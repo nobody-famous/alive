@@ -6,6 +6,7 @@ module.exports.Parser = class {
         this.lex = new Lexer(text);
         this.curNdx = undefined;
         this.tokens = undefined;
+        this.parens = [];
     }
 
     parse() {
@@ -18,26 +19,50 @@ module.exports.Parser = class {
                 break;
             }
 
-            if (this.peek().type == types.OPEN_PARENS) {
-                this.sexpr();
-            } else {
-                console.log(`${this.peek().text} ${this.peek().type} not handled`);
-                break;
-            }
+            this.expr();
         }
 
         return this.tokens;
     }
 
-    sexpr() {
-        this.consume();
-        this.sexprContent();
-
-        if (this.peek().type !== types.CLOSE_PARENS) {
+    expr() {
+        this.skipWS();
+        const token = this.peek();
+        if (token === undefined) {
             return;
         }
 
+        if (token.type === types.OPEN_PARENS) {
+            this.sexpr();
+        } else if (token.type === types.CLOSE_PARENS) {
+            token.type = types.MISMATCHED_CLOSE_PARENS;
+            this.consume();
+        } else {
+            this.consume();
+        }
+    }
+
+    sexpr() {
+        this.parens.push(this.peek());
         this.consume();
+
+        while (true) {
+            this.skipWS();
+
+            if (this.peek() === undefined) {
+                const token = this.parens.pop();
+                token.type = types.MISMATCHED_OPEN_PARENS;
+                break;
+            }
+
+            if (this.peek().type === types.CLOSE_PARENS) {
+                this.parens.pop();
+                this.consume();
+                break;
+            }
+
+            this.expr();
+        }
     }
 
     sexprContent() {
@@ -156,7 +181,7 @@ module.exports.Parser = class {
     }
 
     skipWS() {
-        while (this.peek().type === types.WHITE_SPACE) {
+        while (this.peek() !== undefined && this.peek().type === types.WHITE_SPACE) {
             this.consume();
         }
     }

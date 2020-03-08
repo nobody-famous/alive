@@ -27,8 +27,6 @@ module.exports.Lexer = class {
         this.curPos = 0;
         this.curText = undefined;
         this.start = undefined;
-        this.unmatchedOpenParens = [];
-        this.unmatchedCloseParens = [];
     }
 
     getTokens() {
@@ -43,19 +41,7 @@ module.exports.Lexer = class {
             tokens.push(token);
         }
 
-        this.checkForUnmatched();
-
         return tokens;
-    }
-
-    checkForUnmatched() {
-        if (this.unmatchedOpenParens.length > 0) {
-            this.unmatchedOpenParens.forEach(token => token.type = types.MISMATCHED_OPEN_PARENS);
-        }
-
-        if (this.unmatchedCloseParens.length > 0) {
-            this.unmatchedCloseParens.forEach(token => token.type = types.MISMATCHED_CLOSE_PARENS);
-        }
     }
 
     nextToken() {
@@ -73,9 +59,9 @@ module.exports.Lexer = class {
 
         switch (char) {
             case '(':
-                return this.openParens();
+                return this.char(types.OPEN_PARENS);
             case ')':
-                return this.closeParens();
+                return this.char(types.CLOSE_PARENS);
             case '"':
                 return this.quotedString();
             default:
@@ -105,24 +91,6 @@ module.exports.Lexer = class {
         this.consume();
 
         return this.newToken(types.STRING);
-    }
-
-    openParens() {
-        const token = this.char(types.OPEN_PARENS);
-        this.unmatchedOpenParens.push(token);
-        return token;
-    }
-
-    closeParens() {
-        const token = this.char(types.CLOSE_PARENS);
-
-        if (this.unmatchedOpenParens.length > 0) {
-            this.unmatchedOpenParens.pop();
-        } else {
-            this.unmatchedCloseParens.push(token);
-        }
-
-        return token;
     }
 
     id() {
