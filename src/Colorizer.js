@@ -2,6 +2,7 @@ const { window } = require('vscode');
 
 const decorationTypes = {
     'common_lisp.default': window.createTextEditorDecorationType({ color: { id: 'common_lisp.default' } }),
+    'common_lisp.id': window.createTextEditorDecorationType({ color: { id: 'common_lisp.id' } }),
     'common_lisp.error': window.createTextEditorDecorationType({ color: { id: 'common_lisp.error' } }),
     'common_lisp.keyword': window.createTextEditorDecorationType({ color: { id: 'common_lisp.keyword' } }),
     'common_lisp.control': window.createTextEditorDecorationType({ color: { id: 'common_lisp.control' } }),

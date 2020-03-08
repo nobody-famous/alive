@@ -7,9 +7,10 @@ let activeEditor = window.activeTextEditor;
 const colorizer = new Colorizer();
 
 const typeStyles = {};
-typeStyles[types.ID] = 'common_lisp.default';
 typeStyles[types.OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.CLOSE_PARENS] = 'common_lisp.default';
+
+typeStyles[types.ID] = 'common_lisp.id';
 
 typeStyles[types.DEFUN] = 'common_lisp.keyword';
 typeStyles[types.IN_PACKAGE] = 'common_lisp.keyword';

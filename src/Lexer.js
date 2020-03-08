@@ -29,7 +29,6 @@ module.exports.Lexer = class {
         this.start = undefined;
         this.unmatchedOpenParens = [];
         this.unmatchedCloseParens = [];
-        this.unmatchedDblQuote = [];
     }
 
     getTokens() {
