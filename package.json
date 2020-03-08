@@ -83,6 +83,24 @@
                 }
             },
             {
+                "id": "common_lisp.package",
+                "description": "Common Lisp Package",
+                "defaults": {
+                    "light": "#4ec9b0ff",
+                    "dark": "#4ec9b0ff",
+                    "highContrast": "#4ec9b0ff"
+                }
+            },
+            {
+                "id": "common_lisp.symbol",
+                "description": "Common Lisp Symbol",
+                "defaults": {
+                    "light": "#9cdcfeff",
+                    "dark": "#9cdcfeff",
+                    "highContrast": "#9cdcfeff"
+                }
+            },
+            {
                 "id": "common_lisp.error",
                 "description": "Common Lisp Error",
                 "defaults": {

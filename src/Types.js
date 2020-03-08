@@ -16,6 +16,10 @@ module.exports.HANDLER_CASE = 13;
 module.exports.AND = 14;
 module.exports.OR = 15;
 module.exports.STRING = 16;
+module.exports.TRUE = 17;
+module.exports.NIL = 18;
+module.exports.PACKAGE_NAME = 19;
+module.exports.SYMBOL = 20;
 
 module.exports.MISMATCHED_OPEN_PARENS = 100;
 module.exports.MISMATCHED_CLOSE_PARENS = 101;

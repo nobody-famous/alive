@@ -7,6 +7,8 @@ const decorationTypes = {
     'common_lisp.control': window.createTextEditorDecorationType({ color: { id: 'common_lisp.control' } }),
     'common_lisp.function': window.createTextEditorDecorationType({ color: { id: 'common_lisp.function' } }),
     'common_lisp.string': window.createTextEditorDecorationType({ color: { id: 'common_lisp.string' } }),
+    'common_lisp.package': window.createTextEditorDecorationType({ color: { id: 'common_lisp.package' } }),
+    'common_lisp.symbol': window.createTextEditorDecorationType({ color: { id: 'common_lisp.symbol' } }),
     'editorWhitespace.foreground': window.createTextEditorDecorationType({ color: { id: 'editorWhitespace.foreground' } }),
 }
 

@@ -14,6 +14,8 @@ typeStyles[types.CLOSE_PARENS] = 'common_lisp.default';
 typeStyles[types.DEFUN] = 'common_lisp.keyword';
 typeStyles[types.IN_PACKAGE] = 'common_lisp.keyword';
 typeStyles[types.DEFPACKAGE] = 'common_lisp.keyword';
+typeStyles[types.TRUE] = 'common_lisp.keyword';
+typeStyles[types.NIL] = 'common_lisp.keyword';
 
 typeStyles[types.LET] = 'common_lisp.control';
 typeStyles[types.LOAD] = 'common_lisp.control';
@@ -26,6 +28,10 @@ typeStyles[types.FORMAT] = 'common_lisp.function';
 typeStyles[types.SETF] = 'common_lisp.function';
 
 typeStyles[types.STRING] = 'common_lisp.string';
+
+typeStyles[types.PACKAGE_NAME] = 'common_lisp.package';
+
+typeStyles[types.SYMBOL] = 'common_lisp.symbol';
 
 typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error';

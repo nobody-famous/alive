@@ -15,6 +15,8 @@ const keywords = {
     'SETF': types.SETF,
     'HANDLER-CASE': types.HANDLER_CASE,
     'AND': types.AND,
+    'T': types.TRUE,
+    'NIL': types.NIL,
 };
 
 module.exports.Lexer = class {
@@ -129,8 +131,16 @@ module.exports.Lexer = class {
         this.consume();
 
         while (!this.isDelimiter(this.peek())) {
+            if (this.curText.length > 1 && this.curText.charAt(0) !== ':' && this.peek() === ':') {
+                return this.newToken(types.PACKAGE_NAME);
+            }
+
             this.curText += this.peek();
             this.consume();
+        }
+
+        if (this.curText.charAt(0) === ':') {
+            return this.newToken(types.SYMBOL);
         }
 
         this.curText = this.curText.toUpperCase();
