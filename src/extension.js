@@ -10,8 +10,6 @@ const typeStyles = {};
 typeStyles[types.ID] = 'common_lisp.default';
 typeStyles[types.OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.CLOSE_PARENS] = 'common_lisp.default';
-typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default';
-typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error';
 
 typeStyles[types.DEFUN] = 'common_lisp.keyword';
 typeStyles[types.IN_PACKAGE] = 'common_lisp.keyword';
@@ -26,6 +24,12 @@ typeStyles[types.AND] = 'common_lisp.control';
 
 typeStyles[types.FORMAT] = 'common_lisp.function';
 typeStyles[types.SETF] = 'common_lisp.function';
+
+typeStyles[types.STRING] = 'common_lisp.string';
+
+typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default';
+typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error';
+typeStyles[types.MISMATCHED_DBL_QUOTE] = 'common_lisp.error';
 
 module.exports.activate = (ctx) => {
     window.onDidChangeActiveTextEditor(editor => {

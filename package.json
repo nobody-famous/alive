@@ -74,6 +74,15 @@
                 }
             },
             {
+                "id": "common_lisp.string",
+                "description": "Common Lisp String",
+                "defaults": {
+                    "light": "#ce9178ff",
+                    "dark": "#ce9178ff",
+                    "highContrast": "#ce9178ff"
+                }
+            },
+            {
                 "id": "common_lisp.error",
                 "description": "Common Lisp Error",
                 "defaults": {
