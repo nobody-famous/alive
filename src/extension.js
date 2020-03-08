@@ -26,8 +26,6 @@ typeStyles[types.HANDLER_CASE] = 'common_lisp.control';
 typeStyles[types.AND] = 'common_lisp.control';
 
 typeStyles[types.FUNCTION] = 'common_lisp.function';
-typeStyles[types.FORMAT] = 'common_lisp.function';
-typeStyles[types.SETF] = 'common_lisp.function';
 
 typeStyles[types.STRING] = 'common_lisp.string';
 

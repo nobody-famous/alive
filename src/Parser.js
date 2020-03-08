@@ -26,7 +26,6 @@ module.exports.Parser = class {
     }
 
     expr() {
-        this.skipWS();
         const token = this.peek();
         if (token === undefined) {
             return;
@@ -46,9 +45,13 @@ module.exports.Parser = class {
         this.parens.push(this.peek());
         this.consume();
 
-        while (true) {
-            this.skipWS();
+        if (this.peek() === undefined) {
+            return;
+        }
 
+        this.sexprCheckFunctionCall();
+
+        while (true) {
             if (this.peek() === undefined) {
                 const token = this.parens.pop();
                 token.type = types.MISMATCHED_OPEN_PARENS;
@@ -61,7 +64,28 @@ module.exports.Parser = class {
                 break;
             }
 
-            this.expr();
+            if (this.peek().type === types.DEFUN) {
+                this.defun();
+            } else {
+                this.expr();
+            }
+        }
+    }
+
+    sexprCheckFunctionCall() {
+        if (this.peek().type === types.ID) {
+            this.peek().type = types.FUNCTION;
+            this.consume();
+        } else if (this.peek().type === types.PACKAGE_NAME) {
+            this.consume();
+            if (this.peek() === undefined) {
+                return;
+            }
+
+            if (this.peek().type === types.SYMBOL) {
+                this.peek().type = types.FUNCTION;
+                this.consume();
+            }
         }
     }
 
@@ -131,7 +155,6 @@ module.exports.Parser = class {
 
     defun() {
         this.consume();
-        this.skipWS();
 
         let token = this.peek();
         if (token.type !== types.ID) {
@@ -140,44 +163,43 @@ module.exports.Parser = class {
 
         token.type = types.FUNCTION;
         this.consume();
-        this.skipWS();
 
         token = this.peek();
-        if (token.type !== types.OPEN_PARENS) {
+        if (token === undefined || token.type !== types.OPEN_PARENS) {
             return;
         }
 
+        this.parens.push(token);
+        this.consume();
+
         this.paramList();
-        this.defunBody();
-    }
 
-    defunBody() {
-        while (true) {
-            this.skipWS();
+        if (this.peek() === undefined) {
+            return;
+        }
 
-            if (this.peek() !== undefined && this.peek().type !== types.CLOSE_PARENS) {
-                break;
-            }
-
-            const token = this.peek();
-
-            if (token.type === OPEN_PARENS) {
-                this.sexpr();
-            } else {
-                this.consume();
-            }
+        while (this.peek() !== undefined && this.peek().type !== types.CLOSE_PARENS) {
+            this.expr();
         }
     }
 
     paramList() {
-        this.consume();
+        while (true) {
+            if (this.peek() === undefined) {
+                const parens = this.parens.pop();
+                parens.type = types.MISMATCHED_OPEN_PARENS;
+                return;
+            }
 
-        while (this.peek() !== undefined && this.peek().type !== types.CLOSE_PARENS) {
+            if (this.peek().type === types.CLOSE_PARENS) {
+                this.parens.pop();
+                this.consume();
+                break;
+            }
+
             this.peek().type = types.PARAMETER;
             this.consume();
         }
-
-        this.consume();
     }
 
     skipWS() {
@@ -200,5 +222,6 @@ module.exports.Parser = class {
         }
 
         this.curNdx += 1;
+        this.skipWS();
     }
 };
