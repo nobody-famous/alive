@@ -69,6 +69,8 @@ module.exports.Parser = class {
                 this.defun();
             } else if (this.peek().type === types.IN_PACKAGE) {
                 this.inPackage();
+            } else if (this.peek().type === types.DEFPACKAGE) {
+                this.defPackage();
             } else {
                 this.expr();
             }
@@ -92,19 +94,6 @@ module.exports.Parser = class {
         }
     }
 
-    sexprContent() {
-        switch (this.peek().type) {
-            case types.DEFUN:
-                return this.defun();
-            case types.IN_PACKAGE:
-                return this.inPackage();
-            case types.DEFPACKAGE:
-                return this.defPackage();
-            case types.LOAD:
-                return this.load();
-        }
-    }
-
     load() {
         this.consume();
         while (this.peek() !== undefined && this.peek().type !== types.CLOSE_PARENS) {
@@ -124,22 +113,8 @@ module.exports.Parser = class {
         this.consume();
         token.type = types.PACKAGE_NAME;
 
-        this.defPackageBody();
-    }
-
-    defPackageBody() {
-        while (true) {
-            this.skipWS();
-            if (this.peek().type !== types.OPEN_PARENS) {
-                return;
-            }
-
-            this.consume();
-            while (this.peek() !== undefined && this.peek().type !== types.CLOSE_PARENS) {
-                this.consume();
-            }
-
-            this.consume();
+        while (this.peek() !== undefined && this.peek().type !== types.CLOSE_PARENS) {
+            this.expr();
         }
     }
 
