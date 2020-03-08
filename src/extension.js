@@ -1,6 +1,6 @@
 const types = require('./Types');
 const { Range, window, workspace } = require('vscode');
-const { Lexer } = require('./Lexer');
+const { Parser } = require('./Parser');
 const { Colorizer } = require('./Colorizer');
 
 let activeEditor = window.activeTextEditor;
@@ -24,6 +24,7 @@ typeStyles[types.LOOP] = 'common_lisp.control';
 typeStyles[types.HANDLER_CASE] = 'common_lisp.control';
 typeStyles[types.AND] = 'common_lisp.control';
 
+typeStyles[types.FUNCTION] = 'common_lisp.function';
 typeStyles[types.FORMAT] = 'common_lisp.function';
 typeStyles[types.SETF] = 'common_lisp.function';
 
@@ -32,6 +33,8 @@ typeStyles[types.STRING] = 'common_lisp.string';
 typeStyles[types.PACKAGE_NAME] = 'common_lisp.package';
 
 typeStyles[types.SYMBOL] = 'common_lisp.symbol';
+
+typeStyles[types.PARAMETER] = 'common_lisp.parameter';
 
 typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error';
@@ -78,10 +81,10 @@ function decorateText() {
 }
 
 function buildStyleMap() {
-    const lex = new Lexer(activeEditor.document.getText());
+    const parser = new Parser(activeEditor.document.getText());
     const map = {};
 
-    const tokens = lex.getTokens();
+    const tokens = parser.parse();
     let mismatched = false;
     for (let ndx = 0; ndx < tokens.length; ndx += 1) {
         const token = tokens[ndx];

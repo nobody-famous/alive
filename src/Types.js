@@ -20,6 +20,8 @@ module.exports.TRUE = 17;
 module.exports.NIL = 18;
 module.exports.PACKAGE_NAME = 19;
 module.exports.SYMBOL = 20;
+module.exports.FUNCTION = 21;
+module.exports.PARAMETER = 22;
 
 module.exports.MISMATCHED_OPEN_PARENS = 100;
 module.exports.MISMATCHED_CLOSE_PARENS = 101;

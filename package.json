@@ -101,6 +101,15 @@
                 }
             },
             {
+                "id": "common_lisp.parameter",
+                "description": "Common Lisp Parameter",
+                "defaults": {
+                    "light": "#9cdcfeff",
+                    "dark": "#9cdcfeff",
+                    "highContrast": "#9cdcfeff"
+                }
+            },
+            {
                 "id": "common_lisp.error",
                 "description": "Common Lisp Error",
                 "defaults": {
