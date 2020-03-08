@@ -1,0 +1,69 @@
+{
+    "name": "common-lisp",
+    "displayName": "Common Lisp",
+    "description": "Syntax highlighting for Common Lisp",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.41.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "main": "./src/extension.js",
+    "activationEvents": [
+        "onLanguage:common-lisp"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "common-lisp",
+                "aliases": [
+                    "Common Lisp",
+                    "common-lisp"
+                ],
+                "extensions": [
+                    ".lisp"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "colors": [
+            {
+                "id": "common_lisp.default",
+                "description": "Common Lisp Keyword",
+                "defaults": {
+                    "light": "#d4d4d4",
+                    "dark": "#d4d4d4",
+                    "highContrast": "#d4d4d4"
+                }
+            },
+            {
+                "id": "common_lisp.white_space",
+                "description": "Common Lisp Whitespace",
+                "defaults": {
+                    "light": "#666",
+                    "dark": "#666",
+                    "highContrast": "#666"
+                }
+            },
+            {
+                "id": "common_lisp.keyword",
+                "description": "Common Lisp Keyword",
+                "defaults": {
+                    "light": "#569cd6",
+                    "dark": "#569cd6",
+                    "highContrast": "#569cd6"
+                }
+            },
+            {
+                "id": "common_lisp.mismatched_parens",
+                "description": "Common Lisp Mismatched Parenthesis",
+                "defaults": {
+                    "light": "#ff0000",
+                    "dark": "#ff0000",
+                    "highContrast": "#ff0000"
+                }
+            }
+        ]
+    }
+}
