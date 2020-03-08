@@ -67,6 +67,8 @@ module.exports.Parser = class {
 
             if (this.peek().type === types.DEFUN) {
                 this.defun();
+            } else if (this.peek().type === types.IN_PACKAGE) {
+                this.inPackage();
             } else {
                 this.expr();
             }
