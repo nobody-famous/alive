@@ -98,7 +98,7 @@ function buildStyleMap() {
             style = 'common_lisp.error';
         }
 
-        if (token.type === types.MISMATCHED_OPEN_PARENS || token.type === types.MISMATCHED_CLOSE_PARENS) {
+        if (parser.unclosedString === undefined && (token.type === types.MISMATCHED_OPEN_PARENS || token.type === types.MISMATCHED_CLOSE_PARENS)) {
             mismatched = true;
         }
 

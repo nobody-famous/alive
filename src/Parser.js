@@ -7,6 +7,7 @@ module.exports.Parser = class {
         this.curNdx = undefined;
         this.tokens = undefined;
         this.parens = [];
+        this.unclosedString = undefined;
     }
 
     parse() {
@@ -213,7 +214,12 @@ module.exports.Parser = class {
             return undefined;
         }
 
-        return this.tokens[this.curNdx];
+        const token = this.tokens[this.curNdx];
+        if (this.unclosedString === undefined && token.type === types.MISMATCHED_DBL_QUOTE) {
+            this.unclosedString = token;
+        }
+
+        return token;
     }
 
     consume() {
