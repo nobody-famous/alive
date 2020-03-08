@@ -2,7 +2,10 @@ const { window } = require('vscode');
 
 const decorationTypes = {
     'common_lisp.default': window.createTextEditorDecorationType({ color: { id: 'common_lisp.default' } }),
-    'common_lisp.mismatched_parens': window.createTextEditorDecorationType({ color: { id: 'common_lisp.mismatched_parens' } }),
+    'common_lisp.error': window.createTextEditorDecorationType({ color: { id: 'common_lisp.error' } }),
+    'common_lisp.keyword': window.createTextEditorDecorationType({ color: { id: 'common_lisp.keyword' } }),
+    'common_lisp.control': window.createTextEditorDecorationType({ color: { id: 'common_lisp.control' } }),
+    'common_lisp.function': window.createTextEditorDecorationType({ color: { id: 'common_lisp.function' } }),
     'editorWhitespace.foreground': window.createTextEditorDecorationType({ color: { id: 'editorWhitespace.foreground' } }),
 }
 
@@ -11,6 +14,8 @@ module.exports.Colorizer = class {
 
     colorize(editor, styleMap) {
         const entries = Object.entries(styleMap);
+
+        this.clearEmptyTypes(editor, styleMap);
 
         for (let ndx = 0; ndx < entries.length; ndx += 1) {
             const [style, list] = entries[ndx];
@@ -21,6 +26,18 @@ module.exports.Colorizer = class {
             }
 
             editor.setDecorations(decoration, list);
+        }
+    }
+
+    clearEmptyTypes(editor, styleMap) {
+        const styles = Object.keys(decorationTypes);
+
+        for (let ndx = 0; ndx < styles.length; ndx += 1) {
+            const style = styles[ndx];
+
+            if (styleMap[style] === undefined) {
+                editor.setDecorations(decorationTypes[style], []);
+            }
         }
     }
 };

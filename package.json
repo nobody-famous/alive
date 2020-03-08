@@ -32,9 +32,9 @@
                 "id": "common_lisp.default",
                 "description": "Common Lisp Keyword",
                 "defaults": {
-                    "light": "#d4d4d4",
-                    "dark": "#d4d4d4",
-                    "highContrast": "#d4d4d4"
+                    "light": "#d4d4d4ff",
+                    "dark": "#d4d4d4ff",
+                    "highContrast": "#d4d4d4ff"
                 }
             },
             {
@@ -50,14 +50,32 @@
                 "id": "common_lisp.keyword",
                 "description": "Common Lisp Keyword",
                 "defaults": {
-                    "light": "#569cd6",
-                    "dark": "#569cd6",
-                    "highContrast": "#569cd6"
+                    "light": "#569cd6ff",
+                    "dark": "#569cd6ff",
+                    "highContrast": "#569cd6ff"
                 }
             },
             {
-                "id": "common_lisp.mismatched_parens",
-                "description": "Common Lisp Mismatched Parenthesis",
+                "id": "common_lisp.control",
+                "description": "Common Lisp Control Words",
+                "defaults": {
+                    "light": "#c586c0ff",
+                    "dark": "#c586c0ff",
+                    "highContrast": "#c586c0ff"
+                }
+            },
+            {
+                "id": "common_lisp.function",
+                "description": "Common Lisp Function",
+                "defaults": {
+                    "light": "#dcdcaaff",
+                    "dark": "#dcdcaaff",
+                    "highContrast": "#dcdcaaff"
+                }
+            },
+            {
+                "id": "common_lisp.error",
+                "description": "Common Lisp Error",
                 "defaults": {
                     "light": "#ff0000",
                     "dark": "#ff0000",

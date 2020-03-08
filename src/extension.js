@@ -6,8 +6,33 @@ const { Colorizer } = require('./Colorizer');
 let activeEditor = window.activeTextEditor;
 const colorizer = new Colorizer();
 
+const typeStyles = {};
+typeStyles[types.ID] = 'common_lisp.default';
+typeStyles[types.OPEN_PARENS] = 'common_lisp.default';
+typeStyles[types.CLOSE_PARENS] = 'common_lisp.default';
+typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default';
+typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error';
+
+typeStyles[types.DEFUN] = 'common_lisp.keyword';
+typeStyles[types.IN_PACKAGE] = 'common_lisp.keyword';
+typeStyles[types.DEFPACKAGE] = 'common_lisp.keyword';
+
+typeStyles[types.LET] = 'common_lisp.control';
+typeStyles[types.LOAD] = 'common_lisp.control';
+typeStyles[types.IF] = 'common_lisp.control';
+typeStyles[types.LOOP] = 'common_lisp.control';
+typeStyles[types.HANDLER_CASE] = 'common_lisp.control';
+typeStyles[types.AND] = 'common_lisp.control';
+
+typeStyles[types.FORMAT] = 'common_lisp.function';
+typeStyles[types.SETF] = 'common_lisp.function';
+
 module.exports.activate = (ctx) => {
     window.onDidChangeActiveTextEditor(editor => {
+        if (editor.document.languageId !== 'common-lisp') {
+            return;
+        }
+
         activeEditor = editor;
 
         try {
@@ -50,19 +75,22 @@ function buildStyleMap() {
     let mismatched = false;
     for (let ndx = 0; ndx < tokens.length; ndx += 1) {
         const token = tokens[ndx];
+        let style = typeStyles[token.type] || 'common_lisp.default';
+        const target = { range: new Range(token.start, token.end) };
 
-        if (token.type === types.MISMATCHED_CLOSE_PARENS) {
-            mismatched = true;
-            addToMap(map, 'common_lisp.mismatched_parens', { range: new Range(token.start, token.end) });
-        } else if (token.type === types.MISMATCHED_OPEN_PARENS) {
-            mismatched = true;
-        } else if (mismatched && token.type !== types.WHITE_SPACE) {
-            addToMap(map, 'common_lisp.mismatched_parens', { range: new Range(token.start, token.end) });
-        } else if (token.type === types.WHITE_SPACE) {
-            addToMap(map, 'editorWhitespace.foreground', { range: new Range(token.start, token.end) });
-        } else {
-            addToMap(map, 'common_lisp.default', { range: new Range(token.start, token.end) });
+        if (token.type === types.WHITE_SPACE) {
+            continue;
         }
+
+        if (mismatched) {
+            style = 'common_lisp.error';
+        }
+
+        if (token.type === types.MISMATCHED_OPEN_PARENS || token.type === types.MISMATCHED_CLOSE_PARENS) {
+            mismatched = true;
+        }
+
+        addToMap(map, style, target);
     }
 
     return map;

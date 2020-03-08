@@ -2,6 +2,21 @@ const types = require('./Types');
 const { Position } = require('vscode');
 const { Token } = require('./Token');
 
+const keywords = {
+    'defun': types.DEFUN,
+    'let': types.LET,
+    'let*': types.LET,
+    'load': types.LOAD,
+    'if': types.IF,
+    'loop': types.LOOP,
+    'in-package': types.IN_PACKAGE,
+    'defpackage': types.DEFPACKAGE,
+    'format': types.FORMAT,
+    'setf': types.SETF,
+    'handler-case': types.HANDLER_CASE,
+    'and': types.AND,
+};
+
 module.exports.Lexer = class {
     constructor(text) {
         this.text = text;
@@ -85,6 +100,11 @@ module.exports.Lexer = class {
         while (!this.isDelimiter(this.peek())) {
             this.curText += this.peek();
             this.consume();
+        }
+
+        const keywordID = keywords[this.curText];
+        if (keywordID !== undefined) {
+            return this.newToken(keywordID);
         }
 
         return this.newToken(types.ID);
