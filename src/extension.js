@@ -27,21 +27,6 @@ module.exports.activate = (ctx) => {
     }, null, ctx.subscriptions);
 
     languages.registerCompletionItemProvider(LANGUAGE_ID, new CompletionProvider());
-    // languages.registerCompletionItemProvider(LANGUAGE_ID, {
-    //     provideCompletionItems(document, pos, token, ctx) {
-    //         const test = new CompletionItem('console');
-    //         test.commitCharacters = ['.'];
-    //         test.documentation = new MarkdownString('Press `.` to get `console.`');
-
-    //         return [
-    //             test,
-    //             new CompletionItem('Hello, World!'),
-    //             new CompletionItem('Something'),
-    //             new CompletionItem('Other Thing'),
-    //             new CompletionItem('Next Thing'),
-    //         ];
-    //     }
-    // });
 
     decorateText();
 };
