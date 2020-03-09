@@ -65,6 +65,8 @@ module.exports.Lexer = class {
                 return this.char(types.CLOSE_PARENS);
             case '\'':
                 return this.char(types.SINGLE_QUOTE);
+            case '`':
+                return this.char(types.BACK_QUOTE);
             case '"':
                 return this.quotedString();
             default:

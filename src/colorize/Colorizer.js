@@ -42,6 +42,7 @@ typeStyles[types.STRING] = 'common_lisp.string';
 
 typeStyles[types.QUOTED] = 'common_lisp.quoted';
 typeStyles[types.SINGLE_QUOTE] = 'common_lisp.quoted';
+typeStyles[types.BACK_QUOTE] = 'common_lisp.quoted';
 
 typeStyles[types.PACKAGE_NAME] = 'common_lisp.package';
 

@@ -37,7 +37,7 @@ module.exports.Parser = class {
         } else if (token.type === types.CLOSE_PARENS) {
             token.type = types.MISMATCHED_CLOSE_PARENS;
             this.consume();
-        } else if (token.type === types.SINGLE_QUOTE) {
+        } else if (token.type === types.SINGLE_QUOTE || token.type === types.BACK_QUOTE) {
             this.quote();
         } else {
             this.consume();
