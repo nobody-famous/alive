@@ -10,6 +10,7 @@ const decorationTypes = {
     'common_lisp.control': window.createTextEditorDecorationType({ color: { id: 'common_lisp.control' } }),
     'common_lisp.function': window.createTextEditorDecorationType({ color: { id: 'common_lisp.function' } }),
     'common_lisp.string': window.createTextEditorDecorationType({ color: { id: 'common_lisp.string' } }),
+    'common_lisp.quoted': window.createTextEditorDecorationType({ color: { id: 'common_lisp.quoted' } }),
     'common_lisp.package': window.createTextEditorDecorationType({ color: { id: 'common_lisp.package' } }),
     'common_lisp.symbol': window.createTextEditorDecorationType({ color: { id: 'common_lisp.symbol' } }),
     'common_lisp.parameter': window.createTextEditorDecorationType({ color: { id: 'common_lisp.parameter' } }),
@@ -38,6 +39,9 @@ typeStyles[types.AND] = 'common_lisp.control';
 typeStyles[types.FUNCTION] = 'common_lisp.function';
 
 typeStyles[types.STRING] = 'common_lisp.string';
+
+typeStyles[types.QUOTED] = 'common_lisp.quoted';
+typeStyles[types.SINGLE_QUOTE] = 'common_lisp.quoted';
 
 typeStyles[types.PACKAGE_NAME] = 'common_lisp.package';
 

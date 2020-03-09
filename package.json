@@ -89,6 +89,15 @@
                 }
             },
             {
+                "id": "common_lisp.quoted",
+                "description": "Common Lisp Quoted Item",
+                "defaults": {
+                    "light": "#ce9178ff",
+                    "dark": "#ce9178ff",
+                    "highContrast": "#ce9178ff"
+                }
+            },
+            {
                 "id": "common_lisp.package",
                 "description": "Common Lisp Package",
                 "defaults": {

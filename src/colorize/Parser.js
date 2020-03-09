@@ -37,8 +37,27 @@ module.exports.Parser = class {
         } else if (token.type === types.CLOSE_PARENS) {
             token.type = types.MISMATCHED_CLOSE_PARENS;
             this.consume();
+        } else if (token.type === types.SINGLE_QUOTE) {
+            this.quote();
         } else {
             this.consume();
+        }
+    }
+
+    quote() {
+        this.consumeNoSkip();
+        if (this.peek() === undefined || this.peek().type === types.WHITE_SPACE) {
+            return;
+        }
+
+        const start = this.curNdx;
+        this.expr();
+
+        for (let ndx = start; ndx < this.curNdx; ndx += 1) {
+            const token = this.tokens[ndx];
+            if (token.type !== types.WHITE_SPACE) {
+                token.type = types.QUOTED;
+            }
         }
     }
 
@@ -199,12 +218,16 @@ module.exports.Parser = class {
         return token;
     }
 
-    consume() {
+    consumeNoSkip() {
         if (this.curNdx >= this.tokens.length) {
             return;
         }
 
         this.curNdx += 1;
+    }
+
+    consume() {
+        this.consumeNoSkip();
         this.skipWS();
     }
 };
