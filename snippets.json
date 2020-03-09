@@ -1,0 +1,10 @@
+{
+    "Format String": {
+        "prefix": "format",
+        "body": ["(format T \"$1\" $0)"]
+    },
+    "Define Function": {
+        "prefix": "defun",
+        "body": ["(defun $1 ($2) $0)"]
+    }
+}

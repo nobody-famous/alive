@@ -1,12 +1,15 @@
-const { window, workspace } = require('vscode');
+const { CompletionItem, languages, MarkdownString, window, workspace } = require('vscode');
 const { Colorizer } = require('./colorize/Colorizer');
+const { CompletionProvider } = require('./CompletionProvider');
+
+const LANGUAGE_ID = 'common-lisp';
+const colorizer = new Colorizer();
 
 let activeEditor = window.activeTextEditor;
-const colorizer = new Colorizer();
 
 module.exports.activate = (ctx) => {
     window.onDidChangeActiveTextEditor(editor => {
-        if (editor.document.languageId !== 'common-lisp') {
+        if (editor.document.languageId !== LANGUAGE_ID) {
             return;
         }
 
@@ -23,11 +26,24 @@ module.exports.activate = (ctx) => {
         decorateText();
     }, null, ctx.subscriptions);
 
-    try {
-        decorateText();
-    } catch (err) {
-        console.log(err);
-    }
+    languages.registerCompletionItemProvider(LANGUAGE_ID, new CompletionProvider());
+    // languages.registerCompletionItemProvider(LANGUAGE_ID, {
+    //     provideCompletionItems(document, pos, token, ctx) {
+    //         const test = new CompletionItem('console');
+    //         test.commitCharacters = ['.'];
+    //         test.documentation = new MarkdownString('Press `.` to get `console.`');
+
+    //         return [
+    //             test,
+    //             new CompletionItem('Hello, World!'),
+    //             new CompletionItem('Something'),
+    //             new CompletionItem('Other Thing'),
+    //             new CompletionItem('Next Thing'),
+    //         ];
+    //     }
+    // });
+
+    decorateText();
 };
 
 function decorateText() {

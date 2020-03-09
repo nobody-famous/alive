@@ -27,6 +27,12 @@
                 "configuration": "./language-configuration.json"
             }
         ],
+        "snippets": [
+            {
+                "language": "common-lisp",
+                "path": "./snippets.json"
+            }
+        ],
         "colors": [
             {
                 "id": "common_lisp.default",
