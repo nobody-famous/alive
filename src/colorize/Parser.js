@@ -1,5 +1,5 @@
-const types = require('./Types');
-const { Lexer } = require('./Lexer');
+const types = require('../Types');
+const { Lexer } = require('../Lexer');
 
 module.exports.Parser = class {
     constructor(text) {
