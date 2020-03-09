@@ -1,4 +1,4 @@
-const { CompletionItem, languages, MarkdownString, window, workspace } = require('vscode');
+const { languages, window, workspace } = require('vscode');
 const { Colorizer } = require('./colorize/Colorizer');
 const { CompletionProvider } = require('./CompletionProvider');
 
