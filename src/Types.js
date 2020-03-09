@@ -22,6 +22,7 @@ module.exports.FUNCTION = 19;
 module.exports.PARAMETER = 20;
 module.exports.SINGLE_QUOTE = 21;
 module.exports.QUOTED = 22;
+module.exports.QUOTE_FUNC = 23;
 
 module.exports.MISMATCHED_OPEN_PARENS = 100;
 module.exports.MISMATCHED_CLOSE_PARENS = 101;

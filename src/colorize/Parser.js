@@ -52,8 +52,11 @@ module.exports.Parser = class {
 
         const start = this.curNdx;
         this.expr();
+        this.quoteItems(start, this.curNdx);
+    }
 
-        for (let ndx = start; ndx < this.curNdx; ndx += 1) {
+    quoteItems(start, end) {
+        for (let ndx = start; ndx < end; ndx += 1) {
             const token = this.tokens[ndx];
             if (token.type !== types.WHITE_SPACE) {
                 token.type = types.QUOTED;
@@ -86,6 +89,8 @@ module.exports.Parser = class {
 
             if (this.peek().type === types.DEFUN) {
                 this.defun();
+            } else if (this.peek().type === types.QUOTE_FUNC) {
+                this.quoteFn();
             } else if (this.peek().type === types.IN_PACKAGE) {
                 this.inPackage();
             } else if (this.peek().type === types.DEFPACKAGE) {
@@ -94,6 +99,14 @@ module.exports.Parser = class {
                 this.expr();
             }
         }
+    }
+
+    quoteFn() {
+        this.consume();
+
+        const start = this.curNdx;
+        this.expr();
+        this.quoteItems(start, this.curNdx);
     }
 
     sexprCheckFunctionCall() {

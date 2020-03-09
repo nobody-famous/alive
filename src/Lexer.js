@@ -4,6 +4,7 @@ const { Token } = require('./Token');
 
 const keywords = {
     'DEFUN': types.DEFUN,
+    'QUOTE': types.QUOTE_FUNC,
     'LET': types.LET,
     'LET*': types.LET,
     'LOAD': types.LOAD,
