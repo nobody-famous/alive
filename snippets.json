@@ -1,10 +1,14 @@
 {
     "Format String": {
         "prefix": "format",
-        "body": ["(format T \"$1\" $0)"]
+        "body": ["format T \"$1\" $0"]
+    },
+    "Load File": {
+        "prefix": "load",
+        "body": ["load \"$1\""]
     },
     "Define Function": {
         "prefix": "defun",
-        "body": ["(defun $1 ($2) $0)"]
+        "body": ["defun $1 ($2) $0"]
     }
 }
