@@ -1,22 +1,31 @@
 const { languages, window, workspace } = require('vscode');
 const { Colorizer } = require('./colorize/Colorizer');
+const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
 
 const LANGUAGE_ID = 'common-lisp';
 const colorizer = new Colorizer();
+const completionProvider = new CompletionProvider();
+const formatter = new Formatter();
 
 let activeEditor = window.activeTextEditor;
 
 module.exports.activate = (ctx) => {
     window.onDidChangeActiveTextEditor(editor => {
-        if (editor.document.languageId !== LANGUAGE_ID) {
+        activeEditor = editor;
+
+        if (editor.document.languageId === LANGUAGE_ID) {
+            decorateText();
+        }
+    }, null, ctx.subscriptions);
+
+    workspace.onDidOpenTextDocument(doc => {
+        if (doc.languageId !== LANGUAGE_ID) {
             return;
         }
 
-        activeEditor = editor;
-
         decorateText();
-    }, null, ctx.subscriptions);
+    });
 
     workspace.onDidChangeTextDocument(event => {
         if (!activeEditor || (event.document !== activeEditor.document)) {
@@ -26,7 +35,11 @@ module.exports.activate = (ctx) => {
         decorateText();
     }, null, ctx.subscriptions);
 
-    languages.registerCompletionItemProvider(LANGUAGE_ID, new CompletionProvider());
+    languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, completionProvider);
+    languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, completionProvider);
+
+    languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, formatter);
+    languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, formatter);
 
     decorateText();
 };
@@ -35,6 +48,6 @@ function decorateText() {
     try {
         colorizer.run(activeEditor);
     } catch (err) {
-        console.log(err);
+        window.showErrorMessage(`Failed to colorize file: ${err.toString()}`);
     }
 }
