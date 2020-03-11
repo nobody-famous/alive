@@ -132,6 +132,7 @@ module.exports.Lexer = class {
     }
 
     ws() {
+        this.curText += this.peek();
         this.consume();
 
         while (this.isWS(this.peek())) {

@@ -2,6 +2,7 @@ const { languages, window, workspace } = require('vscode');
 const { Colorizer } = require('./colorize/Colorizer');
 const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
+const { Parser } = require('./lisp/Parser');
 
 const LANGUAGE_ID = 'common-lisp';
 const colorizer = new Colorizer();
@@ -40,6 +41,9 @@ module.exports.activate = (ctx) => {
 
     languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, formatter);
     languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, formatter);
+
+    const parser = new Parser(activeEditor.document.getText());
+    parser.parse();
 
     decorateText();
 };

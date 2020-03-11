@@ -1,28 +1,28 @@
 const types = require('../Types');
 const { format } = require('util');
-const { Lexer } = require('../Lexer');
+const { Parser } = require('./Parser');
 const { State } = require('./State');
-const { Range, TextEdit } = require('vscode');
+const { Position, Range, TextEdit } = require('vscode');
 
 module.exports.Formatter = class {
     provideDocumentFormattingEdits(doc, opts) {
-        const lex = new Lexer(doc.getText());
-        const tokens = lex.getTokens();
-        const state = new State(tokens);
+        const parser = new Parser(doc.getText());
+        const exprList = parser.parse();
+        // const state = new State(tokens);
         const edits = [];
 
-        if (tokens.length === 0) {
+        if (exprList.length === 0) {
             return;
         }
 
-        state.setOptions(opts);
+        // state.setOptions(opts);
 
-        this.removeBlankLines(edits, state);
-        if (tokens[0].type === types.WHITE_SPACE) {
-            edits.push(TextEdit.delete(
-                new Range(tokens[0].start, tokens[1].start),
-            ));
-        }
+        // this.removeBlankLines(edits, state);
+        // if (tokens[0].type === types.WHITE_SPACE) {
+        //     edits.push(TextEdit.delete(
+        //         new Range(tokens[0].start, tokens[1].start),
+        //     ));
+        // }
 
         return edits;
     }
