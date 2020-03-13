@@ -3,6 +3,7 @@ const types = require('../Types');
 module.exports.AST = class {
     constructor() {
         this.nodes = [];
+        this.symbleTable = {};
     }
 
     addNode(node) {

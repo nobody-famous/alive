@@ -2,16 +2,15 @@ const types = require('../Types');
 const { Lexer } = require('../Lexer');
 
 module.exports.Parser = class {
-    constructor(text) {
+    constructor(text, tokens) {
         this.lex = new Lexer(text);
         this.curNdx = undefined;
-        this.tokens = undefined;
+        this.tokens = tokens;
         this.parens = [];
         this.unclosedString = undefined;
     }
 
     parse() {
-        this.tokens = this.lex.getTokens();
         this.curNdx = 0;
 
         while (true) {

@@ -3,6 +3,7 @@ const { Colorizer } = require('./colorize/Colorizer');
 const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
 const { Parser } = require('./lisp/Parser');
+const { Lexer } = require('./Lexer');
 
 const LANGUAGE_ID = 'common-lisp';
 const colorizer = new Colorizer();
@@ -16,7 +17,9 @@ module.exports.activate = (ctx) => {
         activeEditor = editor;
 
         if (editor.document.languageId === LANGUAGE_ID) {
-            decorateText();
+            const lex = new Lexer(activeEditor.document.getText());
+            const tokens = lex.getTokens();
+            decorateText(tokens);
         }
     }, null, ctx.subscriptions);
 
@@ -25,7 +28,9 @@ module.exports.activate = (ctx) => {
             return;
         }
 
-        decorateText();
+        const lex = new Lexer(activeEditor.document.getText());
+        const tokens = lex.getTokens();
+        decorateText(tokens);
     });
 
     workspace.onDidChangeTextDocument(event => {
@@ -33,24 +38,42 @@ module.exports.activate = (ctx) => {
             return;
         }
 
-        decorateText();
+        const lex = new Lexer(activeEditor.document.getText());
+        const tokens = lex.getTokens();
+        decorateText(tokens);
     }, null, ctx.subscriptions);
 
     languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, completionProvider);
     languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, completionProvider);
 
-    languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, formatter);
-    languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, formatter);
+    languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter());
+    languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter());
 
-    const parser = new Parser(activeEditor.document.getText());
+    const lex = new Lexer(activeEditor.document.getText());
+    const tokens = lex.getTokens();
+    const parser = new Parser(tokens);
     parser.parse();
 
-    decorateText();
+    decorateText(tokens);
 };
 
-function decorateText() {
+function documentFormatter() {
+    return {
+        provideDocumentFormattingEdits(doc, opts) {
+            const lex = new Lexer(activeEditor.document.getText());
+            const tokens = lex.getTokens();
+            const parser = new Parser(tokens);
+            const ast = parser.parse();
+            const formatter = new Formatter(doc, opts, ast);
+
+            return formatter.format();
+        }
+    };
+}
+
+function decorateText(tokens) {
     try {
-        colorizer.run(activeEditor);
+        colorizer.run(activeEditor, tokens);
     } catch (err) {
         window.showErrorMessage(`Failed to colorize file: ${err.toString()}`);
     }

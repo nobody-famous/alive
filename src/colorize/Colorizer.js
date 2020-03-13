@@ -57,8 +57,8 @@ typeStyles[types.MISMATCHED_DBL_QUOTE] = 'common_lisp.error';
 module.exports.Colorizer = class {
     constructor() { }
 
-    run(editor) {
-        const styleMap = this.buildStyleMap(editor);
+    run(editor, tokens) {
+        const styleMap = this.buildStyleMap(editor, tokens);
         const entries = Object.entries(styleMap);
 
         this.clearEmptyTypes(editor, styleMap);
@@ -87,8 +87,8 @@ module.exports.Colorizer = class {
         }
     }
 
-    buildStyleMap(editor) {
-        const parser = new Parser(editor.document.getText());
+    buildStyleMap(editor, lexTokens) {
+        const parser = new Parser(editor.document.getText(), lexTokens);
         const map = {};
 
         const tokens = parser.parse();

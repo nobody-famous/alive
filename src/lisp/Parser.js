@@ -1,29 +1,27 @@
 const types = require('../Types');
-const { Lexer } = require('../Lexer');
+const { format } = require('util');
 const { AST } = require('./AST');
 const { Node } = require('./Node');
+const { PackageMgr } = require('./PackageMgr');
 
 module.exports.Parser = class {
-    constructor(text) {
-        this.lex = new Lexer(text);
-        this.tokens = undefined;
+    constructor(tokens) {
+        this.tokens = tokens;
         this.ndx = undefined;
-        this.ast = undefined;
     }
 
     parse() {
         this.ndx = 0;
-        this.tokens = this.lex.getTokens();
-        this.ast = new AST();
+        const ast = new AST();
 
         while (this.peek() !== undefined) {
             const node = this.expr();
             if (node !== undefined) {
-                this.ast.addNode(node);
+                ast.addNode(node);
             }
         }
 
-        this.ast.debug();
+        return ast;
     }
 
     expr() {
