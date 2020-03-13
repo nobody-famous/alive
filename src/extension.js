@@ -8,7 +8,6 @@ const { Lexer } = require('./Lexer');
 const LANGUAGE_ID = 'common-lisp';
 const colorizer = new Colorizer();
 const completionProvider = new CompletionProvider();
-const formatter = new Formatter();
 
 let activeEditor = window.activeTextEditor;
 

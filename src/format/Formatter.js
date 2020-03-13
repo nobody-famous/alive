@@ -8,6 +8,9 @@ module.exports.Formatter = class {
     constructor(doc, opts, ast) {
         this.ast = ast;
         this.parens = [];
+        this.elems = [];
+
+        this.indentSize = 3;
     }
 
     format() {
@@ -45,25 +48,78 @@ module.exports.Formatter = class {
         if (this.parens.length === 0) {
             this.fixIndent(edits, line, 0);
         } else if (line.length > 1 && line[1].text === ')') {
-            const open = this.parens.pop();
-            this.fixIndent(edits, line, open.start.character);
-            this.parens.push(open);
+            this.fixCloseParen(edits, lines, lineNdx);
+        } else {
+            this.fixChildElem(edits, lines, lineNdx);
         }
 
+        this.checkForParens(line);
+    }
 
+    checkForParens(line) {
         for (let ndx = 0; ndx < line.length; ndx += 1) {
             const token = line[ndx];
 
             if (token.text === '(') {
+                this.elems.push(this.getNextElem(line, ndx + 1));
                 this.parens.push(token);
             } else if (token.text === ')') {
+                this.elems.pop();
                 this.parens.pop();
             }
         }
     }
 
+    getNextElem(line, ndx) {
+        if (ndx >= line.length) {
+            return undefined;
+        }
+
+        if (line[ndx].type === types.WHITE_SPACE) {
+            if (ndx + 1 >= line.length) {
+                return undefined;
+            } else {
+                ndx += 1;
+            }
+        }
+
+        return line[ndx];
+    }
+
+    fixChildElem(edits, lines, lineNdx) {
+        if (this.elems.length === 0) {
+            return;
+        }
+
+        const token = this.elems[this.elems.length - 1];
+        switch (token.type) {
+            case types.DEFPACKAGE:
+                return this.fixDefPackageElem(edits, lines[lineNdx]);
+            default:
+                console.log(`fixChildElem in ${token.type} ${token.text}, line ${lineNdx}`);
+        }
+    }
+
+    fixDefPackageElem(edits, line) {
+        this.fixIndent(edits, line, this.indentSize);
+    }
+
+    fixCloseParen(edits, lines, lineNdx) {
+        const line = lines[lineNdx];
+        const open = this.parens.pop();
+
+        this.fixIndent(edits, line, open.start.character);
+
+        // Put the open parens back so that the code to check for matching parens sees it.
+        this.parens.push(open);
+    }
+
     fixIndent(edits, line, target) {
         const token = line[0];
+
+        if (token.type !== types.WHITE_SPACE) {
+            return;
+        }
 
         if (token.text.length > target) {
             const end = new Position(token.start.line, token.end.character - target);
