@@ -1,7 +1,7 @@
 {
     "Format String": {
         "prefix": "format",
-        "body": ["format T \"$1\" $0"]
+        "body": ["format ${1:T} \"$2\" $0"]
     },
     "Load File": {
         "prefix": "load",
