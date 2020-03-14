@@ -48,12 +48,14 @@ module.exports.activate = (ctx) => {
     languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter());
     languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter());
 
-    const lex = new Lexer(activeEditor.document.getText());
-    const tokens = lex.getTokens();
-    const parser = new Parser(tokens);
-    parser.parse();
+    if (activeEditor.document.languageId === LANGUAGE_ID) {
+        const lex = new Lexer(activeEditor.document.getText());
+        const tokens = lex.getTokens();
+        const parser = new Parser(tokens);
+        parser.parse();
 
-    decorateText(tokens);
+        decorateText(tokens);
+    }
 };
 
 function documentFormatter() {
