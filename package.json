@@ -54,15 +54,6 @@
                 }
             },
             {
-                "id": "common_lisp.white_space",
-                "description": "Common Lisp Whitespace",
-                "defaults": {
-                    "light": "#666",
-                    "dark": "#666",
-                    "highContrast": "#666"
-                }
-            },
-            {
                 "id": "common_lisp.keyword",
                 "description": "Common Lisp Keyword",
                 "defaults": {
