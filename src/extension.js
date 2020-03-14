@@ -24,7 +24,7 @@ module.exports.activate = (ctx) => {
             readLexTokens(editor.document);
         }
 
-        decorateText(lexTokenMap[editor.fileName]);
+        decorateText(lexTokenMap[editor.document.fileName]);
     }, null, ctx.subscriptions);
 
     workspace.onDidOpenTextDocument(doc => {
@@ -74,7 +74,8 @@ function documentFormatter() {
             const ast = parser.parse();
             const formatter = new Formatter(doc, opts, ast);
 
-            return formatter.format();
+            const edits = formatter.format();
+            return edits.length > 0 ? edits : undefined;
         }
     };
 }

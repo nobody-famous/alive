@@ -17,6 +17,7 @@ module.exports.Formatter = class {
         const haveCfg = (cfg !== undefined && cfg.format !== undefined);
 
         this.indentSize = (haveCfg && (cfg.format.indentWidth !== undefined)) ? cfg.format.indentWidth : DEFAULT_INDENT;
+        this.indentCloseStack = (haveCfg && (cfg.format.indentCloseParenStack !== undefined)) ? cfg.format.indentCloseParenStack : true;
     }
 
     format() {
@@ -134,8 +135,8 @@ module.exports.Formatter = class {
     }
 
     fixDefaultIndent(edits, lines, lineNdx) {
-        const parent = this.elems[this.elems.length - 1];
-        const indent = parent.start.character + DEFAULT_INDENT;
+        const parent = this.parens[this.parens.length - 1];
+        const indent = parent.start.character + this.indentSize;
 
         this.fixIndent(edits, lines[lineNdx], indent);
     }
@@ -154,7 +155,7 @@ module.exports.Formatter = class {
         const parentLine = lines[parent.start.line];
         const parentNdx = this.getElemNdx(parentLine, parent);
         let alignNdx = parentNdx + 1;
-        let indent = parent.start.character + DEFAULT_INDENT;
+        let indent = parent.start.character + this.indentSize;
 
         if (alignNdx < parentLine.length && parentLine[alignNdx].type === types.WHITE_SPACE) {
             alignNdx += 1;
@@ -177,18 +178,32 @@ module.exports.Formatter = class {
         return undefined;
     }
 
-    fixDefPackageElem(edits, line) {
-        this.fixIndent(edits, line, this.indentSize);
-    }
-
     fixCloseParen(edits, lines, lineNdx) {
         const line = lines[lineNdx];
-        const open = this.parens.pop();
+        const open = this.parens[this.parens.length - 1];
+        const stacked = this.countParenStack(line);
 
-        this.fixIndent(edits, line, open.start.character);
+        if ((stacked === this.parens.length) && !this.indentCloseStack) {
+            this.fixIndent(edits, line, 0);
+        } else {
+            this.fixIndent(edits, line, open.start.character);
+        }
+    }
 
-        // Put the open parens back so that the code to check for matching parens sees it.
-        this.parens.push(open);
+    countParenStack(line) {
+        let count = 0;
+
+        for (let ndx = 0; ndx < line.length; ndx += 1) {
+            if (line[ndx].type !== types.WHITE_SPACE && line[ndx].text !== ')') {
+                break;
+            }
+
+            if (line[ndx].text === ')') {
+                count += 1;
+            }
+        }
+
+        return count;
     }
 
     fixIndent(edits, line, target) {
