@@ -228,7 +228,9 @@ module.exports.Formatter = class {
     createLines(lines, node) {
         if (node.value !== undefined) {
             if (node.value.type === types.WHITE_SPACE) {
-                this.splitWS(lines, node.value);
+                this.splitLines(lines, types.WHITE_SPACE, node.value);
+            } else if (node.value.type === types.COMMENT) {
+                this.splitLines(lines, types.COMMENT, node.value);
             } else {
                 lines[lines.length - 1].push(node.value);
             }
@@ -251,7 +253,7 @@ module.exports.Formatter = class {
         lines[lines.length - 1].push(token);
     }
 
-    splitWS(lines, token) {
+    splitLines(lines, type, token) {
         const splits = token.text.split('\n');
         const startLine = token.start.line;
 
@@ -264,7 +266,7 @@ module.exports.Formatter = class {
 
             const start = new Position(curLine, startChar);
             const end = new Position(curLine, startChar + splits[ndx].length);
-            const newToken = new Token(types.WHITE_SPACE, start, end, splits[ndx]);
+            const newToken = new Token(type, start, end, splits[ndx]);
 
             startChar += splits[ndx].length;
             if (curLine !== startLine) {
