@@ -8,6 +8,7 @@ module.exports.Parser = class {
         this.tokens = tokens;
         this.parens = [];
         this.unclosedString = undefined;
+        this.mismatchedBar = undefined;
     }
 
     parse() {
@@ -225,6 +226,8 @@ module.exports.Parser = class {
         const token = this.tokens[this.curNdx];
         if (this.unclosedString === undefined && token.type === types.MISMATCHED_DBL_QUOTE) {
             this.unclosedString = token;
+        } else if (this.mismatchedBar === undefined && token.type === types.MISMATCHED_BAR) {
+            this.mismatchedBar = token;
         }
 
         return token;

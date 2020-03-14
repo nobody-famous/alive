@@ -24,7 +24,11 @@ module.exports.SINGLE_QUOTE = 21;
 module.exports.BACK_QUOTE = 22;
 module.exports.QUOTED = 23;
 module.exports.QUOTE_FUNC = 24;
+module.exports.COMMENT = 25;
+module.exports.POUND_SEQ = 26;
 
 module.exports.MISMATCHED_OPEN_PARENS = 100;
 module.exports.MISMATCHED_CLOSE_PARENS = 101;
 module.exports.MISMATCHED_DBL_QUOTE = 102;
+module.exports.MISMATCHED_COMMENT = 103;
+module.exports.MISMATCHED_BAR = 104;

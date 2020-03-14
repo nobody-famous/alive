@@ -144,6 +144,15 @@
                 }
             },
             {
+                "id": "common_lisp.comment",
+                "description": "Common Lisp Comment",
+                "defaults": {
+                    "light": "#6a9955ff",
+                    "dark": "#6a9955ff",
+                    "highContrast": "#6a9955ff"
+                }
+            },
+            {
                 "id": "common_lisp.error",
                 "description": "Common Lisp Error",
                 "defaults": {

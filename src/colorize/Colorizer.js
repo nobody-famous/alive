@@ -4,6 +4,7 @@ const { Range, window } = require('vscode');
 
 const decorationTypes = {
     'common_lisp.default': window.createTextEditorDecorationType({ color: { id: 'common_lisp.default' } }),
+    'common_lisp.comment': window.createTextEditorDecorationType({ color: { id: 'common_lisp.comment' } }),
     'common_lisp.id': window.createTextEditorDecorationType({ color: { id: 'common_lisp.id' } }),
     'common_lisp.error': window.createTextEditorDecorationType({ color: { id: 'common_lisp.error' } }),
     'common_lisp.keyword': window.createTextEditorDecorationType({ color: { id: 'common_lisp.keyword' } }),
@@ -20,6 +21,8 @@ const decorationTypes = {
 const typeStyles = {};
 typeStyles[types.OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.CLOSE_PARENS] = 'common_lisp.default';
+
+typeStyles[types.COMMENT] = 'common_lisp.comment';
 
 typeStyles[types.ID] = 'common_lisp.id';
 
@@ -53,6 +56,8 @@ typeStyles[types.PARAMETER] = 'common_lisp.parameter';
 typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error';
 typeStyles[types.MISMATCHED_DBL_QUOTE] = 'common_lisp.error';
+typeStyles[types.MISMATCHED_BAR] = 'common_lisp.error';
+typeStyles[types.MISMATCHED_COMMENT] = 'common_lisp.error';
 
 module.exports.Colorizer = class {
     constructor() { }
@@ -106,7 +111,7 @@ module.exports.Colorizer = class {
                 style = 'common_lisp.error';
             }
 
-            if (parser.unclosedString === undefined && (token.type === types.MISMATCHED_OPEN_PARENS || token.type === types.MISMATCHED_CLOSE_PARENS)) {
+            if (this.isMismatched(parser, token)) {
                 mismatched = true;
             }
 
@@ -114,6 +119,16 @@ module.exports.Colorizer = class {
         }
 
         return map;
+    }
+
+    isMismatched(parser, token) {
+        if (parser.unclosedString !== undefined) {
+            return false;
+        }
+
+        if (token.type === types.MISMATCHED_OPEN_PARENS || token.type === types.MISMATCHED_CLOSE_PARENS) {
+            return true;
+        }
     }
 
     addToMap(map, key, entry) {

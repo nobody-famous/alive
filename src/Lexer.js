@@ -69,9 +69,113 @@ module.exports.Lexer = class {
                 return this.char(types.BACK_QUOTE);
             case '"':
                 return this.quotedString();
+            case '#':
+                return this.pound();
+            case '|':
+                return this.bar();
             default:
                 return this.id();
         }
+    }
+
+    bar() {
+        this.consume();
+
+        while (true) {
+            if (this.peek() === undefined) {
+                return this.newToken(types.MISMATCHED_BAR);
+            }
+
+            if (this.peek() === '\\') {
+                this.curText += this.peek();
+                this.consume();
+
+                if (this.peek() === undefined) {
+                    return this.newToken(types.MISMATCHED_BAR);
+                }
+                this.curText += this.peek();
+                this.consume();
+            } else if (this.peek() === '|') {
+                this.consume();
+                break;
+            } else {
+                this.curText += this.peek();
+                this.consume();
+            }
+        }
+
+        return this.newToken(types.ID);
+    }
+
+    pound() {
+        this.consume();
+
+        if (this.peek() === '|') {
+            this.consume();
+            return this.nestedComment();
+        } else {
+            this.curText += '#';
+            return this.poundSequence();
+        }
+    }
+
+    poundSequence() {
+        while (!this.isDelimiter(this.peek())) {
+            this.curText += this.peek();
+            this.consume();
+        }
+
+        return this.newToken(types.POUND_SEQ);
+    }
+
+    nestedComment() {
+        this.opens = 0;
+
+        while (true) {
+            if (this.peek() === undefined) {
+                return this.newToken(types.MISMATCHED_COMMENT);
+            }
+
+            if (this.peek() === '|') {
+                this.consume();
+
+                if (this.peek() === '#') {
+                    this.consume();
+                    this.opens -= 1;
+
+                    if (this.opens < 0) {
+                        break;
+                    } else {
+                        this.curText += '|#';
+                    }
+                } else {
+                    this.curText += '|';
+                }
+            } else if (this.peek() === '\\') {
+                this.curText += this.peek();
+                this.consume();
+
+                if (this.peek() !== undefined) {
+                    this.curText += this.peek();
+                    this.consume();
+                }
+            } else if (this.peek() === '#') {
+                this.curText += this.peek();
+                this.consume();
+
+                if (this.peek() === '|') {
+                    this.opens += 1;
+
+                    this.curText += this.peek();
+                    this.consume();
+                }
+            } else {
+                this.curText += this.peek();
+                this.consume();
+            }
+        }
+
+        return this.newToken(types.COMMENT);
     }
 
     quotedString() {
