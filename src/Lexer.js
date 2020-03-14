@@ -96,7 +96,7 @@ module.exports.Lexer = class {
         this.consume();
 
         while (true) {
-            if (this.peek() === undefined) {
+            if (this.peek() === undefined || this.peek() === '\n') {
                 return this.newToken(types.MISMATCHED_BAR);
             }
 
