@@ -2,18 +2,26 @@ const types = require('../Types');
 const { Token } = require('../Token');
 const { format } = require('util');
 const { State } = require('./State');
-const { Position, Range, TextEdit } = require('vscode');
+const { Position, Range, TextEdit, workspace } = require('vscode');
 
+const DEFAULT_INDENT = 3;
 module.exports.Formatter = class {
     constructor(doc, opts, ast) {
         this.ast = ast;
         this.parens = [];
         this.elems = [];
+    }
 
-        this.indentSize = 3;
+    setConfiguration() {
+        const cfg = workspace.getConfiguration('common_lisp');
+        const haveCfg = (cfg !== undefined && cfg.format !== undefined);
+
+        this.indentSize = (haveCfg && (cfg.format.indentWidth !== undefined)) ? cfg.format.indentWidth : DEFAULT_INDENT;
     }
 
     format() {
+        this.setConfiguration();
+
         const lines = [];
         lines.push([]);
         for (let ndx = 0; ndx < this.ast.nodes.length; ndx += 1) {
@@ -95,9 +103,34 @@ module.exports.Formatter = class {
         switch (token.type) {
             case types.DEFPACKAGE:
                 return this.fixDefPackageElem(edits, lines[lineNdx]);
+            case types.SYMBOL:
+                return this.fixSymbolElem(edits, lines, lineNdx);
             default:
                 console.log(`fixChildElem in ${token.type} ${token.text}, line ${lineNdx}`);
         }
+    }
+
+    fixSymbolElem(edits, lines, lineNdx) {
+        const line = lines[lineNdx];
+        const prevNdx = Math.max(0, this.elems.length - 2);
+        const prevElem = this.elems[prevNdx];
+
+        switch (prevElem.type) {
+            case types.DEFPACKAGE:
+                return this.fixDefPackageSymbol(edits, lines, lineNdx);
+            default:
+                console.log(`fixSymbolElem ${prevElem.text}`);
+        }
+    }
+
+    fixDefPackageSymbol(edits, lines, lineNdx) {
+        const parent = this.elems[this.elems.length - 1];
+        const parentLine = lines[parent.start.line];
+        const indent = (parentLine.length < 6)
+            ? DEFAULT_INDENT
+            : parentLine[4].start.character;
+
+        this.fixIndent(edits, lines[lineNdx], indent);
     }
 
     fixDefPackageElem(edits, line) {
@@ -124,13 +157,21 @@ module.exports.Formatter = class {
         if (token.text.length > target) {
             const end = new Position(token.start.line, token.end.character - target);
             edits.push(TextEdit.delete(new Range(token.start, end)));
-
-            if (line[1].text === '(') {
-                line[1].start = new Position(line[1].start.line, target);
-            }
         } else if (token.text.length < target) {
             const diff = target - token.text.length;
             edits.push(TextEdit.insert(new Position(token.start.line, 0), ' '.repeat(diff)));
+        }
+
+        this.fixLineStarts(line, target);
+    }
+
+    fixLineStarts(line, target) {
+        let char = target;
+        const lineNum = line[0].start.line;
+
+        for (let ndx = 1; ndx < line.length; ndx += 1) {
+            line[ndx].start = new Position(lineNum, char);
+            char += line[ndx].text.length;
         }
     }
 

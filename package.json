@@ -33,6 +33,16 @@
                 "path": "./snippets.json"
             }
         ],
+        "configuration": {
+            "title": "Common Lisp",
+            "properties": {
+                "common_lisp.format.indentWidth": {
+                    "type": "number",
+                    "default": 4,
+                    "description": "Indentation Level"
+                }
+            }
+        },
         "colors": [
             {
                 "id": "common_lisp.default",
