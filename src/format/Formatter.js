@@ -101,10 +101,20 @@ module.exports.Formatter = class {
 
         const token = this.elems[this.elems.length - 1];
         switch (token.type) {
-            case types.DEFPACKAGE:
-                return this.fixDefPackageElem(edits, lines[lineNdx]);
             case types.SYMBOL:
                 return this.fixSymbolElem(edits, lines, lineNdx);
+            case types.DEFUN:
+            case types.DEFPACKAGE:
+            case types.LET:
+            case types.LOOP:
+            case types.HANDLER_CASE:
+                return this.fixDefaultIndent(edits, lines, lineNdx);
+            case types.AND:
+            case types.ID:
+            case types.IF:
+                return this.fixAlignFirstElem(edits, lines, lineNdx);
+            case types.OPEN_PARENS:
+                return this.fixAlignParent(edits, lines, lineNdx);
             default:
                 console.log(`fixChildElem in ${token.type} ${token.text}, line ${lineNdx}`);
         }
@@ -117,20 +127,54 @@ module.exports.Formatter = class {
 
         switch (prevElem.type) {
             case types.DEFPACKAGE:
-                return this.fixDefPackageSymbol(edits, lines, lineNdx);
+                return this.fixAlignFirstElem(edits, lines, lineNdx);
             default:
                 console.log(`fixSymbolElem ${prevElem.text}`);
         }
     }
 
-    fixDefPackageSymbol(edits, lines, lineNdx) {
+    fixDefaultIndent(edits, lines, lineNdx) {
         const parent = this.elems[this.elems.length - 1];
-        const parentLine = lines[parent.start.line];
-        const indent = (parentLine.length < 6)
-            ? DEFAULT_INDENT
-            : parentLine[4].start.character;
+        const indent = parent.start.character + DEFAULT_INDENT;
 
         this.fixIndent(edits, lines[lineNdx], indent);
+    }
+
+    fixAlignParent(edits, lines, lineNdx) {
+        const parent = this.elems[this.elems.length - 1];
+        const parentLine = lines[parent.start.line];
+        const parentNdx = this.getElemNdx(parentLine, parent);
+        const indent = parentLine[parentNdx].start.character;
+
+        this.fixIndent(edits, lines[lineNdx], indent);
+    }
+
+    fixAlignFirstElem(edits, lines, lineNdx) {
+        const parent = this.elems[this.elems.length - 1];
+        const parentLine = lines[parent.start.line];
+        const parentNdx = this.getElemNdx(parentLine, parent);
+        let alignNdx = parentNdx + 1;
+        let indent = parent.start.character + DEFAULT_INDENT;
+
+        if (alignNdx < parentLine.length && parentLine[alignNdx].type === types.WHITE_SPACE) {
+            alignNdx += 1;
+        }
+
+        if (alignNdx < parentLine.length) {
+            indent = parentLine[alignNdx].start.character;
+        }
+
+        this.fixIndent(edits, lines[lineNdx], indent);
+    }
+
+    getElemNdx(line, elem) {
+        for (let ndx = 0; ndx < line.length; ndx += 1) {
+            if (line[ndx] === elem) {
+                return ndx;
+            }
+        }
+
+        return undefined;
     }
 
     fixDefPackageElem(edits, line) {
