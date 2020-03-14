@@ -10,16 +10,21 @@ const colorizer = new Colorizer();
 const completionProvider = new CompletionProvider();
 
 let activeEditor = window.activeTextEditor;
+let lexTokenMap = {};
 
 module.exports.activate = (ctx) => {
     window.onDidChangeActiveTextEditor(editor => {
         activeEditor = editor;
 
-        if (editor.document.languageId === LANGUAGE_ID) {
-            const lex = new Lexer(activeEditor.document.getText());
-            const tokens = lex.getTokens();
-            decorateText(tokens);
+        if (editor.document.languageId !== LANGUAGE_ID) {
+            return;
         }
+
+        if (lexTokenMap[editor.fileName] === undefined) {
+            readLexTokens(editor.document);
+        }
+
+        decorateText(lexTokenMap[editor.fileName]);
     }, null, ctx.subscriptions);
 
     workspace.onDidOpenTextDocument(doc => {
@@ -27,9 +32,8 @@ module.exports.activate = (ctx) => {
             return;
         }
 
-        const lex = new Lexer(activeEditor.document.getText());
-        const tokens = lex.getTokens();
-        decorateText(tokens);
+        readLexTokens(activeEditor.document);
+        decorateText(lexTokenMap[doc.fileName]);
     });
 
     workspace.onDidChangeTextDocument(event => {
@@ -37,9 +41,8 @@ module.exports.activate = (ctx) => {
             return;
         }
 
-        const lex = new Lexer(activeEditor.document.getText());
-        const tokens = lex.getTokens();
-        decorateText(tokens);
+        readLexTokens(activeEditor.document);
+        decorateText(lexTokenMap[activeEditor.document.fileName]);
     }, null, ctx.subscriptions);
 
     languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, completionProvider);
@@ -48,15 +51,19 @@ module.exports.activate = (ctx) => {
     languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter());
     languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter());
 
-    if (activeEditor.document.languageId === LANGUAGE_ID) {
-        const lex = new Lexer(activeEditor.document.getText());
-        const tokens = lex.getTokens();
-        const parser = new Parser(tokens);
-        parser.parse();
-
-        decorateText(tokens);
+    if (activeEditor.document.languageId !== LANGUAGE_ID) {
+        return;
     }
+
+    readLexTokens(activeEditor.document);
+    decorateText(lexTokenMap[activeEditor.document.fileName]);
 };
+
+function readLexTokens(doc) {
+    const lex = new Lexer(doc.getText());
+
+    lexTokenMap[doc.fileName] = lex.getTokens();
+}
 
 function documentFormatter() {
     return {

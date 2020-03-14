@@ -7,6 +7,7 @@ Language extension to add support for editing Common Lisp files. Very much a wor
 * Basic syntax highlighting
 * Minimal code completion
 * Code formatter
+* Snippets
 
 ## Extension Settings
 

@@ -7,6 +7,10 @@
         "prefix": "load",
         "body": ["load \"$1\""]
     },
+    "Comment": {
+        "prefix": "comment",
+        "body": ["#| $0 |#"]
+    },
     "Define Function": {
         "prefix": "defun",
         "body": ["defun $1 ($2) $0"]
