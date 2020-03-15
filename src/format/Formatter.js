@@ -40,11 +40,8 @@ module.exports.Formatter = class {
         const edits = [];
 
         while (this.lineNdx < this.lines.length) {
-            if (this.fixBlankLine(this.lines[this.lineNdx])) {
-                const token = this.lines[this.lineNdx][0];
-                const range = new Range(token.start, token.end);
-
-                edits.push(TextEdit.delete(range));
+            if (this.isBlankLine(this.lines[this.lineNdx])) {
+                this.fixBlankLine(edits, this.lines[this.lineNdx]);
             } else {
                 this.indent(edits);
             }
@@ -53,6 +50,17 @@ module.exports.Formatter = class {
         }
 
         return edits;
+    }
+
+    fixBlankLine(edits, line) {
+        if (line[0].text.length === 0) {
+            return;
+        }
+
+        const token = this.lines[this.lineNdx][0];
+        const range = new Range(token.start, token.end);
+
+        edits.push(TextEdit.delete(range));
     }
 
     indent(edits) {
@@ -217,6 +225,7 @@ module.exports.Formatter = class {
             }
 
             if (this.isBlankLine(this.lines[this.lineNdx])) {
+                this.fixBlankLine(edits, this.lines[this.lineNdx]);
                 this.lineNdx += 1;
                 continue;
             }
@@ -362,10 +371,6 @@ module.exports.Formatter = class {
 
     isBlankLine(line) {
         return line.length === 1 && line[0].type === types.WHITE_SPACE;
-    }
-
-    fixBlankLine(line) {
-        return this.isBlankLine(line) && line[0].text.length > 0;
     }
 
     createLines(lines, node) {
