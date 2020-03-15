@@ -40,6 +40,17 @@
                     "type": "number",
                     "default": 4,
                     "description": "Indentation Level"
+                },
+                "common_lisp.format.indentCloseParenStack": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If true, align closing parens stack with nearest parent"
+                },
+                "common_lisp.format.closeParenStacked": {
+                    "type": "string",
+                    "enum": ["always", "never"],
+                    "default": "always",
+                    "description": "When to stack all close parens together"
                 }
             }
         },

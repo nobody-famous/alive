@@ -63,6 +63,10 @@ module.exports.Colorizer = class {
     constructor() { }
 
     run(editor, tokens) {
+        if (tokens === undefined || tokens.length === 0) {
+            return;
+        }
+
         const styleMap = this.buildStyleMap(editor, tokens);
         const entries = Object.entries(styleMap);
 

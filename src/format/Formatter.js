@@ -10,6 +10,8 @@ module.exports.Formatter = class {
         this.ast = ast;
         this.parens = [];
         this.elems = [];
+        this.lines = undefined;
+        this.lineNdx = 0;
     }
 
     setConfiguration() {
@@ -18,48 +20,51 @@ module.exports.Formatter = class {
 
         this.indentSize = (haveCfg && (cfg.format.indentWidth !== undefined)) ? cfg.format.indentWidth : DEFAULT_INDENT;
         this.indentCloseStack = (haveCfg && (cfg.format.indentCloseParenStack !== undefined)) ? cfg.format.indentCloseParenStack : true;
+        this.closeParenStacked = (haveCfg && (cfg.format.closeParenStacked !== undefined)) ? cfg.format.closeParenStacked : undefined;
     }
 
     format() {
         this.setConfiguration();
 
-        const lines = [];
-        lines.push([]);
+        this.lines = [];
+        this.lines.push([]);
         for (let ndx = 0; ndx < this.ast.nodes.length; ndx += 1) {
-            this.createLines(lines, this.ast.nodes[ndx]);
+            this.createLines(this.lines, this.ast.nodes[ndx]);
         }
 
-        const edits = this.formatLines(lines);
+        const edits = this.formatLines();
 
         return edits;
     }
 
-    formatLines(lines) {
+    formatLines() {
         const edits = [];
 
-        for (let ndx = 0; ndx < lines.length; ndx += 1) {
-            if (this.fixBlankLine(lines[ndx])) {
-                const token = lines[ndx][0];
+        while (this.lineNdx < this.lines.length) {
+            if (this.fixBlankLine(this.lines[this.lineNdx])) {
+                const token = this.lines[this.lineNdx][0];
                 const range = new Range(token.start, token.end);
 
                 edits.push(TextEdit.delete(range));
             } else {
-                this.indent(edits, lines, ndx);
+                this.indent(edits);
             }
+
+            this.lineNdx += 1;
         }
 
         return edits;
     }
 
-    indent(edits, lines, lineNdx) {
-        const line = lines[lineNdx];
+    indent(edits) {
+        const line = this.lines[this.lineNdx];
 
         if (this.parens.length === 0) {
             this.fixIndent(edits, line, 0);
         } else if (line.length > 1 && line[1].text === ')') {
-            this.fixCloseParen(edits, lines, lineNdx);
+            this.fixCloseParen(edits);
         } else {
-            this.fixChildElem(edits, lines, lineNdx);
+            this.fixChildElem(edits);
         }
 
         this.checkForParens(line);
@@ -95,7 +100,7 @@ module.exports.Formatter = class {
         return line[ndx];
     }
 
-    fixChildElem(edits, lines, lineNdx) {
+    fixChildElem(edits) {
         if (this.elems.length === 0) {
             return;
         }
@@ -103,69 +108,66 @@ module.exports.Formatter = class {
         const token = this.elems[this.elems.length - 1];
         switch (token.type) {
             case types.SYMBOL:
-                return this.fixSymbolElem(edits, lines, lineNdx);
+                return this.fixSymbolElem(edits);
             case types.DEFUN:
             case types.DEFPACKAGE:
             case types.LET:
             case types.LOOP:
             case types.HANDLER_CASE:
-                return this.fixDefaultIndent(edits, lines, lineNdx);
+                return this.fixDefaultIndent(edits);
             case types.AND:
             case types.ID:
             case types.IF:
-                return this.fixAlignFirstElem(edits, lines, lineNdx);
+                return this.fixAlignFirstElem(edits);
             case types.OPEN_PARENS:
-                return this.fixAlignParent(edits, lines, lineNdx);
+                return this.fixAlignParent(edits);
             default:
-                console.log(`fixChildElem in ${token.type} ${token.text}, line ${lineNdx}`);
+                console.log(`fixChildElem in ${token.type} ${token.text}, line ${this.lineNdx}`);
         }
     }
 
-    fixSymbolElem(edits, lines, lineNdx) {
-        const line = lines[lineNdx];
+    fixSymbolElem(edits) {
         const prevNdx = Math.max(0, this.elems.length - 2);
         const prevElem = this.elems[prevNdx];
 
         switch (prevElem.type) {
             case types.DEFPACKAGE:
-                return this.fixAlignFirstElem(edits, lines, lineNdx);
+                return this.fixAlignFirstElem(edits);
             default:
                 console.log(`fixSymbolElem ${prevElem.text}`);
         }
     }
 
-    fixDefaultIndent(edits, lines, lineNdx) {
+    fixDefaultIndent(edits) {
         const parent = this.parens[this.parens.length - 1];
         const indent = parent.start.character + this.indentSize;
 
-        this.fixIndent(edits, lines[lineNdx], indent);
+        this.fixIndent(edits, this.lines[this.lineNdx], indent);
     }
 
-    fixAlignParent(edits, lines, lineNdx) {
-        const parent = this.elems[this.elems.length - 1];
-        const parentLine = lines[parent.start.line];
-        const parentNdx = this.getElemNdx(parentLine, parent);
-        const indent = parentLine[parentNdx].start.character;
-
-        this.fixIndent(edits, lines[lineNdx], indent);
+    fixAlignParent(edits) {
+        const indent = this.getElemIndent(this.elems, 1, 0);
+        this.fixIndent(edits, this.lines[this.lineNdx], indent);
     }
 
-    fixAlignFirstElem(edits, lines, lineNdx) {
-        const parent = this.elems[this.elems.length - 1];
-        const parentLine = lines[parent.start.line];
+    fixAlignFirstElem(edits) {
+        const indent = this.getElemIndent(this.elems, 1, 1);
+        this.fixIndent(edits, this.lines[this.lineNdx], indent);
+    }
+
+    getElemIndent(stack, stackNdx = 1, alignNdx = 0) {
+        const parent = stack[stack.length - stackNdx];
+        const parentLine = this.lines[parent.start.line];
         const parentNdx = this.getElemNdx(parentLine, parent);
-        let alignNdx = parentNdx + 1;
-        let indent = parent.start.character + this.indentSize;
+        let align = parentNdx + alignNdx;
 
-        if (alignNdx < parentLine.length && parentLine[alignNdx].type === types.WHITE_SPACE) {
-            alignNdx += 1;
+        if (align < parentLine.length && parentLine[align].type === types.WHITE_SPACE) {
+            align += 1;
         }
 
-        if (alignNdx < parentLine.length) {
-            indent = parentLine[alignNdx].start.character;
-        }
-
-        this.fixIndent(edits, lines[lineNdx], indent);
+        return (align < parentLine.length)
+            ? parentLine[align].start.character
+            : parent.start.character + this.indentSize;
     }
 
     getElemNdx(line, elem) {
@@ -178,15 +180,65 @@ module.exports.Formatter = class {
         return undefined;
     }
 
-    fixCloseParen(edits, lines, lineNdx) {
-        const line = lines[lineNdx];
+    fixCloseParen(edits) {
+        const line = this.lines[this.lineNdx];
         const open = this.parens[this.parens.length - 1];
         const stacked = this.countParenStack(line);
+
+        this.fixCloseParenStack(edits);
 
         if ((stacked === this.parens.length) && !this.indentCloseStack) {
             this.fixIndent(edits, line, 0);
         } else {
             this.fixIndent(edits, line, open.start.character);
+        }
+    }
+
+    fixCloseParenStack(edits) {
+        if (this.closeParenStacked === 'always') {
+            this.stackCloseParens(edits);
+        } else if (this.closeParenStacked === 'never') {
+            this.unstackCloseParens(edits);
+        }
+    }
+
+    stackCloseParens(edits) { }
+
+    unstackCloseParens(edits) {
+        const stacked = this.countParenStack(this.lines[this.lineNdx]);
+        if (stacked < 2) {
+            return;
+        }
+
+        const line = this.lines[this.lineNdx];
+        let newLine = this.lineNdx;
+        let stackNdx = 1;
+        for (let ndx = 0; ndx < line.length; ndx += 1) {
+            if (line[ndx].text !== ')') {
+                continue;
+            }
+
+            if (line[ndx].start.line === newLine) {
+                newLine += 1;
+                continue;
+            }
+
+            const indent = this.getElemIndent(this.parens, stackNdx, 0);
+            edits.push(TextEdit.insert(new Position(line[ndx].start.line, line[ndx].start.character - 1), ' '.repeat(indent)));
+            edits.push(TextEdit.insert(new Position(line[ndx].start.line, line[ndx].start.character), '\n'));
+
+            stackNdx += 1;
+        }
+    }
+
+    updateLineNumbers(startNdx) {
+        for (let ndx = startNdx; ndx < this.lines.length; ndx += 1) {
+            const line = this.lines[ndx];
+            line.forEach(expr => {
+                const diff = Math.abs(ndx - expr.start.line);
+                expr.start = new Position(ndx, expr.start.character);
+                expr.end = new Position(expr.end.line + diff, expr.end.character);
+            });
         }
     }
 
