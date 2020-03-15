@@ -14,6 +14,8 @@ Language extension to add support for editing Common Lisp files. Very much a wor
 This extension contributes the following settings:
 
 * `common_lisp.format.indentWidth`: Default indentation width
+* `common_lisp.format.indentCloseParenStack`: If false, align close stack with furthest parent instead of closest
+* `common_lisp.format.closeParenStacked`: ['always', 'never'] Specify whether to stack close parens.
 
 workbench.colorCustomizations:
 * `common_lisp.default`: Default text
@@ -32,8 +34,6 @@ workbench.colorCustomizations:
 ## Known Issues
 
 Code completion only shows built-in words, it doesn't add variables and whatnot from the code, yet.
-
-Formatter only fixes indentation.
 
 Back quoted expressions are entirely colorized as quoted. The plan is to have the unquoted elements be colorized normally.
 

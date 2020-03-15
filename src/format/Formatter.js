@@ -1,7 +1,6 @@
 const types = require('../Types');
 const { Token } = require('../Token');
 const { format } = require('util');
-const { State } = require('./State');
 const { Position, Range, TextEdit, workspace } = require('vscode');
 
 const DEFAULT_INDENT = 3;
@@ -202,7 +201,82 @@ module.exports.Formatter = class {
         }
     }
 
-    stackCloseParens(edits) { }
+    stackCloseParens(edits) {
+        const line = this.lines[this.lineNdx];
+        const lastNdx = this.findLastClose(line);
+
+        if (lastNdx === undefined) {
+            return;
+        }
+
+        let count = 0;
+        this.lineNdx += 1;
+        while (true) {
+            if (this.lineNdx >= this.lines.length) {
+                break;
+            }
+
+            if (this.isBlankLine(this.lines[this.lineNdx])) {
+                this.lineNdx += 1;
+                continue;
+            }
+
+            if (!this.startsWithClose(this.lines[this.lineNdx])) {
+                this.lineNdx -= 1;
+                break;
+            }
+
+            count += this.removeCloseParens(edits, this.lines[this.lineNdx]);
+            this.lineNdx += 1;
+        }
+
+        if (count > 0) {
+            const pos = line[lastNdx].end;
+            edits.push(TextEdit.insert(pos, ')'.repeat(count)));
+        }
+    }
+
+    removeCloseParens(edits, line) {
+        let count = 0;
+
+        for (let ndx = 0; ndx < line.length; ndx += 1) {
+            if (line[ndx].text === ')') {
+                edits.push(TextEdit.delete(new Range(line[ndx].start, line[ndx].end)));
+                this.parens.pop();
+                count += 1;
+            } else if (line[ndx].type !== types.WHITE_SPACE) {
+                break;
+            }
+        }
+
+        return count;
+    }
+
+    startsWithClose(line) {
+        if (line[0].text === ')') {
+            return true;
+        }
+
+        if (line.length < 2) {
+            return false;
+        }
+
+        return line[1].text === ')';
+    }
+
+    findLastClose(line) {
+        let last = undefined;
+
+        for (let ndx = 0; ndx < line.length; ndx += 1) {
+            if (line[ndx].text === ')') {
+                last = ndx;
+            } else if (line[ndx].type !== types.WHITE_SPACE) {
+                return undefined;
+            }
+        }
+
+        return last;
+    }
 
     unstackCloseParens(edits) {
         const stacked = this.countParenStack(this.lines[this.lineNdx]);
@@ -286,10 +360,12 @@ module.exports.Formatter = class {
         }
     }
 
+    isBlankLine(line) {
+        return line.length === 1 && line[0].type === types.WHITE_SPACE;
+    }
+
     fixBlankLine(line) {
-        return line.length === 1
-            && line[0].type === types.WHITE_SPACE
-            && line[0].text.length > 0;
+        return this.isBlankLine(line) && line[0].text.length > 0;
     }
 
     createLines(lines, node) {
