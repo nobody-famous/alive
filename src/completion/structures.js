@@ -1,4 +1,4 @@
 module.exports = [
-    'defstruct',
-    'copy-structure',
+    { label: 'defstruct' },
+    { label: 'copy-structure' },
 ];

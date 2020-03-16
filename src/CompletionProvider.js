@@ -21,7 +21,7 @@ const structures = require('./completion/structures');
 const sysconstruct = require('./completion/sysconstruct');
 const symbols = require('./completion/symbols');
 const types = require('./completion/types');
-const { CompletionItem } = require('vscode');
+const { CompletionItem, CompletionItemKind, MarkdownString } = require('vscode');
 
 const sysWords = arrays
     .concat(characters)
@@ -47,7 +47,15 @@ const sysWords = arrays
     .concat(symbols)
     .concat(types);
 
-const completions = sysWords.map(word => new CompletionItem(word));
+const completions = sysWords.map(word => {
+    const item = new CompletionItem(word.label);
+
+    if (word.doc !== undefined) {
+        item.documentation = new MarkdownString(word.doc);
+    }
+
+    return item;
+});
 
 module.exports.CompletionProvider = class {
     constructor() { }

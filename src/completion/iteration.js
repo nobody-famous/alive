@@ -1,8 +1,8 @@
 module.exports = [
-    'do',
-    'do*',
-    'dotimes',
-    'dolist',
-    'loop',
-    'loop-finish',
+    { label: 'do' },
+    { label: 'do*' },
+    { label: 'dotimes' },
+    { label: 'dolist' },
+    { label: 'loop' },
+    { label: 'loop-finish' },
 ];
