@@ -37,7 +37,7 @@ module.exports.activate = (ctx) => {
     });
 
     workspace.onDidChangeTextDocument(event => {
-        if (!activeEditor || (event.document !== activeEditor.document)) {
+        if (!activeEditor || (activeEditor.document.languageId !== LANGUAGE_ID) || (event.document !== activeEditor.document)) {
             return;
         }
 

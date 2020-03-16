@@ -270,7 +270,7 @@ module.exports.Lexer = class {
     }
 
     isDelimiter(char) {
-        return this.char === undefined || this.isWS(char) || this.isParens(char) || char === '"';
+        return char === undefined || this.isWS(char) || this.isParens(char) || char === '"';
     }
 
     newToken(type) {
