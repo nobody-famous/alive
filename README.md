@@ -22,6 +22,8 @@ workbench.colorCustomizations:
 * `common_lisp.keyword`: Keywords
 * `common_lisp.control`: Control words, such as 'if', 'and', etc
 * `common_lisp.function`: Function names
+* `common_lisp.macro`: Macro names
+* `common_lisp.special`: Special operators
 * `common_lisp.string`: String constants
 * `common_lisp.quoted`: Quoted elements
 * `common_lisp.package`: Package names

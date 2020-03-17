@@ -57,7 +57,7 @@
         "colors": [
             {
                 "id": "common_lisp.default",
-                "description": "Common Lisp Keyword",
+                "description": "Common Lisp Default",
                 "defaults": {
                     "light": "#d4d4d4ff",
                     "dark": "#d4d4d4ff",
@@ -74,8 +74,35 @@
                 }
             },
             {
+                "id": "common_lisp.packages",
+                "description": "Common Lisp Packages Keyword",
+                "defaults": {
+                    "light": "#569cd6ff",
+                    "dark": "#569cd6ff",
+                    "highContrast": "#569cd6ff"
+                }
+            },
+            {
                 "id": "common_lisp.control",
                 "description": "Common Lisp Control Words",
+                "defaults": {
+                    "light": "#c586c0ff",
+                    "dark": "#c586c0ff",
+                    "highContrast": "#c586c0ff"
+                }
+            },
+            {
+                "id": "common_lisp.macro",
+                "description": "Common Lisp Macro",
+                "defaults": {
+                    "light": "#c586c0ff",
+                    "dark": "#c586c0ff",
+                    "highContrast": "#c586c0ff"
+                }
+            },
+            {
+                "id": "common_lisp.special",
+                "description": "Common Lisp Special Operators",
                 "defaults": {
                     "light": "#c586c0ff",
                     "dark": "#c586c0ff",

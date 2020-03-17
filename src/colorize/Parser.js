@@ -87,7 +87,7 @@ module.exports.Parser = class {
                 break;
             }
 
-            if (this.peek().type === types.DEFUN) {
+            if (this.peek().text === 'DEFUN') {
                 this.defun();
             } else if (this.peek().type === types.QUOTE_FUNC) {
                 this.quoteFn();

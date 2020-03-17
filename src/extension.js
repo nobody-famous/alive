@@ -45,8 +45,8 @@ module.exports.activate = (ctx) => {
         decorateText(lexTokenMap[activeEditor.document.fileName]);
     }, null, ctx.subscriptions);
 
-    languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, completionProvider);
-    languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, completionProvider);
+    languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider());
+    languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider());
 
     languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter());
     languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter());
@@ -58,6 +58,15 @@ module.exports.activate = (ctx) => {
     readLexTokens(activeEditor.document);
     decorateText(lexTokenMap[activeEditor.document.fileName]);
 };
+
+function getCompletionProvider() {
+    return {
+        provideCompletionItems(document, pos, token, ctx) {
+            const provider = new CompletionProvider();
+            return provider.getCompletions();;
+        }
+    };
+}
 
 function readLexTokens(doc) {
     const lex = new Lexer(doc.getText());

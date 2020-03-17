@@ -4,6 +4,7 @@ const { format } = require('util');
 const { Position, Range, TextEdit, workspace } = require('vscode');
 
 const DEFAULT_INDENT = 3;
+
 module.exports.Formatter = class {
     constructor(doc, opts, ast) {
         this.ast = ast;
@@ -11,6 +12,19 @@ module.exports.Formatter = class {
         this.elems = [];
         this.lines = undefined;
         this.lineNdx = 0;
+
+        this.indentMap = {
+            'DEFUN': (edits) => this.fixDefaultIndent(edits),
+            'DEFPACKAGE': (edits) => this.fixDefaultIndent(edits),
+            'LET': (edits) => this.fixDefaultIndent(edits),
+            'LET*': (edits) => this.fixDefaultIndent(edits),
+            'LOOP': (edits) => this.fixDefaultIndent(edits),
+            'HANDLER-CASE': (edits) => this.fixDefaultIndent(edits),
+
+            'AND': (edits) => this.fixAlignFirstElem(edits),
+            'WHEN': (edits) => this.fixAlignFirstElem(edits),
+            'IF': (edits) => this.fixAlignFirstElem(edits),
+        };
     }
 
     setConfiguration() {
@@ -113,18 +127,15 @@ module.exports.Formatter = class {
         }
 
         const token = this.elems[this.elems.length - 1];
+        const fn = this.indentMap[token.text];
+        if (fn !== undefined) {
+            return fn(edits);
+        }
+
         switch (token.type) {
             case types.SYMBOL:
                 return this.fixSymbolElem(edits);
-            case types.DEFUN:
-            case types.DEFPACKAGE:
-            case types.LET:
-            case types.LOOP:
-            case types.HANDLER_CASE:
-                return this.fixDefaultIndent(edits);
-            case types.AND:
             case types.ID:
-            case types.IF:
                 return this.fixAlignFirstElem(edits);
             case types.OPEN_PARENS:
                 return this.fixAlignParent(edits);
@@ -137,12 +148,11 @@ module.exports.Formatter = class {
         const prevNdx = Math.max(0, this.elems.length - 2);
         const prevElem = this.elems[prevNdx];
 
-        switch (prevElem.type) {
-            case types.DEFPACKAGE:
-                return this.fixAlignFirstElem(edits);
-            default:
-                console.log(`fixSymbolElem ${prevElem.text}`);
+        if (prevElem.text === 'DEFPACKAGE') {
+            return this.fixAlignFirstElem(edits);
         }
+
+        console.log(`fixSymbolElem ${prevElem.text}`);
     }
 
     fixDefaultIndent(edits) {

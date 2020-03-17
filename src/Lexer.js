@@ -2,23 +2,67 @@ const types = require('./Types');
 const { Position } = require('vscode');
 const { Token } = require('./Token');
 
-const keywords = {
-    'DEFUN': types.DEFUN,
-    'QUOTE': types.QUOTE_FUNC,
-    'LET': types.LET,
-    'LET*': types.LET,
-    'LOAD': types.LOAD,
-    'IF': types.IF,
-    'LOOP': types.LOOP,
-    'IN-PACKAGE': types.IN_PACKAGE,
-    'DEFPACKAGE': types.DEFPACKAGE,
-    'FORMAT': types.FORMAT,
-    'SETF': types.SETF,
-    'HANDLER-CASE': types.HANDLER_CASE,
-    'AND': types.AND,
-    'T': types.TRUE,
-    'NIL': types.NIL,
-};
+const arrays = require('./keywords/arrays');
+const control = require('./keywords/control');
+const kwTypes = require('./keywords/types');
+const iteration = require('./keywords/iteration');
+const objects = require('./keywords/objects');
+const structures = require('./keywords/structures');
+const conditions = require('./keywords/conditions');
+const symbols = require('./keywords/symbols');
+const packages = require('./keywords/packages');
+const numbers = require('./keywords/numbers');
+const characters = require('./keywords/characters');
+const conses = require('./keywords/conses');
+const strings = require('./keywords/strings');
+const sequences = require('./keywords/sequences');
+const hashtables = require('./keywords/hashtables');
+const filenames = require('./keywords/filenames');
+const files = require('./keywords/files');
+const streams = require('./keywords/streams');
+const printer = require('./keywords/printer');
+const reader = require('./keywords/reader');
+const sysconstruct = require('./keywords/sysconstruct');
+const env = require('./keywords/env');
+
+const keywords = {};
+
+arrays.forEach(item => addKeyword(item, types.KEYWORD));
+control.forEach(item => addKeyword(item, types.CONTROL));
+kwTypes.forEach(item => addKeyword(item, types.KEYWORD));
+iteration.forEach(item => addKeyword(item, types.KEYWORD));
+objects.forEach(item => addKeyword(item, types.KEYWORD));
+structures.forEach(item => addKeyword(item, types.KEYWORD));
+conditions.forEach(item => addKeyword(item, types.KEYWORD));
+symbols.forEach(item => addKeyword(item, types.KEYWORD));
+packages.forEach(item => addKeyword(item, types.PACKAGES));
+numbers.forEach(item => addKeyword(item, types.KEYWORD));
+characters.forEach(item => addKeyword(item, types.KEYWORD));
+conses.forEach(item => addKeyword(item, types.KEYWORD));
+strings.forEach(item => addKeyword(item, types.KEYWORD));
+sequences.forEach(item => addKeyword(item, types.KEYWORD));
+hashtables.forEach(item => addKeyword(item, types.KEYWORD));
+filenames.forEach(item => addKeyword(item, types.KEYWORD));
+files.forEach(item => addKeyword(item, types.KEYWORD));
+streams.forEach(item => addKeyword(item, types.KEYWORD));
+printer.forEach(item => addKeyword(item, types.KEYWORD));
+reader.forEach(item => addKeyword(item, types.KEYWORD));
+sysconstruct.forEach(item => addKeyword(item, types.KEYWORD));
+env.forEach(item => addKeyword(item, types.KEYWORD));
+
+function addKeyword(item, wordType) {
+    const label = item.label.toUpperCase();
+
+    if (item.type === 'Function' || item.type === 'Local Function' || item.type === 'Accessor') {
+        keywords[label] = wordType;
+    } else if (item.type === 'Macro' || item.type === 'Local Macro') {
+        keywords[label] = types.MACRO;
+    } else if (item.type === 'Special Operator') {
+        keywords[label] = types.SPECIAL;
+    } else {
+        keywords[label] = types.KEYWORD;
+    }
+}
 
 module.exports.Lexer = class {
     constructor(text) {

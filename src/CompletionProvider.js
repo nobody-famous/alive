@@ -1,27 +1,27 @@
-const arrays = require('./completion/arrays');
-const characters = require('./completion/characters');
-const conditions = require('./completion/conditions');
-const conses = require('./completion/conses');
-const control = require('./completion/control');
-const env = require('./completion/env');
-const eval = require('./completion/eval');
-const filenames = require('./completion/filenames');
-const files = require('./completion/files');
-const hashtables = require('./completion/hashtables');
-const iteration = require('./completion/iteration');
-const numbers = require('./completion/numbers');
-const objects = require('./completion/objects');
-const packages = require('./completion/packages');
-const printer = require('./completion/printer');
-const reader = require('./completion/reader');
-const sequences = require('./completion/sequences');
-const streams = require('./completion/streams');
-const strings = require('./completion/strings');
-const structures = require('./completion/structures');
-const sysconstruct = require('./completion/sysconstruct');
-const symbols = require('./completion/symbols');
-const types = require('./completion/types');
-const { CompletionItem, CompletionItemKind, MarkdownString } = require('vscode');
+const arrays = require('./keywords/arrays');
+const characters = require('./keywords/characters');
+const conditions = require('./keywords/conditions');
+const conses = require('./keywords/conses');
+const control = require('./keywords/control');
+const env = require('./keywords/env');
+const eval = require('./keywords/eval');
+const filenames = require('./keywords/filenames');
+const files = require('./keywords/files');
+const hashtables = require('./keywords/hashtables');
+const iteration = require('./keywords/iteration');
+const numbers = require('./keywords/numbers');
+const objects = require('./keywords/objects');
+const packages = require('./keywords/packages');
+const printer = require('./keywords/printer');
+const reader = require('./keywords/reader');
+const sequences = require('./keywords/sequences');
+const streams = require('./keywords/streams');
+const strings = require('./keywords/strings');
+const structures = require('./keywords/structures');
+const sysconstruct = require('./keywords/sysconstruct');
+const symbols = require('./keywords/symbols');
+const types = require('./keywords/types');
+const { CompletionItem, MarkdownString } = require('vscode');
 
 const sysWords = arrays
     .concat(characters)
@@ -58,9 +58,10 @@ const completions = sysWords.map(word => {
 });
 
 module.exports.CompletionProvider = class {
-    constructor() { }
+    constructor() {
+    }
 
-    provideCompletionItems(document, pos, token, ctx) {
+    getCompletions(document, pos, token, ctx) {
         return completions;
     }
 };

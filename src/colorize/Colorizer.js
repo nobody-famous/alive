@@ -8,8 +8,11 @@ const decorationTypes = {
     'common_lisp.id': window.createTextEditorDecorationType({ color: { id: 'common_lisp.id' } }),
     'common_lisp.error': window.createTextEditorDecorationType({ color: { id: 'common_lisp.error' } }),
     'common_lisp.keyword': window.createTextEditorDecorationType({ color: { id: 'common_lisp.keyword' } }),
+    'common_lisp.packages': window.createTextEditorDecorationType({ color: { id: 'common_lisp.packages' } }),
     'common_lisp.control': window.createTextEditorDecorationType({ color: { id: 'common_lisp.control' } }),
     'common_lisp.function': window.createTextEditorDecorationType({ color: { id: 'common_lisp.function' } }),
+    'common_lisp.macro': window.createTextEditorDecorationType({ color: { id: 'common_lisp.macro' } }),
+    'common_lisp.special': window.createTextEditorDecorationType({ color: { id: 'common_lisp.special' } }),
     'common_lisp.string': window.createTextEditorDecorationType({ color: { id: 'common_lisp.string' } }),
     'common_lisp.quoted': window.createTextEditorDecorationType({ color: { id: 'common_lisp.quoted' } }),
     'common_lisp.package': window.createTextEditorDecorationType({ color: { id: 'common_lisp.package' } }),
@@ -21,38 +24,20 @@ const decorationTypes = {
 const typeStyles = {};
 typeStyles[types.OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.CLOSE_PARENS] = 'common_lisp.default';
-
+typeStyles[types.KEYWORD] = 'common_lisp.keyword';
 typeStyles[types.COMMENT] = 'common_lisp.comment';
-
+typeStyles[types.CONTROL] = 'common_lisp.control';
+typeStyles[types.MACRO] = 'common_lisp.macro';
+typeStyles[types.SPECIAL] = 'common_lisp.special';
 typeStyles[types.ID] = 'common_lisp.id';
-
-typeStyles[types.DEFUN] = 'common_lisp.keyword';
-typeStyles[types.IN_PACKAGE] = 'common_lisp.keyword';
-typeStyles[types.DEFPACKAGE] = 'common_lisp.keyword';
-typeStyles[types.TRUE] = 'common_lisp.keyword';
-typeStyles[types.NIL] = 'common_lisp.keyword';
-
-typeStyles[types.LET] = 'common_lisp.control';
-typeStyles[types.LOAD] = 'common_lisp.control';
-typeStyles[types.IF] = 'common_lisp.control';
-typeStyles[types.LOOP] = 'common_lisp.control';
-typeStyles[types.HANDLER_CASE] = 'common_lisp.control';
-typeStyles[types.AND] = 'common_lisp.control';
-
 typeStyles[types.FUNCTION] = 'common_lisp.function';
-
 typeStyles[types.STRING] = 'common_lisp.string';
-
 typeStyles[types.QUOTED] = 'common_lisp.quoted';
 typeStyles[types.SINGLE_QUOTE] = 'common_lisp.quoted';
 typeStyles[types.BACK_QUOTE] = 'common_lisp.quoted';
-
 typeStyles[types.PACKAGE_NAME] = 'common_lisp.package';
-
 typeStyles[types.SYMBOL] = 'common_lisp.symbol';
-
 typeStyles[types.PARAMETER] = 'common_lisp.parameter';
-
 typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error';
 typeStyles[types.MISMATCHED_DBL_QUOTE] = 'common_lisp.error';
@@ -119,6 +104,9 @@ module.exports.Colorizer = class {
                 mismatched = true;
             }
 
+            // if (token.text === 'NIL') {
+            //     console.log(`HERE ${token.type} ${typeStyles[token.type]} ${style}`);
+            // }
             this.addToMap(map, style, target);
         }
 
