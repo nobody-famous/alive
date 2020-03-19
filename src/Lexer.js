@@ -162,7 +162,7 @@ module.exports.Lexer = class {
             }
         }
 
-        return this.newToken(types.ID);
+        return this.newToken(types.ID, true);
     }
 
     pound() {
@@ -266,7 +266,7 @@ module.exports.Lexer = class {
 
         while (!this.isDelimiter(this.peek())) {
             if (this.curText.length > 1 && this.curText.charAt(0) !== ':' && this.peek() === ':') {
-                return this.newToken(types.PACKAGE_NAME);
+                return this.newToken(types.PACKAGE_NAME, true);
             }
 
             this.curText += this.peek();
@@ -274,16 +274,16 @@ module.exports.Lexer = class {
         }
 
         if (this.curText.charAt(0) === ':') {
-            return this.newToken(types.SYMBOL);
+            return this.newToken(types.SYMBOL, true);
         }
 
         this.curText = this.curText.toUpperCase();
         const keywordID = keywords[this.curText];
         if (keywordID !== undefined) {
-            return this.newToken(keywordID);
+            return this.newToken(keywordID, true);
         }
 
-        return this.newToken(types.ID);
+        return this.newToken(types.ID, true);
     }
 
     char(type) {
@@ -317,8 +317,9 @@ module.exports.Lexer = class {
         return char === undefined || this.isWS(char) || this.isParens(char) || char === '"';
     }
 
-    newToken(type) {
-        return new Token(type, this.start, new Position(this.line, this.col), this.curText);
+    newToken(type, upcase = false) {
+        const text = upcase ? this.curText.toUpperCase() : this.curText;
+        return new Token(type, this.start, new Position(this.line, this.col), text);
     }
 
     peek() {

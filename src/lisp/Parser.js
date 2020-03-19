@@ -2,7 +2,6 @@ const types = require('../Types');
 const { format } = require('util');
 const { AST } = require('./AST');
 const { Node } = require('./Node');
-const { PackageMgr } = require('./PackageMgr');
 
 module.exports.Parser = class {
     constructor(tokens) {

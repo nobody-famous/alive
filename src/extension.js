@@ -62,8 +62,13 @@ module.exports.activate = (ctx) => {
 function getCompletionProvider() {
     return {
         provideCompletionItems(document, pos, token, ctx) {
-            const provider = new CompletionProvider();
-            return provider.getCompletions();;
+            try {
+                const ast = getDocumentAST(document);
+                return completionProvider.getCompletions(ast, pos);
+            } catch (err) {
+                console.log(err);
+                return [];
+            }
         }
     };
 }
@@ -77,16 +82,21 @@ function readLexTokens(doc) {
 function documentFormatter() {
     return {
         provideDocumentFormattingEdits(doc, opts) {
-            const lex = new Lexer(activeEditor.document.getText());
-            const tokens = lex.getTokens();
-            const parser = new Parser(tokens);
-            const ast = parser.parse();
+            const ast = getDocumentAST(activeEditor.document);
             const formatter = new Formatter(doc, opts, ast);
 
             const edits = formatter.format();
             return edits.length > 0 ? edits : undefined;
         }
     };
+}
+
+function getDocumentAST(doc) {
+    const lex = new Lexer(doc.getText());
+    const tokens = lex.getTokens();
+    const parser = new Parser(tokens);
+
+    return parser.parse();
 }
 
 function decorateText(tokens) {
