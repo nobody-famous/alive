@@ -1,4 +1,4 @@
-const { languages, window, workspace } = require('vscode');
+const { commands, languages, Selection, window, workspace } = require('vscode');
 const { Colorizer } = require('./colorize/Colorizer');
 const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
@@ -51,6 +51,8 @@ module.exports.activate = (ctx) => {
     languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter());
     languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter());
 
+    ctx.subscriptions.push(commands.registerCommand('common-lisp.selectSexpr', selectSexpr));
+
     if (activeEditor.document.languageId !== LANGUAGE_ID) {
         return;
     }
@@ -58,6 +60,27 @@ module.exports.activate = (ctx) => {
     readLexTokens(activeEditor.document);
     decorateText(lexTokenMap[activeEditor.document.fileName]);
 };
+
+function selectSexpr() {
+    try {
+        const editor = window.activeTextEditor;
+        if (editor.document.languageId !== LANGUAGE_ID) {
+            return;
+        }
+
+        const ast = getDocumentAST(editor.document);
+        const pos = editor.selection.start;
+        const node = ast.getPositionNode(pos);
+
+        if (node.open === undefined || node.close === undefined) {
+            return;
+        }
+
+        editor.selection = new Selection(node.open.start, node.close.end);
+    } catch (err) {
+        console.log(err);
+    }
+}
 
 function getCompletionProvider() {
     return {

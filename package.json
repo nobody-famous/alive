@@ -33,6 +33,18 @@
                 "path": "./snippets.json"
             }
         ],
+        "commands": [
+            {
+                "command": "common-lisp.selectSexpr",
+                "title": "Select S-Expression"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "common-lisp.selectSexpr",
+                "key": "alt+shift+up"
+            }
+        ],
         "configuration": {
             "title": "Common Lisp",
             "properties": {
@@ -48,7 +60,10 @@
                 },
                 "common_lisp.format.closeParenStacked": {
                     "type": "string",
-                    "enum": ["always", "never"],
+                    "enum": [
+                        "always",
+                        "never"
+                    ],
                     "default": "always",
                     "description": "When to stack all close parens together"
                 }

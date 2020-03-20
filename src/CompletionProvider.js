@@ -1,5 +1,5 @@
 const { keywords } = require('./keywords');
-const { CompletionItem, MarkdownString, Range } = require('vscode');
+const { CompletionItem, MarkdownString } = require('vscode');
 const { PackageMgr } = require('./lisp/PackageMgr');
 
 const completions = keywords.map(word => {
@@ -17,7 +17,7 @@ module.exports.CompletionProvider = class {
     }
 
     getCompletions(ast, pos) {
-        let node = this.getPositionNode(ast, pos);
+        let node = ast.getPositionNode(pos);
         if (node === undefined) {
             return [];
         }
@@ -33,45 +33,5 @@ module.exports.CompletionProvider = class {
         }
 
         return completions.map(item => new CompletionItem(item.toLowerCase()));
-    }
-
-    getPositionNode(ast, pos) {
-        for (let node of ast.nodes) {
-            const range = this.getNodeRange(node);
-
-            if (this.isPosInRange(pos, range)) {
-                return node;
-            }
-        }
-
-        return undefined;
-    }
-
-    getNodeRange(node) {
-        if (node.open !== undefined) {
-            return new Range(node.open.start, node.close.start);
-        }
-
-        if (node.value !== undefined) {
-            return new Range(node.value.start, node.value.end);
-        }
-
-        return undefined;
-    }
-
-    isPosInRange(pos, range) {
-        if (range === undefined) {
-            return false;
-        }
-
-        if (pos.line === range.start.line && pos.character < range.start.character) {
-            return false;
-        }
-
-        if (pos.line === range.end.line && pos.character > range.end.character) {
-            return false;
-        }
-
-        return (pos.line >= range.start.line && pos.line <= range.end.line);
     }
 };
