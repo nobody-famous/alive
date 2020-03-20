@@ -33,6 +33,11 @@ workbench.colorCustomizations:
 * `common_lisp.comment`: Comments
 * `common_lisp.error`: Errors
 
+## Commands
+
+### Select S-Expression
+Selects the surrounding top level expression for the current cursor position.
+
 ## Known Issues
 
 Code completion only shows built-in words, it doesn't add variables and whatnot from the code, yet.
