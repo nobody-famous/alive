@@ -220,15 +220,9 @@ module.exports.Formatter = class {
     }
 
     stackCloseParens(edits) {
-        const line = this.lines[this.lineNdx];
-        const lastNdx = this.findLastClose(line);
-
-        if (lastNdx === undefined) {
-            return;
-        }
-
-        let count = 0;
+        let startLine = this.lines[this.lineNdx];
         this.lineNdx += 1;
+
         while (true) {
             if (this.lineNdx >= this.lines.length) {
                 break;
@@ -245,30 +239,43 @@ module.exports.Formatter = class {
                 break;
             }
 
-            count += this.removeCloseParens(edits, this.lines[this.lineNdx]);
-            this.lineNdx += 1;
-        }
+            this.doStackParens(edits, startLine, this.lines[this.lineNdx]);
+            this.checkForParens(this.lines[this.lineNdx]);
 
-        if (count > 0) {
-            const pos = line[lastNdx].end;
-            edits.push(TextEdit.insert(pos, ')'.repeat(count)));
+            if (!this.isParenStack(this.lines[this.lineNdx])) {
+                this.splitAfterCloseParens(edits, this.lines[this.lineNdx]);
+                break;
+            }
+
+            startLine = this.lines[this.lineNdx];
+            this.lineNdx += 1;
         }
     }
 
-    removeCloseParens(edits, line) {
-        let count = 0;
+    splitAfterCloseParens(edits, line) {
+        let lastWS = undefined;
 
-        for (let ndx = 0; ndx < line.length; ndx += 1) {
-            if (line[ndx].text === ')') {
-                edits.push(TextEdit.delete(new Range(line[ndx].start, line[ndx].end)));
-                this.parens.pop();
-                count += 1;
-            } else if (line[ndx].type !== types.WHITE_SPACE) {
-                break;
+        for (let token of line) {
+            if (token.type === types.WHITE_SPACE) {
+                lastWS = token;
+                continue;
             }
-        }
 
-        return count;
+            if (token.text !== ')') {
+                const start = (lastWS !== undefined) ? lastWS.start : token.start;
+                edits.push(TextEdit.insert(start, '\n'));
+                return;
+            }
+
+            lastWS = undefined;
+        }
+    }
+
+    doStackParens(edits, startLine, endLine) {
+        const start = startLine[startLine.length - 1].start;
+        const end = endLine[1].start;
+
+        edits.push(TextEdit.delete(new Range(start, end)));
     }
 
     startsWithClose(line) {
@@ -335,16 +342,24 @@ module.exports.Formatter = class {
         }
     }
 
+    isParenStack(line) {
+        for (let token of line) {
+            if (token.type !== types.WHITE_SPACE && token.text !== ')') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     countParenStack(line) {
         let count = 0;
 
-        for (let ndx = 0; ndx < line.length; ndx += 1) {
-            if (line[ndx].type !== types.WHITE_SPACE && line[ndx].text !== ')') {
-                break;
-            }
-
-            if (line[ndx].text === ')') {
+        for (let token of line) {
+            if (token.text === ')') {
                 count += 1;
+            } else if (token.type !== types.WHITE_SPACE) {
+                break;
             }
         }
 
