@@ -136,6 +136,7 @@ module.exports.Formatter = class {
             case types.SYMBOL:
                 return this.fixSymbolElem(edits);
             case types.ID:
+            case types.KEYWORD:
                 return this.fixAlignFirstElem(edits);
             case types.OPEN_PARENS:
                 return this.fixAlignParent(edits);
