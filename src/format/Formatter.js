@@ -71,7 +71,7 @@ module.exports.Formatter = class {
             return;
         }
 
-        const token = this.lines[this.lineNdx][0];
+        const token = line[0];
         const range = new Range(token.start, token.end);
 
         edits.push(TextEdit.delete(range));
