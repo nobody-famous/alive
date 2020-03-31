@@ -1,6 +1,6 @@
 const { commands, languages, Selection, window, workspace } = require('vscode');
 const { Colorizer } = require('./colorize/Colorizer');
-const { Formatter } = require('./format/Formatter');
+const { Formatter } = require('./format/SMFormatter');
 const { CompletionProvider } = require('./CompletionProvider');
 const { Parser } = require('./lisp/Parser');
 const { Lexer } = require('./Lexer');
