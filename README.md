@@ -14,6 +14,7 @@ Language extension to add support for editing Common Lisp files. Very much a wor
 This extension contributes the following settings:
 
 * `common_lisp.format.indentWidth`: Default indentation width
+* `common_lisp.format.alignExpressions`: If false, indent with the specified width
 * `common_lisp.format.indentCloseParenStack`: If false, align close stack with furthest parent instead of closest
 * `common_lisp.format.closeParenStacked`: ['always', 'never'] Specify whether to stack close parens.
 

@@ -19,6 +19,7 @@ module.exports.Formatter = class {
         const haveCfg = (cfg !== undefined && cfg.format !== undefined);
 
         this.indentSize = (haveCfg && (cfg.format.indentWidth !== undefined)) ? cfg.format.indentWidth : DEFAULT_INDENT;
+        this.alignExprs = (haveCfg && (cfg.format.alignExpressions !== undefined)) ? cfg.format.alignExpressions : false;
         this.indentCloseStack = (haveCfg && (cfg.format.indentCloseParenStack !== undefined)) ? cfg.format.indentCloseParenStack : true;
         this.closeParenStacked = (haveCfg && (cfg.format.closeParenStacked !== undefined)) ? cfg.format.closeParenStacked : undefined;
         this.removeBlankLines = (haveCfg && (cfg.format.removeBlankLines !== undefined)) ? cfg.format.removeBlankLines : undefined;
@@ -75,12 +76,12 @@ module.exports.Formatter = class {
         const sexpr = this.sexprs[this.sexprs.length - 1];
         if (sexpr.indent === undefined) {
             sexpr.alignNext = true;
-            sexpr.indent = token.start.character;
+            sexpr.indent = this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
             return;
         }
 
         if (sexpr.alignNext) {
-            sexpr.indent = token.start.character;
+            sexpr.indent = this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
             sexpr.alignNext = false;
         }
     }
@@ -189,7 +190,7 @@ module.exports.Formatter = class {
             const sexpr = this.sexprs[this.sexprs.length - 1];
 
             if (sexpr.indent === undefined || sexpr.alignNext) {
-                sexpr.indent = token.start.character;
+                sexpr.indent = this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
                 sexpr.alignNext = false;
             }
         }
