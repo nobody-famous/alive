@@ -76,14 +76,18 @@ module.exports.Formatter = class {
         const sexpr = this.sexprs[this.sexprs.length - 1];
         if (sexpr.indent === undefined) {
             sexpr.alignNext = true;
-            sexpr.indent = this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
+            sexpr.indent = this.alignIndent(sexpr, token);
             return;
         }
 
         if (sexpr.alignNext) {
-            sexpr.indent = this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
+            sexpr.indent = this.alignIndent(sexpr, token);
             sexpr.alignNext = false;
         }
+    }
+
+    alignIndent(sexpr, token) {
+        return this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
     }
 
     whitespace(token) {
@@ -140,7 +144,9 @@ module.exports.Formatter = class {
             fixStart = start;
         }
 
-        this.fixLine(fixStart, this.tokenNdx + 1);
+        if (fixStart !== undefined) {
+            this.fixLine(fixStart, this.tokenNdx + 1);
+        }
     }
 
     countIndent(token) {
@@ -190,7 +196,7 @@ module.exports.Formatter = class {
             const sexpr = this.sexprs[this.sexprs.length - 1];
 
             if (sexpr.indent === undefined || sexpr.alignNext) {
-                sexpr.indent = this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
+                sexpr.indent = this.alignIndent(sexpr, token);
                 sexpr.alignNext = false;
             }
         }
