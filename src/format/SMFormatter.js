@@ -1,21 +1,8 @@
 const types = require('../Types');
-const { Token } = require('../Token');
 const { format } = require('util');
 const { Position, Range, TextEdit, workspace } = require('vscode');
 
 const DEFAULT_INDENT = 3;
-
-const STATE_DONE = 0;
-const STATE_START = 1;
-const STATE_SEXPR = 2;
-const STATE_FUNC_ARG = 3;
-
-const stateNames = {
-    0: 'STATE_DONE',
-    1: 'STATE_START',
-    2: 'STATE_SEXPR',
-    3: 'STATE_FUNC_ARG',
-};
 
 module.exports.Formatter = class {
     constructor(doc, opts, tokens) {
@@ -25,12 +12,6 @@ module.exports.Formatter = class {
         this.sexprs = [];
         this.states = undefined;
         this.edits = undefined;
-
-        this.handlers = {};
-        this.handlers[STATE_DONE] = () => this.done();
-        this.handlers[STATE_START] = () => this.start();
-        this.handlers[STATE_SEXPR] = () => this.sexpr();
-        this.handlers[STATE_FUNC_ARG] = () => this.funcArg();
     }
 
     setConfiguration() {
@@ -77,6 +58,9 @@ module.exports.Formatter = class {
             case types.WHITE_SPACE:
                 return this.whitespace(token);
             case types.ID:
+            case types.KEYWORD:
+            case types.MACRO:
+            case types.SPECIAL:
                 return this.id(token);
             default:
                 this.unhandledToken('processToken', token);
@@ -108,6 +92,7 @@ module.exports.Formatter = class {
 
         if (this.sexprs.length === 0) {
             console.log(`Whitespace outside expr ${format(token)}`);
+            return;
         }
 
         const sexpr = this.sexprs[this.sexprs.length - 1];
@@ -202,7 +187,8 @@ module.exports.Formatter = class {
     openParens(token) {
         if (this.sexprs.length > 0) {
             const sexpr = this.sexprs[this.sexprs.length - 1];
-            if (sexpr.alignNext) {
+
+            if (sexpr.indent === undefined || sexpr.alignNext) {
                 sexpr.indent = token.start.character;
                 sexpr.alignNext = false;
             }
