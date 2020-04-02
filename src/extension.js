@@ -105,8 +105,9 @@ function readLexTokens(doc) {
 function documentFormatter() {
     return {
         provideDocumentFormattingEdits(doc, opts) {
-            const ast = getDocumentAST(activeEditor.document);
-            const formatter = new Formatter(doc, opts, ast);
+            const lex = new Lexer(doc.getText());
+            const tokens = lex.getTokens();
+            const formatter = new Formatter(doc, opts, tokens);
 
             const edits = formatter.format();
             return edits.length > 0 ? edits : undefined;
