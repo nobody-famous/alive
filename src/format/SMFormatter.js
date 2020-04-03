@@ -58,17 +58,19 @@ module.exports.Formatter = class {
                 return this.closeParens(token);
             case types.WHITE_SPACE:
                 return this.whitespace(token);
+            case types.CONTROL:
             case types.ID:
             case types.KEYWORD:
             case types.MACRO:
             case types.SPECIAL:
-                return this.id(token);
+            case types.SYMBOL:
+                return this.funcCall(token);
             default:
                 this.unhandledToken('processToken', token);
         }
     }
 
-    id(token) {
+    funcCall(token) {
         if (this.sexprs.length === 0) {
             return;
         }
@@ -103,11 +105,19 @@ module.exports.Formatter = class {
         const sexpr = this.sexprs[this.sexprs.length - 1];
         if (sexpr.indent === undefined && this.fixWhitespace) {
             return this.deleteToken();
-        }
-
-        if (token.start.line !== token.end.line) {
+        } else if (token.start.line === token.end.line) {
+            if (this.fixWhitespace) {
+                this.fixPadding(token);
+            }
+        } else if (this.tokens[this.tokenNdx + 1].type === types.CLOSE_PARENS) {
+            this.fixIndent(token, sexpr.open.start.character);
+        } else {
             this.fixIndent(token, sexpr.indent);
         }
+    }
+
+    fixPadding(token) {
+        console.log(`FIX PADDING NOT DONE`);
     }
 
     deleteToken() {
