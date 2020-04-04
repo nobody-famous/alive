@@ -102,30 +102,41 @@ module.exports.Formatter = class {
             return;
         }
 
+        if (this.tokens[this.tokenNdx + 1].type === types.CLOSE_PARENS) {
+            // Close parens code handles this
+            return;
+        }
+
         const sexpr = this.sexprs[this.sexprs.length - 1];
         if (sexpr.indent === undefined && this.fixWhitespace) {
-            return this.deleteToken();
+            this.deleteToken(this.tokenNdx);
         } else if (token.start.line === token.end.line) {
-            if (this.fixWhitespace) {
-                this.fixPadding(token);
-            }
-        } else if (this.tokens[this.tokenNdx + 1].type === types.CLOSE_PARENS) {
-            this.fixIndent(token, sexpr.open.start.character);
+            this.fixPadding(token);
         } else {
             this.fixIndent(token, sexpr.indent);
         }
     }
 
     fixPadding(token) {
-        console.log(`FIX PADDING NOT DONE`);
+        if (!this.fixWhitespace || token.text.length <= 1) {
+            return;
+        }
+
+        const origToken = this.original[this.tokenNdx];
+        const start = new Position(origToken.start.line, origToken.start.character + 1);
+        const end = new Position(origToken.end.line, origToken.end.character);
+        const range = new Range(start, end);
+
+        this.edits.push(TextEdit.delete(range));
+        this.fixLine(token.start, this.tokenNdx + 1);
     }
 
-    deleteToken() {
-        const origToken = this.original[this.tokenNdx];
+    deleteToken(tokenNdx) {
+        const origToken = this.original[tokenNdx];
         this.edits.push(TextEdit.delete(new Range(origToken.start, origToken.end)));
 
-        let start = this.tokens[this.tokenNdx].start;
-        let ndx = this.tokenNdx + 1;
+        let start = this.tokens[tokenNdx].start;
+        let ndx = tokenNdx + 1;
 
         this.fixLine(start, ndx);
     }
@@ -198,7 +209,89 @@ module.exports.Formatter = class {
     }
 
     closeParens(token) {
-        this.sexprs.pop();
+        const sexpr = this.sexprs.pop();
+        const prev = this.prevToken();
+        const count = this.countCloseParens() - 1;
+
+        if (prev === undefined) {
+            return;
+        }
+
+        if (prev.type === types.WHITE_SPACE) {
+            this.closeParensWS(sexpr, prev);
+        }
+
+        this.tokenNdx += 1;
+        if (this.closeParenStacked === 'always') {
+            this.stackCloseParens(count);
+        } else if (this.closeParenStacked === 'never') {
+            console.log('UNSTACK CLOSE PARENS');
+        } else {
+            console.log('INDENT CLOSE PARENS');
+            // this.fixIndent(prev, sexpr.open.start.character);
+            // this.consumeCloseParens(count);
+        }
+    }
+
+    closeParensWS(sexpr, prev) {
+        if (prev.start.line === prev.end.line) {
+            if (this.fixWhitespace) {
+                this.deleteToken(this.tokenNdx - 1);
+            }
+        } else {
+            this.fixIndent(prev, sexpr.open.start.character);
+        }
+    }
+
+    stackCloseParens(count) {
+        while (count > 0) {
+            const token = this.tokens[this.tokenNdx];
+
+            if (token.type === types.CLOSE_PARENS) {
+                this.sexprs.pop();
+                count -= 1;
+            } else if (token.type === types.WHITE_SPACE) {
+                this.deleteToken(this.tokenNdx);
+            }
+
+            this.tokenNdx += 1;
+        }
+
+        // Have to put the last close parens back so main loop can consume it
+        this.tokenNdx -= 1;
+    }
+
+    consumeCloseParens(count) {
+        while (count > 0) {
+            const token = this.tokens[this.tokenNdx];
+
+            if (token.type === types.CLOSE_PARENS) {
+                this.sexprs.pop();
+                count -= 1;
+            }
+
+            this.tokenNdx += 1;
+        }
+    }
+
+    countCloseParens() {
+        let count = 0;
+
+        for (let ndx = this.tokenNdx; ndx < this.tokens.length; ndx += 1) {
+            const token = this.tokens[ndx];
+
+            if (token.type === types.WHITE_SPACE) {
+                continue;
+            }
+
+            if (token.type !== types.CLOSE_PARENS) {
+                break;
+            }
+
+            count += 1;
+        }
+
+        return count;
     }
 
     openParens(token) {
@@ -222,6 +315,14 @@ module.exports.Formatter = class {
 
     unhandledToken(state, token) {
         console.log(`${state} unhandled token ${format(token)}`);
+    }
+
+    prevToken() {
+        if (this.tokenNdx === 0) {
+            return undefined;
+        }
+
+        return this.tokens[this.tokenNdx - 1];
     }
 
     peekToken() {
