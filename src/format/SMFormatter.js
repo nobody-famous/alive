@@ -9,6 +9,8 @@ module.exports.Formatter = class {
         this.original = tokens;
         this.tokens = this.copyTokens(tokens);
         this.tokenNdx = undefined;
+        this.curLine = undefined;
+        this.curLineEmpty = undefined;
         this.sexprs = [];
         this.states = undefined;
         this.edits = undefined;
@@ -18,17 +20,39 @@ module.exports.Formatter = class {
         const cfg = workspace.getConfiguration('common_lisp');
         const haveCfg = (cfg !== undefined && cfg.format !== undefined);
 
-        this.indentSize = (haveCfg && (cfg.format.indentWidth !== undefined)) ? cfg.format.indentWidth : DEFAULT_INDENT;
-        this.alignExprs = (haveCfg && (cfg.format.alignExpressions !== undefined)) ? cfg.format.alignExpressions : false;
-        this.indentCloseStack = (haveCfg && (cfg.format.indentCloseParenStack !== undefined)) ? cfg.format.indentCloseParenStack : true;
-        this.closeParenStacked = (haveCfg && (cfg.format.closeParenStacked !== undefined)) ? cfg.format.closeParenStacked : undefined;
-        this.removeBlankLines = (haveCfg && (cfg.format.removeBlankLines !== undefined)) ? cfg.format.removeBlankLines : undefined;
-        this.fixWhitespace = (haveCfg && (cfg.format.fixWhitespace !== undefined)) ? cfg.format.fixWhitespace : undefined;
-        this.allowOpenOnOwnLine = (haveCfg && (cfg.format.allowOpenOnOwnLine !== undefined)) ? cfg.format.allowOpenOnOwnLine : undefined;
+        if (!haveCfg) {
+            return;
+        }
+
+        this.setConfigOption(cfg, 'indentWidth', DEFAULT_INDENT);
+        this.setConfigOption(cfg, 'alignExpressions', false);
+
+        this.setConfigOption(cfg, 'allowOpenOnOwnLine', undefined);
+
+        this.setConfigOption(cfg, 'indentCloseParenStack', true);
+        this.setConfigOption(cfg, 'closeParenStacked', undefined);
+        this.setConfigOption(cfg, 'closeParenOwnLine', undefined);
+
+        this.setConfigOption(cfg, 'removeBlankLines', undefined);
+        this.setConfigOption(cfg, 'fixWhitespace', undefined);
+    }
+
+    setConfigOption(cfg, opt, value = undefined) {
+        this[opt] = cfg.format[opt] !== undefined ? cfg.format[opt] : value;
     }
 
     copyTokens(tokens) {
-        return tokens.map(token => JSON.parse(JSON.stringify(token)));
+        const newTokens = [];
+
+        for (let ndx = 0; ndx < tokens.length; ndx += 1) {
+            const token = tokens[ndx];
+            const copy = JSON.parse(JSON.stringify(token));
+
+            copy.ndx = ndx;
+            newTokens.push(copy);
+        }
+
+        return newTokens;
     }
 
     format() {
@@ -36,6 +60,8 @@ module.exports.Formatter = class {
 
         this.edits = [];
         this.tokenNdx = 0;
+        this.curLine = 0;
+        this.curLineEmpty = true;
 
         while (true) {
             const token = this.peekToken();
@@ -51,8 +77,14 @@ module.exports.Formatter = class {
     }
 
     processToken(token) {
+        if (token.start.line !== this.curLine) {
+            this.curLine = token.start.line;
+            this.curLineEmpty = true;
+        }
+
         switch (token.type) {
             case types.OPEN_PARENS:
+                this.curLineEmpty = false;
                 return this.openParens(token);
             case types.CLOSE_PARENS:
                 return this.closeParens(token);
@@ -64,6 +96,7 @@ module.exports.Formatter = class {
             case types.MACRO:
             case types.SPECIAL:
             case types.SYMBOL:
+                this.curLineEmpty = false;
                 return this.funcCall(token);
             default:
                 this.unhandledToken('processToken', token);
@@ -76,20 +109,22 @@ module.exports.Formatter = class {
         }
 
         const sexpr = this.sexprs[this.sexprs.length - 1];
+
+        if (sexpr.open.start.line !== token.start.line) {
+            sexpr.multiline = true;
+        }
+
         if (sexpr.indent === undefined) {
             sexpr.alignNext = true;
             sexpr.indent = this.alignIndent(sexpr, token);
-            return;
-        }
-
-        if (sexpr.alignNext) {
+        } else if (sexpr.alignNext) {
             sexpr.indent = this.alignIndent(sexpr, token);
             sexpr.alignNext = false;
         }
     }
 
     alignIndent(sexpr, token) {
-        return this.alignExprs ? token.start.character : sexpr.open.start.character + this.indentSize;
+        return this.alignExpressions ? token.start.character : sexpr.open.start.character + this.indentWidth;
     }
 
     whitespace(token) {
@@ -113,7 +148,7 @@ module.exports.Formatter = class {
         } else if (token.start.line === token.end.line) {
             this.fixPadding(token);
         } else {
-            this.fixIndent(token, sexpr.indent);
+            this.fixIndent(this.original[token.ndx], sexpr.indent);
         }
     }
 
@@ -171,11 +206,11 @@ module.exports.Formatter = class {
     }
 
     countIndent(token) {
-        const txt = token.text;
+        const txt = (token.text !== undefined) ? token.text : '';
         let count = 0;
 
         for (let ndx = txt.length - 1; ndx >= 0; ndx -= 1) {
-            if (txt.charAt(ndx) === '\n') {
+            if (txt.charAt(ndx) !== ' ') {
                 break;
             }
 
@@ -210,16 +245,9 @@ module.exports.Formatter = class {
 
     closeParens(token) {
         const sexpr = this.sexprs.pop();
-        const prev = this.prevToken();
         const count = this.countCloseParens() - 1;
 
-        if (prev === undefined) {
-            return;
-        }
-
-        if (prev.type === types.WHITE_SPACE) {
-            this.closeParensWS(sexpr, prev);
-        }
+        this.placeFirstCloseParen(sexpr, token, count);
 
         this.tokenNdx += 1;
         if (this.closeParenStacked === 'always') {
@@ -233,13 +261,61 @@ module.exports.Formatter = class {
         }
     }
 
-    closeParensWS(sexpr, prev) {
-        if (prev.start.line === prev.end.line) {
-            if (this.fixWhitespace) {
-                this.deleteToken(this.tokenNdx - 1);
+    placeFirstCloseParen(sexpr, token, count) {
+        if (this.prevToken(token) === undefined) {
+            return;
+        }
+
+        if (this.closeParenOwnLine === 'always') {
+            this.closeOwnLineAlways(sexpr, token, count);
+        } else if (this.closeParenOwnLine === 'never') {
+
+        } else if (this.closeParenOwnLine === 'multiline') {
+
+        } else if (prev.type === types.WHITE_SPACE) {
+            // this.closeParensWS(sexpr, prev);
+        }
+    }
+
+    closeOwnLineAlways(sexpr, token, count) {
+        const prev = this.prevToken(token);
+        const orig = this.original[prev.ndx];
+
+        if (!this.curLineEmpty) {
+            if (prev.type === types.WHITE_SPACE) {
+                this.edits.push(TextEdit.insert(orig.start, '\n'));
+                prev.start = new Position(prev.start.line + 1, 0);
+                prev.end = new Position(prev.start.line + 1, prev.start.character + prev.text.length);
+            } else {
+                this.edits.push(TextEdit.insert(orig.end, '\n'));
+                token.start = new Position(token.start.line + 1, sexpr.open.start.character);
+                token.end = new Position(token.start.line + 1, sexpr.open.start.character + token.text.length);
             }
+        }
+
+        if (this.indentCloseParenStack) {
+            this.fixIndent(orig, sexpr.open.start.character);
         } else {
-            this.fixIndent(prev, sexpr.open.start.character);
+            const topExpr = (count === 0) ? sexpr : this.sexprs[this.sexprs.length - count];
+            this.fixIndent(orig, topExpr.open.start.character);
+        }
+    }
+
+    closeParensWS(sexpr, ws) {
+        if (ws.start.line === ws.end.line) {
+            this.closParensOneLineWS(sexpr, ws);
+        } else {
+            this.closParensMulilineineWS(sexpr, ws);
+        }
+    }
+
+    closParensMulilineineWS(sexpr, ws) {
+        this.fixIndent(ws, sexpr.open.start.character);
+    }
+
+    closParensOneLineWS(sexpr, ws) {
+        if (this.fixWhitespace) {
+            this.deleteToken(this.tokenNdx - 1);
         }
     }
 
@@ -308,6 +384,7 @@ module.exports.Formatter = class {
             open: token,
             alignNext: false,
             indent: undefined,
+            multiline: false,
         };
 
         this.sexprs.push(expr);
@@ -317,12 +394,12 @@ module.exports.Formatter = class {
         console.log(`${state} unhandled token ${format(token)}`);
     }
 
-    prevToken() {
-        if (this.tokenNdx === 0) {
+    prevToken(token) {
+        if (token.ndx === 0) {
             return undefined;
         }
 
-        return this.tokens[this.tokenNdx - 1];
+        return this.tokens[token.ndx - 1];
     }
 
     peekToken() {
