@@ -8,7 +8,7 @@ module.exports.Formatter = class {
     constructor(doc, opts, tokens) {
         this.original = tokens;
         this.tokens = this.copyTokens(tokens);
-        this.tokenNdx = undefined;
+        this.token = undefined;
         this.curLine = undefined;
         this.curLineEmpty = undefined;
         this.sexprs = [];
@@ -59,37 +59,50 @@ module.exports.Formatter = class {
         this.setConfiguration();
 
         this.edits = [];
-        this.tokenNdx = 0;
         this.curLine = 0;
         this.curLineEmpty = true;
+        this.token = this.tokens[0];
 
-        while (true) {
-            const token = this.peekToken();
-            if (token === undefined) {
-                break;
-            }
-
-            this.processToken(token);
-            this.consume();
+        while (this.token !== undefined) {
+            this.debugDump();
+            this.processToken();
         }
 
+        this.debugDump();
         return this.edits;
     }
 
-    processToken(token) {
-        if (token.start.line !== this.curLine) {
-            this.curLine = token.start.line;
+    debugDump() {
+        let str = '';
+        let line = 0;
+
+        for (let ndx = 0; ndx < this.tokens.length; ndx += 1) {
+            const token = this.tokens[ndx];
+
+            if (token.start.line !== line) {
+                console.log(str);
+                str = `[${token.start.line},${token.start.character}:${token.end.line},${token.end.character}]`;
+                line = token.start.line;
+            } else {
+                str += `[${token.start.line},${token.start.character}:${token.end.line},${token.end.character}]`;
+            }
+        }
+    }
+
+    processToken() {
+        if (this.token.start.line !== this.curLine) {
+            this.curLine = this.token.start.line;
             this.curLineEmpty = true;
         }
 
-        switch (token.type) {
+        switch (this.token.type) {
             case types.OPEN_PARENS:
                 this.curLineEmpty = false;
-                return this.openParens(token);
+                return this.openParens();
             case types.CLOSE_PARENS:
-                return this.closeParens(token);
+                return this.closeParens();
             case types.WHITE_SPACE:
-                return this.whitespace(token);
+                return this.whitespace();
             case types.CONTROL:
             case types.ID:
             case types.KEYWORD:
@@ -97,112 +110,144 @@ module.exports.Formatter = class {
             case types.SPECIAL:
             case types.SYMBOL:
                 this.curLineEmpty = false;
-                return this.funcCall(token);
+                return this.funcCall();
             default:
-                this.unhandledToken('processToken', token);
+                this.unhandledthis.token('processthis.token', this.token);
         }
     }
 
-    funcCall(token) {
+    funcCall() {
         if (this.sexprs.length === 0) {
             return;
         }
 
         const sexpr = this.sexprs[this.sexprs.length - 1];
 
-        if (sexpr.open.start.line !== token.start.line) {
-            sexpr.multiline = true;
+        if (sexpr.open.start.line !== this.token.start.line) {
+            for (let ndx = 0; ndx < this.sexprs.length; ndx += 1) {
+                this.sexprs[ndx].multiline = true;
+            }
         }
 
         if (sexpr.indent === undefined) {
             sexpr.alignNext = true;
-            sexpr.indent = this.alignIndent(sexpr, token);
+            sexpr.indent = this.alignIndent(sexpr, this.token);
         } else if (sexpr.alignNext) {
-            sexpr.indent = this.alignIndent(sexpr, token);
+            sexpr.indent = this.alignIndent(sexpr, this.token);
             sexpr.alignNext = false;
         }
+
+        this.consume();
     }
 
     alignIndent(sexpr, token) {
         return this.alignExpressions ? token.start.character : sexpr.open.start.character + this.indentWidth;
     }
 
-    whitespace(token) {
-        if (this.tokenNdx >= this.tokens.length - 1) {
-            return this.fixEOF(token);
+    whitespace() {
+        console.log(`whitespace ${this.debugToken(this.token)}`);
+        if (this.token.ndx >= this.tokens.length - 1) {
+            return this.fixEOF();
         }
 
         if (this.sexprs.length === 0) {
             console.log(`Whitespace outside expr ${format(token)}`);
-            return;
-        }
-
-        if (this.tokens[this.tokenNdx + 1].type === types.CLOSE_PARENS) {
+        } else if (this.tokens[this.token.ndx + 1].type === types.CLOSE_PARENS) {
             // Close parens code handles this
-            return;
+        } else {
+            const sexpr = this.sexprs[this.sexprs.length - 1];
+            if (sexpr.indent === undefined && this.fixWhitespace) {
+                this.deleteToken(this.token);
+            } else if (this.token.start.line === this.token.end.line) {
+                this.fixPadding();
+            } else {
+                this.fixIndent(sexpr.indent);
+            }
         }
 
-        const sexpr = this.sexprs[this.sexprs.length - 1];
-        if (sexpr.indent === undefined && this.fixWhitespace) {
-            this.deleteToken(this.tokenNdx);
-        } else if (token.start.line === token.end.line) {
-            this.fixPadding(token);
-        } else {
-            this.fixIndent(this.original[token.ndx], sexpr.indent);
-        }
+        this.consume();
     }
 
-    fixPadding(token) {
-        if (!this.fixWhitespace || token.text.length <= 1) {
+    fixPadding() {
+        console.log(`fixPadding ${this.debugToken(this.token)}`);
+        if (!this.fixWhitespace || this.token.text.length <= 1) {
             return;
         }
 
-        const origToken = this.original[this.tokenNdx];
+        const origToken = this.original[this.token.ndx];
         const start = new Position(origToken.start.line, origToken.start.character + 1);
         const end = new Position(origToken.end.line, origToken.end.character);
         const range = new Range(start, end);
 
         this.edits.push(TextEdit.delete(range));
-        this.fixLine(token.start, this.tokenNdx + 1);
+        console.log(`fixLine padding`);
+        this.fixLine();
     }
 
-    deleteToken(tokenNdx) {
-        const origToken = this.original[tokenNdx];
+    deleteToken(token) {
+        const origToken = this.original[token.ndx];
+
+        console.log(`delete ${this.debugToken(origToken)}, [${origToken.end.line},${origToken.end.character}]`);
+
         this.edits.push(TextEdit.delete(new Range(origToken.start, origToken.end)));
 
-        let start = this.tokens[tokenNdx].start;
-        let ndx = tokenNdx + 1;
+        let start = token.start;
 
-        this.fixLine(start, ndx);
+        console.log(`fixLine delete`);
+        this.fixLine(start, token.ndx + 1);
     }
 
-    fixIndent(token, indent) {
+    fixIndent(indent) {
+        console.log(`fixIndent ${this.debugToken(this.token)}`);
         if (indent === undefined) {
             return;
         }
 
-        let fixStart = undefined;
-        const current = this.countIndent(token);
+        const current = this.countIndent(this.token);
+        const orig = this.original[this.token.ndx];
+
         if (current < indent) {
             const diff = indent - current;
             const pad = ' '.repeat(diff);
 
-            this.edits.push(TextEdit.insert(new Position(token.end.line, token.end.character), pad));
+            this.edits.push(TextEdit.insert(new Position(orig.end.line, orig.end.character), pad));
 
-            fixStart = new Position(token.end.line, token.end.character + diff);
+            this.token.end = new Position(this.token.end.line, this.token.end.character + diff);
+            this.fixLine();
         } else if (current > indent) {
             const diff = current - indent;
-            const start = new Position(token.end.line, token.end.character - diff);
-            const end = new Position(token.end.line, token.end.character);
-            const range = new Range(start, end);
+            const start = new Position(orig.end.line, orig.end.character - diff);
+            const end = new Position(orig.end.line, orig.end.character);
 
-            this.edits.push(TextEdit.delete(range));
-            fixStart = start;
+            this.edits.push(TextEdit.delete(new Range(start, end)));
+
+            this.token.end = new Position(this.token.end.line, this.token.end.character - diff);
+            this.fixLine();
         }
 
-        if (fixStart !== undefined) {
-            this.fixLine(fixStart, this.tokenNdx + 1);
-        }
+        // let fixStart = undefined;
+        // const current = this.countIndent(token);
+        // if (current < indent) {
+        //     const diff = indent - current;
+        //     const pad = ' '.repeat(diff);
+
+        //     this.edits.push(TextEdit.insert(new Position(token.end.line, token.end.character), pad));
+
+        //     fixStart = new Position(token.end.line, token.end.character + diff);
+        // } else if (current > indent) {
+        //     const diff = current - indent;
+        //     const start = new Position(token.end.line, token.end.character - diff);
+        //     const end = new Position(token.end.line, token.end.character);
+        //     const range = new Range(start, end);
+
+        //     this.edits.push(TextEdit.delete(range));
+        //     fixStart = start;
+        // }
+
+        // if (fixStart !== undefined) {
+        //     console.log(`fixLine fixIndent`);
+        //     this.fixLine(fixStart, this.tokenNdx + 1);
+        // }
     }
 
     countIndent(token) {
@@ -220,36 +265,84 @@ module.exports.Formatter = class {
         return count;
     }
 
-    fixLine(start, ndx) {
-        while (true) {
-            if (ndx >= this.tokens.length) {
-                break;
+    fixLine() {
+        console.log(`fixLine [${this.debugToken(this.token)}]`);
+
+        let token = this.token;
+        let next = this.nextToken(token);
+
+        while (next !== undefined) {
+            // if (next.start.line !== token.start.line) {
+            //     break;
+            // }
+
+            if (next.start.character !== token.end.character) {
+                next.start = new Position(next.start.line, token.end.character);
             }
 
-            const next = this.tokens[ndx];
-
-            next.start = start;
-            if (next.end.line !== next.start.line) {
+            if (next.start.line !== next.end.line) {
                 break;
             }
 
             next.end = new Position(next.start.line, next.start.character + next.text.length);
-            start = new Position(next.end.line, next.end.character);
-            ndx += 1;
+
+            token = next;
+            next = this.nextToken(token);
+
+            // console.log(`  ${next.start.line},${next.start.character} => ${start.line},${start.character}`);
+            // next.start = new Position(start.line, start.character);
+
+            // if (next.end.line !== next.start.line) {
+            //     break;
+            // }
+
+            // next.end = new Position(start.line, start.character + next.text.length);
+
+            // start = new Position(next.end.line, next.end.character);
+            // ndx += 1;
         }
     }
 
-    fixEOF(token) {
-        console.log(`EOF ${format(token)}`);
+    fixEOF() {
+        console.log(`EOF ${this.token.start.line}, ${this.token.start.character}`);
+        this.consume();
     }
 
-    closeParens(token) {
-        const sexpr = this.sexprs.pop();
-        const count = this.countCloseParens() - 1;
+    closeParens() {
+        const sexpr = this.sexprs[this.sexprs.length - 1];
+        console.log(`close parens ${this.debugToken(this.token)}`);
 
-        this.placeFirstCloseParen(sexpr, token, count);
+        const count = this.countCloseParens();
 
-        this.tokenNdx += 1;
+        if (this.closeParenOwnLine === 'multiline') {
+            this.closeOwnLineMulti(sexpr, count);
+            this.consume();
+        } else {
+            this.placeFirstCloseParen(sexpr, token, count);
+
+            this.tokenNdx += 1;
+            this.stackRemainingParens(count);
+
+            // Have to put the last close parens back so main loop can consume it
+            // this.tokenNdx -= 1;
+
+            // if (this.closeParenStacked === 'always') {
+            //     this.stackCloseParens(count);
+            // } else if (this.closeParenStacked === 'never') {
+            //     console.log('UNSTACK CLOSE PARENS');
+            // } else {
+            //     console.log('INDENT CLOSE PARENS');
+            //     // this.fixIndent(prev, sexpr.open.start.character);
+            //     // this.consumeCloseParens(count);
+            // }
+        }
+    }
+
+    stackRemainingParens(count) {
+        if (count === 0) {
+            return;
+        }
+
         if (this.closeParenStacked === 'always') {
             this.stackCloseParens(count);
         } else if (this.closeParenStacked === 'never') {
@@ -269,11 +362,40 @@ module.exports.Formatter = class {
         if (this.closeParenOwnLine === 'always') {
             this.closeOwnLineAlways(sexpr, token, count);
         } else if (this.closeParenOwnLine === 'never') {
-
-        } else if (this.closeParenOwnLine === 'multiline') {
-
+            this.closeOwnLineNever(sexpr, token, count);
         } else if (prev.type === types.WHITE_SPACE) {
-            // this.closeParensWS(sexpr, prev);
+            this.closeParensWS(sexpr, prev);
+        }
+    }
+
+    closeOwnLineMulti(sexpr, count) {
+        console.log(`close multi ${sexpr.multiline} ${this.debugToken(this.token)}`);
+        this.sexprs.pop();
+        // while (true) {
+        //     if (sexpr.multiline) {
+        //         this.closeOwnLineAlways(sexpr, token, count);
+        //         break;
+        //     } else {
+        //         this.closeOwnLineNever(sexpr, token, count);
+        //     }
+
+        //     if (count === 0) {
+        //         return;
+        //     }
+
+        //     sexpr = this.sexprs[this.sexprs.length - 1];
+        //     count -= 1;
+
+        //     this.consumeCloseParens(1);
+        //     token = this.tokens[this.tokenNdx];
+        // }
+    }
+
+    closeOwnLineNever(sexpr, token, count) {
+        const prev = this.prevToken(token);
+
+        if (prev.type === types.WHITE_SPACE) {
+            this.deleteToken(prev);
         }
     }
 
@@ -283,39 +405,59 @@ module.exports.Formatter = class {
 
         if (!this.curLineEmpty) {
             if (prev.type === types.WHITE_SPACE) {
+                console.log(`ws adding nl ${this.debugToken(orig)}`);
                 this.edits.push(TextEdit.insert(orig.start, '\n'));
+
                 prev.start = new Position(prev.start.line + 1, 0);
                 prev.end = new Position(prev.start.line + 1, prev.start.character + prev.text.length);
+
+                this.adjustLineNumbers(prev.ndx + 1, 1);
             } else {
-                this.edits.push(TextEdit.insert(orig.end, '\n'));
+                console.log(`non-ws adding nl ${this.debugToken(orig)}, ${this.debugToken(token)}`);
+                const pad = ' '.repeat(sexpr.open.start.character);
+                this.edits.push(TextEdit.insert(orig.end, '\n' + pad));
+
                 token.start = new Position(token.start.line + 1, sexpr.open.start.character);
                 token.end = new Position(token.start.line + 1, sexpr.open.start.character + token.text.length);
+
+                this.adjustLineNumbers(token.ndx + 1, 1);
+                this.fixLine(token.start, token.ndx + 1);
+            }
+        } else {
+            if (this.indentCloseParenStack) {
+                this.fixIndent(orig, sexpr.open.start.character);
+            } else {
+                const topExpr = (count === 0) ? sexpr : this.sexprs[this.sexprs.length - count];
+                this.fixIndent(orig, topExpr.open.start.character);
             }
         }
+    }
 
-        if (this.indentCloseParenStack) {
-            this.fixIndent(orig, sexpr.open.start.character);
-        } else {
-            const topExpr = (count === 0) ? sexpr : this.sexprs[this.sexprs.length - count];
-            this.fixIndent(orig, topExpr.open.start.character);
+    adjustLineNumbers(startNdx, diff) {
+        for (let ndx = startNdx; ndx < this.tokens.length; ndx += 1) {
+            const token = this.tokens[ndx];
+
+            console.log(`adjust line ${token.start.line},${token.start.character} => ${token.start.line + diff},${token.start.character}`);
+            this.tokens[ndx].start = new Position(token.start.line + diff, token.start.character);
+            this.tokens[ndx].end = new Position(token.end.line + diff, token.end.character);
         }
     }
 
     closeParensWS(sexpr, ws) {
         if (ws.start.line === ws.end.line) {
-            this.closParensOneLineWS(sexpr, ws);
+            this.closeParensOneLineWS(sexpr, ws);
         } else {
-            this.closParensMulilineineWS(sexpr, ws);
+            this.closeParensMulilineineWS(sexpr, ws);
         }
     }
 
-    closParensMulilineineWS(sexpr, ws) {
+    closeParensMulilineineWS(sexpr, ws) {
         this.fixIndent(ws, sexpr.open.start.character);
     }
 
-    closParensOneLineWS(sexpr, ws) {
+    closeParensOneLineWS(sexpr, ws) {
         if (this.fixWhitespace) {
-            this.deleteToken(this.tokenNdx - 1);
+            this.deleteToken(ws);
         }
     }
 
@@ -353,7 +495,7 @@ module.exports.Formatter = class {
     countCloseParens() {
         let count = 0;
 
-        for (let ndx = this.tokenNdx; ndx < this.tokens.length; ndx += 1) {
+        for (let ndx = this.token.ndx; ndx < this.tokens.length; ndx += 1) {
             const token = this.tokens[ndx];
 
             if (token.type === types.WHITE_SPACE) {
@@ -370,24 +512,27 @@ module.exports.Formatter = class {
         return count;
     }
 
-    openParens(token) {
+    openParens() {
         if (this.sexprs.length > 0) {
             const sexpr = this.sexprs[this.sexprs.length - 1];
 
             if (sexpr.indent === undefined || sexpr.alignNext) {
-                sexpr.indent = this.alignIndent(sexpr, token);
+                sexpr.indent = this.alignIndent(sexpr, this.token);
                 sexpr.alignNext = false;
             }
         }
 
         const expr = {
-            open: token,
+            open: this.token,
             alignNext: false,
             indent: undefined,
             multiline: false,
         };
 
+        console.log(`push expr ${this.debugToken(this.original[this.token.ndx])} => ${this.debugToken(this.token)}`);
         this.sexprs.push(expr);
+
+        this.consume();
     }
 
     unhandledToken(state, token) {
@@ -395,11 +540,23 @@ module.exports.Formatter = class {
     }
 
     prevToken(token) {
-        if (token.ndx === 0) {
+        const ndx = token.ndx - 1;
+
+        if (ndx < 0) {
             return undefined;
         }
 
-        return this.tokens[token.ndx - 1];
+        return this.tokens[ndx];
+    }
+
+    nextToken(token) {
+        const ndx = token.ndx + 1;
+
+        if (ndx >= this.tokens.length) {
+            return undefined;
+        }
+
+        return this.tokens[ndx];
     }
 
     peekToken() {
@@ -411,10 +568,14 @@ module.exports.Formatter = class {
     }
 
     consume() {
-        if (this.tokenNdx >= this.tokens.length) {
-            return;
-        }
+        const next = (this.token.ndx + 1 < this.tokens.length)
+            ? this.tokens[this.token.ndx + 1]
+            : undefined;
 
-        this.tokenNdx += 1;
+        this.token = next;
+    }
+
+    debugToken(token) {
+        return `[${token.start.line},${token.start.character}]`;
     }
 };
