@@ -64,7 +64,6 @@ module.exports.Formatter = class {
         this.token = this.tokens[0];
 
         while (this.token !== undefined) {
-            this.debugDump();
             this.processToken();
         }
 
@@ -185,16 +184,18 @@ module.exports.Formatter = class {
     }
 
     deleteToken(token) {
+        if (token === undefined) {
+            return;
+        }
+
         const origToken = this.original[token.ndx];
 
         console.log(`delete ${this.debugToken(origToken)}, [${origToken.end.line},${origToken.end.character}]`);
 
         this.edits.push(TextEdit.delete(new Range(origToken.start, origToken.end)));
 
-        let start = token.start;
-
         console.log(`fixLine delete`);
-        this.fixLine(start, token.ndx + 1);
+        this.fixLine();
     }
 
     fixIndent(indent) {
@@ -224,30 +225,6 @@ module.exports.Formatter = class {
             this.token.end = new Position(this.token.end.line, this.token.end.character - diff);
             this.fixLine();
         }
-
-        // let fixStart = undefined;
-        // const current = this.countIndent(token);
-        // if (current < indent) {
-        //     const diff = indent - current;
-        //     const pad = ' '.repeat(diff);
-
-        //     this.edits.push(TextEdit.insert(new Position(token.end.line, token.end.character), pad));
-
-        //     fixStart = new Position(token.end.line, token.end.character + diff);
-        // } else if (current > indent) {
-        //     const diff = current - indent;
-        //     const start = new Position(token.end.line, token.end.character - diff);
-        //     const end = new Position(token.end.line, token.end.character);
-        //     const range = new Range(start, end);
-
-        //     this.edits.push(TextEdit.delete(range));
-        //     fixStart = start;
-        // }
-
-        // if (fixStart !== undefined) {
-        //     console.log(`fixLine fixIndent`);
-        //     this.fixLine(fixStart, this.tokenNdx + 1);
-        // }
     }
 
     countIndent(token) {
@@ -266,16 +243,11 @@ module.exports.Formatter = class {
     }
 
     fixLine() {
-        console.log(`fixLine [${this.debugToken(this.token)}]`);
-
         let token = this.token;
         let next = this.nextToken(token);
+        console.log(`fixLine ${this.debugToken(token)}`);
 
         while (next !== undefined) {
-            // if (next.start.line !== token.start.line) {
-            //     break;
-            // }
-
             if (next.start.character !== token.end.character) {
                 next.start = new Position(next.start.line, token.end.character);
             }
@@ -288,18 +260,6 @@ module.exports.Formatter = class {
 
             token = next;
             next = this.nextToken(token);
-
-            // console.log(`  ${next.start.line},${next.start.character} => ${start.line},${start.character}`);
-            // next.start = new Position(start.line, start.character);
-
-            // if (next.end.line !== next.start.line) {
-            //     break;
-            // }
-
-            // next.end = new Position(start.line, start.character + next.text.length);
-
-            // start = new Position(next.end.line, next.end.character);
-            // ndx += 1;
         }
     }
 
@@ -309,7 +269,7 @@ module.exports.Formatter = class {
     }
 
     closeParens() {
-        const sexpr = this.sexprs[this.sexprs.length - 1];
+        const sexpr = this.sexprs.pop();
         console.log(`close parens ${this.debugToken(this.token)}`);
 
         const count = this.countCloseParens();
@@ -318,23 +278,7 @@ module.exports.Formatter = class {
             this.closeOwnLineMulti(sexpr, count);
             this.consume();
         } else {
-            this.placeFirstCloseParen(sexpr, token, count);
-
-            this.tokenNdx += 1;
-            this.stackRemainingParens(count);
-
-            // Have to put the last close parens back so main loop can consume it
-            // this.tokenNdx -= 1;
-
-            // if (this.closeParenStacked === 'always') {
-            //     this.stackCloseParens(count);
-            // } else if (this.closeParenStacked === 'never') {
-            //     console.log('UNSTACK CLOSE PARENS');
-            // } else {
-            //     console.log('INDENT CLOSE PARENS');
-            //     // this.fixIndent(prev, sexpr.open.start.character);
-            //     // this.consumeCloseParens(count);
-            // }
+            console.log(`CLOSE PAREN NOT MULTILINE`);
         }
     }
 
@@ -349,46 +293,50 @@ module.exports.Formatter = class {
             console.log('UNSTACK CLOSE PARENS');
         } else {
             console.log('INDENT CLOSE PARENS');
-            // this.fixIndent(prev, sexpr.open.start.character);
-            // this.consumeCloseParens(count);
-        }
-    }
-
-    placeFirstCloseParen(sexpr, token, count) {
-        if (this.prevToken(token) === undefined) {
-            return;
-        }
-
-        if (this.closeParenOwnLine === 'always') {
-            this.closeOwnLineAlways(sexpr, token, count);
-        } else if (this.closeParenOwnLine === 'never') {
-            this.closeOwnLineNever(sexpr, token, count);
-        } else if (prev.type === types.WHITE_SPACE) {
-            this.closeParensWS(sexpr, prev);
         }
     }
 
     closeOwnLineMulti(sexpr, count) {
         console.log(`close multi ${sexpr.multiline} ${this.debugToken(this.token)}`);
-        this.sexprs.pop();
-        // while (true) {
-        //     if (sexpr.multiline) {
-        //         this.closeOwnLineAlways(sexpr, token, count);
-        //         break;
-        //     } else {
-        //         this.closeOwnLineNever(sexpr, token, count);
-        //     }
 
-        //     if (count === 0) {
-        //         return;
-        //     }
+        while (!sexpr.multiline) {
+            const prev = this.prevToken(this.token);
+            if (prev.type === types.WHITE_SPACE) {
+                this.deleteToken(prev);
+            }
 
-        //     sexpr = this.sexprs[this.sexprs.length - 1];
-        //     count -= 1;
+            count -= 1;
+            if (count === 0) {
+                return;
+            }
 
-        //     this.consumeCloseParens(1);
-        //     token = this.tokens[this.tokenNdx];
-        // }
+            this.token = this.findNextCloseParen();
+            sexpr = this.sexprs.pop();
+        }
+
+        console.log(`CLOSE MULTI ${count} REMAINING ${this.debugToken(sexpr.open)}`);
+        this.closeForceOwnLine(sexpr);
+    }
+
+    findNextCloseParen() {
+        for (let ndx = this.token.ndx + 1; ndx < this.tokens.length; ndx += 1) {
+            if (this.tokens[ndx].type === types.CLOSE_PARENS) {
+                return this.tokens[ndx];
+            }
+        }
+
+        return undefined;
+    }
+
+    closeForceOwnLine(sexpr) {
+        console.log(`force own line ${format(this.token)}`);
+        const prev = this.prevToken(this.token);
+
+        if (prev.type === types.WHITE_SPACE) {
+
+        } else {
+            console.log(`BREAK BETWEEN ITEMS ${this.debugToken(this.token)}`);
+        }
     }
 
     closeOwnLineNever(sexpr, token, count) {
@@ -399,40 +347,6 @@ module.exports.Formatter = class {
         }
     }
 
-    closeOwnLineAlways(sexpr, token, count) {
-        const prev = this.prevToken(token);
-        const orig = this.original[prev.ndx];
-
-        if (!this.curLineEmpty) {
-            if (prev.type === types.WHITE_SPACE) {
-                console.log(`ws adding nl ${this.debugToken(orig)}`);
-                this.edits.push(TextEdit.insert(orig.start, '\n'));
-
-                prev.start = new Position(prev.start.line + 1, 0);
-                prev.end = new Position(prev.start.line + 1, prev.start.character + prev.text.length);
-
-                this.adjustLineNumbers(prev.ndx + 1, 1);
-            } else {
-                console.log(`non-ws adding nl ${this.debugToken(orig)}, ${this.debugToken(token)}`);
-                const pad = ' '.repeat(sexpr.open.start.character);
-                this.edits.push(TextEdit.insert(orig.end, '\n' + pad));
-
-                token.start = new Position(token.start.line + 1, sexpr.open.start.character);
-                token.end = new Position(token.start.line + 1, sexpr.open.start.character + token.text.length);
-
-                this.adjustLineNumbers(token.ndx + 1, 1);
-                this.fixLine(token.start, token.ndx + 1);
-            }
-        } else {
-            if (this.indentCloseParenStack) {
-                this.fixIndent(orig, sexpr.open.start.character);
-            } else {
-                const topExpr = (count === 0) ? sexpr : this.sexprs[this.sexprs.length - count];
-                this.fixIndent(orig, topExpr.open.start.character);
-            }
-        }
-    }
-
     adjustLineNumbers(startNdx, diff) {
         for (let ndx = startNdx; ndx < this.tokens.length; ndx += 1) {
             const token = this.tokens[ndx];
@@ -440,55 +354,6 @@ module.exports.Formatter = class {
             console.log(`adjust line ${token.start.line},${token.start.character} => ${token.start.line + diff},${token.start.character}`);
             this.tokens[ndx].start = new Position(token.start.line + diff, token.start.character);
             this.tokens[ndx].end = new Position(token.end.line + diff, token.end.character);
-        }
-    }
-
-    closeParensWS(sexpr, ws) {
-        if (ws.start.line === ws.end.line) {
-            this.closeParensOneLineWS(sexpr, ws);
-        } else {
-            this.closeParensMulilineineWS(sexpr, ws);
-        }
-    }
-
-    closeParensMulilineineWS(sexpr, ws) {
-        this.fixIndent(ws, sexpr.open.start.character);
-    }
-
-    closeParensOneLineWS(sexpr, ws) {
-        if (this.fixWhitespace) {
-            this.deleteToken(ws);
-        }
-    }
-
-    stackCloseParens(count) {
-        while (count > 0) {
-            const token = this.tokens[this.tokenNdx];
-
-            if (token.type === types.CLOSE_PARENS) {
-                this.sexprs.pop();
-                count -= 1;
-            } else if (token.type === types.WHITE_SPACE) {
-                this.deleteToken(this.tokenNdx);
-            }
-
-            this.tokenNdx += 1;
-        }
-
-        // Have to put the last close parens back so main loop can consume it
-        this.tokenNdx -= 1;
-    }
-
-    consumeCloseParens(count) {
-        while (count > 0) {
-            const token = this.tokens[this.tokenNdx];
-
-            if (token.type === types.CLOSE_PARENS) {
-                this.sexprs.pop();
-                count -= 1;
-            }
-
-            this.tokenNdx += 1;
         }
     }
 
@@ -557,14 +422,6 @@ module.exports.Formatter = class {
         }
 
         return this.tokens[ndx];
-    }
-
-    peekToken() {
-        if (this.tokenNdx >= this.tokens.length) {
-            return undefined;
-        }
-
-        return this.tokens[this.tokenNdx];
     }
 
     consume() {
