@@ -150,7 +150,7 @@ module.exports.Formatter = class {
         }
 
         if (this.sexprs.length === 0) {
-            console.log(`Whitespace outside expr ${format(token)}`);
+            console.log(`Whitespace outside expr ${format(this.token)}`);
         } else if (this.tokens[this.token.ndx + 1].type === types.CLOSE_PARENS) {
             // Close parens code handles this
         } else {
@@ -317,6 +317,22 @@ module.exports.Formatter = class {
         const indent = this.getCloseStackIndent(sexpr, count);
 
         this.forceOwnLine(indent);
+        this.stackRemaining(count - 1);
+    }
+
+    stackRemaining(count) {
+        while (count > 0) {
+            this.token = this.nextToken(this.token);
+
+            if (this.token.type === types.WHITE_SPACE) {
+                this.deleteToken(this.token);
+            } else if (this.token.type === types.CLOSE_PARENS) {
+                this.sexprs.pop();
+                count -= 1;
+            } else {
+                break;
+            }
+        }
     }
 
     findNextCloseParen() {
@@ -330,7 +346,6 @@ module.exports.Formatter = class {
     }
 
     forceOwnLine(indent) {
-        console.log(`force own line ${format(this.token)}`);
         const prev = this.prevToken(this.token);
 
         if (prev.type === types.WHITE_SPACE) {
@@ -338,7 +353,9 @@ module.exports.Formatter = class {
                 ? this.breakLine(prev, indent)
                 : this.fixIndent(prev, indent);
         } else {
-            this.breakLine(this.token, indent);
+            const pad = ' '.repeat(indent);
+            this.edits.push(TextEdit.insert(this.original[this.token.ndx].start, '\n' + pad));
+            this.adjustLineNumbers(this.token.ndx, 1);
         }
     }
 
