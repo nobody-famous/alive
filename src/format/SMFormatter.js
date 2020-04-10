@@ -160,7 +160,7 @@ module.exports.Formatter = class {
             } else if (this.token.start.line === this.token.end.line) {
                 this.fixPadding();
             } else {
-                this.fixIndent(sexpr.indent);
+                this.fixIndent(this.token, sexpr.indent);
             }
         }
 
@@ -198,14 +198,14 @@ module.exports.Formatter = class {
         this.fixLine();
     }
 
-    fixIndent(indent) {
-        console.log(`fixIndent ${this.debugToken(this.token)}`);
+    fixIndent(token, indent) {
+        console.log(`fixIndent ${this.debugToken(token)}`);
         if (indent === undefined) {
             return;
         }
 
-        const current = this.countIndent(this.token);
-        const orig = this.original[this.token.ndx];
+        const current = this.countIndent(token);
+        const orig = this.original[token.ndx];
 
         if (current < indent) {
             const diff = indent - current;
@@ -213,7 +213,7 @@ module.exports.Formatter = class {
 
             this.edits.push(TextEdit.insert(new Position(orig.end.line, orig.end.character), pad));
 
-            this.token.end = new Position(this.token.end.line, this.token.end.character + diff);
+            token.end = new Position(token.end.line, token.end.character + diff);
             this.fixLine();
         } else if (current > indent) {
             const diff = current - indent;
@@ -222,7 +222,7 @@ module.exports.Formatter = class {
 
             this.edits.push(TextEdit.delete(new Range(start, end)));
 
-            this.token.end = new Position(this.token.end.line, this.token.end.character - diff);
+            token.end = new Position(token.end.line, token.end.character - diff);
             this.fixLine();
         }
     }
@@ -314,8 +314,9 @@ module.exports.Formatter = class {
             sexpr = this.sexprs.pop();
         }
 
-        console.log(`CLOSE MULTI ${count} REMAINING ${this.debugToken(sexpr.open)}`);
-        this.closeForceOwnLine(sexpr);
+        const indent = this.getCloseStackIndent(sexpr, count);
+
+        this.forceOwnLine(indent);
     }
 
     findNextCloseParen() {
@@ -328,15 +329,40 @@ module.exports.Formatter = class {
         return undefined;
     }
 
-    closeForceOwnLine(sexpr) {
+    forceOwnLine(indent) {
         console.log(`force own line ${format(this.token)}`);
         const prev = this.prevToken(this.token);
 
         if (prev.type === types.WHITE_SPACE) {
-
+            (prev.start.line === prev.end.line)
+                ? this.breakLine(prev, indent)
+                : this.fixIndent(prev, indent);
         } else {
-            console.log(`BREAK BETWEEN ITEMS ${this.debugToken(this.token)}`);
+            this.breakLine(this.token, indent);
         }
+    }
+
+    getCloseStackIndent(sexpr, count) {
+        if (this.sexprs.length === 0) {
+            return 0;
+        }
+
+        if (count === 1) {
+            return sexpr.open.start.character;
+        }
+
+        const target = (this.indentCloseParenStack)
+            ? sexpr
+            : this.sexprs[this.sexprs.length - count + 1];
+
+        return target.open.start.character;
+    }
+
+    breakLine(token, indent) {
+        this.edits.push(TextEdit.insert(this.original[token.ndx].start, '\n'));
+
+        this.adjustLineNumbers(token.ndx, 1);
+        this.fixIndent(token, indent);
     }
 
     closeOwnLineNever(sexpr, token, count) {
@@ -351,7 +377,6 @@ module.exports.Formatter = class {
         for (let ndx = startNdx; ndx < this.tokens.length; ndx += 1) {
             const token = this.tokens[ndx];
 
-            console.log(`adjust line ${token.start.line},${token.start.character} => ${token.start.line + diff},${token.start.character}`);
             this.tokens[ndx].start = new Position(token.start.line + diff, token.start.character);
             this.tokens[ndx].end = new Position(token.end.line + diff, token.end.character);
         }
