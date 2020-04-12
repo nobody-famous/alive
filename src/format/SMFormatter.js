@@ -113,7 +113,8 @@ module.exports.Formatter = class {
                 this.checkMultiline();
                 return this.funcCall();
             default:
-                this.unhandledthis.token('processthis.token', this.token);
+                this.unhandledToken('processtToken', this.token);
+                this.consume();
         }
     }
 
@@ -317,10 +318,8 @@ module.exports.Formatter = class {
 
     closeOwnLineMulti(sexpr, count) {
         while (!sexpr.multiline) {
-            console.log(`CLOSE MULTI ${count} ${format(this.token)} ${format(sexpr)}`);
             const prev = this.prevToken(this.token);
             if (prev.type === types.WHITE_SPACE) {
-                console.log(`DELETE WS ${format(prev)}`);
                 this.deleteToken(prev);
             }
 
