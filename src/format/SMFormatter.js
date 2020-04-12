@@ -97,6 +97,7 @@ module.exports.Formatter = class {
         switch (this.token.type) {
             case types.OPEN_PARENS:
                 this.curLineEmpty = false;
+                this.checkMultiline();
                 return this.openParens();
             case types.CLOSE_PARENS:
                 return this.closeParens();
@@ -109,13 +110,14 @@ module.exports.Formatter = class {
             case types.SPECIAL:
             case types.SYMBOL:
                 this.curLineEmpty = false;
+                this.checkMultiline();
                 return this.funcCall();
             default:
                 this.unhandledthis.token('processthis.token', this.token);
         }
     }
 
-    funcCall() {
+    checkMultiline() {
         if (this.sexprs.length === 0) {
             return;
         }
@@ -127,6 +129,14 @@ module.exports.Formatter = class {
                 this.sexprs[ndx].multiline = true;
             }
         }
+    }
+
+    funcCall() {
+        if (this.sexprs.length === 0) {
+            return;
+        }
+
+        const sexpr = this.sexprs[this.sexprs.length - 1];
 
         if (sexpr.indent === undefined) {
             sexpr.alignNext = true;
@@ -144,13 +154,12 @@ module.exports.Formatter = class {
     }
 
     whitespace() {
-        console.log(`whitespace ${this.debugToken(this.token)}`);
         if (this.token.ndx >= this.tokens.length - 1) {
             return this.fixEOF();
         }
 
         if (this.sexprs.length === 0) {
-            console.log(`Whitespace outside expr ${format(this.token)}`);
+            // console.log(`Whitespace outside expr ${format(this.token)}`);
         } else if (this.tokens[this.token.ndx + 1].type === types.CLOSE_PARENS) {
             // Close parens code handles this
         } else {
@@ -168,7 +177,6 @@ module.exports.Formatter = class {
     }
 
     fixPadding() {
-        console.log(`fixPadding ${this.debugToken(this.token)}`);
         if (!this.fixWhitespace || this.token.text.length <= 1) {
             return;
         }
@@ -179,7 +187,6 @@ module.exports.Formatter = class {
         const range = new Range(start, end);
 
         this.edits.push(TextEdit.delete(range));
-        console.log(`fixLine padding`);
         this.fixLine();
     }
 
@@ -190,16 +197,32 @@ module.exports.Formatter = class {
 
         const origToken = this.original[token.ndx];
 
-        console.log(`delete ${this.debugToken(origToken)}, [${origToken.end.line},${origToken.end.character}]`);
-
         this.edits.push(TextEdit.delete(new Range(origToken.start, origToken.end)));
 
-        console.log(`fixLine delete`);
+        if (token.type === types.WHITE_SPACE) {
+            const count = this.countLines(token);
+            this.adjustLineNumbers(token.ndx, -count);
+        }
+
         this.fixLine();
     }
 
+    countLines(token) {
+        if (token.type !== types.WHITE_SPACE) {
+            return 0;
+        }
+
+        let count = 0;
+        for (let ndx = 0; ndx < token.text.length; ndx += 1) {
+            if (token.text.charAt(ndx) === '\n') {
+                count += 1;
+            }
+        }
+
+        return count;
+    }
+
     fixIndent(token, indent) {
-        console.log(`fixIndent ${this.debugToken(token)}`);
         if (indent === undefined) {
             return;
         }
@@ -245,7 +268,6 @@ module.exports.Formatter = class {
     fixLine() {
         let token = this.token;
         let next = this.nextToken(token);
-        console.log(`fixLine ${this.debugToken(token)}`);
 
         while (next !== undefined) {
             if (next.start.character !== token.end.character) {
@@ -264,14 +286,11 @@ module.exports.Formatter = class {
     }
 
     fixEOF() {
-        console.log(`EOF ${this.token.start.line}, ${this.token.start.character}`);
         this.consume();
     }
 
     closeParens() {
         const sexpr = this.sexprs.pop();
-        console.log(`close parens ${this.debugToken(this.token)}`);
-
         const count = this.countCloseParens();
 
         if (this.closeParenOwnLine === 'multiline') {
@@ -297,11 +316,11 @@ module.exports.Formatter = class {
     }
 
     closeOwnLineMulti(sexpr, count) {
-        console.log(`close multi ${sexpr.multiline} ${this.debugToken(this.token)}`);
-
         while (!sexpr.multiline) {
+            console.log(`CLOSE MULTI ${count} ${format(this.token)} ${format(sexpr)}`);
             const prev = this.prevToken(this.token);
             if (prev.type === types.WHITE_SPACE) {
+                console.log(`DELETE WS ${format(prev)}`);
                 this.deleteToken(prev);
             }
 
@@ -436,9 +455,7 @@ module.exports.Formatter = class {
             multiline: false,
         };
 
-        console.log(`push expr ${this.debugToken(this.original[this.token.ndx])} => ${this.debugToken(this.token)}`);
         this.sexprs.push(expr);
-
         this.consume();
     }
 
