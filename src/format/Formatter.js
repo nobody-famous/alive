@@ -1,453 +1,536 @@
 const types = require('../Types');
-const { Token } = require('../Token');
 const { format } = require('util');
 const { Position, Range, TextEdit, workspace } = require('vscode');
 
 const DEFAULT_INDENT = 3;
 
 module.exports.Formatter = class {
-    constructor(doc, opts, ast) {
-        this.ast = ast;
-        this.parens = [];
-        this.elems = [];
-        this.lines = undefined;
-        this.lineNdx = 0;
-
-        this.indentMap = {
-            'DEFUN': (edits) => this.fixDefaultIndent(edits),
-            'DEFPACKAGE': (edits) => this.fixDefaultIndent(edits),
-            'LET': (edits) => this.fixDefaultIndent(edits),
-            'LET*': (edits) => this.fixDefaultIndent(edits),
-            'LOOP': (edits) => this.fixDefaultIndent(edits),
-            'HANDLER-CASE': (edits) => this.fixDefaultIndent(edits),
-
-            'AND': (edits) => this.fixAlignFirstElem(edits),
-            'WHEN': (edits) => this.fixAlignFirstElem(edits),
-            'IF': (edits) => this.fixAlignFirstElem(edits),
-        };
+    constructor(doc, opts, tokens) {
+        this.original = tokens;
+        this.tokens = this.copyTokens(tokens);
+        this.token = undefined;
+        this.curLine = undefined;
+        this.curLineEmpty = undefined;
+        this.sexprs = [];
+        this.states = undefined;
+        this.edits = undefined;
     }
 
     setConfiguration() {
         const cfg = workspace.getConfiguration('common_lisp');
         const haveCfg = (cfg !== undefined && cfg.format !== undefined);
 
-        this.indentSize = (haveCfg && (cfg.format.indentWidth !== undefined)) ? cfg.format.indentWidth : DEFAULT_INDENT;
-        this.indentCloseStack = (haveCfg && (cfg.format.indentCloseParenStack !== undefined)) ? cfg.format.indentCloseParenStack : true;
-        this.closeParenStacked = (haveCfg && (cfg.format.closeParenStacked !== undefined)) ? cfg.format.closeParenStacked : undefined;
+        if (!haveCfg) {
+            return;
+        }
+
+        this.setConfigOption(cfg, 'indentWidth', DEFAULT_INDENT);
+
+        this.setConfigOption(cfg, 'allowOpenOnOwnLine', undefined);
+
+        this.setConfigOption(cfg, 'indentCloseParenStack', true);
+        this.setConfigOption(cfg, 'closeParenStacked', undefined);
+        this.setConfigOption(cfg, 'closeParenOwnLine', undefined);
+
+        this.setConfigOption(cfg, 'removeBlankLines', undefined);
+        this.setConfigOption(cfg, 'fixWhitespace', undefined);
+    }
+
+    setConfigOption(cfg, opt, value = undefined) {
+        this[opt] = cfg.format[opt] !== undefined ? cfg.format[opt] : value;
+    }
+
+    copyTokens(tokens) {
+        const newTokens = [];
+
+        for (let ndx = 0; ndx < tokens.length; ndx += 1) {
+            const token = tokens[ndx];
+            const copy = JSON.parse(JSON.stringify(token));
+
+            copy.ndx = ndx;
+            newTokens.push(copy);
+        }
+
+        return newTokens;
     }
 
     format() {
         this.setConfiguration();
 
-        this.lines = [];
-        this.lines.push([]);
-        for (let ndx = 0; ndx < this.ast.nodes.length; ndx += 1) {
-            this.createLines(this.lines, this.ast.nodes[ndx]);
+        this.edits = [];
+        this.curLine = 0;
+        this.curLineEmpty = true;
+        this.token = this.tokens[0];
+
+        while (this.token !== undefined) {
+            this.processToken();
         }
 
-        const edits = this.formatLines();
-
-        return edits;
+        // this.debugDump();
+        return this.edits;
     }
 
-    formatLines() {
-        const edits = [];
+    debugDump() {
+        let str = '';
+        let line = 0;
 
-        while (this.lineNdx < this.lines.length) {
-            if (this.isBlankLine(this.lines[this.lineNdx])) {
-                this.fixBlankLine(edits, this.lines[this.lineNdx]);
+        for (let ndx = 0; ndx < this.tokens.length; ndx += 1) {
+            const token = this.tokens[ndx];
+
+            if (token.start.line !== line) {
+                console.log(str);
+                str = `[${token.start.line},${token.start.character}:${token.end.line},${token.end.character}]`;
+                line = token.start.line;
             } else {
-                this.indent(edits);
-            }
-
-            this.lineNdx += 1;
-        }
-
-        return edits;
-    }
-
-    fixBlankLine(edits, line) {
-        if (line[0].text.length === 0) {
-            return;
-        }
-
-        const token = line[0];
-        const range = new Range(token.start, token.end);
-
-        edits.push(TextEdit.delete(range));
-    }
-
-    indent(edits) {
-        const line = this.lines[this.lineNdx];
-
-        if (this.parens.length === 0) {
-            this.fixIndent(edits, line, 0);
-        } else if (line.length > 1 && line[1].text === ')') {
-            this.fixCloseParen(edits);
-        } else {
-            this.fixChildElem(edits);
-        }
-
-        this.checkForParens(line);
-    }
-
-    checkForParens(line) {
-        for (let ndx = 0; ndx < line.length; ndx += 1) {
-            const token = line[ndx];
-
-            if (token.text === '(') {
-                this.elems.push(this.getNextElem(line, ndx + 1));
-                this.parens.push(token);
-            } else if (token.text === ')') {
-                this.elems.pop();
-                this.parens.pop();
+                str += `[${token.start.line},${token.start.character}:${token.end.line},${token.end.character}]`;
             }
         }
     }
 
-    getNextElem(line, ndx) {
-        if (ndx >= line.length) {
-            return undefined;
+    processToken() {
+        if (this.token.start.line !== this.curLine) {
+            this.curLine = this.token.start.line;
+            this.curLineEmpty = true;
         }
 
-        if (line[ndx].type === types.WHITE_SPACE) {
-            if (ndx + 1 >= line.length) {
-                return undefined;
-            } else {
-                ndx += 1;
-            }
+        if (this.token.type === types.CLOSE_PARENS) {
+            return this.closeParens();
+        } else if (this.token.type === types.WHITE_SPACE) {
+            return this.whitespace();
         }
 
-        return line[ndx];
-    }
+        this.curLineEmpty = false;
+        this.checkMultiline();
 
-    fixChildElem(edits) {
-        if (this.elems.length === 0) {
-            return;
-        }
-
-        const token = this.elems[this.elems.length - 1];
-        const fn = this.indentMap[token.text];
-        if (fn !== undefined) {
-            return fn(edits);
-        }
-
-        switch (token.type) {
-            case types.SYMBOL:
-                return this.fixSymbolElem(edits);
-            case types.ID:
-            case types.KEYWORD:
-                return this.fixAlignFirstElem(edits);
+        switch (this.token.type) {
             case types.OPEN_PARENS:
-                return this.fixAlignParent(edits);
+                return this.openParens();
+            case types.ID:
+            case types.CONTROL:
+            case types.KEYWORD:
+            case types.MACRO:
+            case types.SPECIAL:
+            case types.SYMBOL:
+                return this.id();
+            case types.PACKAGE_NAME:
+            case types.POUND_SEQ:
+            case types.STRING:
+                return this.doIndent();
             default:
-                console.log(`fixChildElem in ${token.type} ${token.text}, line ${this.lineNdx}`);
+                this.unhandledToken('processtToken', this.token);
+                this.consume();
         }
     }
 
-    fixSymbolElem(edits) {
-        const prevNdx = Math.max(0, this.elems.length - 2);
-        const prevElem = this.elems[prevNdx];
-
-        if (prevElem.text === 'DEFPACKAGE') {
-            return this.fixAlignFirstElem(edits);
-        }
-
-        console.log(`fixSymbolElem ${prevElem.text}`);
-    }
-
-    fixDefaultIndent(edits) {
-        const parent = this.parens[this.parens.length - 1];
-        const indent = parent.start.character + this.indentSize;
-
-        this.fixIndent(edits, this.lines[this.lineNdx], indent);
-    }
-
-    fixAlignParent(edits) {
-        const indent = this.getElemIndent(this.elems, 1, 0);
-        this.fixIndent(edits, this.lines[this.lineNdx], indent);
-    }
-
-    fixAlignFirstElem(edits) {
-        const indent = this.getElemIndent(this.elems, 1, 1);
-        this.fixIndent(edits, this.lines[this.lineNdx], indent);
-    }
-
-    getElemIndent(stack, stackNdx = 1, alignNdx = 0) {
-        const parent = stack[stack.length - stackNdx];
-        const parentLine = this.lines[parent.start.line];
-        const parentNdx = this.getElemNdx(parentLine, parent);
-        let align = parentNdx + alignNdx;
-
-        if (align < parentLine.length && parentLine[align].type === types.WHITE_SPACE) {
-            align += 1;
-        }
-
-        return (align < parentLine.length)
-            ? parentLine[align].start.character
-            : parent.start.character + this.indentSize;
-    }
-
-    getElemNdx(line, elem) {
-        for (let ndx = 0; ndx < line.length; ndx += 1) {
-            if (line[ndx] === elem) {
-                return ndx;
-            }
-        }
-
-        return undefined;
-    }
-
-    fixCloseParen(edits) {
-        const line = this.lines[this.lineNdx];
-        const open = this.parens[this.parens.length - 1];
-        const stacked = this.countParenStack(line);
-
-        this.fixCloseParenStack(edits);
-
-        if ((stacked === this.parens.length) && !this.indentCloseStack) {
-            this.fixIndent(edits, line, 0);
-        } else {
-            this.fixIndent(edits, line, open.start.character);
-        }
-    }
-
-    fixCloseParenStack(edits) {
-        if (this.closeParenStacked === 'always') {
-            this.stackCloseParens(edits);
-        } else if (this.closeParenStacked === 'never') {
-            this.unstackCloseParens(edits);
-        }
-    }
-
-    stackCloseParens(edits) {
-        let startLine = this.lines[this.lineNdx];
-        this.lineNdx += 1;
-
-        while (true) {
-            if (this.lineNdx >= this.lines.length) {
-                break;
-            }
-
-            if (this.isBlankLine(this.lines[this.lineNdx])) {
-                this.fixBlankLine(edits, this.lines[this.lineNdx]);
-                this.lineNdx += 1;
-                continue;
-            }
-
-            if (!this.startsWithClose(this.lines[this.lineNdx])) {
-                this.lineNdx -= 1;
-                break;
-            }
-
-            this.doStackParens(edits, startLine, this.lines[this.lineNdx]);
-            this.checkForParens(this.lines[this.lineNdx]);
-
-            if (!this.isParenStack(this.lines[this.lineNdx])) {
-                this.splitAfterCloseParens(edits, this.lines[this.lineNdx]);
-                break;
-            }
-
-            startLine = this.lines[this.lineNdx];
-            this.lineNdx += 1;
-        }
-    }
-
-    splitAfterCloseParens(edits, line) {
-        let lastWS = undefined;
-
-        for (let token of line) {
-            if (token.type === types.WHITE_SPACE) {
-                lastWS = token;
-                continue;
-            }
-
-            if (token.text !== ')') {
-                const start = (lastWS !== undefined) ? lastWS.start : token.start;
-                edits.push(TextEdit.insert(start, '\n'));
-                return;
-            }
-
-            lastWS = undefined;
-        }
-    }
-
-    doStackParens(edits, startLine, endLine) {
-        const start = startLine[startLine.length - 1].start;
-        const end = endLine[1].start;
-
-        edits.push(TextEdit.delete(new Range(start, end)));
-    }
-
-    startsWithClose(line) {
-        if (line[0].text === ')') {
-            return true;
-        }
-
-        if (line.length < 2) {
-            return false;
-        }
-
-        return line[1].text === ')';
-    }
-
-    findLastClose(line) {
-        let last = undefined;
-
-        for (let ndx = 0; ndx < line.length; ndx += 1) {
-            if (line[ndx].text === ')') {
-                last = ndx;
-            } else if (line[ndx].type !== types.WHITE_SPACE) {
-                return undefined;
-            }
-        }
-
-        return last;
-    }
-
-    unstackCloseParens(edits) {
-        const stacked = this.countParenStack(this.lines[this.lineNdx]);
-        if (stacked < 2) {
+    checkMultiline() {
+        if (this.sexprs.length === 0) {
             return;
         }
 
-        const line = this.lines[this.lineNdx];
-        let newLine = this.lineNdx;
-        let stackNdx = 1;
-        for (let ndx = 0; ndx < line.length; ndx += 1) {
-            if (line[ndx].text !== ')') {
-                continue;
+        const sexpr = this.sexprs[this.sexprs.length - 1];
+
+        if (sexpr.open.start.line !== this.token.start.line) {
+            for (let ndx = 0; ndx < this.sexprs.length; ndx += 1) {
+                this.sexprs[ndx].multiline = true;
             }
-
-            if (line[ndx].start.line === newLine) {
-                newLine += 1;
-                continue;
-            }
-
-            const indent = this.getElemIndent(this.parens, stackNdx, 0);
-            edits.push(TextEdit.insert(new Position(line[ndx].start.line, line[ndx].start.character - 1), ' '.repeat(indent)));
-            edits.push(TextEdit.insert(new Position(line[ndx].start.line, line[ndx].start.character), '\n'));
-
-            stackNdx += 1;
         }
     }
 
-    updateLineNumbers(startNdx) {
-        for (let ndx = startNdx; ndx < this.lines.length; ndx += 1) {
-            const line = this.lines[ndx];
-            line.forEach(expr => {
-                const diff = Math.abs(ndx - expr.start.line);
-                expr.start = new Position(ndx, expr.start.character);
-                expr.end = new Position(expr.end.line + diff, expr.end.character);
-            });
+    doIndent() {
+        if (this.sexprs.length === 0) {
+            return;
+        }
+
+        const sexpr = this.sexprs[this.sexprs.length - 1];
+
+        this.setIndent(sexpr);
+        this.consume();
+    }
+
+    id() {
+        if (this.sexprs.length === 0) {
+            return;
+        }
+
+        const sexpr = this.sexprs[this.sexprs.length - 1];
+        const alignedIDs = [
+            'IF', 'CONS', 'COND', 'AND', 'OR', 'EQ', 'EQL', 'EQUAL', 'EQUALP',
+        ];
+
+        if (this.token.text === 'DEFUN') {
+            this.startDefun(sexpr);
+        } else if (this.token.text === 'LET' || this.token.text === 'LET*' || this.token.text === 'FLET') {
+            this.startLet(sexpr);
+        } else if (alignedIDs.includes(this.token.text)) {
+            sexpr.isAligned = true;
+        }
+
+        this.setIndent(sexpr);
+        this.consume();
+    }
+
+    startDefun(sexpr) {
+        sexpr.defun = {
+            paramList: false,
+        };
+    }
+
+    startLet(sexpr) {
+        sexpr.isLet = true;
+        sexpr.hasVarExpr = false;
+    }
+
+    setIndent(sexpr) {
+        if (sexpr.indent === undefined) {
+            sexpr.alignNext = true;
+            sexpr.indent = this.alignIndent(sexpr, this.token);
+        } else if (sexpr.alignNext) {
+            sexpr.indent = this.alignIndent(sexpr, this.token);
+            sexpr.alignNext = false;
         }
     }
 
-    isParenStack(line) {
-        for (let token of line) {
-            if (token.type !== types.WHITE_SPACE && token.text !== ')') {
-                return false;
+    alignIndent(sexpr, token) {
+        return (sexpr.isParamList || sexpr.isAligned)
+            ? token.start.character
+            : sexpr.open.start.character + this.indentWidth;
+    }
+
+    whitespace() {
+        if (this.token.ndx >= this.tokens.length - 1) {
+            return this.fixEOF();
+        }
+
+        if (this.sexprs.length === 0) {
+            // TODO: Handle white space between expressions. I.e., remove or add lines depending on setings
+        } else if (this.tokens[this.token.ndx + 1].type === types.CLOSE_PARENS) {
+            // Close parens code handles this
+        } else {
+            const sexpr = this.sexprs[this.sexprs.length - 1];
+            if (sexpr.indent === undefined && this.fixWhitespace) {
+                this.deleteToken(this.token);
+            } else if (this.token.start.line === this.token.end.line) {
+                this.fixPadding();
+            } else {
+                this.fixIndent(this.token, sexpr.indent);
             }
         }
 
-        return true;
+        this.consume();
     }
 
-    countParenStack(line) {
+    fixPadding() {
+        if (!this.fixWhitespace || this.token.text.length <= 1) {
+            return;
+        }
+
+        const origToken = this.original[this.token.ndx];
+        const start = new Position(origToken.start.line, origToken.start.character + 1);
+        const end = new Position(origToken.end.line, origToken.end.character);
+        const range = new Range(start, end);
+
+        this.edits.push(TextEdit.delete(range));
+        this.fixLine();
+    }
+
+    deleteToken(token) {
+        if (token === undefined) {
+            return;
+        }
+
+        const origToken = this.original[token.ndx];
+
+        this.edits.push(TextEdit.delete(new Range(origToken.start, origToken.end)));
+
+        if (token.type === types.WHITE_SPACE) {
+            const count = this.countLines(token);
+            this.adjustLineNumbers(token.ndx, -count);
+        }
+
+        this.fixLine();
+    }
+
+    countLines(token) {
+        if (token.type !== types.WHITE_SPACE) {
+            return 0;
+        }
+
         let count = 0;
-
-        for (let token of line) {
-            if (token.text === ')') {
+        for (let ndx = 0; ndx < token.text.length; ndx += 1) {
+            if (token.text.charAt(ndx) === '\n') {
                 count += 1;
-            } else if (token.type !== types.WHITE_SPACE) {
-                break;
             }
         }
 
         return count;
     }
 
-    fixIndent(edits, line, target) {
-        const token = line[0];
-
-        if (token.type !== types.WHITE_SPACE) {
+    fixIndent(token, indent) {
+        if (indent === undefined) {
             return;
         }
 
-        if (token.text.length > target) {
-            const end = new Position(token.start.line, token.end.character - target);
-            edits.push(TextEdit.delete(new Range(token.start, end)));
-        } else if (token.text.length < target) {
-            const diff = target - token.text.length;
-            edits.push(TextEdit.insert(new Position(token.start.line, 0), ' '.repeat(diff)));
+        const current = this.countIndent(token);
+        const orig = this.original[token.ndx];
+
+        if (current < indent) {
+            const diff = indent - current;
+            const pad = ' '.repeat(diff);
+
+            this.edits.push(TextEdit.insert(new Position(orig.end.line, orig.end.character), pad));
+
+            token.end = new Position(token.end.line, token.end.character + diff);
+            this.fixLine();
+        } else if (current > indent) {
+            const diff = current - indent;
+            const start = new Position(orig.end.line, orig.end.character - diff);
+            const end = new Position(orig.end.line, orig.end.character);
+
+            this.edits.push(TextEdit.delete(new Range(start, end)));
+
+            token.end = new Position(token.end.line, token.end.character - diff);
+            this.fixLine();
         }
-
-        this.fixLineStarts(line, target);
     }
 
-    fixLineStarts(line, target) {
-        let char = target;
-        const lineNum = line[0].start.line;
+    countIndent(token) {
+        const txt = (token.text !== undefined) ? token.text : '';
+        let count = 0;
 
-        for (let ndx = 1; ndx < line.length; ndx += 1) {
-            line[ndx].start = new Position(lineNum, char);
-            char += line[ndx].text.length;
-        }
-    }
-
-    isBlankLine(line) {
-        return line.length === 1 && line[0].type === types.WHITE_SPACE;
-    }
-
-    createLines(lines, node) {
-        if (node.value !== undefined) {
-            if (node.value.type === types.WHITE_SPACE) {
-                this.splitLines(lines, types.WHITE_SPACE, node.value);
-            } else if (node.value.type === types.COMMENT) {
-                this.splitLines(lines, types.COMMENT, node.value);
-            } else {
-                lines[lines.length - 1].push(node.value);
+        for (let ndx = txt.length - 1; ndx >= 0; ndx -= 1) {
+            if (txt.charAt(ndx) !== ' ') {
+                break;
             }
+
+            count += 1;
+        }
+
+        return count;
+    }
+
+    fixLine() {
+        let token = this.token;
+        let next = this.nextToken(token);
+
+        while (next !== undefined) {
+            if (next.start.character !== token.end.character) {
+                next.start = new Position(next.start.line, token.end.character);
+            }
+
+            if (next.start.line !== next.end.line) {
+                break;
+            }
+
+            next.end = new Position(next.start.line, next.start.character + next.text.length);
+
+            token = next;
+            next = this.nextToken(token);
+        }
+    }
+
+    fixEOF() {
+        this.consume();
+    }
+
+    closeParens() {
+        const sexpr = this.sexprs.pop();
+        const count = this.countCloseParens();
+
+        if (this.closeParenOwnLine === 'multiline') {
+            this.closeOwnLineMulti(sexpr, count);
+            this.consume();
         } else {
-            this.createObjectLines(lines, node);
+            console.log(`CLOSE PAREN NOT MULTILINE`);
         }
     }
 
-    createObjectLines(lines, node) {
-        const startLine = node.open.start.line;
-
-        let token = new Token(node.open.type, node.open.start, node.open.end, '(');
-        lines[lines.length - 1].push(token);
-
-        for (let ndx = 0; ndx < node.kids.length; ndx += 1) {
-            this.createLines(lines, node.kids[ndx]);
-        }
-
-        token = new Token(node.close.type, node.close.start, node.close.end, ')');
-        lines[lines.length - 1].push(token);
-    }
-
-    splitLines(lines, type, token) {
-        const splits = token.text.split('\n');
-        const startLine = token.start.line;
-
-        let startChar = token.start.character;
-        for (let ndx = 0; ndx < splits.length; ndx += 1) {
-            const curLine = startLine + ndx;
-            if (ndx > 0) {
-                startChar = 0;
+    closeOwnLineMulti(sexpr, count) {
+        while (!sexpr.multiline) {
+            const prev = this.prevToken(this.token);
+            if (prev.type === types.WHITE_SPACE) {
+                this.deleteToken(prev);
             }
 
-            const start = new Position(curLine, startChar);
-            const end = new Position(curLine, startChar + splits[ndx].length);
-            const newToken = new Token(type, start, end, splits[ndx]);
+            count -= 1;
+            if (count === 0) {
+                return;
+            }
 
-            startChar += splits[ndx].length;
-            if (curLine !== startLine) {
-                lines.push([newToken]);
+            this.token = this.findNextCloseParen();
+            sexpr = this.sexprs.pop();
+        }
+
+        const indent = this.getCloseStackIndent(sexpr, count);
+
+        this.forceOwnLine(indent);
+        this.stackRemaining(count - 1);
+    }
+
+    stackRemaining(count) {
+        while (count > 0) {
+            this.token = this.nextToken(this.token);
+
+            if (this.token.type === types.WHITE_SPACE) {
+                this.deleteToken(this.token);
+            } else if (this.token.type === types.CLOSE_PARENS) {
+                this.sexprs.pop();
+                count -= 1;
             } else {
-                lines[lines.length - 1].push(newToken);
+                break;
             }
         }
+    }
+
+    findNextCloseParen() {
+        for (let ndx = this.token.ndx + 1; ndx < this.tokens.length; ndx += 1) {
+            if (this.tokens[ndx].type === types.CLOSE_PARENS) {
+                return this.tokens[ndx];
+            }
+        }
+
+        return undefined;
+    }
+
+    forceOwnLine(indent) {
+        const prev = this.prevToken(this.token);
+
+        if (prev.type === types.WHITE_SPACE) {
+            (prev.start.line === prev.end.line)
+                ? this.breakLine(prev, indent)
+                : this.fixIndent(prev, indent);
+        } else {
+            const pad = ' '.repeat(indent);
+            this.edits.push(TextEdit.insert(this.original[this.token.ndx].start, '\n' + pad));
+            this.adjustLineNumbers(this.token.ndx, 1);
+        }
+    }
+
+    getCloseStackIndent(sexpr, count) {
+        if (this.sexprs.length === 0) {
+            return 0;
+        }
+
+        if (count === 1) {
+            return sexpr.open.start.character;
+        }
+
+        const target = (this.indentCloseParenStack)
+            ? sexpr
+            : this.sexprs[this.sexprs.length - count + 1];
+
+        return target.open.start.character;
+    }
+
+    breakLine(token, indent) {
+        this.edits.push(TextEdit.insert(this.original[token.ndx].start, '\n'));
+
+        this.adjustLineNumbers(token.ndx, 1);
+        this.fixIndent(token, indent);
+    }
+
+    closeOwnLineNever(sexpr, token, count) {
+        const prev = this.prevToken(token);
+
+        if (prev.type === types.WHITE_SPACE) {
+            this.deleteToken(prev);
+        }
+    }
+
+    adjustLineNumbers(startNdx, diff) {
+        for (let ndx = startNdx; ndx < this.tokens.length; ndx += 1) {
+            const token = this.tokens[ndx];
+
+            this.tokens[ndx].start = new Position(token.start.line + diff, token.start.character);
+            this.tokens[ndx].end = new Position(token.end.line + diff, token.end.character);
+        }
+    }
+
+    countCloseParens() {
+        let count = 0;
+
+        for (let ndx = this.token.ndx; ndx < this.tokens.length; ndx += 1) {
+            const token = this.tokens[ndx];
+
+            if (token.type === types.WHITE_SPACE) {
+                continue;
+            }
+
+            if (token.type !== types.CLOSE_PARENS) {
+                break;
+            }
+
+            count += 1;
+        }
+
+        return count;
+    }
+
+    openParens() {
+        let paramList = false;
+
+        if (this.sexprs.length > 0) {
+            const sexpr = this.sexprs[this.sexprs.length - 1];
+
+            if (sexpr.defun !== undefined && !sexpr.defun.paramList) {
+                paramList = true;
+                sexpr.defun.paramList = true;
+            } else if (sexpr.isLet && !sexpr.hasVarExpr) {
+                paramList = true;
+                sexpr.hasVarExpr = true;
+            } else if (sexpr.indent === undefined || sexpr.alignNext) {
+                sexpr.indent = this.alignIndent(sexpr, this.token);
+                sexpr.alignNext = false;
+            }
+        }
+
+        const expr = {
+            open: this.token,
+            alignNext: false,
+            indent: undefined,
+            multiline: false,
+        };
+
+        if (paramList) {
+            expr.isParamList = true;
+        }
+
+        this.sexprs.push(expr);
+        this.consume();
+    }
+
+    unhandledToken(state, token) {
+        console.log(`${state} unhandled token ${format(token)}`);
+    }
+
+    prevToken(token) {
+        const ndx = token.ndx - 1;
+
+        if (ndx < 0) {
+            return undefined;
+        }
+
+        return this.tokens[ndx];
+    }
+
+    nextToken(token) {
+        const ndx = token.ndx + 1;
+
+        if (ndx >= this.tokens.length) {
+            return undefined;
+        }
+
+        return this.tokens[ndx];
+    }
+
+    consume() {
+        const next = (this.token.ndx + 1 < this.tokens.length)
+            ? this.tokens[this.token.ndx + 1]
+            : undefined;
+
+        this.token = next;
+    }
+
+    debugToken(token) {
+        return `[${token.start.line},${token.start.character}]`;
     }
 };
