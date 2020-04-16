@@ -1,19 +1,27 @@
-const { commands, languages, Selection, window, workspace } = require('vscode');
+const vscode = require('vscode');
+const { Session } = require('./debug/session');
 const { Colorizer } = require('./colorize/Colorizer');
 const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
 const { Parser } = require('./lisp/Parser');
 const { Lexer } = require('./Lexer');
 
+class InlineDebugAdapterFactory {
+    createDebugAdapterDescriptor(_session) {
+        return new vscode.DebugAdapterInlineImplementation(new Session());
+    }
+}
+
 const LANGUAGE_ID = 'common-lisp';
 const colorizer = new Colorizer();
 const completionProvider = new CompletionProvider();
+const factory = new InlineDebugAdapterFactory();
 
-let activeEditor = window.activeTextEditor;
+let activeEditor = vscode.window.activeTextEditor;
 let lexTokenMap = {};
 
 module.exports.activate = (ctx) => {
-    window.onDidChangeActiveTextEditor(editor => {
+    vscode.window.onDidChangeActiveTextEditor(editor => {
         activeEditor = editor;
 
         if (editor.document.languageId !== LANGUAGE_ID) {
@@ -27,7 +35,7 @@ module.exports.activate = (ctx) => {
         decorateText(lexTokenMap[editor.document.fileName]);
     }, null, ctx.subscriptions);
 
-    workspace.onDidOpenTextDocument(doc => {
+    vscode.workspace.onDidOpenTextDocument(doc => {
         if (doc.languageId !== LANGUAGE_ID) {
             return;
         }
@@ -36,7 +44,7 @@ module.exports.activate = (ctx) => {
         decorateText(lexTokenMap[doc.fileName]);
     });
 
-    workspace.onDidChangeTextDocument(event => {
+    vscode.workspace.onDidChangeTextDocument(event => {
         if (!activeEditor || (activeEditor.document.languageId !== LANGUAGE_ID) || (event.document !== activeEditor.document)) {
             return;
         }
@@ -45,13 +53,16 @@ module.exports.activate = (ctx) => {
         decorateText(lexTokenMap[activeEditor.document.fileName]);
     }, null, ctx.subscriptions);
 
-    languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider());
-    languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider());
+    vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider());
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider());
 
-    languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter());
-    languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter());
+    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter());
+    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter());
 
-    ctx.subscriptions.push(commands.registerCommand('common-lisp.selectSexpr', selectSexpr));
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr));
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl));
+    ctx.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('common-lisp-repl', factory));
+    ctx.subscriptions.push(factory);
 
     if (activeEditor.document.languageId !== LANGUAGE_ID) {
         return;
@@ -61,11 +72,57 @@ module.exports.activate = (ctx) => {
     decorateText(lexTokenMap[activeEditor.document.fileName]);
 };
 
-function selectSexpr() {
+function sendToRepl() {
+    const session = vscode.debug.activeDebugSession;
+    if (session === undefined) {
+        return;
+    }
+
     try {
-        const editor = window.activeTextEditor;
+        const editor = vscode.window.activeTextEditor;
         if (editor.document.languageId !== LANGUAGE_ID) {
             return;
+        }
+
+        const form = getTopForm();
+        const selection = editor.selection;
+        let range = undefined;
+
+        if (!selection.isEmpty) {
+            range = new vscode.Range(selection.start, selection.end);
+        } else if (form !== undefined) {
+            range = new vscode.Range(form.open.start, form.close.end);
+        }
+
+        if (range === undefined) {
+            return;
+        }
+
+        const text = editor.document.getText(range);
+
+        session.customRequest('evaluate', { expression: text });
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+function selectSexpr() {
+    try {
+        const form = getTopForm();
+
+        if (form !== undefined) {
+            editor.selection = new vscode.Selection(form.open.start, form.close.end);
+        }
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+function getTopForm() {
+    try {
+        const editor = vscode.window.activeTextEditor;
+        if (editor.document.languageId !== LANGUAGE_ID) {
+            return undefined;
         }
 
         const ast = getDocumentAST(editor.document);
@@ -73,13 +130,15 @@ function selectSexpr() {
         const node = ast.getPositionNode(pos);
 
         if (node.open === undefined || node.close === undefined) {
-            return;
+            return undefined;
         }
 
-        editor.selection = new Selection(node.open.start, node.close.end);
+        return node;
     } catch (err) {
         console.log(err);
     }
+
+    return undefined;
 }
 
 function getCompletionProvider() {
@@ -127,6 +186,6 @@ function decorateText(tokens) {
     try {
         colorizer.run(activeEditor, tokens);
     } catch (err) {
-        window.showErrorMessage(`Failed to colorize file: ${err.toString()}`);
+        vscode.window.showErrorMessage(`Failed to colorize file: ${err.toString()}`);
     }
 }

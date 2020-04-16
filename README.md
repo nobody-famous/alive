@@ -37,15 +37,23 @@ workbench.colorCustomizations:
 ## Commands
 
 ### Select S-Expression
-Selects the surrounding top level expression for the current cursor position.
+Selects the surrounding top level expression for the current cursor position. Bound to Alt+Shift+Up.
+
+### Send To REPL
+Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position.
+
+## REPL Integration
+I use SBCL, so that's what is currently supported for the REPL. I decided to write it as a debugger extension, so it behaves like a debugger.
+
+After a launch.json is configured, pressing F5 will start the REPL.
+
+The send to REPL command is bound to Alt+Shift+Enter.
 
 ## Known Issues
 
-Code completion only shows built-in words, it doesn't add variables and whatnot from the code, yet.
+Code completion only shows built-in words and top level variables. It doesn't show variables defined in let blocks, for example.
 
 Back quoted expressions are entirely colorized as quoted. The plan is to have the unquoted elements be colorized normally.
-
-No REPL integration, yet. I want something that works fine without it, so am focusing on that first. REPL support should be an enhancement, not a requirement.
 
 I'm not a Lisp guru, so there may be plenty of cases that don't work as expected.
 

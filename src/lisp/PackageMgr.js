@@ -80,7 +80,7 @@ module.exports.PackageMgr = class {
         } else if (token.type === types.LOAD) {
             // Ignore
         } else {
-            console.log(`PackageMgr unhandled expr ${kids[ndx].value.text} ${kids[ndx].value.type} `);
+            // console.log(`PackageMgr unhandled expr ${kids[ndx].value.text} ${kids[ndx].value.type} `);
         }
     }
 
