@@ -108,6 +108,11 @@ function sendToRepl() {
 
 function selectSexpr() {
     try {
+        const editor = vscode.window.activeTextEditor;
+        if (editor.document.languageId !== LANGUAGE_ID) {
+            return;
+        }
+
         const form = getTopForm();
 
         if (form !== undefined) {
