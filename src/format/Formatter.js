@@ -207,6 +207,7 @@ module.exports.Formatter = class {
             // Close parens code handles this
         } else {
             const sexpr = this.sexprs[this.sexprs.length - 1];
+
             if (sexpr.indent === undefined && this.fixWhitespace) {
                 this.deleteToken(this.token);
             } else if (this.token.start.line === this.token.end.line) {
@@ -217,6 +218,35 @@ module.exports.Formatter = class {
         }
 
         this.consume();
+    }
+
+    trimWS(token) {
+        const orig = this.original[token.ndx];
+        let start = 0;
+        let line = orig.start.line;
+        let startChar = orig.start.character;
+
+        while (start < token.text.length && token.text.charAt(start) === '\n') {
+            start += 1;
+        }
+
+        let end = start + 1;
+        let endChar = orig.start.character + 1;
+        while (end < token.text.length) {
+            if (token.text.charAt(end) === '\n') {
+                const a = new Position(line, startChar);
+                const b = new Position(line, endChar);
+
+                this.edits.push(TextEdit.delete(new Range(a, b)));
+
+                line += 1;
+                startChar = 0;
+                endChar = 0;
+            }
+
+            end += 1;
+            endChar += 1;
+        }
     }
 
     fixPadding() {
@@ -272,6 +302,10 @@ module.exports.Formatter = class {
 
         const current = this.countIndent(token);
         const orig = this.original[token.ndx];
+
+        if (this.fixWhitespace && (token.type === types.WHITE_SPACE)) {
+            this.trimWS(token);
+        }
 
         if (current < indent) {
             const diff = indent - current;
