@@ -8,6 +8,7 @@ Language extension to add support for editing Common Lisp files. Very much a wor
 * Minimal code completion
 * Code formatter
 * Snippets
+* Basic REPL integration
 
 ## Extension Settings
 
