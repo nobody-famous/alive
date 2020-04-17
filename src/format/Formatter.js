@@ -154,7 +154,7 @@ module.exports.Formatter = class {
 
         const sexpr = this.sexprs[this.sexprs.length - 1];
         const alignedIDs = [
-            'IF', 'CONS', 'COND', 'AND', 'OR', 'EQ', 'EQL', 'EQUAL', 'EQUALP', 'LIST'
+            'IF', 'CONS', 'COND', 'AND', 'OR', 'EQ', 'EQL', 'EQUAL', 'EQUALP', 'LIST', ':USE', ':EXPORT'
         ];
 
         if (this.token.text === 'DEFUN') {
