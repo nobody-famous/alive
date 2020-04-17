@@ -1,5 +1,6 @@
-const { Range } = require('vscode');
 const types = require('../Types');
+const { format } = require('util');
+const { Range } = require('vscode');
 
 module.exports.AST = class {
     constructor() {
@@ -23,8 +24,12 @@ module.exports.AST = class {
     }
 
     getNodeRange(node) {
+        if (node.value !== undefined && node.value.type === types.WHITE_SPACE) {
+            return undefined;
+        }
+
         if (node.open !== undefined) {
-            return new Range(node.open.start, node.close.start);
+            return new Range(node.open.start, node.close.end);
         }
 
         if (node.value !== undefined) {
@@ -39,12 +44,12 @@ module.exports.AST = class {
             return false;
         }
 
-        if (pos.line === range.start.line && pos.character < range.start.character) {
-            return false;
+        if (pos.line === range.start.line) {
+            return pos.character >= range.start.character;
         }
 
-        if (pos.line === range.end.line && pos.character > range.end.character) {
-            return false;
+        if (pos.line === range.end.line) {
+            return pos.character <= range.end.character;
         }
 
         return (pos.line >= range.start.line && pos.line <= range.end.line);

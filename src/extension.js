@@ -134,7 +134,7 @@ function getTopForm() {
         const pos = editor.selection.start;
         const node = ast.getPositionNode(pos);
 
-        if (node.open === undefined || node.close === undefined) {
+        if (node === undefined || node.open === undefined || node.close === undefined) {
             return undefined;
         }
 
