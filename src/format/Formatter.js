@@ -373,9 +373,29 @@ module.exports.Formatter = class {
         if (this.closeParenOwnLine === 'multiline') {
             this.closeOwnLineMulti(sexpr, count);
             this.consume();
-        } else {
-            console.log(`CLOSE PAREN NOT MULTILINE`);
+        } else if (this.closeParenOwnLine === 'always') {
+            this.closeOwnLineAlways(sexpr, count);
+            this.consume();
+        } else if (this.closeParenOwnLine === 'never') {
+            this.closeOwnLineNever(sexpr, count);
+            this.consume();
         }
+    }
+
+    closeOwnLineAlways(sexpr, count) {
+        const indent = this.getCloseStackIndent(sexpr, count);
+
+        this.forceOwnLine(indent);
+        this.stackRemaining(count - 1);
+    }
+
+    closeOwnLineNever(sexpr, count) {
+        const prev = this.prevToken(this.token);
+        if (prev.type === types.WHITE_SPACE) {
+            this.deleteToken(prev);
+        }
+
+        this.stackRemaining(count - 1);
     }
 
     closeOwnLineMulti(sexpr, count) {
@@ -460,14 +480,6 @@ module.exports.Formatter = class {
 
         this.adjustLineNumbers(token.ndx, 1);
         this.fixIndent(token, indent);
-    }
-
-    closeOwnLineNever(sexpr, token, count) {
-        const prev = this.prevToken(token);
-
-        if (prev.type === types.WHITE_SPACE) {
-            this.deleteToken(prev);
-        }
     }
 
     adjustLineNumbers(startNdx, diff) {
