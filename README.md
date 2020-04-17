@@ -41,14 +41,12 @@ workbench.colorCustomizations:
 Selects the surrounding top level expression for the current cursor position. Bound to Alt+Shift+Up.
 
 ### Send To REPL
-Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position.
+Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position. Bound to Alt+Shift+Enter.
 
 ## REPL Integration
 I use SBCL, so that's what is currently supported for the REPL. I decided to write it as a debugger extension, so it behaves like a debugger.
 
 After a launch.json is configured, pressing F5 will start the REPL.
-
-The send to REPL command is bound to Alt+Shift+Enter.
 
 ## Known Issues
 
