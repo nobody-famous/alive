@@ -194,6 +194,8 @@ module.exports.Parser = class {
     }
 
     paramList() {
+        let parenCount = 0;
+
         while (true) {
             if (this.peek() === undefined) {
                 const parens = this.parens.pop();
@@ -202,9 +204,15 @@ module.exports.Parser = class {
             }
 
             if (this.peek().type === types.CLOSE_PARENS) {
-                this.parens.pop();
-                this.consume();
-                break;
+                if (parenCount === 0) {
+                    this.parens.pop();
+                    this.consume();
+                    break;
+                }
+
+                parenCount -= 1;
+            } else if (this.peek().type === types.OPEN_PARENS) {
+                parenCount += 1;
             }
 
             this.peek().type = types.PARAMETER;
