@@ -11,8 +11,33 @@
         "prefix": "comment",
         "body": ["#| $0 |#"]
     },
+    "Let Expression": {
+        "prefix": "let",
+        "body": ["let (($1))", "    $0", ""]
+    },
+    "Let-Star Expression": {
+        "prefix": "let*",
+        "body": ["let* (($1))", "    $0", ""]
+    },
+    "Define Class": {
+        "prefix": "defclass",
+        "body": ["defclass ${1:name} ($2)", "    ($0)", ""]
+    },
+    "Class Slot": {
+        "prefix": "slot",
+        "body": [
+            "(${1:name}",
+            "    :accessor $1",
+            "    :initform nil",
+            "    :initarg :$1)"
+        ]
+    },
     "Define Function": {
         "prefix": "defun",
-        "body": ["defun $1 ($2)", "    $0", ""]
+        "body": ["defun ${1:name} ($2)", "    $0", ""]
+    },
+    "Define Method": {
+        "prefix": "defmethod",
+        "body": ["defun ${1:name} ($2)", "    $0", ""]
     }
 }
