@@ -117,7 +117,7 @@ module.exports.Formatter = class {
             case types.STRING:
                 return this.doIndent();
             default:
-                this.unhandledToken('processtToken', this.token);
+                // this.unhandledToken('processtToken', this.token);
                 this.consume();
         }
     }
@@ -421,6 +421,26 @@ module.exports.Formatter = class {
     }
 
     stackRemaining(count) {
+        if (this.closeParenStacked === 'always') {
+            this.stackCloseParens(count);
+        } else if (this.closeParenStacked === 'never') {
+            this.unstackCloseParens(count);
+        }
+    }
+
+    unstackCloseParens(count) {
+        while (count > 0) {
+            this.token = this.nextToken(this.token);
+
+            if (this.token.type === types.CLOSE_PARENS) {
+                const sexpr = this.sexprs.pop();
+                this.forceOwnLine(sexpr.open.start.character);
+                count -= 1;
+            }
+        }
+    }
+
+    stackCloseParens(count) {
         while (count > 0) {
             this.token = this.nextToken(this.token);
 
@@ -468,7 +488,7 @@ module.exports.Formatter = class {
             return sexpr.open.start.character;
         }
 
-        const target = (this.indentCloseParenStack)
+        const target = (this.indentCloseParenStack || (this.closeParenStacked === 'never'))
             ? sexpr
             : this.sexprs[this.sexprs.length - count + 1];
 
