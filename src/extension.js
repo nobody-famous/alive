@@ -169,15 +169,11 @@ function readLexTokens(doc) {
 function documentFormatter() {
     return {
         provideDocumentFormattingEdits(doc, opts) {
-            console.log('START FORMAT');
             const lex = new Lexer(doc.getText());
             const tokens = lex.getTokens();
             const formatter = new Formatter(doc, opts, tokens);
 
-            console.log('BEFORE FORMAT');
-            const start = new Date().getTime();
             const edits = formatter.format();
-            console.log(`FORMAT DONE ${edits.length} ${new Date().getTime() - start}`);
             return edits.length > 0 ? edits : undefined;
         }
     };

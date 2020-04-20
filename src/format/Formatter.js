@@ -273,27 +273,7 @@ module.exports.Formatter = class {
 
         this.edits.push(TextEdit.delete(new Range(origToken.start, origToken.end)));
 
-        if (token.type === types.WHITE_SPACE) {
-            const count = this.countLines(token);
-            this.adjustLineNumbers(token.ndx, -count);
-        }
-
         this.fixLine();
-    }
-
-    countLines(token) {
-        if (token.type !== types.WHITE_SPACE) {
-            return 0;
-        }
-
-        let count = 0;
-        for (let ndx = 0; ndx < token.text.length; ndx += 1) {
-            if (token.text.charAt(ndx) === '\n') {
-                count += 1;
-            }
-        }
-
-        return count;
     }
 
     fixIndent(token, indent) {
@@ -476,7 +456,6 @@ module.exports.Formatter = class {
         } else {
             const pad = ' '.repeat(indent);
             this.edits.push(TextEdit.insert(this.original[this.token.ndx].start, '\n' + pad));
-            this.adjustLineNumbers(this.token.ndx, 1);
         }
     }
 
@@ -499,17 +478,7 @@ module.exports.Formatter = class {
     breakLine(token, indent) {
         this.edits.push(TextEdit.insert(this.original[token.ndx].start, '\n'));
 
-        this.adjustLineNumbers(token.ndx, 1);
         this.fixIndent(token, indent);
-    }
-
-    adjustLineNumbers(startNdx, diff) {
-        for (let ndx = startNdx; ndx < this.tokens.length; ndx += 1) {
-            const token = this.tokens[ndx];
-
-            this.tokens[ndx].start = new Position(token.start.line + diff, token.start.character);
-            this.tokens[ndx].end = new Position(token.end.line + diff, token.end.character);
-        }
     }
 
     countCloseParens() {
