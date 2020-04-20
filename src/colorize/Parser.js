@@ -1,5 +1,6 @@
 const types = require('../Types');
 const { Lexer } = require('../Lexer');
+const { format } = require('util');
 
 module.exports.Parser = class {
     constructor(text, tokens) {

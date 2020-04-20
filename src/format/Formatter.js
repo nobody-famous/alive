@@ -138,6 +138,7 @@ module.exports.Formatter = class {
 
     doIndent() {
         if (this.sexprs.length === 0) {
+            this.consume();
             return;
         }
 

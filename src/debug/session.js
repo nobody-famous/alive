@@ -1,5 +1,7 @@
+const vscode = require('vscode');
 const { LoggingDebugSession, OutputEvent, TerminatedEvent } = require('vscode-debugadapter');
-const { SBCL } = require('./sbcl');
+const { SwankClient } = require('./SwankClient');
+const { format } = require('util');
 
 module.exports.Session = class extends LoggingDebugSession {
     constructor() {
@@ -15,13 +17,21 @@ module.exports.Session = class extends LoggingDebugSession {
         this.sendResponse(resp);
     }
 
-    launchRequest(resp, args) {
-        this.runtime = new SBCL();
+    async launchRequest(resp, args) {
+        try {
+            this.runtime = new SwankClient(args.host, args.port);
 
-        this.runtime.on('msg', (msg) => this.sendEvent(new OutputEvent(msg)));
-        this.runtime.on('close', () => this.sendEvent(new TerminatedEvent(false)));
+            this.runtime.on('msg', (msg) => this.sendEvent(new OutputEvent(msg)));
+            this.runtime.on('error', (err) => vscode.window.showErrorMessage(err.toString()));
+            this.runtime.on('close', () => this.sendEvent(new TerminatedEvent(false)));
+            this.runtime.on('conn-info', (info) => vscode.window.showInformationMessage(format(info)));
 
-        this.runtime.start();
+            await this.runtime.connect();
+
+            this.runtime.start();
+        } catch (err) {
+            vscode.window.showErrorMessage(err);
+        }
 
         this.sendResponse(resp);
     }

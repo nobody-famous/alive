@@ -229,10 +229,15 @@
                 "configurationAttributes": {
                     "launch": {
                         "properties": {
-                            "stopOnEntry": {
-                                "type": "boolean",
-                                "description": "Automatically stop after launch",
-                                "default": true
+                            "host": {
+                                "type": "string",
+                                "description": "Hostname of the REPL",
+                                "default": "localhost"
+                            },
+                            "port": {
+                                "type": "number",
+                                "description": "Port of the REPL",
+                                "default": 4005
                             }
                         }
                     }
@@ -242,7 +247,8 @@
                         "type": "common-lisp-repl",
                         "request": "launch",
                         "name": "Common Lisp REPL",
-                        "stopOnEntry": true
+                        "host": "localhost",
+                        "port": 4005
                     }
                 ],
                 "configurationSnippets": [
@@ -252,8 +258,9 @@
                             "type": "common-lisp-repl",
                             "request": "launch",
                             "name": "Common Lisp REPL",
-                            "stopOnEntry": true
-                        }
+                            "host": "localhost",
+                            "port": 4005
+                            }
                     }
                 ]
             }
