@@ -28,7 +28,7 @@ module.exports.AST = class {
             return undefined;
         }
 
-        if (node.open !== undefined) {
+        if (node.open !== undefined && node.close !== undefined) {
             return new Range(node.open.start, node.close.end);
         }
 

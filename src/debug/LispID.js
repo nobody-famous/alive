@@ -9,3 +9,9 @@ module.exports.LispID = class {
         this.id = id;
     }
 };
+
+module.exports.LispQuote = class {
+    constructor(form) {
+        this.form = form;
+    }
+};

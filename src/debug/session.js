@@ -24,7 +24,8 @@ module.exports.Session = class extends LoggingDebugSession {
             this.runtime.on('msg', (msg) => this.sendEvent(new OutputEvent(msg)));
             this.runtime.on('error', (err) => vscode.window.showErrorMessage(err.toString()));
             this.runtime.on('close', () => this.sendEvent(new TerminatedEvent(false)));
-            this.runtime.on('conn-info', (info) => vscode.window.showInformationMessage(format(info)));
+            this.runtime.on('conn-info', (info) => this.updateConnInfo(info));
+            this.runtime.on('eval', (e) => this.sendEvent(new OutputEvent(`\n${e.result}\n`)));
 
             await this.runtime.connect();
 
@@ -36,12 +37,17 @@ module.exports.Session = class extends LoggingDebugSession {
         this.sendResponse(resp);
     }
 
+    updateConnInfo(info) {
+        if (info.package !== undefined && info.package.prompt !== undefined) {
+            const prompt = `${info.package.prompt}>`;
+            this.sendEvent(new OutputEvent(prompt));
+        }
+    }
+
     evaluateRequest(resp, args, req) {
         const text = req.arguments.expression;
 
-        this.sendEvent(new OutputEvent(text));
         this.runtime.send(text);
-
         this.sendResponse(resp);
     }
 };

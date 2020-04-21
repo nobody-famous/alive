@@ -16,6 +16,9 @@ module.exports.Parser = class {
         while (this.peek() !== undefined) {
             const node = this.expr();
             if (node !== undefined) {
+                if (node.open !== undefined && node.close === undefined) {
+                    node.close = this.tokens[this.tokens.length - 1];
+                }
                 ast.addNode(node);
             }
         }

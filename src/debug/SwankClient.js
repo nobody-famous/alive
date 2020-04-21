@@ -1,8 +1,10 @@
 const net = require('net');
 const { EventEmitter } = require('events');
-const { ConnectionInfoReq } = require('./SwankRequest');
+const { ConnectionInfoReq, EmacsRex, EvalReq } = require('./SwankRequest');
 const { ConnectionInfo } = require('./ConnectionInfo');
+const { Eval } = require('./Eval');
 const { SwankResponse } = require('./SwankResponse');
+const { format } = require('util');
 
 module.exports.SwankClient = class extends EventEmitter {
     constructor(host, port) {
@@ -56,8 +58,9 @@ module.exports.SwankClient = class extends EventEmitter {
             this.readResponse();
 
             if (this.curResponse !== undefined && this.curResponse.hasAllData()) {
-                this.curResponse.parse();
-                this.processResponse();
+                const event = this.curResponse.parse();
+
+                this.processEvent(event);
                 this.curResponse = undefined;
             }
         }
@@ -72,25 +75,39 @@ module.exports.SwankClient = class extends EventEmitter {
         this.buffer = this.curResponse.addData(this.buffer);
     }
 
-    processResponse() {
-        console.log(`PROCESS ${this.curResponse.op}`);
-        if (this.curResponse.op === ':RETURN') {
-            this.processReturn(this.curResponse.msgID, this.curResponse.data);
+    processEvent(event) {
+        if (event === undefined) {
+            return;
+        }
+
+        if (event.op === ':RETURN') {
+            this.processReturn(event);
+        } else if (event.op === ':DEBUG') {
+            this.processDebug(event);
+        } else {
+            console.log(this.curResponse);
         }
     }
 
-    processReturn(id, data) {
+    processDebug(event) {
+        this.emit('msg', format(event));
+    }
+
+    processReturn(event) {
         try {
-            const req = this.reqForID(id);
-            const [status, args] = data;
+            const req = this.reqForID(event.msgID);
+            const [status, args] = event.info;
 
             this.checkReturnStatus(status);
 
             if (req instanceof ConnectionInfoReq) {
                 this.emit('conn-info', new ConnectionInfo(args));
+            } else if (req instanceof EvalReq) {
+                this.emit('eval', new Eval(args));
+            } else {
+                this.emit('msg', args);
             }
         } catch (err) {
-            console.log(err);
             this.emit('error', err);
         }
     }
@@ -119,16 +136,28 @@ module.exports.SwankClient = class extends EventEmitter {
             const req = new ConnectionInfoReq(id);
             const msg = req.encode();
 
-            this.conn.write(msg, (err) => {
-                if (err) {
-                    this.emit('error', err);
-                } else {
-                    this.reqs[id] = req;
-                }
-            });
+            this.sendMessage(id, msg, req);
         } catch (err) {
             this.emit('error', err);
         }
+    }
+
+    send(data) {
+        const id = this.nextID();
+        const req = new EvalReq(id, data);
+        const msg = req.encode();
+
+        this.sendMessage(id, msg, req);
+    }
+
+    sendMessage(id, msg, req) {
+        this.conn.write(msg, (err) => {
+            if (err) {
+                this.emit('error', err);
+            } else {
+                this.reqs[id] = req;
+            }
+        });
     }
 
     nextID() {

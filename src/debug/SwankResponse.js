@@ -1,6 +1,8 @@
 const types = require('../Types');
 const { Lexer } = require('../Lexer');
 const { Parser } = require('../lisp/Parser');
+const { ReturnEvent } = require('./ReturnEvent');
+const { DebugEvent } = require('./DebugEvent');
 const { format } = require('util');
 
 module.exports.SwankResponse = class {
@@ -18,6 +20,13 @@ module.exports.SwankResponse = class {
         const parser = new Parser(tokens);
         const ast = parser.parse();
         const arr = this.astToArray(ast);
+        const event = arr[0].toUpperCase();
+
+        if (event === ':RETURN') {
+            return new ReturnEvent(arr);
+        } else if (event === ':DEBUG') {
+            return new DebugEvent(arr);
+        }
 
         if (arr.length > 0) {
             this.op = arr[0].toUpperCase();

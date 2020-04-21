@@ -1,3 +1,5 @@
+const { LispID, LispQuote, LispSymbol } = require('./LispID');
+
 module.exports.plistToObj = (plist) => {
     if (plist === undefined) {
         return undefined;
@@ -6,8 +8,8 @@ module.exports.plistToObj = (plist) => {
     const obj = {};
 
     for (let ndx = 0; ndx < plist.length; ndx += 2) {
-        const name = convert(plist[ndx]);
-        const value = convert(plist[ndx + 1]);
+        const name = exports.convert(plist[ndx]);
+        const value = exports.convert(plist[ndx + 1]);
 
         obj[name.toLowerCase()] = value;
     }
@@ -15,16 +17,7 @@ module.exports.plistToObj = (plist) => {
     return obj;
 };
 
-module.exports.convertArray = (arr) => {
-    return (arr !== undefined)
-        ? arr.map(item => convert(item))
-        : undefined;
-    // for (let ndx = 0; ndx < arr.length; ndx += 1) {
-    //     arr[ndx] = convert(arr[ndx]);
-    // }
-};
-
-function convert(symbol) {
+module.exports.convert = (symbol) => {
     if (typeof symbol !== 'string') {
         return symbol;
     }
@@ -38,4 +31,64 @@ function convert(symbol) {
     }
 
     return symbol;
+}
+
+module.exports.convertArray = (arr) => {
+    if (!Array.isArray(arr)) {
+        return arr;
+    }
+
+    return arr.map(item => exports.convert(item));
+};
+
+module.exports.toWire = (item) => {
+    let str = '';
+
+    if (Array.isArray(item)) {
+        str += arrayToWire(item);
+    } else if (item instanceof LispSymbol) {
+        str += `:${item.id}`;
+    } else if (item instanceof LispID) {
+        str += `${item.id}`;
+    } else if (item instanceof LispQuote) {
+        str += `'${item.form}`;
+    } else if (typeof item === 'object') {
+        str += objectToWire(item);
+    } else if (typeof item === 'string') {
+        str += `"${item.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    } else if (item === true) {
+        str += `t`;
+    } else {
+        str += item;
+    }
+
+    return str;
+}
+
+function objectToWire(obj) {
+    let str = '(';
+    const keys = Object.keys(obj);
+
+    for (let ndx = 0; ndx < keys.length - 1; ndx += 1) {
+        const key = keys[ndx];
+
+        str += `:${key} ${exports.toWire(obj[key])} `;
+    }
+
+    const key = keys[keys.length - 1];
+    str += `:${key} ${exports.toWire(obj[key])}`;
+
+    return str + ')';
+}
+
+function arrayToWire(arr) {
+    let str = '(';
+
+    for (let ndx = 0; ndx < arr.length - 1; ndx += 1) {
+        str += exports.toWire(arr[ndx]) + ' ';
+    }
+
+    str += exports.toWire(arr[arr.length - 1]) + ')';
+
+    return str;
 }
