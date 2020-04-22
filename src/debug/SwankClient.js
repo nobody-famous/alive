@@ -1,8 +1,9 @@
 const net = require('net');
 const { EventEmitter } = require('events');
-const { ConnectionInfoReq, EmacsRex, EvalReq } = require('./SwankRequest');
+const { ConnectionInfoReq, EvalReq, ThreadsReq } = require('./SwankRequest');
 const { ConnectionInfo } = require('./ConnectionInfo');
 const { Eval } = require('./Eval');
+const { Threads } = require('./Threads');
 const { SwankResponse } = require('./SwankResponse');
 const { format } = require('util');
 
@@ -16,7 +17,8 @@ module.exports.SwankClient = class extends EventEmitter {
         this.msgID = 1;
         this.curResponse = undefined;
         this.buffer = undefined;
-        this.reqs = {};
+        this.handlers = {};
+        this.threads = {};
     }
 
     connect() {
@@ -90,73 +92,102 @@ module.exports.SwankClient = class extends EventEmitter {
     }
 
     processDebug(event) {
-        this.emit('msg', format(event));
+        this.threads[event.threadID] = {
+            condition: event.condition,
+            restarts: event.restarts,
+            frames: event.frames,
+        };
+
+        this.emit('debug', event.threadID);
     }
 
     processReturn(event) {
         try {
-            const req = this.reqForID(event.msgID);
+            const handler = this.handlerForID(event.msgID);
             const [status, args] = event.info;
 
-            this.checkReturnStatus(status);
+            if (handler === undefined) {
+                return;
+            }
 
-            if (req instanceof ConnectionInfoReq) {
-                this.emit('conn-info', new ConnectionInfo(args));
-            } else if (req instanceof EvalReq) {
-                this.emit('eval', new Eval(args));
+            const { resolve, reject } = handler;
+            if (status === ':OK') {
+                resolve(args);
             } else {
-                this.emit('msg', args);
+                reject(status);
             }
         } catch (err) {
             this.emit('error', err);
         }
     }
 
-    checkReturnStatus(status) {
-        if (status !== ':OK') {
-            throw new Error(`Request failed with ${status}`);
-        }
-    }
+    handlerForID(id) {
+        const handler = this.handlers[id];
 
-    reqForID(id) {
-        const req = this.reqs[id];
-
-        if (req === undefined) {
-            throw new Error(`No request for response ${id}`);
+        if (handler !== undefined) {
+            delete this.handlers[id];
         }
 
-        delete this.reqs[id];
-
-        return req;
+        return handler;
     }
 
-    start() {
+    async start() {
         try {
             const id = this.nextID();
             const req = new ConnectionInfoReq(id);
-            const msg = req.encode();
 
-            this.sendMessage(id, msg, req);
+            await this.writeMessage(req.encode());
+
+            const resp = await this.waitForResponse(id);
+            return new ConnectionInfo(resp);
         } catch (err) {
             this.emit('error', err);
         }
     }
 
-    send(data) {
-        const id = this.nextID();
-        const req = new EvalReq(id, data);
-        const msg = req.encode();
+    async eval(data) {
+        try {
+            const id = this.nextID();
+            const req = new EvalReq(id, data);
 
-        this.sendMessage(id, msg, req);
+            await this.writeMessage(req.encode());
+
+            const resp = await this.waitForResponse(id);
+            return new Eval(resp);
+        } catch (err) {
+            this.emit('error', err);
+        }
     }
 
-    sendMessage(id, msg, req) {
-        this.conn.write(msg, (err) => {
-            if (err) {
-                this.emit('error', err);
-            } else {
-                this.reqs[id] = req;
-            }
+    async listThreads() {
+        try {
+            const id = this.nextID();
+            const req = new ThreadsReq(id);
+
+            await this.writeMessage(req.encode());
+
+            const resp = await this.waitForResponse(id);
+            return new Threads(resp);
+        } catch (err) {
+            this.emit('error', err);
+        }
+    }
+
+    waitForResponse(id) {
+        return new Promise((resolve, reject) => {
+            this.handlers[id] = { resolve, reject };
+        });
+    }
+
+    writeMessage(msg) {
+        return new Promise((resolve, reject) => {
+            this.conn.write(msg, (err) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                resolve();
+            });
         });
     }
 

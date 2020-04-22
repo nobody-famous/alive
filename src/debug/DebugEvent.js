@@ -31,7 +31,7 @@ module.exports.DebugEvent = class {
         for (let ndx = 0; ndx < frameData.length; ndx += 1) {
             const data = frameData[ndx];
             const frame = {
-                text: data[1],
+                text: convert(data[1]),
             };
 
             if (data.length > 2) {

@@ -215,11 +215,6 @@
                 }
             }
         ],
-        "breakpoints": [
-            {
-                "language": "common-lisp"
-            }
-        ],
         "debuggers": [
             {
                 "type": "common-lisp-repl",
