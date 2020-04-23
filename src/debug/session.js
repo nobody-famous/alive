@@ -79,6 +79,31 @@ module.exports.Session = class extends DebugSession {
         this.sendResponse(resp);
     }
 
+    async scopesRequest(resp, args) {
+        const frameID = args.frameId;
+        const locals = await this.runtime.locals(frameID);
+
+        resp.body = {
+            scopes: [
+                {
+                    name: 'Locals',
+                    presentationHint: 'locals',
+                    variablesReference: frameID,
+                    namedVariables: locals.vars.length,
+                    expensive: false,
+                }
+            ],
+        };
+
+        this.sendResponse(resp);
+    }
+
+    variablesRequest(resp, args) {
+        console.log('variablesRequest', args);
+
+        this.sendResponse(resp);
+    }
+
     pauseRequest(resp, args) {
         console.log('pauseRequest');
         this.sendResponse(resp);

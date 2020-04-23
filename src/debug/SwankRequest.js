@@ -114,25 +114,37 @@ swank:swank-require [needed]
 */
 
 module.exports.EmacsRex = class extends SwankRequest {
-    constructor(msgID, data, pkg) {
-        super('(' + toWire(new LispSymbol('emacs-rex')) + ' ' + data + ' ' + toWire(pkg) + ' ' + toWire(true) + ' ' + msgID + ')');
+    constructor(data, pkg, threadID, msgID) {
+        super('(' + toWire(new LispSymbol('emacs-rex')) + ' ' + data + ' ' + toWire(pkg) + ' ' + toWire(threadID) + ' ' + toWire(msgID) + ')');
     }
 };
 
 module.exports.ConnectionInfoReq = class extends this.EmacsRex {
     constructor(msgID) {
-        super(msgID, toWire([new LispID('swank:connection-info')]), new LispID('nil'));
+        super(toWire([new LispID('swank:connection-info')]), new LispID('nil'), true, msgID);
     }
 };
 
 module.exports.EvalReq = class extends this.EmacsRex {
-    constructor(msgID, form) {
-        super(msgID, toWire([new LispID('swank:eval-and-grab-output'), form]), new LispID('nil'));
+    constructor(form, msgID) {
+        super(toWire([new LispID('swank:eval-and-grab-output'), form]), new LispID('nil'), true, msgID);
     }
 };
 
 module.exports.ThreadsReq = class extends this.EmacsRex {
     constructor(msgID) {
-        super(msgID, toWire([new LispID('swank:list-threads')]), new LispID('nil'));
+        super(toWire([new LispID('swank:list-threads')]), new LispID('nil'), true, msgID);
+    }
+};
+
+module.exports.FrameLocalsReq = class extends this.EmacsRex {
+    constructor(threadID, frameID, msgID) {
+        super(toWire([new LispID('swank:frame-locals-and-catch-tags'), frameID]), new LispID('nil'), threadID, msgID);
+    }
+};
+
+module.exports.DebuggerInfoReq = class extends this.EmacsRex {
+    constructor(threadID, start, end, msgID) {
+        super(toWire([new LispID('swank:debugger-info-for-emacs'), start, end]), new LispID('nil'), threadID, msgID);
     }
 };

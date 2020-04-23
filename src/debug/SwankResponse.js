@@ -3,6 +3,7 @@ const { Lexer } = require('../Lexer');
 const { Parser } = require('../lisp/Parser');
 const { ReturnEvent } = require('./ReturnEvent');
 const { DebugEvent } = require('./DebugEvent');
+const { DebugActivateEvent } = require('./DebugActivateEvent');
 const { format } = require('util');
 
 module.exports.SwankResponse = class {
@@ -11,7 +12,6 @@ module.exports.SwankResponse = class {
         this.buf = undefined;
         this.op = undefined;
         this.data = undefined;
-        this.msgID = undefined;
     }
 
     parse() {
@@ -26,18 +26,11 @@ module.exports.SwankResponse = class {
             return new ReturnEvent(arr);
         } else if (event === ':DEBUG') {
             return new DebugEvent(arr);
-        }
-
-        if (arr.length > 0) {
-            this.op = arr[0].toUpperCase();
-        }
-
-        if (arr.length > 1) {
-            this.data = arr[1];
-        }
-
-        if (arr.length > 2) {
-            this.msgID = parseInt(arr[2]);
+        } else if (event === ':DEBUG-ACTIVATE') {
+            return new DebugActivateEvent(arr);
+        } else {
+            console.log(`UNHANDLED RESPONSE EVENT ${event}`, arr);
+            return undefined;
         }
     }
 
