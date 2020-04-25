@@ -3,11 +3,14 @@ const { DebugSession, OutputEvent, StackFrame, StoppedEvent, TerminatedEvent, Th
 const { SwankClient } = require('./SwankClient');
 const { format } = require('util');
 
+const MAX_THREAD = 0x7fffff;
+
 module.exports.Session = class extends DebugSession {
     constructor() {
         super();
 
         this.runtime = undefined;
+        this.prompt = undefined;
 
         this.setDebuggerLinesStartAt1(false);
         this.setDebuggerColumnsStartAt1(false);
@@ -28,18 +31,22 @@ module.exports.Session = class extends DebugSession {
             this.runtime.on('error', (err) => vscode.window.showErrorMessage(err.toString()));
             this.runtime.on('close', () => this.sendEvent(new TerminatedEvent(false)));
             this.runtime.on('debug', (threadID) => this.sendEvent(new StoppedEvent('pause', threadID)));
+            this.runtime.on('set_prompt', (prompt) => this.updatePrompt(prompt));
 
             await this.runtime.connect();
+            await this.runtime.start();
 
-            const connInfo = await this.runtime.start();
-
-            this.updateConnInfo(connInfo);
             this.sendEvent(new StoppedEvent('launch'));
         } catch (err) {
-            vscode.window.showErrorMessage(err);
+            vscode.window.showErrorMessage(format(err));
         }
 
         this.sendResponse(resp);
+    }
+
+    updatePrompt(prompt) {
+        this.prompt = prompt;
+        this.sendEvent(new OutputEvent(`${prompt}>`));
     }
 
     async threadsRequest(resp) {
@@ -49,7 +56,7 @@ module.exports.Session = class extends DebugSession {
             threads: [],
         };
 
-        list.threads.forEach(thr => resp.body.threads.push(new Thread(thr.id, thr.name)));
+        list.info.forEach(thr => resp.body.threads.push(new Thread(thr.id, thr.name)));
 
         this.sendResponse(resp);
     }
@@ -62,7 +69,7 @@ module.exports.Session = class extends DebugSession {
         if (threadInfo !== undefined && threadInfo.frames !== undefined) {
             for (let n = 0; n < threadInfo.frames.length; n += 1) {
                 const info = threadInfo.frames[n];
-                frames.push(new StackFrame(n, info.text));
+                frames.push(new StackFrame(parseFloat(`${(threadID << 8) + n}`), info.text));
             }
         }
 
@@ -79,7 +86,7 @@ module.exports.Session = class extends DebugSession {
         this.sendResponse(resp);
     }
 
-    async scopesRequest(resp, args) {
+    async scopesRequest(resp, args, req) {
         const frameID = args.frameId;
         const locals = await this.runtime.locals(frameID);
 
@@ -104,8 +111,13 @@ module.exports.Session = class extends DebugSession {
         this.sendResponse(resp);
     }
 
-    pauseRequest(resp, args) {
-        console.log('pauseRequest');
+    async pauseRequest(resp, args) {
+        await this.runtime.debugThread(args.threadId);
+        // const info = await this.runtime.debuggerInfo(args.threadId);
+
+        // console.log('pause', info);
+
+        this.sendEvent(new StoppedEvent('pause', args.threadId));
         this.sendResponse(resp);
     }
 
@@ -123,14 +135,9 @@ module.exports.Session = class extends DebugSession {
         const text = req.arguments.expression;
         const e = await this.runtime.eval(text);
 
-        this.sendEvent(new OutputEvent(`\n${e.result}\n`));
-        this.sendResponse(resp);
-    }
-
-    updateConnInfo(info) {
-        if (info.package !== undefined && info.package.prompt !== undefined) {
-            const prompt = `${info.package.prompt}>`;
-            this.sendEvent(new OutputEvent(prompt));
+        if (e !== undefined && e.result !== undefined) {
+            this.sendEvent(new OutputEvent(`\n${e.result}\n`));
         }
+        this.sendResponse(resp);
     }
 };

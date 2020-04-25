@@ -1,6 +1,14 @@
 const net = require('net');
+const fs = require('fs');
 const { EventEmitter } = require('events');
-const { ConnectionInfoReq, DebuggerInfoReq, EvalReq, FrameLocalsReq, ThreadsReq } = require('./SwankRequest');
+const {
+    ConnectionInfoReq,
+    DebuggerInfoReq,
+    DebugThreadReq,
+    EvalReq,
+    FrameLocalsReq,
+    ThreadsReq
+} = require('./SwankRequest');
 const { ConnectionInfo } = require('./ConnectionInfo');
 const { Eval } = require('./Eval');
 const { Locals } = require('./Locals');
@@ -13,9 +21,12 @@ module.exports.SwankClient = class extends EventEmitter {
     constructor(host, port) {
         super();
 
+        this.trace = true;
+
         this.host = host;
         this.port = port;
         this.conn = undefined;
+        this.connInfo = undefined;
         this.curResponse = undefined;
         this.buffer = undefined;
         this.handlers = {};
@@ -64,6 +75,9 @@ module.exports.SwankClient = class extends EventEmitter {
             this.readResponse();
 
             if (this.curResponse !== undefined && this.curResponse.hasAllData()) {
+                if (this.trace) {
+                    console.log(`<-- ${this.curResponse.buf.toString()}`);
+                }
                 const event = this.curResponse.parse();
 
                 this.processEvent(event);
@@ -93,7 +107,7 @@ module.exports.SwankClient = class extends EventEmitter {
         } else if (event.op === ':DEBUG-ACTIVATE') {
             this.processDebugActivate(event);
         } else {
-            console.log(this.curResponse);
+            console.log(`processEvent op ${event.op}`);
         }
     }
 
@@ -102,19 +116,15 @@ module.exports.SwankClient = class extends EventEmitter {
             this.activeThread = event.threadID;
             const info = await this.debuggerInfo(event.threadID, event.level);
         } catch (err) {
-            console.log(err);
             this.emit('msg', err.toString());
         }
     }
 
     async debuggerInfo(threadID, level) {
         try {
-            const id = this.nextID();
-            const req = new DebuggerInfoReq(threadID, 0, 10, id);
+            const req = new DebuggerInfoReq(threadID, 0, 10);
+            const resp = await this.sendRequest(req);
 
-            await this.writeMessage(req.encode());
-
-            const resp = await this.waitForResponse(id);
             return new DebuggerInfo(resp);
         } catch (err) {
             this.emit('error', err);
@@ -166,13 +176,14 @@ module.exports.SwankClient = class extends EventEmitter {
 
     async start() {
         try {
-            const id = this.nextID();
-            const req = new ConnectionInfoReq(id);
+            const req = new ConnectionInfoReq();
+            const resp = await this.sendRequest(req);
 
-            await this.writeMessage(req.encode());
+            this.connInfo = new ConnectionInfo(resp);
 
-            const resp = await this.waitForResponse(id);
-            return new ConnectionInfo(resp);
+            if (this.connInfo.package !== undefined && this.connInfo.package.prompt !== undefined) {
+                this.emit('set_prompt', this.connInfo.package.prompt);
+            }
         } catch (err) {
             this.emit('error', err);
         }
@@ -180,12 +191,9 @@ module.exports.SwankClient = class extends EventEmitter {
 
     async eval(data) {
         try {
-            const id = this.nextID();
-            const req = new EvalReq(data, id);
+            const req = new EvalReq(data);
+            const resp = await this.sendRequest(req);
 
-            await this.writeMessage(req.encode());
-
-            const resp = await this.waitForResponse(id);
             return new Eval(resp);
         } catch (err) {
             this.emit('error', err);
@@ -194,30 +202,92 @@ module.exports.SwankClient = class extends EventEmitter {
 
     async listThreads() {
         try {
-            const id = this.nextID();
-            const req = new ThreadsReq(id);
+            const req = new ThreadsReq();
+            const resp = await this.sendRequest(req);
+            const threads = new Threads(resp);
 
-            await this.writeMessage(req.encode());
+            await this.initThreads(threads.info);
 
-            const resp = await this.waitForResponse(id);
-            return new Threads(resp);
+            return threads;
         } catch (err) {
             this.emit('error', err);
         }
     }
 
+    async initThreads(info) {
+        this.threads = info;
+    }
+
+    async debugThread(threadID) {
+        try {
+            const ndx = this.threadIndexForId(threadID);
+            if (ndx === undefined) {
+                console.log(`No thread for id ${threadID}`);
+                return;
+            }
+
+            const req = new DebugThreadReq(ndx, this.connInfo.pid);
+            const resp = await this.sendRequest(req);
+
+            // console.log(`send debug thread ${req.encode()}`);
+            // await this.writeMessage(req.encode());
+
+            // const resp = await this.waitForResponse(id);
+            console.log('debugThread', resp);
+            const port = this.readPortFile(`/tmp/slime.${this.connInfo.pid}`);
+            console.log(`port ${port}`);
+            const client = new exports.SwankClient('localhost', port);
+            await client.connect();
+            console.log('client connected');
+            await client.start();
+            console.log('client', client.connInfo);
+            console.log('client info', await client.debuggerInfo(ndx));
+            // await this.debuggerInfo(ndx);
+        } catch (err) {
+            this.emit('error', err);
+        }
+    }
+
+    readPortFile(file) {
+        try {
+            const text = fs.readFileSync(file);
+            const port = parseInt(text);
+
+            return Number.isNaN(port) ? undefined : port;
+        } catch (err) {
+            this.emit('error', err);
+        }
+    }
+
+    threadIndexForId(id) {
+        for (let ndx = 0; ndx < this.threads.length; ndx += 1) {
+            const thr = this.threads[ndx];
+
+            if (thr.id === id) {
+                return ndx;
+            }
+        }
+
+        return undefined;
+    }
+
     async locals(frameID) {
         try {
-            const id = this.nextID();
-            const req = new FrameLocalsReq(this.activeThread, frameID, id);
+            const req = new FrameLocalsReq(this.activeThread, frameID);
+            const resp = await this.sendRequest(req);
 
-            await this.writeMessage(req.encode());
-
-            const resp = await this.waitForResponse(id);
             return new Locals(resp);
         } catch (err) {
             this.emit('error', err);
         }
+    }
+
+    async sendRequest(req) {
+        const id = this.nextID();
+        const msg = req.encode(id);
+
+        await this.writeMessage(msg);
+        return this.waitForResponse(id);
     }
 
     waitForResponse(id) {
@@ -228,6 +298,10 @@ module.exports.SwankClient = class extends EventEmitter {
 
     writeMessage(msg) {
         return new Promise((resolve, reject) => {
+            if (this.trace) {
+                console.log(`--> ${msg}`);
+            }
+
             this.conn.write(msg, (err) => {
                 if (err) {
                     return reject(err);

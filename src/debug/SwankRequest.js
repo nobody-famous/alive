@@ -6,10 +6,13 @@ class SwankRequest {
         this.data = data;
     }
 
-    encode() {
-        const len = this.data.length.toString(16).padStart(6, '0');
+    encode(msgID) {
+        this.data.push(toWire(msgID));
 
-        return `${len}${this.data}`;
+        const str = `(${this.data.join(' ')})`;
+        const len = str.length.toString(16).padStart(6, '0');
+
+        return `${len}${str}`;
     }
 };
 
@@ -114,37 +117,44 @@ swank:swank-require [needed]
 */
 
 module.exports.EmacsRex = class extends SwankRequest {
-    constructor(data, pkg, threadID, msgID) {
-        super('(' + toWire(new LispSymbol('emacs-rex')) + ' ' + data + ' ' + toWire(pkg) + ' ' + toWire(threadID) + ' ' + toWire(msgID) + ')');
+    constructor(data, pkg, threadID) {
+        super([toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)]);
     }
 };
 
 module.exports.ConnectionInfoReq = class extends this.EmacsRex {
-    constructor(msgID) {
-        super(toWire([new LispID('swank:connection-info')]), new LispID('nil'), true, msgID);
+    constructor() {
+        super(toWire([new LispID('swank:connection-info')]), new LispID('nil'), true);
     }
 };
 
 module.exports.EvalReq = class extends this.EmacsRex {
-    constructor(form, msgID) {
-        super(toWire([new LispID('swank:eval-and-grab-output'), form]), new LispID('nil'), true, msgID);
+    constructor(form) {
+        super(toWire([new LispID('swank:eval-and-grab-output'), form]), new LispID('nil'), true);
     }
 };
 
 module.exports.ThreadsReq = class extends this.EmacsRex {
-    constructor(msgID) {
-        super(toWire([new LispID('swank:list-threads')]), new LispID('nil'), true, msgID);
+    constructor() {
+        super(toWire([new LispID('swank:list-threads')]), new LispID('nil'), true);
     }
 };
 
 module.exports.FrameLocalsReq = class extends this.EmacsRex {
-    constructor(threadID, frameID, msgID) {
-        super(toWire([new LispID('swank:frame-locals-and-catch-tags'), frameID]), new LispID('nil'), threadID, msgID);
+    constructor(threadID, frameID) {
+        super(toWire([new LispID('swank:frame-locals-and-catch-tags'), frameID]), new LispID('nil'), threadID);
     }
 };
 
 module.exports.DebuggerInfoReq = class extends this.EmacsRex {
-    constructor(threadID, start, end, msgID) {
-        super(toWire([new LispID('swank:debugger-info-for-emacs'), start, end]), new LispID('nil'), threadID, msgID);
+    constructor(threadID, start, end) {
+        super(toWire([new LispID('swank:debugger-info-for-emacs'), start, end]), new LispID('nil'), threadID);
+    }
+};
+
+module.exports.DebugThreadReq = class extends this.EmacsRex {
+    constructor(threadNdx, pid) {
+        // super(toWire([new LispID('swank:debug-nth-thread'), threadID]), 'COMMON-LISP-USER', true);
+        super(toWire([new LispID('swank:start-swank-server-in-thread'), threadNdx, `/tmp/slime.${pid}`]), new LispID('nil'), true);
     }
 };

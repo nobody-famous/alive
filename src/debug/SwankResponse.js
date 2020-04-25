@@ -29,7 +29,7 @@ module.exports.SwankResponse = class {
         } else if (event === ':DEBUG-ACTIVATE') {
             return new DebugActivateEvent(arr);
         } else {
-            console.log(`UNHANDLED RESPONSE EVENT ${event}`, arr);
+            console.log(`UNHANDLED RESPONSE EVENT ${event}`);
             return undefined;
         }
     }
