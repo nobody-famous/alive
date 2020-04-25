@@ -10,7 +10,6 @@ module.exports.DebugSession = class extends DebugSession {
         super();
 
         this.runtime = undefined;
-        this.prompt = undefined;
 
         this.setDebuggerLinesStartAt1(false);
         this.setDebuggerColumnsStartAt1(false);
@@ -31,10 +30,9 @@ module.exports.DebugSession = class extends DebugSession {
             this.runtime.on('error', (err) => vscode.window.showErrorMessage(err.toString()));
             this.runtime.on('close', () => this.sendEvent(new TerminatedEvent(false)));
             this.runtime.on('debug', (threadID) => this.sendEvent(new StoppedEvent('pause', threadID)));
-            this.runtime.on('set_prompt', (prompt) => this.updatePrompt(prompt));
 
-            await this.runtime.connect();
             await this.runtime.start();
+            this.showPrompt();
 
             this.sendEvent(new StoppedEvent('launch'));
         } catch (err) {
@@ -44,8 +42,9 @@ module.exports.DebugSession = class extends DebugSession {
         this.sendResponse(resp);
     }
 
-    updatePrompt(prompt) {
-        this.prompt = prompt;
+    showPrompt() {
+        const prompt = this.runtime.getPrompt();
+
         this.sendEvent(new OutputEvent(`${prompt}>`));
     }
 
@@ -56,7 +55,9 @@ module.exports.DebugSession = class extends DebugSession {
             threads: [],
         };
 
-        list.info.forEach(thr => resp.body.threads.push(new Thread(thr.id, thr.name)));
+        if (list !== undefined) {
+            list.info.forEach(thr => resp.body.threads.push(new Thread(thr.id, thr.name)));
+        }
 
         this.sendResponse(resp);
     }

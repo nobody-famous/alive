@@ -1,4 +1,5 @@
 const types = require('../Types');
+const { plistToObj, convertArray, convert } = require('./SwankUtils');
 const { Lexer } = require('../Lexer');
 const { Parser } = require('../lisp/Parser');
 const { ReturnEvent } = require('./ReturnEvent');
@@ -102,5 +103,76 @@ module.exports.SwankResponse = class {
         }
 
         return remaining;
+    }
+};
+
+module.exports.EvalResp = class {
+    constructor(data) {
+        let count = 0;
+
+        for (let ndx = 0; ndx < data.length; ndx += 1) {
+            if (data[ndx] === '""') {
+                count += 1;
+            }
+        }
+
+        data.splice(0, count);
+        this.result = convertArray(data).join('\n');
+    }
+};
+
+module.exports.ConnectionInfoResp = class {
+    constructor(data) {
+        const obj = plistToObj(data);
+
+        this.pid = (obj.pid !== undefined) ? parseInt(obj.pid) : undefined;
+
+        if (obj.encoding !== undefined) {
+            this.encoding = plistToObj(obj.encoding);
+            this.encoding.coding_systems = convertArray(this.encoding.coding_systems);
+        }
+
+        this.impl = plistToObj(obj.lisp_implementation);
+        this.machine = plistToObj(obj.machine);
+        this.package = plistToObj(obj.package);
+
+        this.style = obj.style;
+        this.features = convertArray(obj.features);
+        this.modules = convertArray(obj.modules);
+        this.version = obj.version;
+    }
+};
+
+module.exports.LocalsResp = class {
+    constructor(data) {
+        this.vars = this.fromArray(data[0]);
+        this.catchTags = data[1];
+    }
+
+    fromArray(arr) {
+        return arr.map((item) => plistToObj(item));
+    }
+};
+
+module.exports.ThreadsResp = class {
+    constructor(data) {
+        this.headers = data[0];
+        this.info = [];
+
+        for (let ndx = 1; ndx < data.length; ndx += 1) {
+            const [id, name, status] = data[ndx];
+
+            this.info.push({
+                id: parseInt(id),
+                name,
+                status,
+            });
+        }
+    }
+};
+
+module.exports.DebuggerInfoResp = class {
+    constructor(data) {
+        console.log('DebuggerInfo', data);
     }
 };
