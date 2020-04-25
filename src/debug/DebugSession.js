@@ -5,7 +5,7 @@ const { format } = require('util');
 
 const MAX_THREAD = 0x7fffff;
 
-module.exports.Session = class extends DebugSession {
+module.exports.DebugSession = class extends DebugSession {
     constructor() {
         super();
 

@@ -1,5 +1,5 @@
 const vscode = require('vscode');
-const { Session } = require('./debug/session');
+const { DebugSession } = require('./debug/DebugSession');
 const { Colorizer } = require('./colorize/Colorizer');
 const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
@@ -8,7 +8,7 @@ const { Lexer } = require('./Lexer');
 
 class InlineDebugAdapterFactory {
     createDebugAdapterDescriptor(_session) {
-        return new vscode.DebugAdapterInlineImplementation(new Session());
+        return new vscode.DebugAdapterInlineImplementation(new DebugSession());
     }
 }
 

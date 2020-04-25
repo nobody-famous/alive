@@ -255,7 +255,7 @@
                             "name": "Common Lisp REPL",
                             "host": "localhost",
                             "port": 4005
-                            }
+                        }
                     }
                 ]
             }
