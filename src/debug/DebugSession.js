@@ -1,7 +1,16 @@
 const vscode = require('vscode');
-const { DebugSession, OutputEvent, StackFrame, StoppedEvent, TerminatedEvent, Thread } = require('vscode-debugadapter');
 const { SwankClient } = require('./SwankClient');
 const { format } = require('util');
+const {
+    DebugSession,
+    OutputEvent,
+    Scope,
+    StackFrame,
+    StoppedEvent,
+    TerminatedEvent,
+    Thread,
+    Variable,
+} = require('vscode-debugadapter');
 
 const MAX_THREAD = 0x7fffff;
 
@@ -63,15 +72,14 @@ module.exports.DebugSession = class extends DebugSession {
     }
 
     stackTraceRequest(resp, args, req) {
-        const threadID = args.threadId;
-        const threadInfo = this.runtime.threads[threadID];
         const frames = [];
+        const stack = this.runtime.threadStackTrace(args.threadId);
 
-        if (threadInfo !== undefined && threadInfo.frames !== undefined) {
-            for (let n = 0; n < threadInfo.frames.length; n += 1) {
-                const info = threadInfo.frames[n];
-                frames.push(new StackFrame(parseFloat(`${(threadID << 8) + n}`), info.text));
-            }
+        for (let n = 0; n < 0x100 && n < stack.length; n += 1) {
+            const text = stack[n];
+            const frameID = this.encodeFrameID(args.threadId, n);
+
+            frames.push(new StackFrame(frameID, text));
         }
 
         resp.body = {
@@ -82,32 +90,51 @@ module.exports.DebugSession = class extends DebugSession {
         this.sendResponse(resp);
     }
 
+    encodeFrameID(threadID, frameNum, scope = 0) {
+        return (threadID << 12) + (frameNum << 4) + scope;
+    }
+
+    decodeFrameID(frameID) {
+        return {
+            threadID: (frameID >> 12),
+            frameNum: (frameID >> 4) & 0xff,
+            scope: (frameID & 0xf),
+        };
+    }
+
     continueRequest(resp, args) {
         console.log('continueRequest');
         this.sendResponse(resp);
     }
 
     async scopesRequest(resp, args, req) {
-        const frameID = args.frameId;
-        const locals = await this.runtime.locals(frameID);
+        const { threadID, frameNum } = this.decodeFrameID(args.frameId);
 
         resp.body = {
             scopes: [
-                {
-                    name: 'Locals',
-                    presentationHint: 'locals',
-                    variablesReference: frameID,
-                    namedVariables: locals.vars.length,
-                    expensive: false,
-                }
+                new Scope('Locals', this.encodeFrameID(threadID, frameNum, 1), false),
+                new Scope('Condition', this.encodeFrameID(threadID, frameNum, 2), false),
+                new Scope('Catch Tags', this.encodeFrameID(threadID, frameNum, 3), false),
             ],
         };
 
         this.sendResponse(resp);
     }
 
-    variablesRequest(resp, args) {
-        console.log('variablesRequest', args);
+    async variablesRequest(resp, args) {
+        const { threadID, frameNum, scope } = this.decodeFrameID(args.variablesReference);
+
+        resp.body = {};
+
+        if (scope === 1) {
+            const locals = await this.runtime.locals(threadID, frameNum);
+            resp.body.variables = locals.vars.map(v => new Variable(v.name, v.value));
+        } else if (scope === 2) {
+            const cond = this.runtime.threadCondition(threadID);
+            resp.body.variables = cond.map(c => new Variable('', c));
+        } else if (scope === 3) {
+            resp.body.variables = [];
+        }
 
         this.sendResponse(resp);
     }

@@ -154,26 +154,16 @@ module.exports.SwankConn = class extends EventEmitter {
         }
     }
 
-    async processDebugActivate(event) {
+    processDebugActivate(event) {
         try {
-            console.log('processDebugActivate NOT DONE');
-            // this.activeThread = event.threadID;
-            // const info = await this.debuggerInfo(event.threadID, event.level);
+            this.emit('activate', event);
         } catch (err) {
             this.emit('msg', err.toString());
         }
     }
 
     processDebug(event) {
-        console.log('processDebug NOT DONE');
-        // this.threads[event.threadID] = {
-        //     condition: event.condition,
-        //     restarts: event.restarts,
-        //     frames: event.frames,
-        // };
-
-        // this.emit('msg', `\n${event.condition.join('\n')}`);
-        // this.emit('debug', event.threadID);
+        this.emit('debug', event);
     }
 
     processReturn(event) {
@@ -219,6 +209,10 @@ module.exports.SwankConn = class extends EventEmitter {
 
     writeMessage(msg) {
         return new Promise((resolve, reject) => {
+            if (this.conn === undefined) {
+                return reject('No connection');
+            }
+
             if (this.trace) {
                 console.log(`--> ${msg}`);
             }

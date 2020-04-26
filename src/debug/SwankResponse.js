@@ -150,6 +150,10 @@ module.exports.LocalsResp = class {
     }
 
     fromArray(arr) {
+        if (!Array.isArray(arr)) {
+            return arr;
+        }
+
         return arr.map((item) => plistToObj(item));
     }
 };
@@ -164,8 +168,8 @@ module.exports.ThreadsResp = class {
 
             this.info.push({
                 id: parseInt(id),
-                name,
-                status,
+                name: convert(name),
+                status: convert(status),
             });
         }
     }
