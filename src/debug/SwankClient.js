@@ -40,16 +40,19 @@ module.exports.SwankClient = class extends EventEmitter {
 
     async debugEvent(event) {
         if (this.threads[event.threadID] === undefined) {
-            await this.listThreads();
+            this.threads[event.threadID] = {};
         }
 
         if (this.threads[event.threadID] !== undefined) {
             this.threads[event.threadID].debug = event;
         }
+
+        console.log(`debugEvent ${event.threadID}`, this.threads[event.threadID]);
     }
 
     activateEvent(event) {
-        this.emit('debug', event.threadID);
+        console.log(`activateEvent ${event.threadID}`);
+        this.emit('activate', event.threadID);
     }
 
     threadStackTrace(threadID) {
@@ -59,6 +62,7 @@ module.exports.SwankClient = class extends EventEmitter {
             return [];
         }
 
+        console.log(`stack`, thr.debug);
         return thr.debug.frames.map(frame => frame.text);
     }
 
@@ -77,6 +81,27 @@ module.exports.SwankClient = class extends EventEmitter {
         return [str];
     }
 
+    threadRestarts(threadID, frameNum) {
+        const thr = this.threads[threadID];
+
+        console.log(`threadRestarts ${threadID} ${frameNum}`, thr.debug);
+
+        if (thr === undefined || thr.debug === undefined) {
+            return [];
+        }
+
+        const dbg = thr.debug;
+        const frame = dbg.frames[frameNum];
+        const restarts = [];
+
+        Object.entries(dbg.restarts).forEach(([id, txt]) => restarts.push(`${id}: ${txt}`));
+        if (frame !== undefined && frame.opts !== undefined && frame.opts.restartable === true) {
+            restarts.push('Restart Frame');
+        }
+
+        return restarts;
+    }
+
     async eval(str) {
         try {
             const res = await this.replConn.eval(str);
@@ -93,6 +118,7 @@ module.exports.SwankClient = class extends EventEmitter {
         const list = await this.replConn.listThreads();
 
         this.initThreads(list.info);
+        console.log(`listThreads`, this.threads);
 
         return list;
     }

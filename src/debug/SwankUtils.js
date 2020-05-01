@@ -22,6 +22,14 @@ module.exports.convert = (symbol) => {
         return symbol;
     }
 
+    const lower = symbol.toLowerCase();
+
+    if (lower === 't') {
+        return true;
+    } else if (lower === 'nil') {
+        return null;
+    }
+
     if (symbol.charAt(0) === ':') {
         return symbol.substring(1).replace(/-/, '_');
     }

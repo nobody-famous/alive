@@ -24,6 +24,10 @@ module.exports.DebugSession = class extends DebugSession {
         this.setDebuggerColumnsStartAt1(false);
     }
 
+    customRequest(name) {
+        console.log(`customRequest ${name}`);
+    }
+
     initializeRequest(resp, args) {
         resp.body.supportsDataBreakpoints = false;
         resp.body.supportsBreakpointLocationsRequest = false;
@@ -38,7 +42,7 @@ module.exports.DebugSession = class extends DebugSession {
             this.runtime.on('msg', (msg) => this.sendEvent(new OutputEvent(msg)));
             this.runtime.on('error', (err) => vscode.window.showErrorMessage(err.toString()));
             this.runtime.on('close', () => this.sendEvent(new TerminatedEvent(false)));
-            this.runtime.on('debug', (threadID) => this.sendEvent(new StoppedEvent('pause', threadID)));
+            this.runtime.on('activate', (threadID) => this.handleActivateEvent(threadID));
 
             await this.runtime.start();
             this.showPrompt();
@@ -51,6 +55,13 @@ module.exports.DebugSession = class extends DebugSession {
         this.sendResponse(resp);
     }
 
+    async handleActivateEvent(threadID) {
+        console.log('handleActivateEvent');
+        await this.runtime.listThreads();
+
+        this.sendEvent(new StoppedEvent('pause', threadID))
+    }
+
     showPrompt() {
         const prompt = this.runtime.getPrompt();
 
@@ -58,6 +69,7 @@ module.exports.DebugSession = class extends DebugSession {
     }
 
     async threadsRequest(resp) {
+        console.log('threadsRequest');
         const list = await this.runtime.listThreads();
 
         resp.body = {
@@ -128,15 +140,31 @@ module.exports.DebugSession = class extends DebugSession {
 
         if (scope === 1) {
             const locals = await this.runtime.locals(threadID, frameNum);
-            resp.body.variables = locals.vars.map(v => new Variable(v.name, v.value));
+
+            resp.body.variables = Array.isArray(locals.vars)
+                ? locals.vars.map(v => new Variable(v.name, v.value))
+                : [];
         } else if (scope === 2) {
             const cond = this.runtime.threadCondition(threadID);
-            resp.body.variables = cond.map(c => new Variable('', c));
+
+            resp.body.variables = Array.isArray(cond)
+                ? cond.map(c => new Variable('', c))
+                : [];
         } else if (scope === 3) {
             resp.body.variables = [];
         }
 
+        this.updateRestarts(threadID, frameNum);
         this.sendResponse(resp);
+    }
+
+    async updateRestarts(threadID, frameNum) {
+        const restarts = this.runtime.threadRestarts(threadID, frameNum);
+
+        const pick = await vscode.window.showQuickPick(['First', 'Second']);
+        console.log(`pick ${pick}`);
+        console.log('restarts', restarts);
+        // await vscode.commands.executeCommand('common-lisp.updateRestarts', ['Restart 1', 'Restart 2']);
     }
 
     async pauseRequest(resp, args) {
