@@ -66,7 +66,7 @@ module.exports.PackageMgr = class {
         let ndx = (kids[0].value !== undefined && kids[0].value.type === types.WHITE_SPACE) ? 1 : 0;
 
         if (kids[ndx].value === undefined) {
-            console.log(`PackageMgr.processExpr NO VALUE ${kids[ndx.value.text]} ${kids[ndx.value.type]} `);
+            console.log(`PackageMgr.processExpr NO VALUE`);
             return;
         }
 

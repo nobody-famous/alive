@@ -514,7 +514,7 @@ module.exports.Formatter = class {
                 paramList = true;
                 sexpr.hasVarExpr = true;
             } else if (sexpr.indent === undefined || sexpr.alignNext) {
-                sexpr.indent = this.alignIndent(sexpr, this.token);
+                sexpr.indent = this.token.start.character;
                 sexpr.alignNext = false;
             }
         }
