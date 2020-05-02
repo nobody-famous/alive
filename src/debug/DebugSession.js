@@ -56,7 +56,6 @@ module.exports.DebugSession = class extends DebugSession {
     }
 
     async handleActivateEvent(threadID) {
-        console.log('handleActivateEvent');
         await this.runtime.listThreads();
 
         this.sendEvent(new StoppedEvent('pause', threadID))
@@ -69,7 +68,6 @@ module.exports.DebugSession = class extends DebugSession {
     }
 
     async threadsRequest(resp) {
-        console.log('threadsRequest');
         const list = await this.runtime.listThreads();
 
         resp.body = {
@@ -127,6 +125,7 @@ module.exports.DebugSession = class extends DebugSession {
                 new Scope('Locals', this.encodeFrameID(threadID, frameNum, 1), false),
                 new Scope('Condition', this.encodeFrameID(threadID, frameNum, 2), false),
                 new Scope('Catch Tags', this.encodeFrameID(threadID, frameNum, 3), false),
+                new Scope('Restarts', this.encodeFrameID(threadID, frameNum, 4), false),
             ],
         };
 
@@ -139,32 +138,43 @@ module.exports.DebugSession = class extends DebugSession {
         resp.body = {};
 
         if (scope === 1) {
-            const locals = await this.runtime.locals(threadID, frameNum);
-
-            resp.body.variables = Array.isArray(locals.vars)
-                ? locals.vars.map(v => new Variable(v.name, v.value))
-                : [];
+            resp.body.variables = await this.localVariables(threadID, frameNum);
         } else if (scope === 2) {
-            const cond = this.runtime.threadCondition(threadID);
-
-            resp.body.variables = Array.isArray(cond)
-                ? cond.map(c => new Variable('', c))
-                : [];
+            resp.body.variables = this.conditionAsVariable(threadID);
         } else if (scope === 3) {
             resp.body.variables = [];
+        } else if (scope === 4) {
+            resp.body.variables = this.restartsAsVariables(threadID, frameNum);
         }
 
-        this.updateRestarts(threadID, frameNum);
         this.sendResponse(resp);
     }
 
-    async updateRestarts(threadID, frameNum) {
+    restartsAsVariables(threadID, frameNum) {
         const restarts = this.runtime.threadRestarts(threadID, frameNum);
+        const vars = [];
 
-        const pick = await vscode.window.showQuickPick(['First', 'Second']);
-        console.log(`pick ${pick}`);
-        console.log('restarts', restarts);
-        // await vscode.commands.executeCommand('common-lisp.updateRestarts', ['Restart 1', 'Restart 2']);
+        for (let ndx = 0; ndx < restarts.length; ndx += 1) {
+            vars.push(new Variable(ndx.toString(), restarts[ndx]));
+        }
+
+        return vars;
+    }
+
+    conditionAsVariable(threadID) {
+        const cond = this.runtime.threadCondition(threadID);
+
+        return Array.isArray(cond)
+            ? cond.map(c => new Variable('', c))
+            : [];
+    }
+
+    async localVariables(threadID, frameNum) {
+        const locals = await this.runtime.locals(threadID, frameNum);
+
+        return Array.isArray(locals.vars)
+            ? locals.vars.map(v => new Variable(v.name, v.value))
+            : [];
     }
 
     async pauseRequest(resp, args) {

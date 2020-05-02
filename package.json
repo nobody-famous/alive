@@ -44,6 +44,13 @@
                 "title": "Send To REPL"
             }
         ],
+        "menus": {
+            "debug/callstack/context": [
+                {
+                    "command": "common-lisp.sendToRepl"
+                }
+            ]
+        },
         "keybindings": [
             {
                 "command": "common-lisp.selectSexpr",
@@ -54,6 +61,29 @@
                 "key": "alt+shift+enter"
             }
         ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "common-lisp-repl",
+                    "title": "REPL",
+                    "icon": "images/lisp-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "common-lisp-repl": [
+                {
+                    "id": "common-lisp-repl-view",
+                    "name": "Common Lisp REPL",
+                    "when": "commonLispView == 'One'"
+                },
+                {
+                    "id": "common-lisp-repl-view-2",
+                    "name": "Common Lisp REPL 2",
+                    "when": "commonLispView == 'Two'"
+                }
+            ]
+        },
         "configuration": {
             "title": "Common Lisp",
             "properties": {

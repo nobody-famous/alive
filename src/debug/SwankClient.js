@@ -46,12 +46,9 @@ module.exports.SwankClient = class extends EventEmitter {
         if (this.threads[event.threadID] !== undefined) {
             this.threads[event.threadID].debug = event;
         }
-
-        console.log(`debugEvent ${event.threadID}`, this.threads[event.threadID]);
     }
 
     activateEvent(event) {
-        console.log(`activateEvent ${event.threadID}`);
         this.emit('activate', event.threadID);
     }
 
@@ -62,7 +59,6 @@ module.exports.SwankClient = class extends EventEmitter {
             return [];
         }
 
-        console.log(`stack`, thr.debug);
         return thr.debug.frames.map(frame => frame.text);
     }
 
@@ -83,8 +79,6 @@ module.exports.SwankClient = class extends EventEmitter {
 
     threadRestarts(threadID, frameNum) {
         const thr = this.threads[threadID];
-
-        console.log(`threadRestarts ${threadID} ${frameNum}`, thr.debug);
 
         if (thr === undefined || thr.debug === undefined) {
             return [];
@@ -118,7 +112,6 @@ module.exports.SwankClient = class extends EventEmitter {
         const list = await this.replConn.listThreads();
 
         this.initThreads(list.info);
-        console.log(`listThreads`, this.threads);
 
         return list;
     }
