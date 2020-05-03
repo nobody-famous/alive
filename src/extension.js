@@ -1,10 +1,13 @@
 const vscode = require('vscode');
+const path = require('path');
+const fs = require('fs');
 const { DebugSession } = require('./debug/DebugSession');
 const { Colorizer } = require('./colorize/Colorizer');
 const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
 const { Parser } = require('./lisp/Parser');
 const { Lexer } = require('./Lexer');
+const { PackageMgr } = require('./lisp/PackageMgr');
 
 class InlineDebugAdapterFactory {
     createDebugAdapterDescriptor(_session) {
@@ -14,8 +17,9 @@ class InlineDebugAdapterFactory {
 
 const LANGUAGE_ID = 'common-lisp';
 const colorizer = new Colorizer();
-const completionProvider = new CompletionProvider();
 const factory = new InlineDebugAdapterFactory();
+const pkgMgr = new PackageMgr();
+const completionProvider = new CompletionProvider(pkgMgr);
 
 let activeEditor = vscode.window.activeTextEditor;
 let lexTokenMap = {};
@@ -29,7 +33,7 @@ module.exports.activate = (ctx) => {
         }
 
         if (lexTokenMap[editor.fileName] === undefined) {
-            readLexTokens(editor.document);
+            readLexTokens(editor.document.fileName, editor.document.getText());
         }
 
         decorateText(lexTokenMap[editor.document.fileName]);
@@ -40,7 +44,7 @@ module.exports.activate = (ctx) => {
             return;
         }
 
-        readLexTokens(activeEditor.document);
+        readLexTokens(activeEditor.document.fileName, activeEditor.document.getText());
         decorateText(lexTokenMap[doc.fileName]);
     });
 
@@ -49,9 +53,11 @@ module.exports.activate = (ctx) => {
             return;
         }
 
-        readLexTokens(activeEditor.document);
+        readLexTokens(activeEditor.document.fileName, activeEditor.document.getText());
         decorateText(lexTokenMap[activeEditor.document.fileName]);
     }, null, ctx.subscriptions);
+
+    console.log('folders', vscode.workspace.workspaceFolders);
 
     vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider());
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider());
@@ -68,9 +74,31 @@ module.exports.activate = (ctx) => {
         return;
     }
 
-    readLexTokens(activeEditor.document);
+    readLexTokens(activeEditor.document.fileName, activeEditor.document.getText());
     decorateText(lexTokenMap[activeEditor.document.fileName]);
+    readPackageLisp();
 };
+
+async function readPackageLisp() {
+    if (vscode.workspace.workspaceFolders === undefined) {
+        return;
+    }
+
+    const folder = vscode.workspace.workspaceFolders[0];
+    const pkgFile = path.join(folder.uri.path, 'package.lisp');
+
+    if (!fs.existsSync(pkgFile) || !fs.lstatSync(pkgFile).isFile()) {
+        return;
+    }
+
+    const textBuf = await fs.promises.readFile(pkgFile);
+    readLexTokens(pkgFile, textBuf.toString());
+
+    const parser = new Parser(lexTokenMap[pkgFile]);
+    const ast = parser.parse();
+
+    pkgMgr.process(ast);
+}
 
 function sendToRepl() {
     const session = vscode.debug.activeDebugSession;
@@ -160,10 +188,10 @@ function getCompletionProvider() {
     };
 }
 
-function readLexTokens(doc) {
-    const lex = new Lexer(doc.getText());
+function readLexTokens(fileName, text) {
+    const lex = new Lexer(text);
 
-    lexTokenMap[doc.fileName] = lex.getTokens();
+    lexTokenMap[fileName] = lex.getTokens();
 }
 
 function documentFormatter() {
@@ -183,8 +211,11 @@ function getDocumentAST(doc) {
     const lex = new Lexer(doc.getText());
     const tokens = lex.getTokens();
     const parser = new Parser(tokens);
+    const ast = parser.parse();
 
-    return parser.parse();
+    pkgMgr.process(ast);
+
+    return ast;
 }
 
 function decorateText(tokens) {

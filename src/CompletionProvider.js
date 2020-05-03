@@ -13,7 +13,8 @@ const completions = keywords.map(word => {
 });
 
 module.exports.CompletionProvider = class {
-    constructor() {
+    constructor(pkgMgr) {
+        this.packageMgr = pkgMgr;
     }
 
     getCompletions(ast, pos) {
@@ -22,14 +23,11 @@ module.exports.CompletionProvider = class {
             return [];
         }
 
-        const packageMgr = new PackageMgr();
-        packageMgr.process(ast);
-
         let completions = undefined;
         if (node.open !== undefined) {
-            completions = packageMgr.getSymbols(node.open.start.line);
+            completions = this.packageMgr.getSymbols(node.open.start.line);
         } else if (node.value !== undefined) {
-            completions = packageMgr.getSymbols(node.value.start.line);
+            completions = this.packageMgr.getSymbols(node.value.start.line);
         }
 
         return completions.map(item => new CompletionItem(item.toLowerCase()));
