@@ -24,6 +24,7 @@ const printer = require('./keywords/printer');
 const reader = require('./keywords/reader');
 const sysconstruct = require('./keywords/sysconstruct');
 const env = require('./keywords/env');
+const eval = require('./keywords/eval');
 
 const keywords = {};
 
@@ -49,6 +50,7 @@ printer.forEach(item => addKeyword(item, types.KEYWORD));
 reader.forEach(item => addKeyword(item, types.KEYWORD));
 sysconstruct.forEach(item => addKeyword(item, types.KEYWORD));
 env.forEach(item => addKeyword(item, types.KEYWORD));
+eval.forEach(item => addKeyword(item, types.KEYWORD));
 
 function addKeyword(item, wordType) {
     const label = item.label.toUpperCase();
