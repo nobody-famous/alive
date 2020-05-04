@@ -57,8 +57,6 @@ module.exports.activate = (ctx) => {
         decorateText(lexTokenMap[activeEditor.document.fileName]);
     }, null, ctx.subscriptions);
 
-    console.log('folders', vscode.workspace.workspaceFolders);
-
     vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider());
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider());
 
@@ -95,9 +93,9 @@ async function readPackageLisp() {
     readLexTokens(pkgFile, textBuf.toString());
 
     const parser = new Parser(lexTokenMap[pkgFile]);
-    const ast = parser.parse();
+    const exprs = parser.parse();
 
-    pkgMgr.process(ast);
+    pkgMgr.process(exprs);
 }
 
 function sendToRepl() {

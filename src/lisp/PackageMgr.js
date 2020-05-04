@@ -1,5 +1,6 @@
 const types = require('../Types');
 const { allLabels } = require('../keywords');
+const { Atom, DefPackage } = require('./Expr');
 
 const CL_USER_PKG = 'CL-USER';
 
@@ -21,17 +22,21 @@ module.exports.PackageMgr = class {
         this.pkgs[CL_USER_PKG] = new Package(CL_USER_PKG);
     }
 
-    process(ast) {
+    process(exprs) {
         this.initMainPackage();
 
-        for (let ndx = 0; ndx < ast.nodes.length; ndx += 1) {
-            const node = ast.nodes[ndx];
-            if (node.open !== undefined) {
-                this.processExpr(node);
-                this.curPackage.endLine = node.close.start.line;
-            } else {
-                this.curPackage.endLine = node.value.start.line;
-            }
+        for (let ndx = 0; ndx < exprs.length; ndx += 1) {
+            const expr = exprs[ndx];
+
+            this.curPackage.endLine = expr.end.line;
+            this.processExpr(expr);
+
+            // if (node.open !== undefined) {
+            //     this.processExpr(node);
+            //     this.curPackage.endLine = node.close.start.line;
+            // } else {
+            //     this.curPackage.endLine = node.value.start.line;
+            // }
         }
     }
 
@@ -61,27 +66,31 @@ module.exports.PackageMgr = class {
         return symbols;
     }
 
-    processExpr(node) {
-        const kids = node.kids;
-        let ndx = (kids[0].value !== undefined && kids[0].value.type === types.WHITE_SPACE) ? 1 : 0;
-
-        if (kids[ndx].value === undefined) {
-            console.log(`PackageMgr.processExpr NO VALUE`);
-            return;
+    processExpr(expr) {
+        if (expr instanceof DefPackage) {
+            this.processDefPackage(expr);
         }
 
-        const token = kids[ndx].value;
-        if (token.text === 'IN-PACKAGE') {
-            this.processInPackage(kids[ndx + 2].value);
-        } else if (token.text === 'DEFPACKAGE') {
-            this.processDefPackage(kids.slice(ndx + 2));
-        } else if (token.text === 'DEFUN') {
-            this.processDefun(kids.slice(ndx + 2));
-        } else if (token.type === types.LOAD) {
-            // Ignore
-        } else {
-            // console.log(`PackageMgr unhandled expr ${kids[ndx].value.text} ${kids[ndx].value.type} `);
-        }
+        // const kids = node.kids;
+        // let ndx = (kids[0].value !== undefined && kids[0].value.type === types.WHITE_SPACE) ? 1 : 0;
+
+        // if (kids[ndx].value === undefined) {
+        //     console.log(`PackageMgr.processExpr NO VALUE`);
+        //     return;
+        // }
+
+        // const token = kids[ndx].value;
+        // if (token.text === 'IN-PACKAGE') {
+        //     this.processInPackage(kids[ndx + 2].value);
+        // } else if (token.text === 'DEFPACKAGE') {
+        //     this.processDefPackage(kids.slice(ndx + 2));
+        // } else if (token.text === 'DEFUN') {
+        //     this.processDefun(kids.slice(ndx + 2));
+        // } else if (token.type === types.LOAD) {
+        //     // Ignore
+        // } else {
+        //     // console.log(`PackageMgr unhandled expr ${kids[ndx].value.text} ${kids[ndx].value.type} `);
+        // }
     }
 
     processDefun(nodes) {
@@ -95,18 +104,24 @@ module.exports.PackageMgr = class {
         this.curPackage.symbols[token.text] = nodes;
     }
 
-    processDefPackage(nodes) {
-        let name = undefined;
+    processDefPackage(expr) {
+        const pkg = new Package(expr.name);
 
-        if (nodes[0].value.type === types.SYMBOL) {
-            name = nodes[0].value.text.substring(1);
-        }
+        pkg.exports = expr.exports;
+        pkg.uses = expr.uses;
 
-        if (name === undefined) {
-            return;
-        }
+        this.pkgs[expr.name] = pkg;
+        // let name = undefined;
 
-        this.createPackage(name, nodes.slice(2));
+        // if (nodes[0].value.type === types.SYMBOL) {
+        //     name = nodes[0].value.text.substring(1);
+        // }
+
+        // if (name === undefined) {
+        //     return;
+        // }
+
+        // this.createPackage(name, nodes.slice(2));
     }
 
     createPackage(name, nodes) {

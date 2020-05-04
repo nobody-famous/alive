@@ -23,13 +23,27 @@ module.exports.CompletionProvider = class {
             return [];
         }
 
-        let completions = undefined;
-        if (node.open !== undefined) {
-            completions = this.packageMgr.getSymbols(node.open.start.line);
-        } else if (node.value !== undefined) {
-            completions = this.packageMgr.getSymbols(node.value.start.line);
-        }
+        const symbols = this.getSymbols(node);
+        const locals = this.getLocals(node, pos);
+        const completions = locals.concat(symbols);
 
         return completions.map(item => new CompletionItem(item.toLowerCase()));
+    }
+
+    getSymbols(node) {
+        if (node.open !== undefined) {
+            return this.packageMgr.getSymbols(node.open.start.line);
+        } else if (node.value !== undefined) {
+            return this.packageMgr.getSymbols(node.value.start.line);
+        }
+
+        return [];
+    }
+
+    getLocals(node, pos) {
+        console.log(`getLocals ${pos.line}:${pos.character}`);
+        const locals = [];
+
+        return locals;
     }
 };

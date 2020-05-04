@@ -1,6 +1,5 @@
 const types = require('../Types');
 const { format } = require('util');
-const { AST } = require('./AST');
 const { Node } = require('./Node');
 
 module.exports.Parser = class {
@@ -11,7 +10,7 @@ module.exports.Parser = class {
 
     parse() {
         this.ndx = 0;
-        const ast = new AST();
+        const exprs = [];
 
         while (this.peek() !== undefined) {
             const node = this.expr();
@@ -19,11 +18,15 @@ module.exports.Parser = class {
                 if (node.open !== undefined && node.close === undefined) {
                     node.close = this.tokens[this.tokens.length - 1];
                 }
-                ast.addNode(node);
+
+                const expr = node.toExpr();
+                if (expr !== undefined) {
+                    exprs.push(expr);
+                }
             }
         }
 
-        return ast;
+        return exprs;
     }
 
     expr() {
