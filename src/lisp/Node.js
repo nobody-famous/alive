@@ -1,5 +1,5 @@
 const types = require('../Types');
-const { Atom, DefPackage, Defun, If, InPackage } = require('./Expr');
+const { Atom, DefPackage, Defun, If, InPackage, Let, SExpr } = require('./Expr');
 
 module.exports.Node = class {
     constructor() {
@@ -30,8 +30,7 @@ module.exports.Node = class {
         }
 
         if (kids[0].value === undefined) {
-            console.log('Node.toExpr first child has no value');
-            return undefined;
+            return this.toSExpr(kids);
         }
 
         switch (kids[0].value.text) {
@@ -43,11 +42,55 @@ module.exports.Node = class {
                 return this.toIfExpr(kids);
             case 'IN-PACKAGE':
                 return this.toInPackageExpr(kids);
+            case 'LET':
+            case 'LET*':
+                return this.toLetExpr(kids);
             default:
-                console.log(`NEED TO CONVERT ${kids[0].value.text}`);
+                return this.toSExpr(kids);
+        }
+    }
+
+    toSExpr(kids) {
+        const parts = [];
+
+        for (let ndx = 0; ndx < kids.length; ndx += 1) {
+            parts.push(kids[ndx].toExpr());
         }
 
-        return undefined;
+        return new SExpr(this.open.start, this.close.end, parts);
+    }
+
+    toLetExpr(kids) {
+        const vars = this.toNameValueMap(kids[1]);
+        const body = this.toExprList(kids, 2);
+
+        return new Let(this.open.start, this.close.end, vars, body);
+    }
+
+    toNameValueMap(node) {
+        const map = {};
+
+        for (let ndx = 0; ndx < node.kids.length; ndx += 1) {
+            const pair = this.toNameValuePair(node.kids[ndx]);
+            if (pair === undefined) {
+                continue;
+            }
+
+            map[pair.name] = pair.value;
+        }
+
+        return map;
+    }
+
+    toNameValuePair(node) {
+        if (node.kids.length !== 2 || node.kids[0].value === undefined) {
+            return undefined;
+        }
+
+        return {
+            name: node.kids[0].value.text,
+            value: node.kids[1].toExpr(),
+        };
     }
 
     toIfExpr(kids) {
@@ -61,21 +104,31 @@ module.exports.Node = class {
     toDefunExpr(kids) {
         const name = kids[1].value !== undefined ? kids[1].value.text : undefined;
         const args = this.toList(kids[2]);
-        const body = [];
-
-        for (let ndx = 3; ndx < kids.length; ndx += 1) {
-            const node = kids[ndx];
-            const expr = node.toExpr();
-
-            if (expr !== undefined) {
-                body.push(expr);
-            }
-        }
+        const body = this.toExprList(kids, 3);
 
         return new Defun(this.open.start, this.close.end, name, args, body);
     }
 
+    toExprList(kids, startNdx) {
+        const list = [];
+
+        for (let ndx = startNdx; ndx < kids.length; ndx += 1) {
+            const node = kids[ndx];
+            const expr = node.toExpr();
+
+            if (expr !== undefined) {
+                list.push(expr);
+            }
+        }
+
+        return list;
+    }
+
     toList(node) {
+        if (node === undefined) {
+            return [];
+        }
+
         const items = [];
 
         for (let ndx = 0; ndx < node.kids.length; ndx += 1) {
@@ -170,7 +223,7 @@ module.exports.Node = class {
         kids.forEach(node => {
             if (node.value !== undefined && node.value.type !== types.WHITE_SPACE) {
                 out.push(node);
-            } else if (node.kids.length > 0) {
+            } else if (node.value === undefined) {
                 node.kids = this.removeWS(node.kids);
                 out.push(node);
             }

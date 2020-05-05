@@ -6,6 +6,7 @@ const { Colorizer } = require('./colorize/Colorizer');
 const { Formatter } = require('./format/Formatter');
 const { CompletionProvider } = require('./CompletionProvider');
 const { Parser } = require('./lisp/Parser');
+const { findExpr } = require('./lisp/Expr');
 const { Lexer } = require('./Lexer');
 const { PackageMgr } = require('./lisp/PackageMgr');
 
@@ -110,14 +111,14 @@ function sendToRepl() {
             return;
         }
 
-        const form = getTopForm();
+        const expr = getTopExpr();
         const selection = editor.selection;
         let range = undefined;
 
         if (!selection.isEmpty) {
             range = new vscode.Range(selection.start, selection.end);
-        } else if (form !== undefined) {
-            range = new vscode.Range(form.open.start, form.close.end);
+        } else if (expr !== undefined) {
+            range = new vscode.Range(expr.start, expr.end);
         }
 
         if (range === undefined) {
@@ -139,32 +140,32 @@ function selectSexpr() {
             return;
         }
 
-        const form = getTopForm();
+        const expr = getTopExpr();
 
-        if (form !== undefined) {
-            editor.selection = new vscode.Selection(form.open.start, form.close.end);
+        if (expr !== undefined) {
+            editor.selection = new vscode.Selection(expr.start, expr.end);
         }
     } catch (err) {
         console.log(err);
     }
 }
 
-function getTopForm() {
+function getTopExpr() {
     try {
         const editor = vscode.window.activeTextEditor;
         if (editor.document.languageId !== LANGUAGE_ID) {
             return undefined;
         }
 
-        const ast = getDocumentAST(editor.document);
+        const exprs = getDocumentExprs(editor.document);
         const pos = editor.selection.start;
-        const node = ast.getPositionNode(pos);
+        const expr = findExpr(exprs, pos);
 
-        if (node === undefined || node.open === undefined || node.close === undefined) {
+        if (expr === undefined || expr.start === undefined || expr.end === undefined) {
             return undefined;
         }
 
-        return node;
+        return expr;
     } catch (err) {
         console.log(err);
     }
@@ -176,8 +177,8 @@ function getCompletionProvider() {
     return {
         provideCompletionItems(document, pos, token, ctx) {
             try {
-                const ast = getDocumentAST(document);
-                return completionProvider.getCompletions(ast, pos);
+                const exprs = getDocumentExprs(document);
+                return completionProvider.getCompletions(exprs, pos);
             } catch (err) {
                 console.log(err);
                 return [];
@@ -205,15 +206,15 @@ function documentFormatter() {
     };
 }
 
-function getDocumentAST(doc) {
+function getDocumentExprs(doc) {
     const lex = new Lexer(doc.getText());
     const tokens = lex.getTokens();
     const parser = new Parser(tokens);
-    const ast = parser.parse();
+    const exprs = parser.parse();
 
-    pkgMgr.process(ast);
+    pkgMgr.process(exprs);
 
-    return ast;
+    return exprs;
 }
 
 function decorateText(tokens) {

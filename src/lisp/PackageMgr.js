@@ -1,6 +1,6 @@
 const types = require('../Types');
 const { allLabels } = require('../keywords');
-const { Atom, DefPackage } = require('./Expr');
+const { Atom, DefPackage, Defun, InPackage } = require('./Expr');
 
 const CL_USER_PKG = 'CL-USER';
 
@@ -30,13 +30,6 @@ module.exports.PackageMgr = class {
 
             this.curPackage.endLine = expr.end.line;
             this.processExpr(expr);
-
-            // if (node.open !== undefined) {
-            //     this.processExpr(node);
-            //     this.curPackage.endLine = node.close.start.line;
-            // } else {
-            //     this.curPackage.endLine = node.value.start.line;
-            // }
         }
     }
 
@@ -59,6 +52,7 @@ module.exports.PackageMgr = class {
             } else {
                 const usesPkg = uses.includes(pkg.name);
                 const names = pkg.exports.map(label => usesPkg ? label : `${pkg.name}:${label}`);
+
                 symbols = symbols.concat(names);
             }
         }
@@ -69,39 +63,15 @@ module.exports.PackageMgr = class {
     processExpr(expr) {
         if (expr instanceof DefPackage) {
             this.processDefPackage(expr);
+        } else if (expr instanceof Defun) {
+            this.processDefun(expr);
+        } else if (expr instanceof InPackage) {
+            this.processInPackage(expr);
         }
-
-        // const kids = node.kids;
-        // let ndx = (kids[0].value !== undefined && kids[0].value.type === types.WHITE_SPACE) ? 1 : 0;
-
-        // if (kids[ndx].value === undefined) {
-        //     console.log(`PackageMgr.processExpr NO VALUE`);
-        //     return;
-        // }
-
-        // const token = kids[ndx].value;
-        // if (token.text === 'IN-PACKAGE') {
-        //     this.processInPackage(kids[ndx + 2].value);
-        // } else if (token.text === 'DEFPACKAGE') {
-        //     this.processDefPackage(kids.slice(ndx + 2));
-        // } else if (token.text === 'DEFUN') {
-        //     this.processDefun(kids.slice(ndx + 2));
-        // } else if (token.type === types.LOAD) {
-        //     // Ignore
-        // } else {
-        //     // console.log(`PackageMgr unhandled expr ${kids[ndx].value.text} ${kids[ndx].value.type} `);
-        // }
     }
 
-    processDefun(nodes) {
-        let ndx = (nodes[0].value !== undefined && nodes[0].value.type === types.WHITE_SPACE) ? 1 : 0;
-        let token = nodes[ndx].value;
-
-        if (token === undefined || token.type !== types.ID) {
-            return;
-        }
-
-        this.curPackage.symbols[token.text] = nodes;
+    processDefun(expr) {
+        this.curPackage.symbols[expr.name] = expr;
     }
 
     processDefPackage(expr) {
@@ -111,17 +81,6 @@ module.exports.PackageMgr = class {
         pkg.uses = expr.uses;
 
         this.pkgs[expr.name] = pkg;
-        // let name = undefined;
-
-        // if (nodes[0].value.type === types.SYMBOL) {
-        //     name = nodes[0].value.text.substring(1);
-        // }
-
-        // if (name === undefined) {
-        //     return;
-        // }
-
-        // this.createPackage(name, nodes.slice(2));
     }
 
     createPackage(name, nodes) {
@@ -193,9 +152,8 @@ module.exports.PackageMgr = class {
         }
     }
 
-    processInPackage(token) {
-        let name = (token.type == types.SYMBOL) ? token.text.substring(1) : token.text;
-        name = name.toUpperCase();
+    processInPackage(expr) {
+        let name = expr.name.toUpperCase();
 
         if (name === 'COMMON-LISP-USER') {
             name = CL_USER_PKG;
@@ -206,10 +164,10 @@ module.exports.PackageMgr = class {
         }
 
         if (this.curPackage !== undefined) {
-            this.curPackage.endLine = token.start.line - 1;
+            this.curPackage.endLine = expr.start.line - 1;
         }
 
         this.curPackage = this.pkgs[name];
-        this.curPackage.startLine = token.start.line;
+        this.curPackage.startLine = expr.start.line;
     }
 };

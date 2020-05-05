@@ -1,48 +1,49 @@
-const { keywords } = require('./keywords');
+// const { keywords } = require('./keywords');
 const { CompletionItem, MarkdownString } = require('vscode');
-const { PackageMgr } = require('./lisp/PackageMgr');
+const { posInExpr, Defun, Let } = require('./lisp/Expr');
 
-const completions = keywords.map(word => {
-    const item = new CompletionItem(word.label);
+// const completions = keywords.map(word => {
+//     const item = new CompletionItem(word.label);
 
-    if (word.doc !== undefined) {
-        item.documentation = new MarkdownString(word.doc);
-    }
+//     if (word.doc !== undefined) {
+//         item.documentation = new MarkdownString(word.doc);
+//     }
 
-    return item;
-});
+//     return item;
+// });
 
 module.exports.CompletionProvider = class {
     constructor(pkgMgr) {
         this.packageMgr = pkgMgr;
     }
 
-    getCompletions(ast, pos) {
-        let node = ast.getPositionNode(pos);
-        if (node === undefined) {
+    getCompletions(exprs, pos) {
+        const expr = this.findExpr(exprs, pos);
+        if (expr === undefined) {
             return [];
         }
 
-        const symbols = this.getSymbols(node);
-        const locals = this.getLocals(node, pos);
+        const symbols = this.packageMgr.getSymbols(expr.start.line);
+        const locals = this.getLocals(expr, pos);
         const completions = locals.concat(symbols);
 
         return completions.map(item => new CompletionItem(item.toLowerCase()));
     }
 
-    getSymbols(node) {
-        if (node.open !== undefined) {
-            return this.packageMgr.getSymbols(node.open.start.line);
-        } else if (node.value !== undefined) {
-            return this.packageMgr.getSymbols(node.value.start.line);
+    getLocals(expr, pos) {
+        if (!posInExpr(expr, pos)) {
+            return [];
         }
 
-        return [];
-    }
+        let locals = [];
 
-    getLocals(node, pos) {
-        console.log(`getLocals ${pos.line}:${pos.character}`);
-        const locals = [];
+        if (expr instanceof Defun) {
+            locals = locals.concat(expr.args);
+            expr.body.forEach(expr => locals = locals.concat(this.getLocals(expr, pos)));
+        } else if (expr instanceof Let) {
+            locals = locals.concat(Object.keys(expr.vars));
+            expr.body.forEach(expr => locals = locals.concat(this.getLocals(expr, pos)));
+        }
 
         return locals;
     }

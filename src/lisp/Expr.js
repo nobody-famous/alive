@@ -5,11 +5,43 @@ class Expr {
     }
 };
 
+module.exports.posInExpr = (expr, pos) => {
+    if (pos.line === expr.start.line) {
+        return pos.character >= expr.start.character;
+    }
+
+    if (pos.line === expr.end.line) {
+        return pos.character <= expr.end.character;
+    }
+
+    return (pos.line >= expr.start.line && pos.line <= expr.end.line);
+};
+
+module.exports.findExpr = (exprs, pos) => {
+    for (let ndx = 0; ndx < exprs.length; ndx += 1) {
+        const expr = exprs[ndx];
+
+        if (exports.posInExpr(expr, pos)) {
+            return expr;
+        }
+    }
+
+    return undefined;
+}
+
 module.exports.Atom = class extends Expr {
     constructor(start, end, value) {
         super(start, end);
 
         this.value = value;
+    }
+};
+
+module.exports.SExpr = class extends Expr {
+    constructor(start, end, parts) {
+        super(start, end);
+
+        this.parts = parts;
     }
 };
 
@@ -48,5 +80,14 @@ module.exports.If = class extends Expr {
         this.cond = cond;
         this.trueExpr = trueExpr;
         this.falseExpr = falseExpr;
+    }
+};
+
+module.exports.Let = class extends Expr {
+    constructor(start, end, vars, body) {
+        super(start, end);
+
+        this.vars = vars;
+        this.body = body;
     }
 };
