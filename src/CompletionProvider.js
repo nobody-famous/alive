@@ -1,6 +1,6 @@
 // const { keywords } = require('./keywords');
 const { CompletionItem, MarkdownString } = require('vscode');
-const { posInExpr, Defun, Let } = require('./lisp/Expr');
+const { posInExpr, findExpr, Defun, Let } = require('./lisp/Expr');
 
 // const completions = keywords.map(word => {
 //     const item = new CompletionItem(word.label);
@@ -18,7 +18,7 @@ module.exports.CompletionProvider = class {
     }
 
     getCompletions(exprs, pos) {
-        const expr = this.findExpr(exprs, pos);
+        const expr = findExpr(exprs, pos);
         if (expr === undefined) {
             return [];
         }
