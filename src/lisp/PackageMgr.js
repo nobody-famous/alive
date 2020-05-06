@@ -20,10 +20,12 @@ module.exports.PackageMgr = class {
         this.curPackage = undefined;
         this.pkgs = {};
         this.pkgs[CL_USER_PKG] = new Package(CL_USER_PKG);
+
+        this.initMainPackage();
     }
 
     process(exprs) {
-        this.initMainPackage();
+        this.curPackage = this.pkgs[CL_USER_PKG];
 
         for (let ndx = 0; ndx < exprs.length; ndx += 1) {
             const expr = exprs[ndx];
@@ -34,8 +36,6 @@ module.exports.PackageMgr = class {
     }
 
     initMainPackage() {
-        this.curPackage = this.pkgs[CL_USER_PKG];
-
         for (let label of allLabels) {
             this.pkgs[CL_USER_PKG].exports.push(label.toUpperCase());
             this.pkgs[CL_USER_PKG].symbols[label.toUpperCase()] = {};
@@ -43,21 +43,21 @@ module.exports.PackageMgr = class {
     }
 
     getSymbols(line) {
-        let symbols = [];
+        let symbols = {};
         const uses = this.curPackage.uses;
 
         for (let pkg of Object.values(this.pkgs)) {
             if (pkg.startLine <= line && pkg.endLine >= line) {
-                symbols = symbols.concat(Object.keys(pkg.symbols));
+                Object.keys(pkg.symbols).forEach(sym => symbols[sym] = true);
             } else {
                 const usesPkg = uses.includes(pkg.name);
                 const names = pkg.exports.map(label => usesPkg ? label : `${pkg.name}:${label}`);
 
-                symbols = symbols.concat(names);
+                names.forEach(name => symbols[name] = true);
             }
         }
 
-        return symbols;
+        return Object.keys(symbols);
     }
 
     processExpr(expr) {
