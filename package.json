@@ -23,7 +23,10 @@
                     "common-lisp"
                 ],
                 "extensions": [
-                    ".lisp"
+                    ".lisp",
+                    ".cl",
+                    ".asd",
+                    ".asdf"
                 ],
                 "configuration": "./language-configuration.json"
             }
