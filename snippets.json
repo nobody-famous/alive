@@ -38,6 +38,6 @@
     },
     "Define Method": {
         "prefix": "defmethod",
-        "body": ["defun ${1:name} ($2)", "    $0", ""]
+        "body": ["defmethod ${1:name} ($2)", "    $0", ""]
     }
 }
