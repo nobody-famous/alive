@@ -77,8 +77,8 @@ module.exports.PackageMgr = class {
     processDefPackage(expr) {
         const pkg = new Package(expr.name);
 
-        pkg.exports = expr.exports;
-        pkg.uses = expr.uses;
+        pkg.exports = (expr.exports !== undefined) ? expr.exports : [];
+        pkg.uses = (expr.uses !== undefined) ? expr.uses : [];
 
         this.pkgs[expr.name] = pkg;
     }
