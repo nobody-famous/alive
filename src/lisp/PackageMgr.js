@@ -36,6 +36,8 @@ module.exports.PackageMgr = class {
     }
 
     initMainPackage() {
+        this.pkgs[CL_USER_PKG].startLine = 0;
+
         for (let label of allLabels) {
             this.pkgs[CL_USER_PKG].exports.push(label.toUpperCase());
             this.pkgs[CL_USER_PKG].symbols[label.toUpperCase()] = {};
