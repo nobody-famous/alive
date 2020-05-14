@@ -203,8 +203,10 @@ module.exports.Formatter = class {
         }
 
         if (this.sexprs.length === 0) {
-            this.trimWS(this.token);
-            this.fixIndent(this.token, 0);
+            if (this.fixWhitespace) {
+                this.trimWS(this.token);
+                this.fixIndent(this.token, 0);
+            }
         } else if (this.tokens[this.token.ndx + 1].type === types.CLOSE_PARENS) {
             // Close parens code handles this
         } else {
@@ -230,6 +232,8 @@ module.exports.Formatter = class {
 
         while (start < token.text.length && token.text.charAt(start) === '\n') {
             start += 1;
+            line += 1;
+            startChar = 0;
         }
 
         let end = start + 1;
@@ -284,10 +288,6 @@ module.exports.Formatter = class {
 
         const current = this.countIndent(token);
         const orig = this.original[token.ndx];
-
-        if (token.start.line === 0) {
-            console.log(`fixIndent ${indent} ${current}`);
-        }
 
         if (this.fixWhitespace && (token.type === types.WHITE_SPACE)) {
             this.trimWS(token);
