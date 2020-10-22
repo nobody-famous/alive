@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'apply', type: 'Function' },
     { label: 'defun', type: 'Macro' },
     { label: 'fdefinition', type: 'Accessor' },

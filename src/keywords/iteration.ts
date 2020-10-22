@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'do', type: 'Macro' },
     { label: 'do*', type: 'Macro' },
     { label: 'dotimes', type: 'Macro' },

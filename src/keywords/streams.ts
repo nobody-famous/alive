@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'stream', type: 'System Class' },
     { label: 'broadcast-stream', type: 'System Class' },
     { label: 'concatenated-stream', type: 'System Class' },

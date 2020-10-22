@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'compile-file', type: 'Function' },
     { label: 'compile-file-pathname', type: 'Function' },
     { label: 'load', type: 'Function' },

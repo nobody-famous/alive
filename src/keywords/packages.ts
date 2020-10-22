@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'package', type: 'System Class' },
     { label: 'export', type: 'Function' },
     { label: 'find-symbol', type: 'Function' },

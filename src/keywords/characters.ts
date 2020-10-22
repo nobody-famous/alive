@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'character', type: 'System Class' },
     { label: 'base-char', type: 'Type' },
     { label: 'standard-char', type: 'Type' },

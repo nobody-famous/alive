@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'boolean', type: 'Type' },
     { label: 'compiled-function', type: 'Type' },
     { label: 'generic-function', type: 'System Class' },

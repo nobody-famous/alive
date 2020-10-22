@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'atom', type: 'Type' },
     { label: 'cons', type: 'Function' },
     { label: 'consp', type: 'Function' },

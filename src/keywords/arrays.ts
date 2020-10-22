@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'array', type: 'System Class' },
     { label: 'simple-array', type: 'Type' },
     { label: 'vector', type: 'System Class' },

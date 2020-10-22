@@ -1,58 +1,60 @@
-const types = require('./Types');
-const { Position } = require('vscode');
-const { Token } = require('./Token');
+import * as types from './Types';
+import * as kw from './keywords';
+import { Position } from 'vscode';
+import { Token } from './Token';
 
-const arrays = require('./keywords/arrays');
-const control = require('./keywords/control');
-const kwTypes = require('./keywords/types');
-const iteration = require('./keywords/iteration');
-const objects = require('./keywords/objects');
-const structures = require('./keywords/structures');
-const conditions = require('./keywords/conditions');
-const symbols = require('./keywords/symbols');
-const packages = require('./keywords/packages');
-const numbers = require('./keywords/numbers');
-const characters = require('./keywords/characters');
-const conses = require('./keywords/conses');
-const strings = require('./keywords/strings');
-const sequences = require('./keywords/sequences');
-const hashtables = require('./keywords/hashtables');
-const filenames = require('./keywords/filenames');
-const files = require('./keywords/files');
-const streams = require('./keywords/streams');
-const printer = require('./keywords/printer');
-const reader = require('./keywords/reader');
-const sysconstruct = require('./keywords/sysconstruct');
-const env = require('./keywords/env');
-const eval = require('./keywords/eval');
+import arrays from './keywords/arrays';
+import control from './keywords/control';
+import kwTypes from './keywords/types';
+import iteration from './keywords/iteration';
+import objects from './keywords/objects';
+import structures from './keywords/structures';
+import conditions from './keywords/conditions';
+import symbols from './keywords/symbols';
+import packages from './keywords/packages';
+import numbers from './keywords/numbers';
+import characters from './keywords/characters';
+import conses from './keywords/conses';
+import strings from './keywords/strings';
+import sequences from './keywords/sequences';
+import hashtables from './keywords/hashtables';
+import filenames from './keywords/filenames';
+import files from './keywords/files';
+import streams from './keywords/streams';
+import printer from './keywords/printer';
+import reader from './keywords/reader';
+import sysconstruct from './keywords/sysconstruct';
+import env from './keywords/env';
+import kwEval from './keywords/eval';
 
-const keywords = {};
+type kw = { [index: string]: number };
+const keywords: kw = {};
 
-arrays.forEach(item => addKeyword(item, types.KEYWORD));
-control.forEach(item => addKeyword(item, types.CONTROL));
-kwTypes.forEach(item => addKeyword(item, types.KEYWORD));
-iteration.forEach(item => addKeyword(item, types.KEYWORD));
-objects.forEach(item => addKeyword(item, types.KEYWORD));
-structures.forEach(item => addKeyword(item, types.KEYWORD));
-conditions.forEach(item => addKeyword(item, types.KEYWORD));
-symbols.forEach(item => addKeyword(item, types.KEYWORD));
-packages.forEach(item => addKeyword(item, types.PACKAGES));
-numbers.forEach(item => addKeyword(item, types.KEYWORD));
-characters.forEach(item => addKeyword(item, types.KEYWORD));
-conses.forEach(item => addKeyword(item, types.KEYWORD));
-strings.forEach(item => addKeyword(item, types.KEYWORD));
-sequences.forEach(item => addKeyword(item, types.KEYWORD));
-hashtables.forEach(item => addKeyword(item, types.KEYWORD));
-filenames.forEach(item => addKeyword(item, types.KEYWORD));
-files.forEach(item => addKeyword(item, types.KEYWORD));
-streams.forEach(item => addKeyword(item, types.KEYWORD));
-printer.forEach(item => addKeyword(item, types.KEYWORD));
-reader.forEach(item => addKeyword(item, types.KEYWORD));
-sysconstruct.forEach(item => addKeyword(item, types.KEYWORD));
-env.forEach(item => addKeyword(item, types.KEYWORD));
-eval.forEach(item => addKeyword(item, types.KEYWORD));
+arrays.forEach((item) => addKeyword(item, types.KEYWORD));
+control.forEach((item) => addKeyword(item, types.CONTROL));
+kwTypes.forEach((item) => addKeyword(item, types.KEYWORD));
+iteration.forEach((item) => addKeyword(item, types.KEYWORD));
+objects.forEach((item) => addKeyword(item, types.KEYWORD));
+structures.forEach((item) => addKeyword(item, types.KEYWORD));
+conditions.forEach((item) => addKeyword(item, types.KEYWORD));
+symbols.forEach((item) => addKeyword(item, types.KEYWORD));
+packages.forEach((item) => addKeyword(item, types.PACKAGES));
+numbers.forEach((item) => addKeyword(item, types.KEYWORD));
+characters.forEach((item) => addKeyword(item, types.KEYWORD));
+conses.forEach((item) => addKeyword(item, types.KEYWORD));
+strings.forEach((item) => addKeyword(item, types.KEYWORD));
+sequences.forEach((item) => addKeyword(item, types.KEYWORD));
+hashtables.forEach((item) => addKeyword(item, types.KEYWORD));
+filenames.forEach((item) => addKeyword(item, types.KEYWORD));
+files.forEach((item) => addKeyword(item, types.KEYWORD));
+streams.forEach((item) => addKeyword(item, types.KEYWORD));
+printer.forEach((item) => addKeyword(item, types.KEYWORD));
+reader.forEach((item) => addKeyword(item, types.KEYWORD));
+sysconstruct.forEach((item) => addKeyword(item, types.KEYWORD));
+env.forEach((item) => addKeyword(item, types.KEYWORD));
+kwEval.forEach((item) => addKeyword(item, types.KEYWORD));
 
-function addKeyword(item, wordType) {
+function addKeyword(item: kw.kwEntry, wordType: number) {
     const label = item.label.toUpperCase();
 
     if (item.type === 'Function' || item.type === 'Local Function' || item.type === 'Accessor') {
@@ -66,17 +68,26 @@ function addKeyword(item, wordType) {
     }
 }
 
-module.exports.Lexer = class {
-    constructor(text) {
+export class Lexer {
+    text: string;
+    line: number;
+    col: number;
+    curPos: number;
+    opens: number;
+    curText: string;
+    start: Position;
+
+    constructor(text: string) {
         this.text = text;
         this.line = 0;
         this.col = 0;
         this.curPos = 0;
-        this.curText = undefined;
-        this.start = undefined;
+        this.curText = '';
+        this.start = new Position(0, 0);
+        this.opens = 0;
     }
 
-    getTokens() {
+    getTokens(): Token[] {
         const tokens = [];
 
         while (true) {
@@ -109,7 +120,7 @@ module.exports.Lexer = class {
                 return this.char(types.OPEN_PARENS);
             case ')':
                 return this.char(types.CLOSE_PARENS);
-            case '\'':
+            case "'":
                 return this.char(types.SINGLE_QUOTE);
             case '`':
                 return this.char(types.BACK_QUOTE);
@@ -120,18 +131,18 @@ module.exports.Lexer = class {
             case '|':
                 return this.bar();
             case ';':
-                return this.comment();
+                return this.comment(char);
             default:
                 return this.id();
         }
     }
 
-    comment() {
-        this.curText += this.peek();
+    comment(char: string) {
+        this.curText += char;
         this.consume();
 
         while (this.peek() !== undefined && this.peek() !== '\n') {
-            this.curText += this.peek();
+            this.curText += this.peek() ?? '';
             this.consume();
         }
 
@@ -147,19 +158,20 @@ module.exports.Lexer = class {
             }
 
             if (this.peek() === '\\') {
-                this.curText += this.peek();
+                this.curText += this.peek() ?? '';
                 this.consume();
 
                 if (this.peek() === undefined) {
                     return this.newToken(types.MISMATCHED_BAR);
                 }
-                this.curText += this.peek();
+
+                this.curText += this.peek() ?? '';
                 this.consume();
             } else if (this.peek() === '|') {
                 this.consume();
                 break;
             } else {
-                this.curText += this.peek();
+                this.curText += this.peek() ?? '';
                 this.consume();
             }
         }
@@ -181,16 +193,16 @@ module.exports.Lexer = class {
 
     poundSequence() {
         if (this.peek() === '\\') {
-            this.curText += this.peek();
+            this.curText += this.peek() ?? '';
             this.consume();
 
-            this.curText += this.peek();
+            this.curText += this.peek() ?? '';
             this.consume();
             return this.newToken(types.POUND_SEQ);
         }
 
         while (!this.isDelimiter(this.peek())) {
-            this.curText += this.peek();
+            this.curText += this.peek() ?? '';
             this.consume();
         }
 
@@ -221,25 +233,25 @@ module.exports.Lexer = class {
                     this.curText += '|';
                 }
             } else if (this.peek() === '\\') {
-                this.curText += this.peek();
+                this.curText += this.peek() ?? '';
                 this.consume();
 
                 if (this.peek() !== undefined) {
-                    this.curText += this.peek();
+                    this.curText += this.peek() ?? '';
                     this.consume();
                 }
             } else if (this.peek() === '#') {
-                this.curText += this.peek();
+                this.curText += this.peek() ?? '';
                 this.consume();
 
                 if (this.peek() === '|') {
                     this.opens += 1;
 
-                    this.curText += this.peek();
+                    this.curText += this.peek() ?? '';
                     this.consume();
                 }
             } else {
-                this.curText += this.peek();
+                this.curText += this.peek() ?? '';
                 this.consume();
             }
         }
@@ -248,31 +260,31 @@ module.exports.Lexer = class {
     }
 
     quotedString() {
-        this.curText += this.peek();
+        this.curText += this.peek() ?? '';
         this.consume();
 
-        while (this.peek() !== '\"') {
+        while (this.peek() !== '"') {
             if (this.peek() === undefined) {
                 return this.newToken(types.MISMATCHED_DBL_QUOTE);
             }
 
             if (this.peek() === '\\') {
-                this.curText += this.peek();
+                this.curText += this.peek() ?? '';
                 this.consume();
             }
 
-            this.curText += this.peek();
+            this.curText += this.peek() ?? '';
             this.consume();
         }
 
-        this.curText += this.peek();
+        this.curText += this.peek() ?? '';
         this.consume();
 
         return this.newToken(types.STRING);
     }
 
     id() {
-        this.curText += this.peek();
+        this.curText += this.peek() ?? '';
         this.consume();
 
         while (!this.isDelimiter(this.peek())) {
@@ -280,7 +292,7 @@ module.exports.Lexer = class {
                 return this.newToken(types.PACKAGE_NAME, true);
             }
 
-            this.curText += this.peek();
+            this.curText += this.peek() ?? '';
             this.consume();
         }
 
@@ -297,38 +309,38 @@ module.exports.Lexer = class {
         return this.newToken(types.ID, true);
     }
 
-    char(type) {
-        this.curText = this.peek();
+    char(type: number) {
+        this.curText = this.peek() ?? '';
         this.consume();
 
         return this.newToken(type);
     }
 
     ws() {
-        this.curText += this.peek();
+        this.curText += this.peek() ?? '';
         this.consume();
 
         while (this.isWS(this.peek())) {
-            this.curText += this.peek();
+            this.curText += this.peek() ?? '';
             this.consume();
         }
 
         return this.newToken(types.WHITE_SPACE);
     }
 
-    isWS(char) {
-        return (char !== undefined) && (char.trim() === '');
+    isWS(char?: string) {
+        return char !== undefined && char.trim() === '';
     }
 
-    isParens(char) {
-        return (char !== undefined) && ((char === '(') || (char === ')'));
+    isParens(char?: string) {
+        return char !== undefined && (char === '(' || char === ')');
     }
 
-    isDelimiter(char) {
+    isDelimiter(char?: string) {
         return char === undefined || this.isWS(char) || this.isParens(char) || char === '"';
     }
 
-    newToken(type, upcase = false) {
+    newToken(type: number, upcase = false): Token {
         const text = upcase ? this.curText.toUpperCase() : this.curText;
         return new Token(type, this.start, new Position(this.line, this.col), text);
     }
@@ -355,4 +367,4 @@ module.exports.Lexer = class {
 
         this.curPos += 1;
     }
-};
+}

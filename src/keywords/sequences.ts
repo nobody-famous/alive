@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'sequence', type: 'System Class' },
     { label: 'copy-seq', type: 'Function' },
     { label: 'elt', type: 'Accessor' },

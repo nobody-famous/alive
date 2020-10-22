@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'directory', type: 'Function' },
     { label: 'probe-file', type: 'Function' },
     { label: 'ensure-directories-exist', type: 'Function' },

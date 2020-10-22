@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'function-keywords', type: 'Standard Generic Function' },
     { label: 'ensure-generic-function', type: 'Function' },
     { label: 'allocate-instance', type: 'Standard Generic Function' },

@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'hash-table', type: 'System Class' },
     { label: 'make-hash-table', type: 'Function' },
     { label: 'hash-table-p', type: 'Function' },

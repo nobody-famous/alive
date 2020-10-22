@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'readtable', type: 'System Class' },
     { label: 'copy-readtable', type: 'Function' },
     { label: 'make-dispatch-macro-character', type: 'Function' },

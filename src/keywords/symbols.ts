@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'symbol', type: 'System Class' },
     { label: 'keyword', type: 'Type' },
     { label: 'symbolp', type: 'Function' },

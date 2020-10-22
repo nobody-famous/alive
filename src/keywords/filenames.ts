@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'pathname', type: 'Function' },
     { label: 'make-pathname', type: 'Function' },
     { label: 'pathnamep', type: 'Function' },

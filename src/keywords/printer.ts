@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'copy-pprint-dispatch', type: 'Function' },
     { label: 'formatter', type: 'Macro' },
     { label: 'pprint-dispatch', type: 'Function' },

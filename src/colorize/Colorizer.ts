@@ -1,27 +1,64 @@
-const types = require('../Types');
-const { Parser } = require('./Parser');
-const { Range, window } = require('vscode');
+import * as types from '../Types';
+import * as vscode from 'vscode';
+import { Token } from '../Token';
+import { Range, window } from 'vscode';
+import { Parser } from './Parser';
 
-const decorationTypes = {
-    'common_lisp.default': window.createTextEditorDecorationType({ color: { id: 'common_lisp.default' } }),
-    'common_lisp.comment': window.createTextEditorDecorationType({ color: { id: 'common_lisp.comment' } }),
-    'common_lisp.id': window.createTextEditorDecorationType({ color: { id: 'common_lisp.id' } }),
-    'common_lisp.error': window.createTextEditorDecorationType({ color: { id: 'common_lisp.error' } }),
-    'common_lisp.keyword': window.createTextEditorDecorationType({ color: { id: 'common_lisp.keyword' } }),
-    'common_lisp.packages': window.createTextEditorDecorationType({ color: { id: 'common_lisp.packages' } }),
-    'common_lisp.control': window.createTextEditorDecorationType({ color: { id: 'common_lisp.control' } }),
-    'common_lisp.function': window.createTextEditorDecorationType({ color: { id: 'common_lisp.function' } }),
-    'common_lisp.macro': window.createTextEditorDecorationType({ color: { id: 'common_lisp.macro' } }),
-    'common_lisp.special': window.createTextEditorDecorationType({ color: { id: 'common_lisp.special' } }),
-    'common_lisp.string': window.createTextEditorDecorationType({ color: { id: 'common_lisp.string' } }),
-    'common_lisp.quoted': window.createTextEditorDecorationType({ color: { id: 'common_lisp.quoted' } }),
-    'common_lisp.package': window.createTextEditorDecorationType({ color: { id: 'common_lisp.package' } }),
-    'common_lisp.symbol': window.createTextEditorDecorationType({ color: { id: 'common_lisp.symbol' } }),
-    'common_lisp.parameter': window.createTextEditorDecorationType({ color: { id: 'common_lisp.parameter' } }),
-    'editorWhitespace.foreground': window.createTextEditorDecorationType({ color: { id: 'editorWhitespace.foreground' } }),
-}
+type decoratonDict = { [index: string]: any };
+const decorationTypes: decoratonDict = {
+    'common_lisp.default': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.default' },
+    }),
+    'common_lisp.comment': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.comment' },
+    }),
+    'common_lisp.id': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.id' },
+    }),
+    'common_lisp.error': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.error' },
+    }),
+    'common_lisp.keyword': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.keyword' },
+    }),
+    'common_lisp.packages': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.packages' },
+    }),
+    'common_lisp.control': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.control' },
+    }),
+    'common_lisp.function': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.function' },
+    }),
+    'common_lisp.macro': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.macro' },
+    }),
+    'common_lisp.special': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.special' },
+    }),
+    'common_lisp.string': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.string' },
+    }),
+    'common_lisp.quoted': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.quoted' },
+    }),
+    'common_lisp.package': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.package' },
+    }),
+    'common_lisp.symbol': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.symbol' },
+    }),
+    'common_lisp.parameter': window.createTextEditorDecorationType({
+        color: { id: 'common_lisp.parameter' },
+    }),
+    'editorWhitespace.foreground': window.createTextEditorDecorationType({
+        color: { id: 'editorWhitespace.foreground' },
+    }),
+};
 
-const typeStyles = {};
+type stylesDict = { [index: number]: string };
+
+const typeStyles: stylesDict = {};
 typeStyles[types.OPEN_PARENS] = 'common_lisp.default';
 typeStyles[types.CLOSE_PARENS] = 'common_lisp.default';
 typeStyles[types.KEYWORD] = 'common_lisp.keyword';
@@ -44,10 +81,18 @@ typeStyles[types.MISMATCHED_DBL_QUOTE] = 'common_lisp.error';
 typeStyles[types.MISMATCHED_BAR] = 'common_lisp.error';
 typeStyles[types.MISMATCHED_COMMENT] = 'common_lisp.error';
 
-module.exports.Colorizer = class {
-    constructor() { }
+interface rangeValue {
+    range: Range;
+}
 
-    run(editor, tokens) {
+interface styleMapType {
+    [index: string]: rangeValue[];
+}
+
+export class Colorizer {
+    constructor() {}
+
+    run(editor: vscode.TextEditor, tokens: Token[]) {
         if (tokens === undefined || tokens.length === 0) {
             return;
         }
@@ -69,7 +114,7 @@ module.exports.Colorizer = class {
         }
     }
 
-    clearEmptyTypes(editor, styleMap) {
+    clearEmptyTypes(editor: vscode.TextEditor, styleMap: styleMapType) {
         const styles = Object.keys(decorationTypes);
 
         for (let ndx = 0; ndx < styles.length; ndx += 1) {
@@ -81,14 +126,13 @@ module.exports.Colorizer = class {
         }
     }
 
-    buildStyleMap(editor, lexTokens) {
+    buildStyleMap(editor: vscode.TextEditor, lexTokens: Token[]): styleMapType {
         const parser = new Parser(editor.document.getText(), lexTokens);
         const map = {};
 
         const tokens = parser.parse();
         let mismatched = false;
-        for (let ndx = 0; ndx < tokens.length; ndx += 1) {
-            const token = tokens[ndx];
+        for (const token of tokens) {
             let style = typeStyles[token.type] || 'common_lisp.default';
             const target = { range: new Range(token.start, token.end) };
 
@@ -104,16 +148,13 @@ module.exports.Colorizer = class {
                 mismatched = true;
             }
 
-            // if (token.text === 'NIL') {
-            //     console.log(`HERE ${token.type} ${typeStyles[token.type]} ${style}`);
-            // }
             this.addToMap(map, style, target);
         }
 
         return map;
     }
 
-    isMismatched(parser, token) {
+    isMismatched(parser: Parser, token: Token) {
         if (parser.unclosedString !== undefined) {
             return false;
         }
@@ -123,11 +164,11 @@ module.exports.Colorizer = class {
         }
     }
 
-    addToMap(map, key, entry) {
+    addToMap(map: styleMapType, key: string, entry: rangeValue) {
         if (map[key] === undefined) {
             map[key] = [];
         }
 
         map[key].push(entry);
     }
-};
+}

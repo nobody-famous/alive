@@ -1,5 +1,4 @@
-module.exports = [
-
+export default [
     { label: 'lambda', type: 'Macro' },
     { label: 'compile', type: 'Function' },
     { label: 'eval', type: 'Function' },

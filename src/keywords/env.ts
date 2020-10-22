@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'decode-universal-time', type: 'Function' },
     { label: 'encode-universal-time', type: 'Function' },
     { label: 'get-universal-time', type: 'Function' },

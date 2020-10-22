@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'base-string', type: 'Type' },
     { label: 'simple-string', type: 'Type' },
     { label: 'simple-base-string', type: 'Type' },

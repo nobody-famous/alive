@@ -1,4 +1,4 @@
-module.exports = [
+export default [
     { label: 'condition', type: 'Condition Type' },
     { label: 'warning', type: 'Condition Type' },
     { label: 'style-warning', type: 'Condition Type' },
