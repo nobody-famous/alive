@@ -60,13 +60,13 @@ export class Formatter {
             return
         }
 
-        this.indentWidth = cfg.indentWidth ?? DEFAULT_INDENT
+        this.indentWidth = cfg.format.indentWidth ?? DEFAULT_INDENT
 
-        this.indentCloseParenStack = cfg.indentCloseParenStack ?? true
-        this.closeParenStacked = cfg.closeParenStacked ?? undefined
-        this.closeParenOwnLine = cfg.closeParenOwnLine ?? undefined
+        this.indentCloseParenStack = cfg.format.indentCloseParenStack ?? true
+        this.closeParenStacked = cfg.format.closeParenStacked ?? undefined
+        this.closeParenOwnLine = cfg.format.closeParenOwnLine ?? undefined
 
-        this.fixWhitespace = cfg.fixWhitespace ?? undefined
+        this.fixWhitespace = cfg.format.fixWhitespace ?? undefined
     }
 
     copyTokens(tokens: Token[]): FormatterToken[] {
@@ -186,20 +186,7 @@ export class Formatter {
         }
 
         const sexpr = this.sexprs[this.sexprs.length - 1]
-        const alignedIDs = [
-            'IF',
-            'CONS',
-            'COND',
-            'AND',
-            'OR',
-            'EQ',
-            'EQL',
-            'EQUAL',
-            'EQUALP',
-            'LIST',
-            ':USE',
-            ':EXPORT',
-        ]
+        const alignedIDs = ['IF', 'CONS', 'COND', 'AND', 'OR', 'EQ', 'EQL', 'EQUAL', 'EQUALP', 'LIST', ':USE', ':EXPORT']
 
         if (this.token.text === 'DEFUN') {
             this.startDefun(sexpr)
@@ -424,6 +411,8 @@ export class Formatter {
         } else if (this.closeParenOwnLine === 'never') {
             this.closeOwnLineNever(sexpr, count)
             this.consume()
+        } else {
+            this.consume()
         }
     }
 
@@ -467,7 +456,7 @@ export class Formatter {
             curExpr = this.sexprs.pop()
         }
 
-        const indent = this.getCloseStackIndent(sexpr, count)
+        const indent = this.getCloseStackIndent(curExpr ?? sexpr, count)
 
         this.forceOwnLine(indent)
         this.stackRemaining(count - 1)
@@ -550,10 +539,8 @@ export class Formatter {
             return sexpr.open.start.character
         }
 
-        const target =
-            this.indentCloseParenStack || this.closeParenStacked === 'never'
-                ? sexpr
-                : this.sexprs[this.sexprs.length - count + 1]
+        const ndx = this.sexprs.length - count + 1
+        const target = this.indentCloseParenStack || this.closeParenStacked === 'never' ? sexpr : this.sexprs[ndx]
 
         return target.open.start.character
     }
