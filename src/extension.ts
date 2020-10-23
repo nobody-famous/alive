@@ -48,11 +48,7 @@ module.exports.activate = (ctx: vscode.ExtensionContext) => {
 
     vscode.workspace.onDidChangeTextDocument(
         (event) => {
-            if (
-                !activeEditor ||
-                activeEditor.document.languageId !== LANGUAGE_ID ||
-                event.document !== activeEditor.document
-            ) {
+            if (!activeEditor || activeEditor.document.languageId !== LANGUAGE_ID || event.document !== activeEditor.document) {
                 return
             }
 
@@ -63,22 +59,11 @@ module.exports.activate = (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions
     )
 
-    vscode.languages.registerCompletionItemProvider(
-        { scheme: 'untitled', language: LANGUAGE_ID },
-        getCompletionProvider()
-    )
-
+    vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider())
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider())
 
-    vscode.languages.registerDocumentFormattingEditProvider(
-        { scheme: 'untitled', language: LANGUAGE_ID },
-        documentFormatter()
-    )
-
-    vscode.languages.registerDocumentFormattingEditProvider(
-        { scheme: 'file', language: LANGUAGE_ID },
-        documentFormatter()
-    )
+    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter())
+    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter())
 
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl))
