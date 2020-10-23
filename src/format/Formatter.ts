@@ -60,21 +60,13 @@ export class Formatter {
             return
         }
 
-        this.setConfigOption(cfg, 'indentWidth', DEFAULT_INDENT)
+        this.indentWidth = cfg.indentWidth ?? DEFAULT_INDENT
 
-        this.setConfigOption(cfg, 'allowOpenOnOwnLine', undefined)
+        this.indentCloseParenStack = cfg.indentCloseParenStack ?? true
+        this.closeParenStacked = cfg.closeParenStacked ?? undefined
+        this.closeParenOwnLine = cfg.closeParenOwnLine ?? undefined
 
-        this.setConfigOption(cfg, 'indentCloseParenStack', true)
-        this.setConfigOption(cfg, 'closeParenStacked', undefined)
-        this.setConfigOption(cfg, 'closeParenOwnLine', undefined)
-
-        this.setConfigOption(cfg, 'removeBlankLines', undefined)
-        this.setConfigOption(cfg, 'fixWhitespace', undefined)
-    }
-
-    setConfigOption(cfg: vscode.WorkspaceConfiguration, opt: string, value: any = undefined) {
-        // this[opt] = cfg.format[opt] ?? value
-        throw new Error(`setConfigOption ${opt} ${value} NOT DONE YET`)
+        this.fixWhitespace = cfg.fixWhitespace ?? undefined
     }
 
     copyTokens(tokens: Token[]): FormatterToken[] {
