@@ -1,50 +1,50 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
-import { Token } from './Token';
-const { Colorizer } = require('./colorize/Colorizer');
-const { Formatter } = require('./format/Formatter');
-const { CompletionProvider } = require('./CompletionProvider');
-const { Parser } = require('./lisp/Parser');
-const { findExpr } = require('./lisp/Expr');
-const { Lexer } = require('./Lexer');
-const { PackageMgr } = require('./lisp/PackageMgr');
+import * as vscode from 'vscode'
+import * as path from 'path'
+import * as fs from 'fs'
+import { Token } from './Token'
+import { Colorizer } from './colorize/Colorizer'
+import { Formatter } from './format/Formatter'
+import { CompletionProvider } from './CompletionProvider'
+import { Parser } from './lisp/Parser'
+import { findExpr } from './lisp/Expr'
+import { Lexer } from './Lexer'
+import { PackageMgr } from './lisp/PackageMgr'
 
-const LANGUAGE_ID = 'common-lisp';
-const colorizer = new Colorizer();
-const pkgMgr = new PackageMgr();
-const completionProvider = new CompletionProvider(pkgMgr);
+const LANGUAGE_ID = 'common-lisp'
+const colorizer = new Colorizer()
+const pkgMgr = new PackageMgr()
+const completionProvider = new CompletionProvider(pkgMgr)
 
-let activeEditor = vscode.window.activeTextEditor;
-let lexTokenMap: { [index: string]: Token[] } = {};
+let activeEditor = vscode.window.activeTextEditor
+let lexTokenMap: { [index: string]: Token[] } = {}
 
 module.exports.activate = (ctx: vscode.ExtensionContext) => {
     vscode.window.onDidChangeActiveTextEditor(
         (editor?: vscode.TextEditor) => {
-            activeEditor = editor;
+            activeEditor = editor
 
             if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
-                return;
+                return
             }
 
             if (lexTokenMap[editor.document.fileName] === undefined) {
-                readLexTokens(editor.document.fileName, editor.document.getText());
+                readLexTokens(editor.document.fileName, editor.document.getText())
             }
 
-            decorateText(lexTokenMap[editor.document.fileName]);
+            decorateText(lexTokenMap[editor.document.fileName])
         },
         null,
         ctx.subscriptions
-    );
+    )
 
     vscode.workspace.onDidOpenTextDocument((doc) => {
         if (activeEditor === undefined || doc.languageId !== LANGUAGE_ID) {
-            return;
+            return
         }
 
-        readLexTokens(activeEditor.document.fileName, activeEditor.document.getText());
-        decorateText(lexTokenMap[doc.fileName]);
-    });
+        readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
+        decorateText(lexTokenMap[doc.fileName])
+    })
 
     vscode.workspace.onDidChangeTextDocument(
         (event) => {
@@ -53,138 +53,138 @@ module.exports.activate = (ctx: vscode.ExtensionContext) => {
                 activeEditor.document.languageId !== LANGUAGE_ID ||
                 event.document !== activeEditor.document
             ) {
-                return;
+                return
             }
 
-            readLexTokens(activeEditor.document.fileName, activeEditor.document.getText());
-            decorateText(lexTokenMap[activeEditor.document.fileName]);
+            readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
+            decorateText(lexTokenMap[activeEditor.document.fileName])
         },
         null,
         ctx.subscriptions
-    );
+    )
 
     vscode.languages.registerCompletionItemProvider(
         { scheme: 'untitled', language: LANGUAGE_ID },
         getCompletionProvider()
-    );
+    )
 
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider());
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider())
 
     vscode.languages.registerDocumentFormattingEditProvider(
         { scheme: 'untitled', language: LANGUAGE_ID },
         documentFormatter()
-    );
+    )
 
     vscode.languages.registerDocumentFormattingEditProvider(
         { scheme: 'file', language: LANGUAGE_ID },
         documentFormatter()
-    );
+    )
 
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr));
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl));
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr))
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl))
 
     if (activeEditor === undefined || activeEditor.document.languageId !== LANGUAGE_ID) {
-        return;
+        return
     }
 
-    readLexTokens(activeEditor.document.fileName, activeEditor.document.getText());
-    decorateText(lexTokenMap[activeEditor.document.fileName]);
-    readPackageLisp();
-};
+    readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
+    decorateText(lexTokenMap[activeEditor.document.fileName])
+    readPackageLisp()
+}
 
 async function readPackageLisp() {
     if (vscode.workspace.workspaceFolders === undefined) {
-        return;
+        return
     }
 
-    const folder = vscode.workspace.workspaceFolders[0];
-    const pkgFile = path.join(folder.uri.path, 'package.lisp');
+    const folder = vscode.workspace.workspaceFolders[0]
+    const pkgFile = path.join(folder.uri.path, 'package.lisp')
 
     if (!fs.existsSync(pkgFile) || !fs.lstatSync(pkgFile).isFile()) {
-        return;
+        return
     }
 
-    const textBuf = await fs.promises.readFile(pkgFile);
-    readLexTokens(pkgFile, textBuf.toString());
+    const textBuf = await fs.promises.readFile(pkgFile)
+    readLexTokens(pkgFile, textBuf.toString())
 
-    const parser = new Parser(lexTokenMap[pkgFile]);
-    const exprs = parser.parse();
+    const parser = new Parser(lexTokenMap[pkgFile])
+    const exprs = parser.parse()
 
-    pkgMgr.process(exprs);
+    pkgMgr.process(exprs)
 }
 
 function sendToRepl() {
-    const session = vscode.debug.activeDebugSession;
+    const session = vscode.debug.activeDebugSession
     if (session === undefined) {
-        return;
+        return
     }
 
     try {
-        const editor = vscode.window.activeTextEditor;
+        const editor = vscode.window.activeTextEditor
         if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
-            return;
+            return
         }
 
-        const expr = getTopExpr();
-        const selection = editor.selection;
-        let range = undefined;
+        const expr = getTopExpr()
+        const selection = editor.selection
+        let range = undefined
 
         if (!selection.isEmpty) {
-            range = new vscode.Range(selection.start, selection.end);
+            range = new vscode.Range(selection.start, selection.end)
         } else if (expr !== undefined) {
-            range = new vscode.Range(expr.start, expr.end);
+            range = new vscode.Range(expr.start, expr.end)
         }
 
         if (range === undefined) {
-            return;
+            return
         }
 
-        const text = editor.document.getText(range);
+        const text = editor.document.getText(range)
 
-        session.customRequest('evaluate', { expression: text });
+        session.customRequest('evaluate', { expression: text })
     } catch (err) {
-        console.log(err);
+        console.log(err)
     }
 }
 
 function selectSexpr() {
     try {
-        const editor = vscode.window.activeTextEditor;
+        const editor = vscode.window.activeTextEditor
         if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
-            return;
+            return
         }
 
-        const expr = getTopExpr();
+        const expr = getTopExpr()
 
         if (expr !== undefined) {
-            editor.selection = new vscode.Selection(expr.start, expr.end);
+            editor.selection = new vscode.Selection(expr.start, expr.end)
         }
     } catch (err) {
-        console.log(err);
+        console.log(err)
     }
 }
 
 function getTopExpr() {
     try {
-        const editor = vscode.window.activeTextEditor;
+        const editor = vscode.window.activeTextEditor
         if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
-            return undefined;
+            return undefined
         }
 
-        const exprs = getDocumentExprs(editor.document);
-        const pos = editor.selection.start;
-        const expr = findExpr(exprs, pos);
+        const exprs = getDocumentExprs(editor.document)
+        const pos = editor.selection.start
+        const expr = findExpr(exprs, pos)
 
         if (expr === undefined || expr.start === undefined || expr.end === undefined) {
-            return undefined;
+            return undefined
         }
 
-        return expr;
+        return expr
     } catch (err) {
-        console.log(err);
+        console.log(err)
     }
 
-    return undefined;
+    return undefined
 }
 
 function getCompletionProvider(): vscode.CompletionItemProvider {
@@ -196,50 +196,52 @@ function getCompletionProvider(): vscode.CompletionItemProvider {
             ctx: vscode.CompletionContext
         ) {
             try {
-                const exprs = getDocumentExprs(document);
-                return completionProvider.getCompletions(exprs, pos);
+                const exprs = getDocumentExprs(document)
+                return completionProvider.getCompletions(exprs, pos)
             } catch (err) {
-                console.log(err);
-                return [];
+                console.log(err)
+                return []
             }
         },
-    };
+    }
 }
 
 function readLexTokens(fileName: string, text: string) {
-    const lex = new Lexer(text);
+    const lex = new Lexer(text)
 
-    lexTokenMap[fileName] = lex.getTokens();
+    lexTokenMap[fileName] = lex.getTokens()
 }
 
 function documentFormatter(): vscode.DocumentFormattingEditProvider {
     return {
         provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
-            const lex = new Lexer(doc.getText());
-            const tokens = lex.getTokens();
-            const formatter = new Formatter(doc, opts, tokens);
+            const lex = new Lexer(doc.getText())
+            const tokens = lex.getTokens()
+            const formatter = new Formatter(doc, opts, tokens)
 
-            const edits = formatter.format();
-            return edits.length > 0 ? edits : undefined;
+            const edits = formatter.format()
+            return edits.length > 0 ? edits : undefined
         },
-    };
+    }
 }
 
 function getDocumentExprs(doc: vscode.TextDocument) {
-    const lex = new Lexer(doc.getText());
-    const tokens = lex.getTokens();
-    const parser = new Parser(tokens);
-    const exprs = parser.parse();
+    const lex = new Lexer(doc.getText())
+    const tokens = lex.getTokens()
+    const parser = new Parser(tokens)
+    const exprs = parser.parse()
 
-    pkgMgr.process(exprs);
+    pkgMgr.process(exprs)
 
-    return exprs;
+    return exprs
 }
 
 function decorateText(tokens: Token[]) {
     try {
-        colorizer.run(activeEditor, tokens);
+        if (activeEditor !== undefined) {
+            colorizer.run(activeEditor, tokens)
+        }
     } catch (err) {
-        vscode.window.showErrorMessage(`Failed to colorize file: ${err.toString()}`);
+        vscode.window.showErrorMessage(`Failed to colorize file: ${err.toString()}`)
     }
 }
