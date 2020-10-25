@@ -38,6 +38,7 @@ export class SwankConn extends EventEmitter {
             this.conn = net.createConnection(this.port, this.host, async () => {
                 try {
                     this.info = await this.connectionInfo()
+                    console.log('info', this.info)
                 } catch (err) {
                     return reject(`Failed to get connection info ${err.toString()}`)
                 }

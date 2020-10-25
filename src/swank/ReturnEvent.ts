@@ -12,12 +12,12 @@ export class ReturnEvent implements SwankEvent {
     id: number
     info?: Info
 
-    constructor(data: SExpr) {
+    constructor(msgID: number, sexpr: SExpr) {
         this.op = ':RETURN'
-        this.id = 0
+        this.id = msgID
 
-        const status = exprToString(data.parts[0])
-        const argsExpr = data.parts[1]
+        const status = exprToString(sexpr.parts[0])
+        const argsExpr = sexpr.parts[1]
 
         if (status === undefined || !(argsExpr instanceof SExpr)) {
             throw new Error('ReturnEvent Invalid SExpr')

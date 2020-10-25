@@ -1,10 +1,10 @@
 import { Lexer } from '../Lexer'
-import { AST, Expr, Node, Parser, SExpr, Atom } from '../lisp'
+import { AST, Expr, Node, Parser, SExpr, valueToNumber, valueToString, valueToMap, valueToArray } from '../lisp'
 import * as types from '../Types'
-import { SwankEvent, SwankRawEvent, createRawEvent } from './SwankEvent'
-import { convertArray, plistToObj } from './SwankUtils'
-import { Encoding } from './Types'
 import { ReturnEvent } from './ReturnEvent'
+import { createRawEvent, SwankEvent, SwankRawEvent } from './SwankEvent'
+import { convertArray } from './SwankUtils'
+import { ConnInfo, Encoding, StringMap } from './Types'
 
 export class SwankResponse {
     length?: number
@@ -37,18 +37,14 @@ export class SwankResponse {
             throw new Error('parseEvent MORE THAN ONE EVENT')
         }
 
-        for (const expr of exprs) {
-            if (!(expr instanceof SExpr)) {
-                console.log(`parseEvent invalid SExpr`, expr)
-                continue
-            }
-
-            const rawEvent = this.getRawEvent(expr as SExpr)
-
-            return rawEvent !== undefined ? this.convertRawEvent(rawEvent) : undefined
+        const expr = exprs[0]
+        if (!(expr instanceof SExpr)) {
+            throw new Error(`parseEvent invalid SExpr ${expr}`)
         }
 
-        return undefined
+        const rawEvent = this.getRawEvent(expr as SExpr)
+
+        return rawEvent !== undefined ? this.convertRawEvent(rawEvent) : undefined
     }
 
     convertRawEvent(rawEvent: SwankRawEvent): SwankEvent | undefined {
@@ -71,7 +67,11 @@ export class SwankResponse {
     }
 
     buildReturnEvent(rawEvent: SwankRawEvent): ReturnEvent {
-        return new ReturnEvent(rawEvent.args)
+        if (rawEvent.msgID === undefined) {
+            throw new Error(`Return Event missing message ID ${rawEvent}`)
+        }
+
+        return new ReturnEvent(rawEvent.msgID, rawEvent.args)
     }
 
     astToArray(ast: AST): string[] {
@@ -167,40 +167,29 @@ export class EvalResp {
 export class ConnectionInfoResp {
     pid?: number
     encoding?: Encoding
-    impl?: { [index: string]: any }
-    machine?: { [index: string]: any }
-    package?: { [index: string]: any }
+    impl?: StringMap
+    machine?: StringMap
+    package?: StringMap
     style?: string
-    features?: any[]
-    modules?: any[]
+    features?: unknown[]
+    modules?: unknown[]
     version?: string
 
-    constructor(data: any[]) {
-        const obj = plistToObj(data)
+    constructor(info: StringMap) {
+        this.pid = valueToNumber(info.pid)
 
-        if (obj === undefined) {
-            return
+        if (info.encoding !== undefined) {
+            this.encoding = info.encoding as Encoding
         }
 
-        this.pid = obj.pid !== undefined ? parseInt(obj.pid) : undefined
+        this.impl = valueToMap(info.lisp_implementation)
+        this.machine = valueToMap(info.machine)
+        this.package = valueToMap(info.package)
 
-        if (obj.encoding !== undefined) {
-            const plist = plistToObj(obj['encoding'])
-
-            this.encoding = {} as Encoding
-            if (plist !== undefined) {
-                this.encoding.coding_systems = convertArray(plist.coding_systems)
-            }
-        }
-
-        this.impl = plistToObj(obj.lisp_implementation)
-        this.machine = plistToObj(obj.machine)
-        this.package = plistToObj(obj.package)
-
-        this.style = obj.style
-        this.features = convertArray(obj.features)
-        this.modules = convertArray(obj.modules)
-        this.version = obj.version
+        this.style = valueToString(info.style)
+        this.features = valueToArray(info.features)
+        this.modules = valueToArray(info.modules)
+        this.version = valueToString(info.version)
     }
 }
 

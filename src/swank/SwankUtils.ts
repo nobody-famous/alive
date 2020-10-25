@@ -1,23 +1,30 @@
 import { Expr, exprToString, SExpr } from '../lisp'
 import { LispID, LispQuote, LispSymbol } from './LispID'
+import { StringMap } from './Types'
 
-export function plistToObj(exprs: Expr[]): { [index: string]: any } | undefined {
+export function plistToObj(exprs: Expr[]): { [index: string]: unknown } | undefined {
     if (exprs.length % 2 !== 0) {
         return undefined
     }
 
-    const obj: { [index: string]: any } = {}
+    const obj: StringMap = {}
 
     for (let ndx = 0; ndx < exprs.length; ndx += 2) {
         let name = exprToString(exprs[ndx])
-        let value: string | { [index: string]: any } | undefined = exprToString(exprs[ndx + 1])
+        let value: string | { [index: string]: unknown } | undefined = exprToString(exprs[ndx + 1])
 
         if (name !== undefined) {
-            name = convert(name)
+            const converted = convert(name)
+            if (typeof converted === 'string') {
+                name = converted
+            }
         }
 
         if (typeof value === 'string') {
-            value = convert(value)
+            const converted = convert(value)
+            if (typeof converted === 'string') {
+                value = converted
+            }
         } else if (value === undefined && exprs[ndx + 1] instanceof SExpr) {
             const sexpr = exprs[ndx + 1] as SExpr
             value = plistToObj(sexpr.parts)
@@ -31,7 +38,7 @@ export function plistToObj(exprs: Expr[]): { [index: string]: any } | undefined 
     return obj
 }
 
-export function convert(symbol: string): any {
+export function convert(symbol: string): string | boolean | undefined {
     const lower = symbol.toLowerCase()
 
     if (lower === 't') {
@@ -51,7 +58,7 @@ export function convert(symbol: string): any {
     return symbol
 }
 
-export function convertArray(arr: any[]): any[] {
+export function convertArray(arr: unknown[]): unknown[] {
     if (!Array.isArray(arr)) {
         return arr
     }
@@ -59,7 +66,7 @@ export function convertArray(arr: any[]): any[] {
     return arr.map((item) => convert(item))
 }
 
-export function toWire(item: any): string {
+export function toWire(item: unknown): string {
     let str = ''
 
     if (Array.isArray(item)) {
@@ -70,8 +77,8 @@ export function toWire(item: any): string {
         str += `${item.id}`
     } else if (item instanceof LispQuote) {
         str += `'${item.form}`
-    } else if (typeof item === 'object') {
-        str += objectToWire(item)
+    } else if (typeof item === 'object' && item !== null) {
+        str += objectToWire(item as StringMap)
     } else if (typeof item === 'string') {
         str += `"${item.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
     } else if (item === true) {
@@ -83,7 +90,7 @@ export function toWire(item: any): string {
     return str
 }
 
-function objectToWire(obj: { [index: string]: any }) {
+function objectToWire(obj: StringMap) {
     let str = '('
     const keys = Object.keys(obj)
 
@@ -99,7 +106,7 @@ function objectToWire(obj: { [index: string]: any }) {
     return str + ')'
 }
 
-function arrayToWire(arr: any[]) {
+function arrayToWire(arr: unknown[]) {
     let str = '('
 
     for (let ndx = 0; ndx < arr.length - 1; ndx += 1) {

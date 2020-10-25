@@ -28,7 +28,9 @@ export class DebugEvent implements SwankEvent {
             const name = convert(restart[0])
             const desc = convert(restart[1])
 
-            res[name] = desc
+            if (typeof name === 'string' && typeof desc === 'string') {
+                res[name] = desc
+            }
         }
 
         return res
