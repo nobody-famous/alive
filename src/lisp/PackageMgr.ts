@@ -2,6 +2,7 @@ import { allLabels } from '../keywords'
 import * as types from '../Types'
 import { DefPackage, Defun, Expr, InPackage } from './Expr'
 import { Node } from './Node'
+import { AST } from './AST'
 
 const CL_USER_PKG = 'CL-USER'
 
@@ -68,12 +69,7 @@ export class PackageMgr {
         const uses = this.curPackage.uses
 
         for (let pkg of Object.values(this.pkgs)) {
-            if (
-                pkg.startLine !== undefined &&
-                pkg.endLine !== undefined &&
-                pkg.startLine <= line &&
-                pkg.endLine >= line
-            ) {
+            if (pkg.startLine !== undefined && pkg.endLine !== undefined && pkg.startLine <= line && pkg.endLine >= line) {
                 Object.keys(pkg.symbols).forEach((sym) => (symbols[sym] = true))
             } else {
                 const usesPkg = uses.includes(pkg.name)

@@ -9,6 +9,7 @@ import { Parser } from './lisp/Parser'
 import { findExpr } from './lisp/Expr'
 import { Lexer } from './Lexer'
 import { PackageMgr } from './lisp/PackageMgr'
+import { SwankConn } from './swank/SwankConn'
 
 const LANGUAGE_ID = 'common-lisp'
 const colorizer = new Colorizer()
@@ -67,6 +68,7 @@ module.exports.activate = (ctx: vscode.ExtensionContext) => {
 
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl))
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl))
 
     if (activeEditor === undefined || activeEditor.document.languageId !== LANGUAGE_ID) {
         return
@@ -96,6 +98,22 @@ async function readPackageLisp() {
     const exprs = parser.parse()
 
     pkgMgr.process(exprs)
+}
+
+async function attachRepl() {
+    const conn = new SwankConn('localhost', 4005)
+
+    conn.on('error', (err) => console.log(err))
+    conn.on('msg', (msg) => console.log(msg))
+    conn.on('activate', (event) => console.log(event))
+    conn.on('debug', (event) => console.log(event))
+    conn.on('close', () => console.log('Connection closed'))
+
+    try {
+        await conn.connect()
+    } catch (err) {
+        console.log(err)
+    }
 }
 
 function sendToRepl() {

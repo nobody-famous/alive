@@ -16,7 +16,7 @@ export class Node {
         this.value = undefined
     }
 
-    toExpr() {
+    toExpr(): Expr | undefined {
         if (this.value !== undefined) {
             return this.toAtomExpr()
         }
@@ -62,10 +62,13 @@ export class Node {
             return undefined
         }
 
-        const parts = []
+        const parts: Expr[] = []
 
         for (const kid of kids) {
-            parts.push(kid.toExpr())
+            const expr = kid.toExpr()
+            if (expr !== undefined) {
+                parts.push(expr)
+            }
         }
 
         return new SExpr(this.open.start, this.close.end, parts)
@@ -132,12 +135,7 @@ export class Node {
     }
 
     toDefunExpr(kids: Node[]): Defun | undefined {
-        if (
-            this.open === undefined ||
-            this.close === undefined ||
-            kids.length < 3 ||
-            kids[1].value?.text === undefined
-        ) {
+        if (this.open === undefined || this.close === undefined || kids.length < 3 || kids[1].value?.text === undefined) {
             return undefined
         }
 

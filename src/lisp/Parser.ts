@@ -1,5 +1,6 @@
 import * as types from '../Types'
 import { Node } from './Node'
+import { Expr } from './Expr'
 import { Token } from '../Token'
 
 export class Parser {
@@ -11,7 +12,7 @@ export class Parser {
         this.ndx = 0
     }
 
-    parse() {
+    parse(): Expr[] {
         this.ndx = 0
         const exprs = []
 

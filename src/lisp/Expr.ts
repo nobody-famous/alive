@@ -36,9 +36,9 @@ export function findExpr(exprs: Expr[], pos: Position): Expr | undefined {
 }
 
 export class Atom extends Expr {
-    value: any
+    value: unknown
 
-    constructor(start: Position, end: Position, value: any) {
+    constructor(start: Position, end: Position, value: unknown) {
         super(start, end)
 
         this.value = value
@@ -46,9 +46,9 @@ export class Atom extends Expr {
 }
 
 export class SExpr extends Expr {
-    parts: any[]
+    parts: Expr[]
 
-    constructor(start: Position, end: Position, parts: any[]) {
+    constructor(start: Position, end: Position, parts: Expr[]) {
         super(start, end)
 
         this.parts = parts
