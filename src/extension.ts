@@ -1,15 +1,16 @@
-import * as vscode from 'vscode'
-import * as path from 'path'
 import * as fs from 'fs'
-import { Token } from './Token'
+import * as path from 'path'
+import * as vscode from 'vscode'
 import { Colorizer } from './colorize/Colorizer'
-import { Formatter } from './format/Formatter'
 import { CompletionProvider } from './CompletionProvider'
-import { Parser } from './lisp/Parser'
-import { findExpr } from './lisp/Expr'
+import { Formatter } from './format/Formatter'
 import { Lexer } from './Lexer'
+import { findExpr } from './lisp/Expr'
 import { PackageMgr } from './lisp/PackageMgr'
+import { Parser } from './lisp/Parser'
+import * as repl from './repl'
 import { SwankConn } from './swank/SwankConn'
+import { Token } from './Token'
 
 const LANGUAGE_ID = 'common-lisp'
 const colorizer = new Colorizer()
@@ -101,16 +102,9 @@ async function readPackageLisp() {
 }
 
 async function attachRepl() {
-    const conn = new SwankConn('localhost', 4005)
-
-    conn.on('error', (err) => console.log(err))
-    conn.on('msg', (msg) => console.log(msg))
-    conn.on('activate', (event) => console.log(event))
-    conn.on('debug', (event) => console.log(event))
-    conn.on('close', () => console.log('Connection closed'))
-
     try {
-        await conn.connect()
+        const view = new repl.View('localhost', 4005)
+        await view.start()
     } catch (err) {
         console.log(err)
     }
