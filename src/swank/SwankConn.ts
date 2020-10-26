@@ -1,9 +1,11 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
 import { ConnectionInfoReq, EvalReq, SwankRequest } from './SwankRequest'
-import { ConnectionInfoResp, EvalResp, SwankResponse } from './SwankResponse'
+import { SwankResponse } from './SwankResponse'
+import * as response from './response'
 import { SwankEvent } from './SwankEvent'
 import { ReturnEvent } from './ReturnEvent'
+import { ConnInfo } from './Types'
 
 export class SwankConn extends EventEmitter {
     host: string
@@ -11,7 +13,6 @@ export class SwankConn extends EventEmitter {
 
     trace: boolean
     conn?: net.Socket
-    info?: ConnectionInfoResp
 
     buffer?: Buffer
     curResponse?: SwankResponse
@@ -28,7 +29,6 @@ export class SwankConn extends EventEmitter {
         this.trace = false
 
         this.conn = undefined
-        this.info = undefined
         this.handlers = {}
         this.msgID = 1
     }
@@ -37,7 +37,8 @@ export class SwankConn extends EventEmitter {
         return new Promise((resolve, reject) => {
             this.conn = net.createConnection(this.port, this.host, async () => {
                 try {
-                    this.info = await this.connectionInfo()
+                    const infoResp = await this.connectionInfo()
+                    this.emit('conn-info', infoResp.info)
                 } catch (err) {
                     return reject(`Failed to get connection info ${err.toString()}`)
                 }
@@ -54,14 +55,14 @@ export class SwankConn extends EventEmitter {
         const req = new ConnectionInfoReq()
         const resp = await this.sendRequest(req)
 
-        return new ConnectionInfoResp(resp)
+        return new response.ConnectionInfo(resp)
     }
 
     async eval(str: string) {
         const req = new EvalReq(str)
         const resp = await this.sendRequest(req)
 
-        return new EvalResp(resp)
+        return new response.Eval(resp)
     }
 
     // async listThreads() {
@@ -200,7 +201,6 @@ export class SwankConn extends EventEmitter {
     }
 
     async sendRequest(req: SwankRequest): Promise<any> {
-
         const id = this.nextID()
         const msg = req.encode(id)
 

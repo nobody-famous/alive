@@ -1,10 +1,7 @@
 import { Lexer } from '../Lexer'
-import { AST, Expr, Node, Parser, SExpr, valueToNumber, valueToString, valueToMap, valueToArray } from '../lisp'
-import * as types from '../Types'
+import { Expr, Parser, SExpr } from '../lisp'
 import { ReturnEvent } from './ReturnEvent'
 import { createRawEvent, SwankEvent, SwankRawEvent } from './SwankEvent'
-import { convertArray } from './SwankUtils'
-import { ConnInfo, Encoding, StringMap } from './Types'
 
 export class SwankResponse {
     length?: number
@@ -50,6 +47,8 @@ export class SwankResponse {
     convertRawEvent(rawEvent: SwankRawEvent): SwankEvent | undefined {
         if (rawEvent.op === ':RETURN') {
             return this.buildReturnEvent(rawEvent)
+        } else if (rawEvent.op === ':INDENTATION-UPDATE') {
+            return undefined
         }
 
         throw new Error(`UNHANDLED OP ${rawEvent.op}`)
@@ -72,42 +71,6 @@ export class SwankResponse {
         }
 
         return new ReturnEvent(rawEvent.msgID, rawEvent.args)
-    }
-
-    astToArray(ast: AST): string[] {
-        const arr: string[] = []
-
-        ast.nodes.forEach((node) => {
-            const value = this.nodeToArray(node)
-
-            if (value !== undefined) {
-                arr.push(value)
-            }
-        })
-
-        return arr
-    }
-
-    nodeToArray(node: Node): any {
-        if (node.value !== undefined && node.value.type !== types.WHITE_SPACE) {
-            return [node.value.text]
-        }
-
-        if (node.kids.length > 0) {
-            let arr: Array<string | string[]> = []
-
-            node.kids.forEach((kid) => {
-                const value = this.nodeToArray(kid)
-
-                if (value !== undefined) {
-                    arr.push(value)
-                }
-            })
-
-            return arr
-        }
-
-        return undefined
     }
 
     addData(data: Buffer): Buffer {
@@ -144,52 +107,6 @@ export class SwankResponse {
         }
 
         return remaining
-    }
-}
-
-export class EvalResp {
-    result: string
-
-    constructor(data: any[]) {
-        let count = 0
-
-        for (let ndx = 0; ndx < data.length; ndx += 1) {
-            if (data[ndx] === '""') {
-                count += 1
-            }
-        }
-
-        data.splice(0, count)
-        this.result = convertArray(data).join('\n')
-    }
-}
-
-export class ConnectionInfoResp {
-    pid?: number
-    encoding?: Encoding
-    impl?: StringMap
-    machine?: StringMap
-    package?: StringMap
-    style?: string
-    features?: unknown[]
-    modules?: unknown[]
-    version?: string
-
-    constructor(info: StringMap) {
-        this.pid = valueToNumber(info.pid)
-
-        if (info.encoding !== undefined) {
-            this.encoding = info.encoding as Encoding
-        }
-
-        this.impl = valueToMap(info.lisp_implementation)
-        this.machine = valueToMap(info.machine)
-        this.package = valueToMap(info.package)
-
-        this.style = valueToString(info.style)
-        this.features = valueToArray(info.features)
-        this.modules = valueToArray(info.modules)
-        this.version = valueToString(info.version)
     }
 }
 

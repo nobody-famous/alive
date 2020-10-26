@@ -5,11 +5,10 @@ import { Colorizer } from './colorize/Colorizer'
 import { CompletionProvider } from './CompletionProvider'
 import { Formatter } from './format/Formatter'
 import { Lexer } from './Lexer'
-import { findExpr } from './lisp/Expr'
+import { findExpr, Expr } from './lisp/Expr'
 import { PackageMgr } from './lisp/PackageMgr'
 import { Parser } from './lisp/Parser'
 import * as repl from './repl'
-import { SwankConn } from './swank/SwankConn'
 import { Token } from './Token'
 
 const LANGUAGE_ID = 'common-lisp'
@@ -17,10 +16,11 @@ const colorizer = new Colorizer()
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
 
+let clRepl: repl.Repl | undefined = undefined
 let activeEditor = vscode.window.activeTextEditor
 let lexTokenMap: { [index: string]: Token[] } = {}
 
-module.exports.activate = (ctx: vscode.ExtensionContext) => {
+export const activate = (ctx: vscode.ExtensionContext) => {
     vscode.window.onDidChangeActiveTextEditor(
         (editor?: vscode.TextEditor) => {
             activeEditor = editor
@@ -103,16 +103,25 @@ async function readPackageLisp() {
 
 async function attachRepl() {
     try {
-        const view = new repl.View('localhost', 4005)
-        await view.start()
+        clRepl = new repl.Repl('localhost', 4005)
+        await clRepl.connect()
     } catch (err) {
         console.log(err)
     }
 }
 
+function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
+    const selection = editor.selection
+
+    if (!selection.isEmpty) {
+        return new vscode.Range(selection.start, selection.end)
+    }
+
+    return new vscode.Range(expr.start, expr.end)
+}
+
 function sendToRepl() {
-    const session = vscode.debug.activeDebugSession
-    if (session === undefined) {
+    if (clRepl === undefined) {
         return
     }
 
@@ -123,22 +132,14 @@ function sendToRepl() {
         }
 
         const expr = getTopExpr()
-        const selection = editor.selection
-        let range = undefined
-
-        if (!selection.isEmpty) {
-            range = new vscode.Range(selection.start, selection.end)
-        } else if (expr !== undefined) {
-            range = new vscode.Range(expr.start, expr.end)
-        }
-
-        if (range === undefined) {
+        if (expr === undefined) {
             return
         }
 
+        const range = getExprRange(editor, expr)
         const text = editor.document.getText(range)
 
-        session.customRequest('evaluate', { expression: text })
+        clRepl.send(text)
     } catch (err) {
         console.log(err)
     }

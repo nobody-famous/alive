@@ -4,12 +4,17 @@ export interface Encoding {
     coding_systems: StringMap
 }
 
+export interface PkgInfo {
+    name: string
+    prompt: string
+}
+
 export interface ConnInfo {
     pid?: number
     encoding?: Encoding
     impl?: StringMap
     machine?: StringMap
-    package?: StringMap
+    package?: PkgInfo
     style?: string
     features?: any[]
     modules?: any[]

@@ -1,38 +1,54 @@
 import * as vscode from 'vscode'
-import { SwankConn } from '../swank/SwankConn'
 import { WebviewPanel } from 'vscode'
 
 export class View {
-    conn: SwankConn
     panel: WebviewPanel
+    body: string[] = []
+    prompt: string = ''
 
-    constructor(host: string, port: number) {
-        this.conn = new SwankConn(host, port)
-
+    constructor() {
         this.panel = vscode.window.createWebviewPanel('clRepl', 'CL Repl', vscode.ViewColumn.Two, {})
     }
 
-    async start() {
-        this.conn.on('error', (err) => console.log(err))
-        this.conn.on('msg', (msg) => console.log(msg))
-        this.conn.on('activate', (event) => console.log(event))
-        this.conn.on('debug', (event) => console.log(event))
-        this.conn.on('close', () => console.log('Connection closed'))
+    setPrompt(prompt: string) {
+        this.prompt = prompt
+        this.updateView()
+    }
 
-        try {
-            await this.conn.connect()
-            this.updateView()
-        } catch (err) {
-            console.log(err)
-        }
+    addLine(line: string) {
+        this.body.push(line)
+        this.updateView()
     }
 
     updateView() {
         this.panel.webview.html = this.renderHTML()
     }
 
+    renderStyle(): string {
+        return `
+        <style>
+        input[type="text"] {
+            color: var(--vscode-editor-foreground);
+            background-color: var(--vscode-editor-background);
+        }
+        </style>
+        `
+    }
+
+    renderPromptInput(): string {
+        return `<input type="text">`
+    }
+
     renderBody(): string {
-        return 'This is some content'
+        let str = ''
+
+        for (const line of this.body) {
+            str += `<div>${line}</div>`
+        }
+
+        str += `<div>${this.prompt} >${this.renderPromptInput()}</div>`
+
+        return str
     }
 
     renderHTML(): string {
@@ -45,15 +61,22 @@ export class View {
         return html
     }
 
-    htmlOpen(): string {
+    renderHtmlHead(): string {
         return `
-        <!DOCTYPE html>
-        <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>CL Repl</title>
+            ${this.renderStyle()}
         </head>
+        `
+    }
+
+    htmlOpen(): string {
+        return `
+        <!DOCTYPE html>
+        <html lang="en">
+        ${this.renderHtmlHead()}
         <body>
         `
     }

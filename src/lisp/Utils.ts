@@ -50,3 +50,7 @@ export function valueToMap(value: unknown): StringMap | undefined {
 export function isObject(value: unknown): boolean {
     return typeof value === 'object' && value !== null
 }
+
+export function isString(value: unknown): boolean {
+    return typeof value === 'string'
+}
