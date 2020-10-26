@@ -69,7 +69,7 @@ export const activate = (ctx: vscode.ExtensionContext) => {
 
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl))
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl))
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl(ctx)))
 
     if (activeEditor === undefined || activeEditor.document.languageId !== LANGUAGE_ID) {
         return
@@ -101,12 +101,14 @@ async function readPackageLisp() {
     pkgMgr.process(exprs)
 }
 
-async function attachRepl() {
-    try {
-        clRepl = new repl.Repl('localhost', 4005)
-        await clRepl.connect()
-    } catch (err) {
-        console.log(err)
+function attachRepl(ctx: vscode.ExtensionContext): () => void {
+    return async () => {
+        try {
+            clRepl = new repl.Repl(ctx, 'localhost', 4005)
+            await clRepl.connect()
+        } catch (err) {
+            console.log(err)
+        }
     }
 }
 

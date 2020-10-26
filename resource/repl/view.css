@@ -1,0 +1,11 @@
+textarea {
+    color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+    animation-name: blink;
+    border: none;
+}
+
+textarea:focus {
+    border: none;
+    outline: none;
+}

@@ -1,14 +1,15 @@
-import { View } from './View'
+import * as vscode from 'vscode'
 import { SwankConn } from '../swank/SwankConn'
 import { ConnInfo } from '../swank/Types'
+import { View } from './View'
 
 export class Repl {
     conn: SwankConn
     view: View
 
-    constructor(host: string, port: number) {
+    constructor(ctx: vscode.ExtensionContext, host: string, port: number) {
         this.conn = new SwankConn(host, port)
-        this.view = new View()
+        this.view = new View(ctx)
     }
 
     async connect() {
@@ -27,7 +28,6 @@ export class Repl {
     }
 
     handleConnInfo(info: ConnInfo) {
-        console.log('handleConnInfo prompt', info.package?.prompt)
         if (info.package?.prompt !== undefined) {
             this.view.setPrompt(info.package.prompt)
         }

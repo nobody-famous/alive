@@ -1,13 +1,26 @@
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { WebviewPanel } from 'vscode'
 
 export class View {
     panel: WebviewPanel
     body: string[] = []
     prompt: string = ''
+    cssUri: vscode.Uri
+    jsUri: vscode.Uri
 
-    constructor() {
-        this.panel = vscode.window.createWebviewPanel('clRepl', 'CL Repl', vscode.ViewColumn.Two, {})
+    constructor(ctx: vscode.ExtensionContext) {
+        const opts = {
+            enableScripts: true,
+            localResourceRoots: [vscode.Uri.file(path.join(ctx.extensionPath, 'resource'))],
+        }
+
+        const cssFileUri = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'repl', 'view.css'))
+        const jsFileUri = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'repl', 'view.js'))
+
+        this.panel = vscode.window.createWebviewPanel('clRepl', 'CL Repl', vscode.ViewColumn.Two, opts)
+        this.cssUri = this.panel.webview.asWebviewUri(cssFileUri)
+        this.jsUri = this.panel.webview.asWebviewUri(jsFileUri)
     }
 
     setPrompt(prompt: string) {
@@ -25,28 +38,26 @@ export class View {
     }
 
     renderStyle(): string {
-        return `
-        <style>
-        input[type="text"] {
-            color: var(--vscode-editor-foreground);
-            background-color: var(--vscode-editor-background);
-        }
-        </style>
-        `
+        return `<link rel="stylesheet" href="${this.cssUri}">`
+    }
+
+    renderScript(): string {
+        return `<script type="text/javascript" src="${this.jsUri}"></script>`
     }
 
     renderPromptInput(): string {
-        return `<input type="text">`
+        return `<textarea id="replInput" rows="1" autofocus></textarea>`
     }
 
     renderBody(): string {
-        let str = ''
+        let str = '<body>'
 
         for (const line of this.body) {
             str += `<div>${line}</div>`
         }
 
         str += `<div>${this.prompt} >${this.renderPromptInput()}</div>`
+        str += '</body>'
 
         return str
     }
@@ -56,15 +67,25 @@ export class View {
 
         html += `${this.htmlOpen()}`
         html += this.renderBody()
+        html += this.renderScript()
         html == this.htmlClose()
 
         return html
     }
 
     renderHtmlHead(): string {
+        const webview = this.panel.webview
+        const imgSrc = `img-src ${webview.cspSource}`
+        const scriptSrc = `script-src ${webview.cspSource}`
+        const styleSrc = `style-src ${webview.cspSource}`
+
         return `
         <head>
             <meta charset="UTF-8">
+            <meta
+                http-equiv="Content-Security-Policy"
+                content="default-src 'none'; ${imgSrc} https:; ${scriptSrc}; ${styleSrc};"
+            />
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>CL Repl</title>
             ${this.renderStyle()}
@@ -77,13 +98,11 @@ export class View {
         <!DOCTYPE html>
         <html lang="en">
         ${this.renderHtmlHead()}
-        <body>
         `
     }
 
     htmlClose(): string {
         return `
-        </body>
         </html>
         `
     }
