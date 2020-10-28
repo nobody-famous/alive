@@ -1,18 +1,29 @@
-import { convertArray } from '../SwankUtils'
+import { Atom, valueToString } from '../../lisp'
+import { convert } from '../SwankUtils'
 
 export class Eval {
-    result: string
+    result: string[]
 
-    constructor(data: any[]) {
-        let count = 0
+    constructor(result: string[]) {
+        this.result = result
+    }
 
-        for (let ndx = 0; ndx < data.length; ndx += 1) {
-            if (data[ndx] === '""') {
-                count += 1
+    static parse(data: unknown): Eval | undefined {
+        if (!Array.isArray(data)) {
+            return undefined
+        }
+
+        const lines = []
+        for (const item of data) {
+            const expr = item as Atom
+            const line = expr.value !== undefined ? valueToString(expr.value) : undefined
+
+            if (line !== undefined) {
+                const converted = convert(line)
+                lines.push(`${converted}`)
             }
         }
 
-        data.splice(0, count)
-        this.result = convertArray(data).join('\n')
+        return new Eval(lines)
     }
 }

@@ -1,30 +1,49 @@
-import { valueToArray, valueToMap, valueToNumber, valueToString } from '../../lisp'
+import { valueToArray, valueToMap, valueToNumber, valueToString, Expr } from '../../lisp'
 import { ConnInfo, Encoding, StringMap, PkgInfo } from '../Types'
 import { isObject, isString } from 'util'
+import { plistToObj } from '../SwankUtils'
 
 export class ConnectionInfo {
     info: ConnInfo
 
-    constructor(info: StringMap) {
-        this.info = {}
-
-        this.info.pid = valueToNumber(info.pid)
-
-        if (info.encoding !== undefined) {
-            this.info.encoding = info.encoding as Encoding
-        }
-
-        this.info.impl = valueToMap(info.lisp_implementation)
-        this.info.machine = valueToMap(info.machine)
-        this.info.package = this.valueToPkgInfo(info.package)
-
-        this.info.style = valueToString(info.style)
-        this.info.features = valueToArray(info.features)
-        this.info.modules = valueToArray(info.modules)
-        this.info.version = valueToString(info.version)
+    constructor(info: ConnInfo) {
+        this.info = info
     }
 
-    valueToPkgInfo(info: unknown): PkgInfo | undefined {
+    static parse(data: unknown): ConnectionInfo | undefined {
+        if (!Array.isArray(data)) {
+            return undefined
+        }
+
+        const exprList = data as Expr[]
+        const plist = plistToObj(exprList)
+
+        if (!isObject(plist)) {
+            return undefined
+        }
+
+        const info = plist as ConnInfo
+        const connInfo: ConnInfo = {}
+
+        connInfo.pid = valueToNumber(info.pid)
+
+        if (info.encoding !== undefined) {
+            connInfo.encoding = info.encoding as Encoding
+        }
+
+        connInfo.impl = valueToMap(info.lisp_implementation)
+        connInfo.machine = valueToMap(info.machine)
+        connInfo.package = this.valueToPkgInfo(info.package)
+
+        connInfo.style = valueToString(info.style)
+        connInfo.features = valueToArray(info.features)
+        connInfo.modules = valueToArray(info.modules)
+        connInfo.version = valueToString(info.version)
+
+        return new ConnectionInfo(connInfo)
+    }
+
+    static valueToPkgInfo(info: unknown): PkgInfo | undefined {
         if (!isObject(info)) {
             return undefined
         }

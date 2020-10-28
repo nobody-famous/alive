@@ -1,11 +1,12 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
+import { format } from 'util'
+import * as response from './response'
+import { ConnectionInfo } from './response'
+import { ReturnEvent } from './ReturnEvent'
+import { SwankEvent } from './SwankEvent'
 import { ConnectionInfoReq, EvalReq, SwankRequest } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
-import * as response from './response'
-import { SwankEvent } from './SwankEvent'
-import { ReturnEvent } from './ReturnEvent'
-import { ConnInfo } from './Types'
 
 export class SwankConn extends EventEmitter {
     host: string
@@ -51,18 +52,28 @@ export class SwankConn extends EventEmitter {
         })
     }
 
-    async connectionInfo() {
-        const req = new ConnectionInfoReq()
+    async connectionInfo(): Promise<response.ConnectionInfo> {
+        const req = new ConnectionInfoReq(this.nextID())
         const resp = await this.sendRequest(req)
+        const info = ConnectionInfo.parse(resp)
 
-        return new response.ConnectionInfo(resp)
+        if (info === undefined) {
+            throw new Error(`Connection Info invalid response ${format(resp)}`)
+        }
+
+        return info
     }
 
-    async eval(str: string) {
-        const req = new EvalReq(str)
+    async eval(str: string): Promise<response.Eval> {
+        const req = new EvalReq(this.nextID(), str)
         const resp = await this.sendRequest(req)
+        const evalResp = response.Eval.parse(resp)
 
-        return new response.Eval(resp)
+        if (evalResp === undefined) {
+            throw new Error(`Eval invalid response ${format(resp)}`)
+        }
+
+        return evalResp
     }
 
     // async listThreads() {
@@ -176,10 +187,10 @@ export class SwankConn extends EventEmitter {
         try {
             const { resolve, reject } = this.handlerForID(event.id)
             const status = event.info?.status
-            const args = event.info?.args
+            const payload = event.info?.payload
 
             if (status === ':OK') {
-                resolve(args)
+                resolve(payload)
             } else {
                 reject(status)
             }
@@ -200,7 +211,7 @@ export class SwankConn extends EventEmitter {
         return handler
     }
 
-    async sendRequest(req: SwankRequest): Promise<any> {
+    async sendRequest(req: SwankRequest): Promise<unknown> {
         const id = this.nextID()
         const msg = req.encode(id)
 
@@ -209,7 +220,7 @@ export class SwankConn extends EventEmitter {
         return this.waitForResponse(id)
     }
 
-    waitForResponse(id: number): Promise<any> {
+    waitForResponse(id: number): Promise<unknown> {
         return new Promise((resolve, reject) => {
             this.handlers[id] = { resolve, reject }
         })

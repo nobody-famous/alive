@@ -33,7 +33,11 @@ export class Repl {
         }
     }
 
-    send(text: string) {
-        this.view.addLine(text)
+    async send(text: string) {
+        const resp = await this.conn.eval(text)
+
+        for (const line of resp.result) {
+            this.view.addLine(line)
+        }
     }
 }

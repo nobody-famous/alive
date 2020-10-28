@@ -2,9 +2,11 @@ import { LispID, LispQuote, LispSymbol } from './LispID'
 import { toWire } from './SwankUtils'
 
 export class SwankRequest {
+    msgID: number
     data: string[]
 
-    constructor(data: string[]) {
+    constructor(msgID: number, data: string[]) {
+        this.msgID = msgID
         this.data = data
     }
 
@@ -119,44 +121,49 @@ swank:swank-require [needed]
 */
 
 export class EmacsRex extends SwankRequest {
-    constructor(data: string, pkg: any, threadID: string | boolean) {
-        super([toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)])
+    constructor(msgID: number, data: string, pkg: any, threadID: string | boolean) {
+        super(msgID, [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)])
     }
 }
 
 export class ConnectionInfoReq extends EmacsRex {
-    constructor() {
-        super(toWire([new LispID('swank:connection-info')]), new LispID('nil'), true)
+    constructor(msgID: number) {
+        super(msgID, toWire([new LispID('swank:connection-info')]), new LispID('nil'), true)
     }
 }
 
 export class EvalReq extends EmacsRex {
-    constructor(form: string) {
-        super(toWire([new LispID('swank:eval-and-grab-output'), form]), new LispID('nil'), true)
+    constructor(msgID: number, form: string) {
+        super(msgID, toWire([new LispID('swank:eval-and-grab-output'), form]), new LispID('nil'), true)
     }
 }
 
 export class ThreadsReq extends EmacsRex {
-    constructor() {
-        super(toWire([new LispID('swank:list-threads')]), new LispID('nil'), true)
+    constructor(msgID: number) {
+        super(msgID, toWire([new LispID('swank:list-threads')]), new LispID('nil'), true)
     }
 }
 
 export class FrameLocalsReq extends EmacsRex {
-    constructor(threadID: string, frameID: string) {
-        super(toWire([new LispID('swank:frame-locals-and-catch-tags'), frameID]), new LispID('nil'), threadID)
+    constructor(msgID: number, threadID: string, frameID: string) {
+        super(msgID, toWire([new LispID('swank:frame-locals-and-catch-tags'), frameID]), new LispID('nil'), threadID)
     }
 }
 
 export class DebuggerInfoReq extends EmacsRex {
-    constructor(threadID: string, start: number, end: number) {
-        super(toWire([new LispID('swank:debugger-info-for-emacs'), start, end]), new LispID('nil'), threadID)
+    constructor(msgID: number, threadID: string, start: number, end: number) {
+        super(msgID, toWire([new LispID('swank:debugger-info-for-emacs'), start, end]), new LispID('nil'), threadID)
     }
 }
 
 export class DebugThreadReq extends EmacsRex {
-    constructor(threadNdx: number, pid: number) {
+    constructor(msgID: number, threadNdx: number, pid: number) {
         // super(toWire([new LispID('swank:debug-nth-thread'), threadID]), 'COMMON-LISP-USER', true);
-        super(toWire([new LispID('swank:start-swank-server-in-thread'), threadNdx, `/tmp/slime.${pid}`]), new LispID('nil'), true)
+        super(
+            msgID,
+            toWire([new LispID('swank:start-swank-server-in-thread'), threadNdx, `/tmp/slime.${pid}`]),
+            new LispID('nil'),
+            true
+        )
     }
 }

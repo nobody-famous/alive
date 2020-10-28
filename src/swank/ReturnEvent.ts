@@ -1,10 +1,11 @@
-import { exprToString, SExpr } from '../lisp'
+import { exprToString, SExpr, Expr } from '../lisp'
 import { SwankEvent } from './SwankEvent'
 import { plistToObj } from './SwankUtils'
+import { format } from 'util'
 
 interface Info {
     status: string
-    args: unknown
+    payload: unknown
 }
 
 export class ReturnEvent implements SwankEvent {
@@ -17,19 +18,15 @@ export class ReturnEvent implements SwankEvent {
         this.id = msgID
 
         const status = exprToString(sexpr.parts[0])
-        const argsExpr = sexpr.parts[1]
+        const payloadExpr = sexpr.parts[1]
 
-        if (status === undefined || !(argsExpr instanceof SExpr)) {
-            throw new Error('ReturnEvent Invalid SExpr')
+        if (status === undefined || !(payloadExpr instanceof SExpr)) {
+            throw new Error(`ReturnEvent Invalid SExpr ${format(payloadExpr)}`)
         }
 
-        const argsSExpr = argsExpr as SExpr
+        const payloadSExpr = payloadExpr as SExpr
+        const payload = payloadSExpr.parts
 
-        const args = plistToObj(argsSExpr.parts)
-        if (args === undefined) {
-            throw new Error('ReturnEvent Invalid plist')
-        }
-
-        this.info = { status, args }
+        this.info = { status, payload }
     }
 }
