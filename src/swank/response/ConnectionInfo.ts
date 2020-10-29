@@ -1,7 +1,8 @@
-import { valueToArray, valueToMap, valueToNumber, valueToString, Expr } from '../../lisp'
+import { valueToArray, valueToMap, valueToNumber, valueToString, Expr, SExpr } from '../../lisp'
 import { ConnInfo, Encoding, StringMap, PkgInfo } from '../Types'
 import { isObject, isString } from 'util'
 import { plistToObj } from '../SwankUtils'
+import { ReturnEvent } from '../ReturnEvent'
 
 export class ConnectionInfo {
     info: ConnInfo
@@ -10,13 +11,23 @@ export class ConnectionInfo {
         this.info = info
     }
 
-    static parse(data: unknown): ConnectionInfo | undefined {
-        if (!Array.isArray(data)) {
-            return undefined
+    static parse(event: ReturnEvent): ConnectionInfo | undefined {
+        const infoExpr = event.info.payload
+
+        if (!(infoExpr instanceof SExpr)) {
+            throw new Error('ConnectionInfo Invalid payload')
         }
 
-        const exprList = data as Expr[]
-        const plist = plistToObj(exprList)
+        const plist = plistToObj(infoExpr.parts)
+
+        // throw new Error('ConnectionInfo parse NOT DONE YET')
+
+        // if (!Array.isArray(data)) {
+        //     return undefined
+        // }
+
+        // const exprList = data as Expr[]
+        // const plist = plistToObj(exprList)
 
         if (!isObject(plist)) {
             return undefined

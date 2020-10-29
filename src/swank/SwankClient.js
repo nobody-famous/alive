@@ -98,6 +98,7 @@ module.exports.SwankClient = class extends EventEmitter {
 
     async eval(str) {
         try {
+            console.log('Client eval')
             const res = await this.replConn.eval(str);
 
             if (res !== undefined && res.result !== undefined) {

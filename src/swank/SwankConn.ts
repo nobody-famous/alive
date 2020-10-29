@@ -107,6 +107,7 @@ export class SwankConn extends EventEmitter {
     }
 
     connClosed() {
+        console.log('CONNECTION CLOSED')
         this.conn = undefined
         this.emit('close')
     }
@@ -187,10 +188,9 @@ export class SwankConn extends EventEmitter {
         try {
             const { resolve, reject } = this.handlerForID(event.id)
             const status = event.info?.status
-            const payload = event.info?.payload
 
             if (status === ':OK') {
-                resolve(payload)
+                resolve(event)
             } else {
                 reject(status)
             }
@@ -211,7 +211,7 @@ export class SwankConn extends EventEmitter {
         return handler
     }
 
-    async sendRequest(req: SwankRequest): Promise<unknown> {
+    async sendRequest(req: SwankRequest): Promise<ReturnEvent> {
         const id = this.nextID()
         const msg = req.encode(id)
 
@@ -220,7 +220,7 @@ export class SwankConn extends EventEmitter {
         return this.waitForResponse(id)
     }
 
-    waitForResponse(id: number): Promise<unknown> {
+    waitForResponse(id: number): Promise<ReturnEvent> {
         return new Promise((resolve, reject) => {
             this.handlers[id] = { resolve, reject }
         })

@@ -1,7 +1,6 @@
-import { exprToString, SExpr, Expr } from '../lisp'
-import { SwankEvent } from './SwankEvent'
-import { plistToObj } from './SwankUtils'
 import { format } from 'util'
+import { exprToNumber, exprToString, SExpr } from '../lisp'
+import { SwankEvent, SwankRawEvent } from './SwankEvent'
 
 interface Info {
     status: string
@@ -11,22 +10,37 @@ interface Info {
 export class ReturnEvent implements SwankEvent {
     op: string
     id: number
-    info?: Info
+    info: Info
 
-    constructor(msgID: number, sexpr: SExpr) {
+    constructor(msgID: number, info: Info) {
         this.op = ':RETURN'
         this.id = msgID
+        this.info = info
+    }
 
-        const status = exprToString(sexpr.parts[0])
-        const payloadExpr = sexpr.parts[1]
-
-        if (status === undefined || !(payloadExpr instanceof SExpr)) {
-            throw new Error(`ReturnEvent Invalid SExpr ${format(payloadExpr)}`)
+    static fromRaw(event: SwankRawEvent): ReturnEvent | undefined {
+        if (event.op !== ':RETURN' || event.payload.length !== 2) {
+            return undefined
         }
 
-        const payloadSExpr = payloadExpr as SExpr
-        const payload = payloadSExpr.parts
+        const retValue = event.payload[0]
+        const msgID = exprToNumber(event.payload[1])
 
-        this.info = { status, payload }
+        if (!(retValue instanceof SExpr) || msgID === undefined) {
+            throw new Error(`ReturnEvent Invalid Event ${format(event)}`)
+        }
+
+        const status = exprToString(retValue.parts[0])
+        if (status === undefined) {
+            throw new Error(`ReturnEvent Invalid Event ${format(event)}`)
+        }
+
+        const payload = retValue.parts[1]
+
+        if (retValue.parts.length > 2) {
+            throw new Error(`ReturnEvent parts ${retValue.parts.length}`)
+        }
+
+        return new ReturnEvent(msgID, { status, payload })
     }
 }

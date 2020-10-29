@@ -1,7 +1,7 @@
 import { Lexer } from '../Lexer'
 import { Expr, Parser, SExpr } from '../lisp'
 import { ReturnEvent } from './ReturnEvent'
-import { createRawEvent, SwankEvent, SwankRawEvent } from './SwankEvent'
+import { SwankEvent, SwankRawEvent } from './SwankEvent'
 
 export class SwankResponse {
     length?: number
@@ -46,7 +46,7 @@ export class SwankResponse {
 
     convertRawEvent(rawEvent: SwankRawEvent): SwankEvent | undefined {
         if (rawEvent.op === ':RETURN') {
-            return this.buildReturnEvent(rawEvent)
+            return ReturnEvent.fromRaw(rawEvent)
         } else if (rawEvent.op === ':INDENTATION-UPDATE') {
             return undefined
         }
@@ -56,22 +56,18 @@ export class SwankResponse {
 
     getRawEvent(expr: SExpr): SwankRawEvent | undefined {
         const sexpr = expr as SExpr
-        const [opExpr, argsExpr, msgIdExpr] = sexpr.parts
+        const [opExpr, ...payload] = sexpr.parts
 
-        if (!(argsExpr instanceof SExpr)) {
-            throw new Error('argsExpr IS NOT SExpr')
-        }
-
-        return createRawEvent(opExpr, argsExpr, msgIdExpr)
+        return SwankRawEvent.create(opExpr, payload)
     }
 
-    buildReturnEvent(rawEvent: SwankRawEvent): ReturnEvent {
-        if (rawEvent.msgID === undefined) {
-            throw new Error(`Return Event missing message ID ${rawEvent}`)
-        }
+    // buildReturnEvent(rawEvent: SwankRawEvent): ReturnEvent {
+    //     if (rawEvent.msgID === undefined) {
+    //         throw new Error(`Return Event missing message ID ${rawEvent}`)
+    //     }
 
-        return new ReturnEvent(rawEvent.msgID, rawEvent.args)
-    }
+    //     return new ReturnEvent(rawEvent.msgID, rawEvent.args)
+    // }
 
     addData(data: Buffer): Buffer {
         if (this.length === undefined) {

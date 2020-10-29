@@ -2,12 +2,15 @@ import * as vscode from 'vscode'
 import { SwankConn } from '../swank/SwankConn'
 import { ConnInfo } from '../swank/Types'
 import { View } from './View'
+import { EventEmitter } from 'events'
 
-export class Repl {
+export class Repl extends EventEmitter {
     conn: SwankConn
     view: View
 
     constructor(ctx: vscode.ExtensionContext, host: string, port: number) {
+        super()
+
         this.conn = new SwankConn(host, port)
         this.view = new View(ctx)
     }
@@ -19,12 +22,18 @@ export class Repl {
             this.conn.on('msg', (msg) => console.log(msg))
             this.conn.on('activate', (event) => console.log(event))
             this.conn.on('debug', (event) => console.log(event))
-            this.conn.on('close', () => console.log('Connection closed'))
+            this.conn.on('close', () => this.onClose())
 
             await this.conn.connect()
         } catch (err) {
             console.log(err)
         }
+    }
+
+    onClose() {
+        console.log('Connection Closed')
+        this.view.close()
+        this.emit('close')
     }
 
     handleConnInfo(info: ConnInfo) {
@@ -34,10 +43,14 @@ export class Repl {
     }
 
     async send(text: string) {
-        const resp = await this.conn.eval(text)
+        try {
+            const resp = await this.conn.eval(text)
 
-        for (const line of resp.result) {
-            this.view.addLine(line)
+            for (const line of resp.result) {
+                this.view.addLine(line)
+            }
+        } catch (err) {
+            this.emit('error', err)
         }
     }
 }

@@ -104,12 +104,24 @@ async function readPackageLisp() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
-            clRepl = new repl.Repl(ctx, 'localhost', 4005)
-            await clRepl.connect()
+            if (clRepl !== undefined) {
+                console.log('Already attached...')
+                return
+            }
+
+            await newReplConnection(ctx)
         } catch (err) {
             console.log(err)
         }
     }
+}
+
+async function newReplConnection(ctx: vscode.ExtensionContext) {
+    clRepl = new repl.Repl(ctx, 'localhost', 4005)
+
+    clRepl.on('close', () => (clRepl = undefined))
+
+    await clRepl.connect()
 }
 
 function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
@@ -122,7 +134,7 @@ function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
     return new vscode.Range(expr.start, expr.end)
 }
 
-function sendToRepl() {
+async function sendToRepl() {
     if (clRepl === undefined) {
         return
     }
@@ -141,7 +153,7 @@ function sendToRepl() {
         const range = getExprRange(editor, expr)
         const text = editor.document.getText(range)
 
-        clRepl.send(text)
+        await clRepl.send(text)
     } catch (err) {
         console.log(err)
     }

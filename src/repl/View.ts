@@ -23,6 +23,10 @@ export class View {
         this.jsUri = this.panel.webview.asWebviewUri(jsFileUri)
     }
 
+    close() {
+        this.panel.dispose()
+    }
+
     setPrompt(prompt: string) {
         this.prompt = prompt
         this.updateView()

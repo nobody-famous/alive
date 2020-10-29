@@ -44,9 +44,15 @@ Selects the surrounding top level expression for the current cursor position. Bo
 Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position. Bound to Alt+Shift+Enter.
 
 ## REPL Integration
-I use SBCL, so that's what is currently supported for the REPL. I decided to write it as a debugger extension, so it behaves like a debugger.
+I use SBCL, so I don't know if other evironments will work.
 
-After a launch.json is configured, pressing F5 will start the REPL.
+My original idea was to implement a debug extension, but that didn't work out as well as I had hoped. Now, I've switched gears and
+am working on a Swank client. The only thing kind of working right now is sending an expression to the repl.
+
+* Attach To REPL
+    * Connects to a swank server running on localhost:4005
+* Alt-Shift-Enter
+    * Sends the current selection to the repl for eval, or the top level form if nothing selected
 
 ## Known Issues
 

@@ -6,23 +6,20 @@ export interface SwankEvent {
 
 export class SwankRawEvent {
     op: string
-    args: SExpr
-    msgID?: number
+    payload: Expr[]
 
-    constructor(op: string, args: SExpr, msgID?: number) {
+    constructor(op: string, payload: Expr[]) {
         this.op = op
-        this.args = args
-        this.msgID = msgID
-    }
-}
-
-export function createRawEvent(opExpr: Expr, args: SExpr, msgIDExpr: Expr): SwankRawEvent | undefined {
-    const op = exprToString(opExpr)
-    const msgID = exprToNumber(msgIDExpr)
-
-    if (op === undefined || args === undefined) {
-        return undefined
+        this.payload = payload
     }
 
-    return new SwankRawEvent(op, args, msgID)
+    static create(opExpr: Expr, payload: Expr[]): SwankRawEvent | undefined {
+        const op = exprToString(opExpr)
+
+        if (op === undefined) {
+            return undefined
+        }
+
+        return new SwankRawEvent(op, payload)
+    }
 }
