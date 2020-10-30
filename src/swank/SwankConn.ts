@@ -7,6 +7,27 @@ import { ReturnEvent } from './ReturnEvent'
 import { SwankEvent } from './SwankEvent'
 import { ConnectionInfoReq, EvalReq, SwankRequest } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
+import { ConnInfo } from './Types'
+
+export interface SwankConn {
+    emit(event: 'conn-err', ...args: unknown[]): boolean
+    on(event: 'conn-err', listener: (...args: unknown[]) => void): this
+
+    emit(event: 'conn-info', info: ConnInfo): boolean
+    on(event: 'conn-info', listener: (info: ConnInfo) => void): this
+
+    emit(event: 'close'): boolean
+    on(event: 'close', listener: () => void): this
+
+    emit(event: 'activate', swankEvent: SwankEvent): boolean
+    on(event: 'activate', listener: (swankEvent: SwankEvent) => void): this
+
+    emit(event: 'debug', swankEvent: SwankEvent): boolean
+    on(event: 'debug', listener: (swankEvent: SwankEvent) => void): this
+
+    emit(event: 'msg', message: string): boolean
+    on(event: 'msg', listener: (message: string) => void): this
+}
 
 export class SwankConn extends EventEmitter {
     host: string
@@ -36,20 +57,16 @@ export class SwankConn extends EventEmitter {
 
     connect() {
         return new Promise((resolve, reject) => {
-            this.conn = net.createConnection(this.port, this.host, async () => {
-                try {
-                    const infoResp = await this.connectionInfo()
-                    this.emit('conn-info', infoResp.info)
-                } catch (err) {
-                    return reject(`Failed to get connection info ${err.toString()}`)
-                }
-                resolve()
-            })
+            this.conn = net.createConnection(this.port, this.host, async () => resolve())
 
             this.conn.on('error', (err) => this.connError(err))
             this.conn.on('close', () => this.connClosed())
             this.conn.on('data', (data) => this.readData(data))
         })
+    }
+
+    close() {
+        this.conn?.destroy()
     }
 
     async connectionInfo(): Promise<response.ConnectionInfo> {
@@ -103,7 +120,7 @@ export class SwankConn extends EventEmitter {
     // }
 
     connError(err: Error) {
-        this.emit('error', `REPL Connection error ${err.toString()}`)
+        this.emit('conn-err', `REPL Connection error ${err.toString()}`)
     }
 
     connClosed() {
@@ -117,7 +134,7 @@ export class SwankConn extends EventEmitter {
             this.addToBuffer(data)
             this.readResponses()
         } catch (err) {
-            this.emit('error', err)
+            this.emit('conn-err', err)
         }
     }
 
@@ -197,7 +214,7 @@ export class SwankConn extends EventEmitter {
 
             delete this.handlers[event.id]
         } catch (err) {
-            this.emit('error', err)
+            this.emit('conn-err', err)
         }
     }
 

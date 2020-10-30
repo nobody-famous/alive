@@ -1,15 +1,12 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { Colorizer } from './colorize/Colorizer'
-import { CompletionProvider } from './CompletionProvider'
-import { Formatter } from './format/Formatter'
-import { Lexer } from './Lexer'
-import { findExpr, Expr } from './lisp/Expr'
-import { PackageMgr } from './lisp/PackageMgr'
-import { Parser } from './lisp/Parser'
-import * as repl from './repl'
-import { Token } from './Token'
+import { Expr, findExpr, Lexer, PackageMgr, Parser, Token } from './lisp'
+import { Colorizer } from './vscode/colorize/Colorizer'
+import { CompletionProvider } from './vscode/CompletionProvider'
+import { Formatter } from './vscode/format/Formatter'
+import * as repl from './vscode/repl'
+import { toVscodePos } from './vscode/Utils'
 
 const LANGUAGE_ID = 'common-lisp'
 const colorizer = new Colorizer()
@@ -131,7 +128,7 @@ function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
         return new vscode.Range(selection.start, selection.end)
     }
 
-    return new vscode.Range(expr.start, expr.end)
+    return new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
 }
 
 async function sendToRepl() {
@@ -169,7 +166,7 @@ function selectSexpr() {
         const expr = getTopExpr()
 
         if (expr !== undefined) {
-            editor.selection = new vscode.Selection(expr.start, expr.end)
+            editor.selection = new vscode.Selection(toVscodePos(expr.start), toVscodePos(expr.end))
         }
     } catch (err) {
         console.log(err)

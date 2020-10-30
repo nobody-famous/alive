@@ -1,8 +1,7 @@
-import { format } from 'util'
 import * as vscode from 'vscode'
 import { Position, Range, TextEdit, workspace } from 'vscode'
-import { Token } from '../Token'
-import * as types from '../Types'
+import { Token, types } from '../../lisp'
+import { toVscodePos } from '../Utils'
 
 const DEFAULT_INDENT = 3
 
@@ -314,7 +313,7 @@ export class Formatter {
 
         const origToken = this.original[token.ndx]
 
-        this.edits.push(TextEdit.delete(new Range(origToken.start, origToken.end)))
+        this.edits.push(TextEdit.delete(new Range(toVscodePos(origToken.start), toVscodePos(origToken.end))))
 
         this.fixLine()
     }
@@ -526,7 +525,7 @@ export class Formatter {
             prev.start.line === prev.end.line ? this.breakLine(prev, indent) : this.fixIndent(prev, indent)
         } else {
             const pad = ' '.repeat(indent)
-            this.edits.push(TextEdit.insert(this.original[this.token.ndx].start, '\n' + pad))
+            this.edits.push(TextEdit.insert(toVscodePos(this.original[this.token.ndx].start), '\n' + pad))
         }
     }
 
@@ -546,7 +545,7 @@ export class Formatter {
     }
 
     breakLine(token: FormatterToken, indent: number) {
-        this.edits.push(TextEdit.insert(this.original[token.ndx].start, '\n'))
+        this.edits.push(TextEdit.insert(toVscodePos(this.original[token.ndx].start), '\n'))
 
         this.fixIndent(token, indent)
     }

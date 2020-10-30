@@ -1,5 +1,4 @@
-import { Position } from 'vscode'
-import { ExprMap } from './Types'
+import { ExprMap, Position } from './Types'
 
 export class Expr {
     start: Position

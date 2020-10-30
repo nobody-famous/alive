@@ -1,5 +1,5 @@
-import { Expr, Atom, SExpr } from './Expr'
 import { StringMap } from '../swank/Types'
+import { Atom, Expr } from './Expr'
 
 export function exprToString(expr: Expr): string | undefined {
     if (!(expr instanceof Atom)) {

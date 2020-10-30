@@ -1,6 +1,5 @@
 import * as types from './Types';
 import * as kw from './keywords';
-import { Position } from 'vscode';
 import { Token } from './Token';
 
 import arrays from './keywords/arrays';
@@ -75,7 +74,7 @@ export class Lexer {
     curPos: number;
     opens: number;
     curText: string;
-    start: Position;
+    start: types.Position;
 
     constructor(text: string) {
         this.text = text;
@@ -83,7 +82,7 @@ export class Lexer {
         this.col = 0;
         this.curPos = 0;
         this.curText = '';
-        this.start = new Position(0, 0);
+        this.start = new types.Position(0, 0);
         this.opens = 0;
     }
 
@@ -103,7 +102,7 @@ export class Lexer {
     }
 
     nextToken() {
-        this.start = new Position(this.line, this.col);
+        this.start = new types.Position(this.line, this.col);
         this.curText = '';
 
         const char = this.peek();
@@ -342,7 +341,7 @@ export class Lexer {
 
     newToken(type: number, upcase = false): Token {
         const text = upcase ? this.curText.toUpperCase() : this.curText;
-        return new Token(type, this.start, new Position(this.line, this.col), text);
+        return new Token(type, this.start, new types.Position(this.line, this.col), text);
     }
 
     peek() {

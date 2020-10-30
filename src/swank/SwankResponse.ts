@@ -1,4 +1,4 @@
-import { Lexer } from '../Lexer'
+import { Lexer } from '../lisp/Lexer'
 import { Expr, Parser, SExpr } from '../lisp'
 import { ReturnEvent } from './ReturnEvent'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'

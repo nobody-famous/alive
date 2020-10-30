@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
-import { SwankConn } from '../swank/SwankConn'
-import { ConnInfo } from '../swank/Types'
+import { SwankConn } from '../../swank/SwankConn'
+import { ConnInfo } from '../../swank/Types'
 import { View } from './View'
 import { EventEmitter } from 'events'
 
@@ -18,7 +18,7 @@ export class Repl extends EventEmitter {
     async connect() {
         try {
             this.conn.on('conn-info', (info) => this.handleConnInfo(info))
-            this.conn.on('error', (err) => console.log(err))
+            this.conn.on('conn-err', (err) => console.log(err))
             this.conn.on('msg', (msg) => console.log(msg))
             this.conn.on('activate', (event) => console.log(event))
             this.conn.on('debug', (event) => console.log(event))

@@ -1,6 +1,4 @@
-import * as types from '../Types'
-import { Token } from '../Token'
-import { Lexer } from '../Lexer'
+import { Token, Lexer, types } from '../../lisp'
 
 export class Parser {
     lex: Lexer

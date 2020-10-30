@@ -1,6 +1,6 @@
-import * as types from '../Types'
+import * as types from './Types'
 import { Atom, DefPackage, Defun, Expr, If, InPackage, Let, SExpr } from './Expr'
-import { Token } from '../Token'
+import { Token } from './Token'
 import { ExprMap, NameValuePair } from './Types'
 
 export class Node {

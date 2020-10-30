@@ -1,6 +1,6 @@
 import { CompletionItem, Position } from 'vscode'
-import { Defun, Expr, findExpr, Let, posInExpr } from './lisp/Expr'
-import { PackageMgr } from './lisp/PackageMgr'
+import { Defun, Expr, findExpr, Let, posInExpr } from '../lisp/Expr'
+import { PackageMgr } from '../lisp/PackageMgr'
 
 export class CompletionProvider {
     packageMgr: PackageMgr

@@ -1,6 +1,18 @@
 {
-	"version": "2.0.0",
-	"tasks": [
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Swank Tests",
+            "type": "shell",
+            "command": "npx",
+            "args": [
+                "ts-node",
+                "test/swank"
+            ],
+            "problemMatcher": [
+                "$tsc"
+            ],
+        },
         {
             "type": "npm",
             "script": "compile",
@@ -10,6 +22,16 @@
             "group": "build",
             "label": "npm: compile",
             "detail": "tsc -p ./"
+        },
+        {
+            "type": "npm",
+            "script": "build",
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "group": "build",
+            "label": "npm: build",
+            "detail": "tsc -p ./tsconfig.build.json"
         }
     ]
 }

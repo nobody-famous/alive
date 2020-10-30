@@ -1,4 +1,4 @@
-import { Position } from 'vscode';
+import { Position } from "./Types";
 
 export class Token {
     type: number;
