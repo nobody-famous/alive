@@ -33,26 +33,21 @@ export class SwankConn extends EventEmitter {
     host: string
     port: number
 
-    trace: boolean
+    trace: boolean = false
     conn?: net.Socket
 
     buffer?: Buffer
     curResponse?: SwankResponse
 
-    handlers: { [index: number]: any }
-    msgID: number
+    handlers: { [index: number]: any } = {}
+    timeouts: { [index: number]: NodeJS.Timeout } = {}
+    msgID: number = 1
 
     constructor(host: string, port: number) {
         super()
 
         this.host = host
         this.port = port
-
-        this.trace = false
-
-        this.conn = undefined
-        this.handlers = {}
-        this.msgID = 1
     }
 
     connect() {
@@ -124,7 +119,6 @@ export class SwankConn extends EventEmitter {
     }
 
     connClosed() {
-        console.log('CONNECTION CLOSED')
         this.conn = undefined
         this.emit('close')
     }
@@ -201,18 +195,23 @@ export class SwankConn extends EventEmitter {
         this.emit('debug', event)
     }
 
+    handlerDone(id: number) {
+        delete this.handlers[id]
+
+        if (id in this.timeouts) {
+            clearTimeout(this.timeouts[id])
+            delete this.timeouts[id]
+        }
+    }
+
     processReturn(event: ReturnEvent) {
         try {
             const { resolve, reject } = this.handlerForID(event.id)
             const status = event.info?.status
 
-            if (status === ':OK') {
-                resolve(event)
-            } else {
-                reject(status)
-            }
+            this.handlerDone(event.id)
 
-            delete this.handlers[event.id]
+            status === ':OK' ? resolve(event) : reject(status)
         } catch (err) {
             this.emit('conn-err', err)
         }
@@ -229,17 +228,23 @@ export class SwankConn extends EventEmitter {
     }
 
     async sendRequest(req: SwankRequest): Promise<ReturnEvent> {
-        const id = this.nextID()
-        const msg = req.encode(id)
+        const msg = req.encode()
 
         await this.writeMessage(msg)
 
-        return this.waitForResponse(id)
+        return this.waitForResponse(req.msgID)
     }
 
     waitForResponse(id: number): Promise<ReturnEvent> {
         return new Promise((resolve, reject) => {
             this.handlers[id] = { resolve, reject }
+
+            this.timeouts[id] = setTimeout(() => {
+                if (id in this.handlers) {
+                    delete this.handlers[id]
+                    reject('Timed Out')
+                }
+            }, 1000)
         })
     }
 

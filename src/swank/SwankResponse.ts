@@ -2,6 +2,7 @@ import { Lexer } from '../lisp/Lexer'
 import { Expr, Parser, SExpr } from '../lisp'
 import { ReturnEvent } from './ReturnEvent'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
+import { format } from 'util'
 
 export class SwankResponse {
     length?: number
@@ -51,7 +52,7 @@ export class SwankResponse {
             return undefined
         }
 
-        throw new Error(`UNHANDLED OP ${rawEvent.op}`)
+        throw new Error(`UNHANDLED OP ${format(rawEvent)}`)
     }
 
     getRawEvent(expr: SExpr): SwankRawEvent | undefined {

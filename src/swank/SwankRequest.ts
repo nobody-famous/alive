@@ -1,4 +1,4 @@
-import { LispID, LispQuote, LispSymbol } from './LispID'
+import { LispID, LispSymbol } from './LispID'
 import { toWire } from './SwankUtils'
 
 export class SwankRequest {
@@ -10,8 +10,8 @@ export class SwankRequest {
         this.data = data
     }
 
-    encode(msgID: number) {
-        this.data.push(toWire(msgID))
+    encode() {
+        this.data.push(toWire(this.msgID))
 
         const str = `(${this.data.join(' ')})`
         const len = str.length.toString(16).padStart(6, '0')
