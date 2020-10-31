@@ -4,6 +4,7 @@ import { ReturnEvent } from './ReturnEvent'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
 import { format } from 'util'
 import { DebugEvent } from './DebugEvent'
+import { DebugActivateEvent } from './DebugActivateEvent'
 
 export class SwankResponse {
     length?: number
@@ -52,6 +53,8 @@ export class SwankResponse {
                 return ReturnEvent.fromRaw(rawEvent)
             case ':DEBUG':
                 return DebugEvent.fromRaw(rawEvent)
+            case ':DEBUG-ACTIVATE':
+                return DebugActivateEvent.fromRaw(rawEvent)
             case ':INDENTATION-UPDATE':
                 return undefined
         }

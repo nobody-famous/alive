@@ -9,6 +9,7 @@ import { ConnectionInfoReq, EvalReq, SwankRequest } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
 import { DebugEvent } from './DebugEvent'
+import { DebugActivateEvent } from './DebugActivateEvent'
 
 export interface SwankConn {
     emit(event: 'conn-err', ...args: unknown[]): boolean
@@ -20,11 +21,11 @@ export interface SwankConn {
     emit(event: 'close'): boolean
     on(event: 'close', listener: () => void): this
 
-    emit(event: 'activate', swankEvent: SwankEvent): boolean
-    on(event: 'activate', listener: (swankEvent: SwankEvent) => void): this
+    emit(event: 'activate', swankEvent: DebugActivateEvent): boolean
+    on(event: 'activate', listener: (swankEvent: DebugActivateEvent) => void): this
 
-    emit(event: 'debug', swankEvent: SwankEvent): boolean
-    on(event: 'debug', listener: (swankEvent: SwankEvent) => void): this
+    emit(event: 'debug', swankEvent: DebugEvent): boolean
+    on(event: 'debug', listener: (swankEvent: DebugEvent) => void): this
 
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
@@ -178,13 +179,13 @@ export class SwankConn extends EventEmitter {
         } else if (event.op === ':DEBUG') {
             this.processDebug(event as DebugEvent)
         } else if (event.op === ':DEBUG-ACTIVATE') {
-            this.processDebugActivate(event)
+            this.processDebugActivate(event as DebugActivateEvent)
         } else {
             console.log(`processEvent op ${event.op}`)
         }
     }
 
-    processDebugActivate(event: SwankEvent) {
+    processDebugActivate(event: DebugActivateEvent) {
         try {
             this.emit('activate', event)
         } catch (err) {
