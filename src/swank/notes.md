@@ -32,11 +32,13 @@ Server notifications are return responses without a message id or the id is nil.
 #### :debug
 
 ```
-(:debug <thread id> <frame id> <reason> <restarts> <frames> <command id list>)
+(:debug <thread id> <frame id> <condition> <restarts> <frames> <cont list>)
 ```
 
 - reason
     - List of strings, where each string is a line of output
     - Final entry is nil
+- cont list
+    - List of pending continuations (i.e. message ids)
 
 #### :debug-activate

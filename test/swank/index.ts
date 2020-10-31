@@ -18,6 +18,7 @@ async function testEval(conn: SwankConn) {
     const conn = new SwankConn('localhost', 4005)
 
     conn.on('conn-err', (...args: unknown[]) => console.log('Caught error', ...args))
+    conn.on('debug', (event) => console.log('debug', event))
 
     try {
         await conn.connect()

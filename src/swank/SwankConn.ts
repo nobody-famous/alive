@@ -8,6 +8,7 @@ import { SwankEvent } from './SwankEvent'
 import { ConnectionInfoReq, EvalReq, SwankRequest } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
+import { DebugEvent } from './DebugEvent'
 
 export interface SwankConn {
     emit(event: 'conn-err', ...args: unknown[]): boolean
@@ -175,7 +176,7 @@ export class SwankConn extends EventEmitter {
         if (event.op === ':RETURN') {
             this.processReturn(event as ReturnEvent)
         } else if (event.op === ':DEBUG') {
-            this.processDebug(event)
+            this.processDebug(event as DebugEvent)
         } else if (event.op === ':DEBUG-ACTIVATE') {
             this.processDebugActivate(event)
         } else {
@@ -191,7 +192,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processDebug(event: SwankEvent) {
+    processDebug(event: DebugEvent) {
         this.emit('debug', event)
     }
 

@@ -3,6 +3,7 @@ import { Expr, Parser, SExpr } from '../lisp'
 import { ReturnEvent } from './ReturnEvent'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
 import { format } from 'util'
+import { DebugEvent } from './DebugEvent'
 
 export class SwankResponse {
     length?: number
@@ -46,10 +47,13 @@ export class SwankResponse {
     }
 
     convertRawEvent(rawEvent: SwankRawEvent): SwankEvent | undefined {
-        if (rawEvent.op === ':RETURN') {
-            return ReturnEvent.fromRaw(rawEvent)
-        } else if (rawEvent.op === ':INDENTATION-UPDATE') {
-            return undefined
+        switch (rawEvent.op) {
+            case ':RETURN':
+                return ReturnEvent.fromRaw(rawEvent)
+            case ':DEBUG':
+                return DebugEvent.fromRaw(rawEvent)
+            case ':INDENTATION-UPDATE':
+                return undefined
         }
 
         throw new Error(`UNHANDLED OP ${format(rawEvent)}`)

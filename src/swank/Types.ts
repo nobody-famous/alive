@@ -21,3 +21,19 @@ export interface ConnInfo {
     version?: string
     lisp_implementation?: StringMap
 }
+
+export interface Restart {
+    name: string
+    desc: string
+}
+
+export interface Frame {
+    num: number
+    desc: string
+    opts?: FrameOption[]
+}
+
+export interface FrameOption {
+    name: string
+    value: string | boolean
+}

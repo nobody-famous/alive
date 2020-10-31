@@ -1,5 +1,6 @@
 import { StringMap } from '../swank/Types'
-import { Atom, Expr } from './Expr'
+import { Atom, Expr, SExpr } from './Expr'
+import { convert } from '../swank/SwankUtils'
 
 export function exprToString(expr: Expr): string | undefined {
     if (!(expr instanceof Atom)) {
@@ -20,8 +21,49 @@ export function exprToNumber(expr: Expr): number | undefined {
     return valueToNumber(op.value)
 }
 
+export function exprToNumberArray(expr: Expr): number[] | undefined {
+    if (!(expr instanceof SExpr)) {
+        return undefined
+    }
+
+    const nums: number[] = []
+    for (const part of expr.parts) {
+        const num = exprToNumber(part)
+
+        if (num !== undefined) {
+            nums.push(num)
+        }
+    }
+
+    return nums
+}
+
+export function exprToStringArray(expr: Expr): string[] | undefined {
+    if (!(expr instanceof SExpr)) {
+        return undefined
+    }
+
+    const strings: string[] = []
+
+    for (const part of expr.parts) {
+        const str = exprToString(part)
+
+        if (str === undefined) {
+            break
+        }
+
+        const converted = convert(str)
+
+        if (typeof converted === 'string') {
+            strings.push(converted)
+        }
+    }
+
+    return strings
+}
+
 export function valueToString(value: unknown): string | undefined {
-    return typeof value === 'string' ? value : undefined
+    return typeof value === 'string' && value.toLowerCase() !== 'nil' ? value : undefined
 }
 
 export function valueToNumber(value: unknown): number | undefined {
