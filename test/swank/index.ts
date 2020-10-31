@@ -9,7 +9,7 @@ async function testConnInfo(conn: SwankConn) {
 }
 
 async function testEval(conn: SwankConn) {
-    const resp = await conn.eval('(foo)')
+    const resp = await conn.eval('(+ 1 2)')
 
     console.log(resp)
 }
@@ -19,13 +19,13 @@ async function testEval(conn: SwankConn) {
     const conn = new SwankConn('localhost', 4005)
 
     conn.on('conn-err', (...args: unknown[]) => console.log('Caught error', ...args))
-    // conn.on('debug', (event) => console.log('debug', event))
+    conn.on('debug', (event) => console.log('debug', event))
     conn.on('activate', (event: DebugActivateEvent) => console.log(event))
 
     try {
         await conn.connect()
 
-        // await testConnInfo(conn)
+        await testConnInfo(conn)
         await testEval(conn)
     } catch (err) {
         console.log('FAILED', err)
