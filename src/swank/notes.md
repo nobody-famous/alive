@@ -14,6 +14,17 @@ The digits give the total length of the Lisp text.
 
 ## Request
 
+### Package Name
+
+The package name to use for a request needs to be sent with the request. This means that the client side needs to keep track of which package is currently being used, the server doesn't do it.
+
+```
+(in-package :some-package)
+```
+has no effect. The connection still reports being in the top level package.
+
+The Emacs version figures out the package by searching for an in-package call in the current buffer.
+
 ## Response
 
 Each response is a list consisting of a response type followed by the data for the response.
