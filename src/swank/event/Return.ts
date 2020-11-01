@@ -1,5 +1,5 @@
 import { format } from 'util'
-import { exprToNumber, exprToString, SExpr } from '../lisp'
+import { exprToNumber, exprToString, SExpr } from '../../lisp'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
 
 interface Info {
@@ -7,7 +7,7 @@ interface Info {
     payload: unknown
 }
 
-export class ReturnEvent implements SwankEvent {
+export class Return implements SwankEvent {
     op: string
     id: number
     info: Info
@@ -18,7 +18,7 @@ export class ReturnEvent implements SwankEvent {
         this.info = info
     }
 
-    static fromRaw(event: SwankRawEvent): ReturnEvent | undefined {
+    static fromRaw(event: SwankRawEvent): Return | undefined {
         if (event.op !== ':RETURN' || event.payload.length !== 2) {
             return undefined
         }
@@ -41,6 +41,6 @@ export class ReturnEvent implements SwankEvent {
             throw new Error(`ReturnEvent parts ${retValue.parts.length}`)
         }
 
-        return new ReturnEvent(msgID, { status, payload })
+        return new Return(msgID, { status, payload })
     }
 }

@@ -3,13 +3,10 @@ import * as net from 'net'
 import { format } from 'util'
 import * as response from './response'
 import { ConnectionInfo } from './response'
-import { ReturnEvent } from './ReturnEvent'
-import { SwankEvent } from './SwankEvent'
+import * as event from './event'
 import { ConnectionInfoReq, EvalReq, SwankRequest } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
-import { DebugEvent } from './DebugEvent'
-import { DebugActivateEvent } from './DebugActivateEvent'
 
 export interface SwankConn {
     emit(event: 'conn-err', ...args: unknown[]): boolean
@@ -21,11 +18,11 @@ export interface SwankConn {
     emit(event: 'close'): boolean
     on(event: 'close', listener: () => void): this
 
-    emit(event: 'activate', swankEvent: DebugActivateEvent): boolean
-    on(event: 'activate', listener: (swankEvent: DebugActivateEvent) => void): this
+    emit(event: 'activate', swankEvent: event.DebugActivate): boolean
+    on(event: 'activate', listener: (swankEvent: event.DebugActivate) => void): this
 
-    emit(event: 'debug', swankEvent: DebugEvent): boolean
-    on(event: 'debug', listener: (swankEvent: DebugEvent) => void): this
+    emit(event: 'debug', swankEvent: event.Debug): boolean
+    on(event: 'debug', listener: (swankEvent: event.Debug) => void): this
 
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
@@ -169,23 +166,25 @@ export class SwankConn extends EventEmitter {
         this.buffer = this.curResponse.addData(this.buffer)
     }
 
-    processEvent(event: SwankEvent) {
+    processEvent(event: event.SwankEvent) {
         if (event === undefined) {
             return
         }
 
         if (event.op === ':RETURN') {
-            this.processReturn(event as ReturnEvent)
+            this.processReturn(event as event.Return)
         } else if (event.op === ':DEBUG') {
-            this.processDebug(event as DebugEvent)
+            this.processDebug(event as event.Debug)
         } else if (event.op === ':DEBUG-ACTIVATE') {
-            this.processDebugActivate(event as DebugActivateEvent)
+            this.processDebugActivate(event as event.DebugActivate)
+        } else if (event.op === ':NEW-FEATURES') {
+            // Ignore
         } else {
             console.log(`processEvent op ${event.op}`)
         }
     }
 
-    processDebugActivate(event: DebugActivateEvent) {
+    processDebugActivate(event: event.DebugActivate) {
         try {
             this.emit('activate', event)
         } catch (err) {
@@ -193,7 +192,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processDebug(event: DebugEvent) {
+    processDebug(event: event.Debug) {
         this.emit('debug', event)
     }
 
@@ -206,7 +205,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processReturn(event: ReturnEvent) {
+    processReturn(event: event.Return) {
         try {
             const { resolve, reject } = this.handlerForID(event.id)
             const status = event.info?.status
@@ -229,7 +228,7 @@ export class SwankConn extends EventEmitter {
         return handler
     }
 
-    async sendRequest(req: SwankRequest): Promise<ReturnEvent> {
+    async sendRequest(req: SwankRequest): Promise<event.Return> {
         const msg = req.encode()
 
         await this.writeMessage(msg)
@@ -237,7 +236,7 @@ export class SwankConn extends EventEmitter {
         return this.waitForResponse(req.msgID)
     }
 
-    waitForResponse(id: number): Promise<ReturnEvent> {
+    waitForResponse(id: number): Promise<event.Return> {
         return new Promise((resolve, reject) => {
             this.handlers[id] = { resolve, reject }
 

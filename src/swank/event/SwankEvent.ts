@@ -1,4 +1,4 @@
-import { Expr, exprToNumber, exprToString, SExpr } from '../lisp'
+import { Expr, exprToString } from '../../lisp'
 
 export interface SwankEvent {
     op: string

@@ -1,7 +1,7 @@
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
-import { exprToNumber } from '../lisp'
+import { exprToNumber } from '../../lisp'
 
-export class DebugActivateEvent implements SwankEvent {
+export class DebugActivate implements SwankEvent {
     op: string
     threadID: number
     frameID: number
@@ -14,7 +14,7 @@ export class DebugActivateEvent implements SwankEvent {
         this.select = select
     }
 
-    static fromRaw(event: SwankRawEvent): DebugActivateEvent | undefined {
+    static fromRaw(event: SwankRawEvent): DebugActivate | undefined {
         if (event.payload.length < 2) {
             return undefined
         }
@@ -23,7 +23,7 @@ export class DebugActivateEvent implements SwankEvent {
         const frameID = exprToNumber(event.payload[1])
 
         if (threadID !== undefined && frameID !== undefined) {
-            return new DebugActivateEvent(threadID, frameID)
+            return new DebugActivate(threadID, frameID)
         }
 
         return undefined

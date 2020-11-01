@@ -1,10 +1,10 @@
 import { format } from 'util'
-import { Atom, Expr, exprToNumber, exprToNumberArray, exprToString, exprToStringArray, SExpr } from '../lisp'
+import { Atom, Expr, exprToNumber, exprToNumberArray, exprToString, exprToStringArray, SExpr } from '../../lisp'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
-import { convert } from './SwankUtils'
-import { Frame, FrameOption, Restart } from './Types'
+import { convert } from '../SwankUtils'
+import { Frame, FrameOption, Restart } from '../Types'
 
-export class DebugEvent implements SwankEvent {
+export class Debug implements SwankEvent {
     op: string
     threadID: number
     frameID: number
@@ -23,7 +23,7 @@ export class DebugEvent implements SwankEvent {
         this.conts = conts
     }
 
-    static fromRaw(event: SwankRawEvent): DebugEvent | undefined {
+    static fromRaw(event: SwankRawEvent): Debug | undefined {
         if (event.payload.length !== 6 || !(event.payload[2] instanceof SExpr)) {
             throw new Error(`DebugEvent Invalid ${format(event)}`)
         }
@@ -46,7 +46,7 @@ export class DebugEvent implements SwankEvent {
             return undefined
         }
 
-        return new DebugEvent(threadID, frameID, condition, restarts, frames, conts)
+        return new Debug(threadID, frameID, condition, restarts, frames, conts)
     }
 
     static convertFrames(expr: Expr): Frame[] | undefined {

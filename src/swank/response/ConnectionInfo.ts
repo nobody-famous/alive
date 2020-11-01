@@ -2,7 +2,7 @@ import { valueToArray, valueToMap, valueToNumber, valueToString, Expr, SExpr } f
 import { ConnInfo, Encoding, StringMap, PkgInfo } from '../Types'
 import { isObject, isString } from 'util'
 import { plistToObj } from '../SwankUtils'
-import { ReturnEvent } from '../ReturnEvent'
+import { Return } from '../event/Return'
 
 export class ConnectionInfo {
     info: ConnInfo
@@ -11,7 +11,7 @@ export class ConnectionInfo {
         this.info = info
     }
 
-    static parse(event: ReturnEvent): ConnectionInfo | undefined {
+    static parse(event: Return): ConnectionInfo | undefined {
         const infoExpr = event.info.payload
 
         if (!(infoExpr instanceof SExpr)) {

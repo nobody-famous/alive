@@ -1,6 +1,6 @@
 import { SwankConn } from '../../src/swank/SwankConn'
 import { expect } from '../Utils'
-import { DebugActivateEvent } from '../../src/swank/DebugActivateEvent'
+import { DebugActivate } from '../../src/swank/event/DebugActivate'
 
 async function testConnInfo(conn: SwankConn) {
     const resp = await conn.connectionInfo()
@@ -20,12 +20,12 @@ async function testEval(conn: SwankConn) {
 
     conn.on('conn-err', (...args: unknown[]) => console.log('Caught error', ...args))
     conn.on('debug', (event) => console.log('debug', event))
-    conn.on('activate', (event: DebugActivateEvent) => console.log(event))
+    conn.on('activate', (event: DebugActivate) => console.log(event))
 
     try {
         await conn.connect()
 
-        await testConnInfo(conn)
+        // await testConnInfo(conn)
         await testEval(conn)
     } catch (err) {
         console.log('FAILED', err)

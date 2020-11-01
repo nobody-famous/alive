@@ -1,10 +1,9 @@
-import { Lexer } from '../lisp/Lexer'
-import { Expr, Parser, SExpr } from '../lisp'
-import { ReturnEvent } from './ReturnEvent'
-import { SwankEvent, SwankRawEvent } from './SwankEvent'
 import { format } from 'util'
-import { DebugEvent } from './DebugEvent'
-import { DebugActivateEvent } from './DebugActivateEvent'
+import { Expr, Parser, SExpr } from '../lisp'
+import { Lexer } from '../lisp/Lexer'
+import * as event from './event'
+import { NewFeatures } from './event/NewFeatures'
+import { SwankEvent, SwankRawEvent } from './event/SwankEvent'
 
 export class SwankResponse {
     length?: number
@@ -50,11 +49,13 @@ export class SwankResponse {
     convertRawEvent(rawEvent: SwankRawEvent): SwankEvent | undefined {
         switch (rawEvent.op) {
             case ':RETURN':
-                return ReturnEvent.fromRaw(rawEvent)
+                return event.Return.fromRaw(rawEvent)
             case ':DEBUG':
-                return DebugEvent.fromRaw(rawEvent)
+                return event.Debug.fromRaw(rawEvent)
             case ':DEBUG-ACTIVATE':
-                return DebugActivateEvent.fromRaw(rawEvent)
+                return event.DebugActivate.fromRaw(rawEvent)
+            case ':NEW-FEATURES':
+                return NewFeatures.fromRaw(rawEvent)
             case ':INDENTATION-UPDATE':
                 return undefined
         }

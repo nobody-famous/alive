@@ -1,6 +1,6 @@
 import { Atom, valueToString, SExpr } from '../../lisp'
 import { convert } from '../SwankUtils'
-import { ReturnEvent } from '../ReturnEvent'
+import { Return } from '../event/Return'
 
 export class Eval {
     result: string[]
@@ -9,7 +9,7 @@ export class Eval {
         this.result = result
     }
 
-    static parse(event: ReturnEvent): Eval | undefined {
+    static parse(event: Return): Eval | undefined {
         const payload = event.info.payload
 
         if (!(payload instanceof SExpr)) {
