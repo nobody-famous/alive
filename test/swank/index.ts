@@ -9,8 +9,16 @@ async function testConnInfo(conn: SwankConn) {
 }
 
 async function testEval(conn: SwankConn) {
-    const resp = await conn.eval('(+ 1 2)')
+    let resp = await conn.eval('(defpackage :morse (:use :cl))')
+    console.log(resp)
 
+    resp = await conn.eval('(in-package :morse)')
+    console.log(resp)
+
+    resp = await conn.eval('(defun foo () (format t "foo called~%") 5)', ':morse')
+    console.log(resp)
+
+    resp = await conn.eval('(foo)', ':morse')
     console.log(resp)
 }
 

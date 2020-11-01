@@ -63,8 +63,8 @@ export class SwankConn extends EventEmitter {
         this.conn?.destroy()
     }
 
-    async connectionInfo(): Promise<response.ConnectionInfo> {
-        const req = new ConnectionInfoReq(this.nextID())
+    async connectionInfo(pkg?: string): Promise<response.ConnectionInfo> {
+        const req = new ConnectionInfoReq(this.nextID(), pkg)
         const resp = await this.sendRequest(req)
         const info = ConnectionInfo.parse(resp)
 
@@ -75,8 +75,8 @@ export class SwankConn extends EventEmitter {
         return info
     }
 
-    async eval(str: string): Promise<response.Eval> {
-        const req = new EvalReq(this.nextID(), str)
+    async eval(str: string, pkg?: string): Promise<response.Eval> {
+        const req = new EvalReq(this.nextID(), str, pkg)
         const resp = await this.sendRequest(req)
         const evalResp = response.Eval.parse(resp)
 
