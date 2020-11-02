@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
 import { format } from 'util'
+import * as event from './event'
 import * as response from './response'
 import { ConnectionInfo } from './response'
-import * as event from './event'
-import { ConnectionInfoReq, EvalReq, SwankRequest } from './SwankRequest'
+import { CompletionsReq, ConnectionInfoReq, EvalReq, OpArgsReq, SetPackageReq, SwankRequest } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
 
@@ -73,6 +73,42 @@ export class SwankConn extends EventEmitter {
         }
 
         return info
+    }
+
+    async completions(prefix: string, pkg: string): Promise<response.Completions> {
+        const req = new CompletionsReq(this.nextID(), prefix, pkg)
+        const resp = await this.sendRequest(req)
+        const compResp = response.Completions.parse(resp)
+
+        if (compResp === undefined) {
+            throw new Error(`Completions invalid response ${format(resp)}`)
+        }
+
+        return compResp
+    }
+
+    async opArgsList(name: string, pkg: string): Promise<response.OpArgs> {
+        const req = new OpArgsReq(this.nextID(), name, pkg)
+        const resp = await this.sendRequest(req)
+        const opArgsResp = response.OpArgs.parse(resp)
+
+        if (opArgsResp === undefined) {
+            throw new Error(`Op Args List invalid response ${format(resp)}`)
+        }
+
+        return opArgsResp
+    }
+
+    async setPackage(pkg: string): Promise<response.SetPackage> {
+        const req = new SetPackageReq(this.nextID(), pkg)
+        const resp = await this.sendRequest(req)
+        const setPkgResp = response.SetPackage.parse(resp)
+
+        if (setPkgResp === undefined) {
+            throw new Error(`Set Package invalid response ${format(resp)}`)
+        }
+
+        return setPkgResp
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval> {

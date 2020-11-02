@@ -126,6 +126,24 @@ export class EmacsRex extends SwankRequest {
     }
 }
 
+export class SetPackageReq extends EmacsRex {
+    constructor(msgID: number, pkg?: string) {
+        super(msgID, toWire([new LispID('swank:set-package'), new LispID(pkg ?? '')]), new LispID(pkg ?? 'nil'), true)
+    }
+}
+
+export class CompletionsReq extends EmacsRex {
+    constructor(msgID: number, prefix: string, pkg: string) {
+        super(msgID, toWire([new LispID('swank:simple-completions'), prefix, pkg]), new LispID(pkg ?? 'nil'), true)
+    }
+}
+
+export class OpArgsReq extends EmacsRex {
+    constructor(msgID: number, name: string, pkg: string) {
+        super(msgID, toWire([new LispID('swank:operator-arglist'), name, pkg]), new LispID(pkg ?? 'nil'), true)
+    }
+}
+
 export class ConnectionInfoReq extends EmacsRex {
     constructor(msgID: number, pkg?: string) {
         super(msgID, toWire([new LispID('swank:connection-info')]), new LispID(pkg ?? 'nil'), true)

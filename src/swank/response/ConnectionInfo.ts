@@ -12,6 +12,10 @@ export class ConnectionInfo {
     }
 
     static parse(event: Return): ConnectionInfo | undefined {
+        if (event.info.status !== ':OK') {
+            return undefined
+        }
+
         const infoExpr = event.info.payload
 
         if (!(infoExpr instanceof SExpr)) {
@@ -19,15 +23,6 @@ export class ConnectionInfo {
         }
 
         const plist = plistToObj(infoExpr.parts)
-
-        // throw new Error('ConnectionInfo parse NOT DONE YET')
-
-        // if (!Array.isArray(data)) {
-        //     return undefined
-        // }
-
-        // const exprList = data as Expr[]
-        // const plist = plistToObj(exprList)
 
         if (!isObject(plist)) {
             return undefined

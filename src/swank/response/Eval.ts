@@ -10,6 +10,10 @@ export class Eval {
     }
 
     static parse(event: Return): Eval | undefined {
+        if (event.info.status !== ':OK') {
+            return undefined
+        }
+
         const payload = event.info.payload
 
         if (!(payload instanceof SExpr)) {
