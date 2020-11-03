@@ -24,10 +24,10 @@ export class Completions {
         const strings = exprToStringArray(payload.parts[0])
         const longestCommon = exprToString(payload.parts[1])
 
-        if (strings === undefined || longestCommon === undefined) {
+        if (longestCommon === undefined) {
             return undefined
         }
 
-        return new Completions(strings, longestCommon)
+        return new Completions(strings ?? [], longestCommon)
     }
 }
