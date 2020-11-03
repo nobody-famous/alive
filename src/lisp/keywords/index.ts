@@ -24,32 +24,6 @@ import types from './types'
 
 export type kwEntry = { label: string; type: string }
 
-// export const keywords: kwEntry[] = {
-//     ...arrays,
-//     ...characters,
-//     ...conditions,
-//     ...conses,
-//     ...control,
-//     ...env,
-//     ...eval,
-//     ...filenames,
-//     ...files,
-//     ...hashtables,
-//     ...iteration,
-//     ...numbers,
-//     ...objects,
-//     ...packages,
-//     ...printer,
-//     ...reader,
-//     ...sequences,
-//     ...streams,
-//     ...strings,
-//     ...structures,
-//     ...sysconstruct,
-//     ...symbols,
-//     ...types,
-// }
-
 export const allLabels: string[] = [
     ...getLabels(arrays),
     ...getLabels(characters),
