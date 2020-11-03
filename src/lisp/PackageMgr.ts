@@ -53,7 +53,7 @@ export class PackageMgr {
     initMainPackage() {
         this.pkgs[CL_USER_PKG].startLine = 0
 
-        for (let label in allLabels) {
+        for (const label of allLabels) {
             this.pkgs[CL_USER_PKG].exports.push(label.toUpperCase())
             this.pkgs[CL_USER_PKG].symbols[label.toUpperCase()] = {}
         }

@@ -198,7 +198,7 @@ function getTopExpr() {
 
 function getCompletionProvider(): vscode.CompletionItemProvider {
     return {
-        provideCompletionItems(
+        async provideCompletionItems(
             document: vscode.TextDocument,
             pos: vscode.Position,
             token: vscode.CancellationToken,
@@ -206,7 +206,7 @@ function getCompletionProvider(): vscode.CompletionItemProvider {
         ) {
             try {
                 const exprs = getDocumentExprs(document)
-                return completionProvider.getCompletions(exprs, pos)
+                return await completionProvider.getCompletions(clRepl, exprs, pos)
             } catch (err) {
                 console.log(err)
                 return []

@@ -4,7 +4,7 @@ import { format } from 'util'
 import * as event from './event'
 import * as response from './response'
 import { ConnectionInfo } from './response'
-import { CompletionsReq, ConnectionInfoReq, EvalReq, OpArgsReq, SetPackageReq, SwankRequest } from './SwankRequest'
+import { CompletionsReq, ConnectionInfoReq, EvalReq, OpArgsReq, SetPackageReq, SwankRequest, DocSymbolReq } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
 
@@ -73,6 +73,18 @@ export class SwankConn extends EventEmitter {
         }
 
         return info
+    }
+
+    async docSymbol(symbol: string, pkg: string): Promise<response.DocSymbol> {
+        const req = new DocSymbolReq(this.nextID(), symbol, pkg)
+        const resp = await this.sendRequest(req)
+        const docResp = response.DocSymbol.parse(resp)
+
+        if (docResp === undefined) {
+            throw new Error(`Doc Symbol invalid response ${format(resp)}`)
+        }
+
+        return docResp
     }
 
     async completions(prefix: string, pkg: string): Promise<response.Completions> {

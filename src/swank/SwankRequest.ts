@@ -32,6 +32,12 @@ export class SetPackageReq extends EmacsRex {
     }
 }
 
+export class DocSymbolReq extends EmacsRex {
+    constructor(msgID: number, symbol: string, pkg?: string) {
+        super(msgID, toWire([new LispID('swank:documentation-symbol'), symbol]), new LispID(pkg ?? 'nil'), true)
+    }
+}
+
 export class CompletionsReq extends EmacsRex {
     constructor(msgID: number, prefix: string, pkg: string) {
         super(msgID, toWire([new LispID('swank:simple-completions'), prefix, pkg]), new LispID(pkg ?? 'nil'), true)
