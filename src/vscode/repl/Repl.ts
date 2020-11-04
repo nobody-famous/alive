@@ -58,7 +58,8 @@ export class Repl extends EventEmitter {
                 return this.kwDocs[symbol]
             }
 
-            return 'Not Documented'
+            const resp = await this.conn.docSymbol(symbol, ':cl-user')
+            return resp.doc
         } catch (err) {
             return ''
         }
