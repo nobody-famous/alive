@@ -65,12 +65,21 @@ export class Repl extends EventEmitter {
         }
     }
 
-    async getCompletions(): Promise<string[]> {
+    async getCompletions(prefix: string): Promise<string[]> {
         try {
-            const resp = await this.conn.completions('', ':cl-user')
+            const resp = await this.conn.completions(prefix, ':cl-user')
             return resp.strings
         } catch (err) {
             return []
+        }
+    }
+
+    async getOpArgs(name: string): Promise<string> {
+        try {
+            const resp = await this.conn.opArgsList(name, ':cl-user')
+            return resp.desc
+        } catch (err) {
+            return ''
         }
     }
 

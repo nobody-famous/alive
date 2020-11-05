@@ -6,7 +6,8 @@ import { Colorizer } from './vscode/colorize/Colorizer'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
-import { toVscodePos } from './vscode/Utils'
+import { getHelp } from './vscode/SigHelp'
+import { getDocumentExprs, toVscodePos } from './vscode/Utils'
 
 const LANGUAGE_ID = 'common-lisp'
 const colorizer = new Colorizer()
@@ -61,6 +62,9 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider())
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider())
 
+    vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getSigHelpProvider(), ' ', ' ')
+    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: LANGUAGE_ID }, getSigHelpProvider(), ' ', ' ')
+
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter())
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter())
 
@@ -95,7 +99,7 @@ async function readPackageLisp() {
     const parser = new Parser(lexTokenMap[pkgFile])
     const exprs = parser.parse()
 
-    pkgMgr.process(exprs)
+    pkgMgr.update(exprs)
 }
 
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
@@ -188,12 +192,39 @@ function getTopExpr() {
             return undefined
         }
 
+        pkgMgr.update(exprs)
+
         return expr
     } catch (err) {
         console.log(err)
     }
 
     return undefined
+}
+
+function getSigHelpProvider(): vscode.SignatureHelpProvider {
+    return {
+        async provideSignatureHelp(
+            document: vscode.TextDocument,
+            pos: vscode.Position,
+            token: vscode.CancellationToken,
+            ctx: vscode.SignatureHelpContext
+        ): Promise<vscode.SignatureHelp> {
+            return await getHelp(clRepl, document, pos)
+            // const exprs = getDocumentExprs(document)
+            // const expr = findExpr(exprs, pos)
+
+            // const sig = new vscode.SignatureInformation('(foo (bar fly))')
+
+            // sig.parameters = [new vscode.ParameterInformation([6, 9]), new vscode.ParameterInformation([10, 13])]
+
+            // return {
+            //     activeParameter: 0,
+            //     activeSignature: 0,
+            //     signatures: [sig],
+            // }
+        },
+    }
 }
 
 function getCompletionProvider(): vscode.CompletionItemProvider {
@@ -206,6 +237,7 @@ function getCompletionProvider(): vscode.CompletionItemProvider {
         ) {
             try {
                 const exprs = getDocumentExprs(document)
+                pkgMgr.update(exprs)
                 return await completionProvider.getCompletions(clRepl, exprs, pos)
             } catch (err) {
                 console.log(err)
@@ -234,16 +266,16 @@ function documentFormatter(): vscode.DocumentFormattingEditProvider {
     }
 }
 
-function getDocumentExprs(doc: vscode.TextDocument) {
-    const lex = new Lexer(doc.getText())
-    const tokens = lex.getTokens()
-    const parser = new Parser(tokens)
-    const exprs = parser.parse()
+// function getDocumentExprs(doc: vscode.TextDocument) {
+//     const lex = new Lexer(doc.getText())
+//     const tokens = lex.getTokens()
+//     const parser = new Parser(tokens)
+//     const exprs = parser.parse()
 
-    pkgMgr.process(exprs)
+//     pkgMgr.update(exprs)
 
-    return exprs
-}
+//     return exprs
+// }
 
 function decorateText(tokens: Token[]) {
     try {

@@ -1,7 +1,8 @@
 import { CompletionItem, Position } from 'vscode'
-import { Defun, Expr, findExpr, Let, posInExpr } from '../lisp/Expr'
+import { Defun, Expr, findExpr, Let, posInExpr, findAtom } from '../lisp/Expr'
 import { PackageMgr } from '../lisp/PackageMgr'
 import { Repl } from './repl'
+import { exprToString } from '../lisp'
 
 export class CompletionProvider {
     packageMgr: PackageMgr
@@ -11,11 +12,21 @@ export class CompletionProvider {
     }
 
     async getCompletions(repl: Repl | undefined, exprs: Expr[], pos: Position): Promise<CompletionItem[]> {
-        return repl === undefined ? this.staticCompletions(exprs, pos) : this.replCompletions(repl)
+        const expr = findAtom(exprs, pos)
+        let str = ''
+
+        if (expr !== undefined) {
+            const exprStr = exprToString(expr)
+            if (exprStr !== undefined) {
+                str = exprStr
+            }
+        }
+
+        return repl === undefined || str === '' ? this.staticCompletions(exprs, pos) : this.replCompletions(repl, str)
     }
 
-    async replCompletions(repl: Repl): Promise<CompletionItem[]> {
-        const comps = await repl.getCompletions()
+    async replCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
+        const comps = await repl.getCompletions(str)
         const items = []
 
         for (const comp of comps) {

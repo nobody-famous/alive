@@ -23,11 +23,32 @@ export function posInExpr(expr: Expr, pos: Position): boolean {
 }
 
 export function findExpr(exprs: Expr[], pos: Position): Expr | undefined {
-    for (let ndx = 0; ndx < exprs.length; ndx += 1) {
-        const expr = exprs[ndx]
-
-        if (exports.posInExpr(expr, pos)) {
+    for (const expr of exprs) {
+        if (posInExpr(expr, pos)) {
             return expr
+        }
+    }
+
+    return undefined
+}
+
+export function posInAtom(expr: Expr, pos: Position): boolean {
+    if (expr instanceof Atom && pos.line === expr.start.line) {
+        return pos.character >= expr.start.character && pos.character <= expr.end.character
+    }
+
+    return false
+}
+
+export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
+    for (const expr of exprs) {
+        if (posInAtom(expr, pos)) {
+            return expr as Atom
+        } else if (expr instanceof SExpr) {
+            const atom = findAtom(expr.parts, pos)
+            if (atom !== undefined) {
+                return atom
+            }
         }
     }
 

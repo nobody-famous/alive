@@ -39,7 +39,7 @@ export class PackageMgr {
         this.initMainPackage()
     }
 
-    process(exprs: Expr[]) {
+    update(exprs: Expr[]) {
         this.curPackage = this.pkgs[CL_USER_PKG]
 
         for (let ndx = 0; ndx < exprs.length; ndx += 1) {
