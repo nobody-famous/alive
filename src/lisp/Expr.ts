@@ -12,6 +12,10 @@ export class Expr {
 
 export function posInExpr(expr: Expr, pos: Position): boolean {
     if (pos.line === expr.start.line) {
+        if (expr.start.line === expr.end.line) {
+            return pos.character >= expr.start.character && pos.character <= expr.end.character
+        }
+
         return pos.character >= expr.start.character
     }
 
