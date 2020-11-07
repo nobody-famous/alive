@@ -1,4 +1,5 @@
 textarea {
+    width: 100%;
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
     animation-name: blink;
@@ -8,4 +9,18 @@ textarea {
 textarea:focus {
     border: none;
     outline: none;
+}
+
+table {
+    width: 100%;
+}
+
+table #prompt {
+    width: 1%;
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+table #prompt-input {
+    width: 100%;
 }

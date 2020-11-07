@@ -27,6 +27,10 @@ export class Repl extends EventEmitter {
             this.conn.on('close', () => this.onClose())
 
             await this.conn.connect()
+
+            const resp = await this.conn.connectionInfo()
+            this.handleConnInfo(resp.info)
+
             await this.getKwDocs()
         } catch (err) {
             console.log(err)

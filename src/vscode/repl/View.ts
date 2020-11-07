@@ -50,7 +50,25 @@ export class View {
     }
 
     renderPromptInput(): string {
-        return `<textarea id="replInput" rows="1" autofocus></textarea>`
+        return `<textarea id="replInput" rows="3" autofocus></textarea>`
+    }
+
+    renderPrompt(): string {
+        let str = '<table>'
+
+        str += '<tbody>'
+        str += '<tr>'
+        str += '<td id="prompt">'
+        str += `${this.prompt} >`
+        str += '</td>'
+        str += '<td id="prompt-input">'
+        str += this.renderPromptInput()
+        str += '</td>'
+        str += '</tr>'
+        str += '</tbody>'
+        str += '</table>'
+
+        return str
     }
 
     renderBody(): string {
@@ -60,7 +78,7 @@ export class View {
             str += `<div>${line}</div>`
         }
 
-        str += `<div>${this.prompt} >${this.renderPromptInput()}</div>`
+        str += this.renderPrompt()
         str += '</body>'
 
         return str
