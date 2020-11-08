@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events'
-import * as vscode from 'vscode'
 import { allLabels } from '../../lisp/keywords'
 import { SwankConn } from '../../swank/SwankConn'
 import { ConnInfo } from '../../swank/Types'
+import { FileView } from './FileView'
 import { View } from './View'
 
 export class Repl extends EventEmitter {
@@ -10,11 +10,12 @@ export class Repl extends EventEmitter {
     view: View
     kwDocs: { [index: string]: string } = {}
 
-    constructor(ctx: vscode.ExtensionContext, host: string, port: number) {
+    constructor(host: string, port: number) {
         super()
 
+        this.view = new FileView(host, port)
+
         this.conn = new SwankConn(host, port)
-        this.view = new View(ctx)
     }
 
     async connect() {
@@ -27,6 +28,7 @@ export class Repl extends EventEmitter {
             this.conn.on('close', () => this.onClose())
 
             await this.conn.connect()
+            await this.view.open()
 
             const resp = await this.conn.connectionInfo()
             this.handleConnInfo(resp.info)

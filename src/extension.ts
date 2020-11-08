@@ -105,20 +105,25 @@ async function readPackageLisp() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
-            if (clRepl !== undefined) {
-                console.log('Already attached...')
+            if (activeEditor?.document.languageId !== LANGUAGE_ID) {
+                vscode.window.showErrorMessage(`Not in a ${LANGUAGE_ID} document`)
                 return
             }
 
-            await newReplConnection(ctx)
+            if (clRepl !== undefined) {
+                vscode.window.showInformationMessage('Already attached...')
+                return
+            }
+
+            await newReplConnection()
         } catch (err) {
             console.log(err)
         }
     }
 }
 
-async function newReplConnection(ctx: vscode.ExtensionContext) {
-    clRepl = new repl.Repl(ctx, 'localhost', 4005)
+async function newReplConnection() {
+    clRepl = new repl.Repl('localhost', 4005)
 
     clRepl.on('close', () => (clRepl = undefined))
 
