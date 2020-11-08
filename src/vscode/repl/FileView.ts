@@ -41,9 +41,22 @@ export class FileView implements View {
     }
 
     close() {}
-    addLine(line: string) {}
+
+    addText(text: string) {
+        text += `\n${this.prompt}`
+        this.appendLine(text)
+    }
 
     setPrompt(prompt: string) {
+        if (this.replEditor === undefined) {
+            return
+        }
+
+        this.prompt = `${prompt}> `
+        this.appendLine(this.prompt)
+    }
+
+    appendLine(toAppend: string) {
         if (this.replEditor === undefined) {
             return
         }
@@ -54,7 +67,7 @@ export class FileView implements View {
             const line = doc.lineAt(doc.lineCount - 1)
             let text = doc.lineCount === 0 ? '' : '\n'
 
-            text += `${prompt}> `
+            text += toAppend
             builder.insert(line.range.end, text)
         })
 

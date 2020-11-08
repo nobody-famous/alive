@@ -36,6 +36,17 @@
                     ".asdf"
                 ],
                 "configuration": "./language-configuration.json"
+            },
+            {
+                "id": "common-lisp-repl",
+                "aliases": [
+                    "Common Lisp REPL",
+                    "common-lisp-repl"
+                ],
+                "extensions": [
+                    ".alive-repl"
+                ],
+                "configuration": "./language-configuration.json"
             }
         ],
         "snippets": [
@@ -59,6 +70,20 @@
             }
         ],
         "menus": {
+            "commandPalette": [
+                {
+                    "command": "common-lisp.attachRepl",
+                    "when": "editorLangId == common-lisp"
+                },
+                {
+                    "command": "common-lisp.sendToRepl",
+                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                },
+                {
+                    "command": "common-lisp.selectSexpr",
+                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                }
+            ],
             "debug/callstack/context": [
                 {
                     "command": "common-lisp.sendToRepl"

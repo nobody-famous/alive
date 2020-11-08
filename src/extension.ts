@@ -9,7 +9,8 @@ import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
 import { getDocumentExprs, toVscodePos } from './vscode/Utils'
 
-const LANGUAGE_ID = 'common-lisp'
+const COMMON_LISP_ID = 'common-lisp'
+const REPL_ID = 'common-lisp-repl'
 const colorizer = new Colorizer()
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
@@ -19,66 +20,70 @@ let activeEditor = vscode.window.activeTextEditor
 let lexTokenMap: { [index: string]: Token[] } = {}
 
 export const activate = (ctx: vscode.ExtensionContext) => {
-    vscode.window.onDidChangeActiveTextEditor(
-        (editor?: vscode.TextEditor) => {
-            activeEditor = editor
-
-            if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
-                return
-            }
-
-            if (lexTokenMap[editor.document.fileName] === undefined) {
-                readLexTokens(editor.document.fileName, editor.document.getText())
-            }
-
-            decorateText(lexTokenMap[editor.document.fileName])
-        },
-        null,
-        ctx.subscriptions
-    )
-
-    vscode.workspace.onDidOpenTextDocument((doc) => {
-        if (activeEditor === undefined || doc.languageId !== LANGUAGE_ID) {
-            return
-        }
-
-        readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-        decorateText(lexTokenMap[doc.fileName])
-    })
-
+    vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
+    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
     vscode.workspace.onDidChangeTextDocument(
-        (event) => {
-            if (!activeEditor || activeEditor.document.languageId !== LANGUAGE_ID || event.document !== activeEditor.document) {
-                return
-            }
-
-            readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-            decorateText(lexTokenMap[activeEditor.document.fileName])
-        },
+        (event: vscode.TextDocumentChangeEvent) => changeTextDocument(event),
         null,
         ctx.subscriptions
     )
 
-    vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getCompletionProvider())
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: LANGUAGE_ID }, getCompletionProvider())
+    vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getCompletionProvider())
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider())
 
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: LANGUAGE_ID }, getSigHelpProvider(), ' ', ' ')
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: LANGUAGE_ID }, getSigHelpProvider(), ' ', ' ')
+    vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
+    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
 
-    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: LANGUAGE_ID }, documentFormatter())
-    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: LANGUAGE_ID }, documentFormatter())
+    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, documentFormatter())
+    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, documentFormatter())
 
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl(ctx)))
 
-    if (activeEditor === undefined || activeEditor.document.languageId !== LANGUAGE_ID) {
+    if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
     }
 
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
     decorateText(lexTokenMap[activeEditor.document.fileName])
     readPackageLisp()
+}
+
+function hasValidLangId(doc?: vscode.TextDocument): boolean {
+    return doc?.languageId === COMMON_LISP_ID || doc?.languageId === REPL_ID
+}
+
+function editorChanged(editor?: vscode.TextEditor) {
+    activeEditor = editor
+
+    if (editor === undefined || !hasValidLangId(editor.document)) {
+        return
+    }
+
+    if (lexTokenMap[editor.document.fileName] === undefined) {
+        readLexTokens(editor.document.fileName, editor.document.getText())
+    }
+
+    decorateText(lexTokenMap[editor.document.fileName])
+}
+
+function openTextDocument(doc: vscode.TextDocument) {
+    if (activeEditor === undefined || !hasValidLangId(doc)) {
+        return
+    }
+
+    readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
+    decorateText(lexTokenMap[doc.fileName])
+}
+
+function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
+    if (!hasValidLangId(activeEditor?.document) || event.document !== activeEditor?.document) {
+        return
+    }
+
+    readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
+    decorateText(lexTokenMap[activeEditor.document.fileName])
 }
 
 async function readPackageLisp() {
@@ -105,8 +110,8 @@ async function readPackageLisp() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
-            if (activeEditor?.document.languageId !== LANGUAGE_ID) {
-                vscode.window.showErrorMessage(`Not in a ${LANGUAGE_ID} document`)
+            if (activeEditor?.document.languageId !== COMMON_LISP_ID) {
+                vscode.window.showErrorMessage(`Not in a ${COMMON_LISP_ID} document`)
                 return
             }
 
@@ -147,12 +152,12 @@ async function sendToRepl() {
 
     try {
         const editor = vscode.window.activeTextEditor
-        if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
+        if (!hasValidLangId(editor?.document)) {
             return
         }
 
         const expr = getTopExpr()
-        if (expr === undefined) {
+        if (editor === undefined || expr === undefined) {
             return
         }
 
@@ -168,7 +173,7 @@ async function sendToRepl() {
 function selectSexpr() {
     try {
         const editor = vscode.window.activeTextEditor
-        if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
+        if (editor === undefined || !hasValidLangId(editor.document)) {
             return
         }
 
@@ -185,7 +190,7 @@ function selectSexpr() {
 function getTopExpr() {
     try {
         const editor = vscode.window.activeTextEditor
-        if (editor === undefined || editor.document.languageId !== LANGUAGE_ID) {
+        if (editor === undefined || !hasValidLangId(editor.document)) {
             return undefined
         }
 

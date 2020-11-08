@@ -93,9 +93,7 @@ export class Repl extends EventEmitter {
         try {
             const resp = await this.conn.eval(text)
 
-            for (const line of resp.result) {
-                this.view.addLine(line)
-            }
+            this.view.addText(resp.result.join(''))
         } catch (err) {
             this.emit('error', err)
         }
