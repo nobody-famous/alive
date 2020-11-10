@@ -1,23 +1,20 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { Expr, findExpr, Lexer, PackageMgr, Parser, Token } from './lisp'
-import { Colorizer } from './vscode/colorize/Colorizer'
+import { Expr, findExpr, getLexTokens, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
-import { getDocumentExprs, toVscodePos } from './vscode/Utils'
+import { decorateText, getDocumentExprs, toVscodePos } from './vscode/Utils'
 
 const COMMON_LISP_ID = 'common-lisp'
 const REPL_ID = 'common-lisp-repl'
-const colorizer = new Colorizer()
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
 
 let clRepl: repl.Repl | undefined = undefined
 let activeEditor = vscode.window.activeTextEditor
-let lexTokenMap: { [index: string]: Token[] } = {}
 
 export const activate = (ctx: vscode.ExtensionContext) => {
     vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
@@ -46,7 +43,7 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     }
 
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-    decorateText(lexTokenMap[activeEditor.document.fileName])
+    decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
     readPackageLisp()
 }
 
@@ -61,11 +58,12 @@ function editorChanged(editor?: vscode.TextEditor) {
         return
     }
 
-    if (lexTokenMap[editor.document.fileName] === undefined) {
-        readLexTokens(editor.document.fileName, editor.document.getText())
+    let tokens = getLexTokens(editor.document.fileName)
+    if (tokens === undefined) {
+        tokens = readLexTokens(editor.document.fileName, editor.document.getText())
     }
 
-    decorateText(lexTokenMap[editor.document.fileName])
+    decorateText(activeEditor, tokens ?? [])
 }
 
 function openTextDocument(doc: vscode.TextDocument) {
@@ -74,7 +72,7 @@ function openTextDocument(doc: vscode.TextDocument) {
     }
 
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-    decorateText(lexTokenMap[doc.fileName])
+    decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
 }
 
 function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
@@ -83,7 +81,7 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
     }
 
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-    decorateText(lexTokenMap[activeEditor.document.fileName])
+    decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
 }
 
 async function readPackageLisp() {
@@ -101,7 +99,7 @@ async function readPackageLisp() {
     const textBuf = await fs.promises.readFile(pkgFile)
     readLexTokens(pkgFile, textBuf.toString())
 
-    const parser = new Parser(lexTokenMap[pkgFile])
+    const parser = new Parser(getLexTokens(pkgFile) ?? [])
     const exprs = parser.parse()
 
     pkgMgr.update(exprs)
@@ -221,18 +219,6 @@ function getSigHelpProvider(): vscode.SignatureHelpProvider {
             ctx: vscode.SignatureHelpContext
         ): Promise<vscode.SignatureHelp> {
             return await getHelp(clRepl, document, pos)
-            // const exprs = getDocumentExprs(document)
-            // const expr = findExpr(exprs, pos)
-
-            // const sig = new vscode.SignatureInformation('(foo (bar fly))')
-
-            // sig.parameters = [new vscode.ParameterInformation([6, 9]), new vscode.ParameterInformation([10, 13])]
-
-            // return {
-            //     activeParameter: 0,
-            //     activeSignature: 0,
-            //     signatures: [sig],
-            // }
         },
     }
 }
@@ -257,12 +243,6 @@ function getCompletionProvider(): vscode.CompletionItemProvider {
     }
 }
 
-function readLexTokens(fileName: string, text: string) {
-    const lex = new Lexer(text)
-
-    lexTokenMap[fileName] = lex.getTokens()
-}
-
 function documentFormatter(): vscode.DocumentFormattingEditProvider {
     return {
         provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
@@ -273,26 +253,5 @@ function documentFormatter(): vscode.DocumentFormattingEditProvider {
             const edits = formatter.format()
             return edits.length > 0 ? edits : undefined
         },
-    }
-}
-
-// function getDocumentExprs(doc: vscode.TextDocument) {
-//     const lex = new Lexer(doc.getText())
-//     const tokens = lex.getTokens()
-//     const parser = new Parser(tokens)
-//     const exprs = parser.parse()
-
-//     pkgMgr.update(exprs)
-
-//     return exprs
-// }
-
-function decorateText(tokens: Token[]) {
-    try {
-        if (activeEditor !== undefined) {
-            colorizer.run(activeEditor, tokens)
-        }
-    } catch (err) {
-        vscode.window.showErrorMessage(`Failed to colorize file: ${err.toString()}`)
     }
 }

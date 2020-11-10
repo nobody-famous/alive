@@ -29,6 +29,7 @@ export class Repl extends EventEmitter {
 
             await this.conn.connect()
             await this.view.open()
+            await this.view.show()
 
             const resp = await this.conn.connectionInfo()
             this.handleConnInfo(resp.info)
@@ -91,6 +92,8 @@ export class Repl extends EventEmitter {
 
     async send(text: string) {
         try {
+            await this.view.show()
+
             const resp = await this.conn.eval(text)
 
             this.view.addText(resp.result.join(''))

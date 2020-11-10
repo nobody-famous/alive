@@ -2,9 +2,10 @@ import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { View } from './View'
+import { Lexer, readLexTokens, getLexTokens } from '../../lisp'
+import { decorateText } from '../Utils'
 
 const OUTPUT_DIR = '.alive'
-const REPL_FILE = 'cl.alive-repl'
 
 export class FileView implements View {
     prompt: string = ''
@@ -23,7 +24,7 @@ export class FileView implements View {
         this.host = host
         this.port = port
         this.scheme = `cl-repl-${host}-${port}`
-        this.name = `REPL ${this.host}:${this.port}`
+        this.name = `REPL-${this.host}-${this.port}.alive-repl`
     }
 
     async open() {
@@ -34,7 +35,6 @@ export class FileView implements View {
 
             await this.createFolder()
             await this.openFile()
-            await this.showDoc()
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
@@ -42,9 +42,18 @@ export class FileView implements View {
 
     close() {}
 
+    async show() {
+        if (this.replDoc === undefined) {
+            throw new Error('No REPL document')
+        }
+
+        if (!this.isEditorVisible()) {
+            this.replEditor = await vscode.window.showTextDocument(this.replDoc, vscode.ViewColumn.Beside)
+        }
+    }
+
     addText(text: string) {
-        text += `\n${this.prompt}`
-        this.appendLine(text)
+        this.appendLine(`\n${text}\n${this.prompt}`)
     }
 
     setPrompt(prompt: string) {
@@ -67,19 +76,39 @@ export class FileView implements View {
             const line = doc.lineAt(doc.lineCount - 1)
             let text = doc.lineCount === 0 ? '' : '\n'
 
+            this.replEditor!.selection = new vscode.Selection(line.range.end, line.range.end)
+
             text += toAppend
             builder.insert(line.range.end, text)
         })
 
+        setTimeout(() => this.colorize(this.replEditor), 10)
+
         doc.save()
     }
 
-    async showDoc() {
-        if (this.replDoc === undefined) {
-            throw new Error('No REPL document')
+    colorize(editor: vscode.TextEditor | undefined) {
+        if (editor === undefined || this.replFile === undefined) {
+            return
         }
 
-        this.replEditor = await vscode.window.showTextDocument(this.replDoc)
+        const tokens = readLexTokens(this.replFile.fsPath, editor.document.getText())
+
+        decorateText(editor, tokens)
+    }
+
+    isEditorVisible(): boolean {
+        if (this.replEditor === undefined) {
+            return false
+        }
+
+        for (const editor of vscode.window.visibleTextEditors) {
+            if (editor === this.replEditor) {
+                return true
+            }
+        }
+
+        return false
     }
 
     async openFile() {
@@ -87,13 +116,11 @@ export class FileView implements View {
             throw new Error('No file to open')
         }
 
-        this.replDoc = await this.tryOpen(this.replFile)
-
-        if (this.replDoc !== undefined) {
-            return
+        try {
+            this.replDoc = await this.tryOpen(this.replFile)
+        } catch (err) {
+            this.replDoc = await this.tryCreate(this.replFile)
         }
-
-        await this.tryCreate(this.replFile)
     }
 
     getReplFile() {
@@ -101,7 +128,7 @@ export class FileView implements View {
             throw new Error('No folder for REPL file')
         }
 
-        this.replFile = vscode.Uri.joinPath(this.folder, REPL_FILE)
+        this.replFile = vscode.Uri.joinPath(this.folder, this.name)
     }
 
     getFolder() {

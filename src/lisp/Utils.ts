@@ -1,6 +1,22 @@
 import { StringMap } from '../swank/Types'
 import { Atom, Expr, SExpr } from './Expr'
 import { convert } from '../swank/SwankUtils'
+import { Lexer } from './Lexer'
+import { Token } from './Token'
+
+let lexTokenMap: { [index: string]: Token[] } = {}
+
+export function readLexTokens(fileName: string, text: string): Token[] {
+    const lex = new Lexer(text)
+
+    lexTokenMap[fileName] = lex.getTokens()
+
+    return lexTokenMap[fileName]
+}
+
+export function getLexTokens(fileName: string): Token[] | undefined {
+    return lexTokenMap[fileName]
+}
 
 export function exprToString(expr: Expr): string | undefined {
     if (!(expr instanceof Atom)) {
