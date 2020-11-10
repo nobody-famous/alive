@@ -19,7 +19,7 @@
         "compile": "tsc -p ./",
         "build": "tsc -p ./tsconfig.build.json",
         "lint": "eslint src --ext ts",
-        "watch": "tsc -watch -p ./"
+        "watch": "tsc -watch -p ./tsconfig.build.json"
     },
     "contributes": {
         "languages": [
@@ -93,10 +93,12 @@
         "keybindings": [
             {
                 "command": "common-lisp.selectSexpr",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
                 "key": "alt+shift+up"
             },
             {
                 "command": "common-lisp.sendToRepl",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
                 "key": "alt+shift+enter"
             }
         ],

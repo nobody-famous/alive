@@ -1,30 +1,41 @@
+import * as vscode from 'vscode'
 import { EventEmitter } from 'events'
 import { allLabels } from '../../lisp/keywords'
 import { SwankConn } from '../../swank/SwankConn'
 import { ConnInfo } from '../../swank/Types'
 import { FileView } from './FileView'
 import { View } from './View'
+import { format } from 'util'
 
 export class Repl extends EventEmitter {
-    conn: SwankConn
-    view: View
+    conn?: SwankConn
+    view?: View
+    host: string
+    port: number
     kwDocs: { [index: string]: string } = {}
 
     constructor(host: string, port: number) {
         super()
 
-        this.view = new FileView(host, port)
-
-        this.conn = new SwankConn(host, port)
+        this.host = host
+        this.port = port
     }
 
     async connect() {
         try {
+            if (this.conn !== undefined && this.view !== undefined) {
+                this.view.show()
+                return
+            }
+
+            this.conn = new SwankConn(this.host, this.port)
+            this.view = new FileView(this.host, this.port)
+
             this.conn.on('conn-info', (info) => this.handleConnInfo(info))
-            this.conn.on('conn-err', (err) => console.log(err))
-            this.conn.on('msg', (msg) => console.log(msg))
-            this.conn.on('activate', (event) => console.log(event))
-            this.conn.on('debug', (event) => console.log(event))
+            this.conn.on('conn-err', (err) => this.displayErrMsg(err))
+            this.conn.on('msg', (msg) => this.displayInfoMsg(msg))
+            this.conn.on('activate', (event) => this.displayInfoMsg(event))
+            this.conn.on('debug', (event) => this.displayInfoMsg(event))
             this.conn.on('close', () => this.onClose())
 
             await this.conn.connect()
@@ -36,11 +47,23 @@ export class Repl extends EventEmitter {
 
             await this.getKwDocs()
         } catch (err) {
-            console.log(err)
+            this.displayErrMsg(err)
         }
     }
 
+    displayErrMsg(msg: unknown) {
+        vscode.window.showErrorMessage(format(msg))
+    }
+
+    displayInfoMsg(msg: unknown) {
+        vscode.window.showInformationMessage(format(msg))
+    }
+
     async getKwDocs() {
+        if (this.conn === undefined) {
+            return
+        }
+
         for (const label of allLabels) {
             const resp = await this.conn.docSymbol(label, ':cl-user')
 
@@ -49,17 +72,29 @@ export class Repl extends EventEmitter {
     }
 
     onClose() {
-        this.view.close()
+        this.view?.close()
+
+        this.conn = undefined
+        this.view = undefined
+
         this.emit('close')
     }
 
     handleConnInfo(info: ConnInfo) {
+        if (this.view === undefined) {
+            return
+        }
+
         if (info.package?.prompt !== undefined) {
             this.view.setPrompt(info.package.prompt)
         }
     }
 
     async getDoc(symbol: string): Promise<string> {
+        if (this.conn === undefined) {
+            return ''
+        }
+
         try {
             if (symbol in this.kwDocs) {
                 return this.kwDocs[symbol]
@@ -73,6 +108,10 @@ export class Repl extends EventEmitter {
     }
 
     async getCompletions(prefix: string): Promise<string[]> {
+        if (this.conn === undefined) {
+            return []
+        }
+
         try {
             const resp = await this.conn.completions(prefix, ':cl-user')
             return resp.strings
@@ -82,6 +121,10 @@ export class Repl extends EventEmitter {
     }
 
     async getOpArgs(name: string): Promise<string> {
+        if (this.conn === undefined) {
+            return ''
+        }
+
         try {
             const resp = await this.conn.opArgsList(name, ':cl-user')
             return resp.desc
@@ -91,6 +134,10 @@ export class Repl extends EventEmitter {
     }
 
     async send(text: string) {
+        if (this.conn === undefined || this.view === undefined) {
+            return
+        }
+
         try {
             await this.view.show()
 

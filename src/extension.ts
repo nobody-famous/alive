@@ -27,9 +27,11 @@ export const activate = (ctx: vscode.ExtensionContext) => {
 
     vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getCompletionProvider())
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider())
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider())
 
     vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
     vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
+    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: REPL_ID }, getSigHelpProvider(), ' ')
 
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, documentFormatter())
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, documentFormatter())
@@ -113,11 +115,6 @@ function attachRepl(ctx: vscode.ExtensionContext): () => void {
                 return
             }
 
-            if (clRepl !== undefined) {
-                vscode.window.showInformationMessage('Already attached...')
-                return
-            }
-
             await newReplConnection()
         } catch (err) {
             console.log(err)
@@ -126,9 +123,10 @@ function attachRepl(ctx: vscode.ExtensionContext): () => void {
 }
 
 async function newReplConnection() {
-    clRepl = new repl.Repl('localhost', 4005)
-
-    clRepl.on('close', () => (clRepl = undefined))
+    if (clRepl === undefined) {
+        clRepl = new repl.Repl('localhost', 4005)
+        clRepl.on('close', () => (clRepl = undefined))
+    }
 
     await clRepl.connect()
 }
@@ -145,6 +143,7 @@ function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
 
 async function sendToRepl() {
     if (clRepl === undefined) {
+        vscode.window.showErrorMessage('REPL not connected')
         return
     }
 
