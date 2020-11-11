@@ -36,6 +36,25 @@ export function findExpr(exprs: Expr[], pos: Position): Expr | undefined {
     return undefined
 }
 
+export function findInnerSexpr(exprs: Expr[], pos: Position): SExpr | undefined {
+    for (const expr of exprs) {
+        if (!posInExpr(expr, pos)) {
+            continue
+        }
+
+        if (!(expr instanceof SExpr)) {
+            return undefined
+        }
+
+        const tmpExpr = expr
+        const inner = findInnerSexpr(expr.parts, pos)
+
+        return inner ?? tmpExpr
+    }
+
+    return undefined
+}
+
 export function posInAtom(expr: Expr, pos: Position): boolean {
     if (expr instanceof Atom && pos.line === expr.start.line) {
         return pos.character >= expr.start.character && pos.character <= expr.end.character

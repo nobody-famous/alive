@@ -1,11 +1,11 @@
 import { ParameterInformation, Position, SignatureHelp, SignatureInformation, TextDocument } from 'vscode'
-import { Expr, exprToString, findExpr, Lexer, Parser, posInExpr, SExpr } from '../lisp'
+import { Expr, exprToString, findInnerSexpr, Lexer, Parser, posInExpr, SExpr } from '../lisp'
 import { Repl } from './repl'
 import { getDocumentExprs } from './Utils'
 
 export async function getHelp(repl: Repl | undefined, doc: TextDocument, pos: Position): Promise<SignatureHelp> {
     const exprs = getDocumentExprs(doc)
-    const expr = findExpr(exprs, pos)
+    const expr = findInnerSexpr(exprs, pos)
 
     if (!(expr instanceof SExpr) || repl === undefined) {
         return new SignatureHelp()
