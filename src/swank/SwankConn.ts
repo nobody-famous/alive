@@ -293,7 +293,7 @@ export class SwankConn extends EventEmitter {
                     delete this.handlers[id]
                     reject('Timed Out')
                 }
-            }, 1000)
+            }, 10000)
         })
     }
 

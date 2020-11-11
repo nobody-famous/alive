@@ -6,6 +6,8 @@ import { ConnInfo } from '../../swank/Types'
 import { FileView } from './FileView'
 import { View } from './View'
 import { format } from 'util'
+import { Lexer, Parser, Expr, InPackage } from '../../lisp'
+import { convert } from '../../swank/SwankUtils'
 
 export class Repl extends EventEmitter {
     conn?: SwankConn
@@ -87,6 +89,7 @@ export class Repl extends EventEmitter {
 
         if (info.package?.prompt !== undefined) {
             this.view.setPrompt(info.package.prompt)
+            this.view.show()
         }
     }
 
@@ -133,6 +136,32 @@ export class Repl extends EventEmitter {
         }
     }
 
+    parseEvalText(text: string): Expr | undefined {
+        const lex = new Lexer(text)
+        const parser = new Parser(lex.getTokens())
+        const exprs = parser.parse()
+
+        return exprs.length > 0 ? exprs[0] : undefined
+    }
+
+    async evalInPackage(text: string) {
+        const expr = this.parseEvalText(text)
+        if (expr instanceof InPackage) {
+            vscode.window.showInformationMessage(`setPackage ${expr.name}`)
+            await this.conn?.setPackage(expr.name)
+        }
+    }
+
+    async changePackage(expr: InPackage) {
+        const pkgName = expr.name.startsWith(':') ? expr.name : `:${expr.name}`
+        const pkg = await this.conn?.setPackage(pkgName)
+        const infoResp = await this.conn?.connectionInfo(pkgName)
+
+        if (infoResp !== undefined) {
+            this.handleConnInfo(infoResp.info)
+        }
+    }
+
     async send(text: string) {
         if (this.conn === undefined || this.view === undefined) {
             return
@@ -141,9 +170,13 @@ export class Repl extends EventEmitter {
         try {
             await this.view.show()
 
-            const resp = await this.conn.eval(text)
-
-            this.view.addText(resp.result.join(''))
+            const expr = this.parseEvalText(text)
+            if (expr instanceof InPackage) {
+                await this.changePackage(expr)
+            } else {
+                const resp = await this.conn.eval(text)
+                this.view.addText(resp.result.join(''))
+            }
         } catch (err) {
             this.emit('error', err)
         }

@@ -22,10 +22,12 @@ async function testEval(conn: SwankConn) {
     // console.log(resp)
 
     conn.trace = true
-    const list = await conn.docSymbol('defparameter', ':morse')
-    console.log(list)
-    // const pkg = await conn.setPackage(':morse')
-    // console.log(pkg)
+    // const list = await conn.docSymbol('defparameter', ':morse')
+    // console.log(list)
+
+    const pkg = await conn.setPackage(':morse')
+    console.log(pkg)
+
     // const infoResp = await conn.connectionInfo(':morse')
     // console.log(infoResp)
 
