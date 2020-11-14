@@ -4,7 +4,16 @@ import { format } from 'util'
 import * as event from './event'
 import * as response from './response'
 import { ConnectionInfo } from './response'
-import { CompletionsReq, ConnectionInfoReq, EvalReq, OpArgsReq, SetPackageReq, SwankRequest, DocSymbolReq } from './SwankRequest'
+import {
+    CompletionsReq,
+    ConnectionInfoReq,
+    EvalReq,
+    OpArgsReq,
+    SetPackageReq,
+    SwankRequest,
+    DocSymbolReq,
+    ListPackagesReq,
+} from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
 
@@ -109,6 +118,18 @@ export class SwankConn extends EventEmitter {
         }
 
         return opArgsResp
+    }
+
+    async listPackages(pkg?: string): Promise<response.ListPackages> {
+        const req = new ListPackagesReq(this.nextID(), pkg)
+        const resp = await this.sendRequest(req)
+        const listPkgResp = response.ListPackages.parse(resp)
+
+        if (listPkgResp === undefined) {
+            throw new Error(`List Packages invalid response ${format(resp)}`)
+        }
+
+        return listPkgResp
     }
 
     async setPackage(pkg: string): Promise<response.SetPackage> {

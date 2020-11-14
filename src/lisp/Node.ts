@@ -186,7 +186,7 @@ export class Node {
 
         const name = this.convertName(kids[1].value)
 
-        return new InPackage(this.open.start, this.close.end, name)
+        return new InPackage(this, this.open.start, this.close.end, name)
     }
 
     toDefPackageExpr(kids: Node[]): DefPackage | undefined {

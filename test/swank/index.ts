@@ -8,31 +8,14 @@ async function testConnInfo(conn: SwankConn) {
     expect(true, resp.info.pid !== undefined)
 }
 
-async function testEval(conn: SwankConn) {
-    let resp = await conn.eval('(defpackage :morse (:use :cl))')
+async function testPackage(conn: SwankConn) {
+    await conn.eval('(defpackage :morse (:use :cl))')
+    await conn.setPackage(':morse')
+}
+
+async function testListPkgs(conn: SwankConn) {
+    const resp = await conn.listPackages()
     console.log(resp)
-
-    // let resp = await conn.eval('(setq *package* (find-package :morse))')
-    // console.log(resp)
-
-    // resp = await conn.eval('(defun foo () (format t "foo called~%") 5)', ':morse')
-    // console.log(resp)
-
-    // resp = await conn.eval('(foo)', ':morse')
-    // console.log(resp)
-
-    conn.trace = true
-    // const list = await conn.docSymbol('defparameter', ':morse')
-    // console.log(list)
-
-    const pkg = await conn.setPackage(':morse')
-    console.log(pkg)
-
-    // const infoResp = await conn.connectionInfo(':morse')
-    // console.log(infoResp)
-
-    // resp = await conn.eval('(foo)')
-    // console.log(resp)
 }
 
 // Wrap in an IIFE so await works
@@ -47,7 +30,8 @@ async function testEval(conn: SwankConn) {
         await conn.connect()
 
         // await testConnInfo(conn)
-        await testEval(conn)
+        // await testPackage(conn)
+        await testListPkgs(conn)
     } catch (err) {
         console.log('FAILED', err)
     } finally {

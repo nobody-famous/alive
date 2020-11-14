@@ -1,8 +1,8 @@
 import { CompletionItem, Position } from 'vscode'
-import { Defun, Expr, findExpr, Let, posInExpr, findAtom } from '../lisp/Expr'
+import { exprToString } from '../lisp'
+import { Defun, Expr, findAtom, findExpr, findInnerExpr, InPackage, Let, posInExpr } from '../lisp/Expr'
 import { PackageMgr } from '../lisp/PackageMgr'
 import { Repl } from './repl'
-import { exprToString } from '../lisp'
 
 export class CompletionProvider {
     packageMgr: PackageMgr
@@ -13,6 +13,7 @@ export class CompletionProvider {
 
     async getCompletions(repl: Repl | undefined, exprs: Expr[], pos: Position): Promise<CompletionItem[]> {
         const expr = findAtom(exprs, pos)
+        const innerExpr = findInnerExpr(exprs, pos)
         let str = ''
 
         if (expr !== undefined) {
@@ -22,7 +23,24 @@ export class CompletionProvider {
             }
         }
 
+        if (innerExpr instanceof InPackage) {
+            return repl === undefined || str === '' ? this.staticPkgCompletions(exprs, pos) : this.replPkgCompletions(repl, str)
+        }
+
         return repl === undefined || str === '' ? this.staticCompletions(exprs, pos) : this.replCompletions(repl, str)
+    }
+
+    async replPkgCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
+        const names = await repl.getPackageNames()
+        const items = []
+
+        for (const name of names) {
+            const item = new CompletionItem(name.toLowerCase())
+
+            items.push(item)
+        }
+
+        return items
     }
 
     async replCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
@@ -39,6 +57,13 @@ export class CompletionProvider {
         }
 
         return items
+    }
+
+    staticPkgCompletions(exprs: Expr[], pos: Position): CompletionItem[] {
+        const pkgs = this.packageMgr.pkgs
+        const pkgNames = Object.keys(pkgs)
+
+        return pkgNames.map((pkg) => new CompletionItem(pkg.toLowerCase()))
     }
 
     staticCompletions(exprs: Expr[], pos: Position): CompletionItem[] {

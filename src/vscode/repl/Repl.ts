@@ -110,6 +110,19 @@ export class Repl extends EventEmitter {
         }
     }
 
+    async getPackageNames(): Promise<string[]> {
+        if (this.conn === undefined) {
+            return []
+        }
+
+        try {
+            const resp = await this.conn.listPackages()
+            return resp.names
+        } catch (err) {
+            return []
+        }
+    }
+
     async getCompletions(prefix: string): Promise<string[]> {
         if (this.conn === undefined) {
             return []

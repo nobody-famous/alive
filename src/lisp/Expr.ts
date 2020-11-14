@@ -1,4 +1,6 @@
+import { Node } from './Node'
 import { ExprMap, Position } from './Types'
+import { format } from 'util'
 
 export class Expr {
     start: Position
@@ -36,18 +38,20 @@ export function findExpr(exprs: Expr[], pos: Position): Expr | undefined {
     return undefined
 }
 
-export function findInnerSexpr(exprs: Expr[], pos: Position): SExpr | undefined {
+export function findInnerExpr(exprs: Expr[], pos: Position): Expr | undefined {
     for (const expr of exprs) {
         if (!posInExpr(expr, pos)) {
             continue
         }
 
-        if (!(expr instanceof SExpr)) {
+        if (expr instanceof Atom) {
             return undefined
+        } else if (!(expr instanceof SExpr)) {
+            return expr
         }
 
         const tmpExpr = expr
-        const inner = findInnerSexpr(expr.parts, pos)
+        const inner = findInnerExpr(expr.parts, pos)
 
         return inner ?? tmpExpr
     }
@@ -55,18 +59,42 @@ export function findInnerSexpr(exprs: Expr[], pos: Position): SExpr | undefined 
     return undefined
 }
 
-export function posInAtom(expr: Expr, pos: Position): boolean {
-    if (expr instanceof Atom && pos.line === expr.start.line) {
-        return pos.character >= expr.start.character && pos.character <= expr.end.character
+export function posInRange(exprStart: Position, exprEnd: Position, pos: Position): boolean {
+    if (pos.line === exprStart.line) {
+        return pos.character >= exprStart.character && pos.character <= exprEnd.character
     }
 
     return false
 }
 
+function posInNode(node: Node, pos: Position): boolean {
+    if (node.value === undefined) {
+        return false
+    }
+
+    return posInRange(node.value.start, node.value.end, pos)
+}
+
+function nodeToAtom(node: Node): Atom {
+    const value = node.value
+
+    if (value === undefined) {
+        return new Atom(new Position(0, 0), new Position(0, 0), '')
+    }
+
+    return new Atom(value.start, value.end, value.text)
+}
+
 export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
     for (const expr of exprs) {
-        if (posInAtom(expr, pos)) {
+        if (expr instanceof Atom && posInRange(expr.start, expr.end, pos)) {
             return expr as Atom
+        } else if (expr instanceof InPackage) {
+            if (posInNode(expr.node.kids[0], pos)) {
+                return nodeToAtom(expr.node.kids[1])
+            } else if (posInNode(expr.node.kids[2], pos)) {
+                return nodeToAtom(expr.node.kids[2])
+            }
         } else if (expr instanceof SExpr) {
             const atom = findAtom(expr.parts, pos)
             if (atom !== undefined) {
@@ -113,11 +141,13 @@ export class DefPackage extends Expr {
 }
 
 export class InPackage extends Expr {
+    node: Node
     name: string
 
-    constructor(start: Position, end: Position, name: string) {
+    constructor(node: Node, start: Position, end: Position, name: string) {
         super(start, end)
 
+        this.node = node
         this.name = name
     }
 }
