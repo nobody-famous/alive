@@ -1,6 +1,5 @@
-import { Node } from './Node'
 import { ExprMap, Position } from './Types'
-import { format } from 'util'
+import { exprToString, exprToStringArray, isLetName } from './Utils'
 
 export class Expr {
     start: Position
@@ -10,100 +9,6 @@ export class Expr {
         this.start = start
         this.end = end
     }
-}
-
-export function posInExpr(expr: Expr, pos: Position): boolean {
-    if (pos.line === expr.start.line) {
-        if (expr.start.line === expr.end.line) {
-            return pos.character >= expr.start.character && pos.character <= expr.end.character
-        }
-
-        return pos.character >= expr.start.character
-    }
-
-    if (pos.line === expr.end.line) {
-        return pos.character <= expr.end.character
-    }
-
-    return pos.line >= expr.start.line && pos.line <= expr.end.line
-}
-
-export function findExpr(exprs: Expr[], pos: Position): Expr | undefined {
-    for (const expr of exprs) {
-        if (posInExpr(expr, pos)) {
-            return expr
-        }
-    }
-
-    return undefined
-}
-
-export function findInnerExpr(exprs: Expr[], pos: Position): Expr | undefined {
-    for (const expr of exprs) {
-        if (!posInExpr(expr, pos)) {
-            continue
-        }
-
-        if (expr instanceof Atom) {
-            return undefined
-        } else if (!(expr instanceof SExpr)) {
-            return expr
-        }
-
-        const tmpExpr = expr
-        const inner = findInnerExpr(expr.parts, pos)
-
-        return inner ?? tmpExpr
-    }
-
-    return undefined
-}
-
-export function posInRange(exprStart: Position, exprEnd: Position, pos: Position): boolean {
-    if (pos.line === exprStart.line) {
-        return pos.character >= exprStart.character && pos.character <= exprEnd.character
-    }
-
-    return false
-}
-
-function posInNode(node: Node, pos: Position): boolean {
-    if (node.value === undefined) {
-        return false
-    }
-
-    return posInRange(node.value.start, node.value.end, pos)
-}
-
-function nodeToAtom(node: Node): Atom {
-    const value = node.value
-
-    if (value === undefined) {
-        return new Atom(new Position(0, 0), new Position(0, 0), '')
-    }
-
-    return new Atom(value.start, value.end, value.text)
-}
-
-export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
-    for (const expr of exprs) {
-        if (expr instanceof Atom && posInRange(expr.start, expr.end, pos)) {
-            return expr as Atom
-        } else if (expr instanceof InPackage) {
-            if (posInNode(expr.node.kids[0], pos)) {
-                return nodeToAtom(expr.node.kids[1])
-            } else if (posInNode(expr.node.kids[2], pos)) {
-                return nodeToAtom(expr.node.kids[2])
-            }
-        } else if (expr instanceof SExpr) {
-            const atom = findAtom(expr.parts, pos)
-            if (atom !== undefined) {
-                return atom
-            }
-        }
-    }
-
-    return undefined
 }
 
 export class Atom extends Expr {
@@ -124,6 +29,14 @@ export class SExpr extends Expr {
 
         this.parts = parts
     }
+
+    getName(): string | undefined {
+        if (this.parts.length === 0) {
+            return undefined
+        }
+
+        return exprToString(this.parts[0])
+    }
 }
 
 export class DefPackage extends Expr {
@@ -138,17 +51,71 @@ export class DefPackage extends Expr {
         this.uses = uses
         this.exports = exps
     }
+
+    static from(expr: SExpr): DefPackage | undefined {
+        const exprName = expr.getName()?.toUpperCase()
+        const pkgName = exprToString(expr.parts[1])
+
+        if (exprName !== 'DEFPACKAGE' || pkgName === undefined) {
+            return undefined
+        }
+
+        let uses: string[] = []
+        let exports: string[] = []
+
+        for (let ndx = 2; ndx < expr.parts.length; ndx += 1) {
+            const part = expr.parts[ndx]
+
+            if (!(part instanceof SExpr)) {
+                continue
+            }
+
+            const child = exprToString(part.parts[0])?.toUpperCase()
+            if (child === ':USE') {
+                uses = this.getUsesList(part)
+            } else if (child === ':EXPORT') {
+                exports = exprToStringArray(part) ?? []
+            }
+        }
+
+        return new DefPackage(expr.start, expr.end, pkgName, uses, exports)
+    }
+
+    static getUsesList(expr: Expr): string[] {
+        const symbols = exprToStringArray(expr)?.slice(1)
+        if (symbols === undefined) {
+            return []
+        }
+
+        return this.convertUsesList(symbols.slice(1))
+    }
+
+    static convertUsesList(list: string[]): string[] {
+        return list.map((i) => {
+            const item = i.toUpperCase()
+            return item === 'CL' || item === 'COMMON-LISP' || item === 'COMMON-LISP-USER' ? 'CL-USER' : item
+        })
+    }
 }
 
 export class InPackage extends Expr {
-    node: Node
     name: string
 
-    constructor(node: Node, start: Position, end: Position, name: string) {
+    constructor(start: Position, end: Position, name: string) {
         super(start, end)
 
-        this.node = node
         this.name = name
+    }
+
+    static from(expr: SExpr): InPackage | undefined {
+        const exprName = expr.getName()?.toUpperCase()
+        const pkgName = exprToString(expr.parts[1])
+
+        if (exprName !== 'IN-PACKAGE' || pkgName === undefined) {
+            return undefined
+        }
+
+        return new InPackage(expr.start, expr.end, pkgName.toUpperCase())
     }
 }
 
@@ -163,6 +130,20 @@ export class Defun extends Expr {
         this.name = name
         this.args = args
         this.body = body
+    }
+
+    static from(expr: SExpr): Defun | undefined {
+        const exprName = expr.getName()?.toUpperCase()
+
+        if (exprName !== 'DEFUN' || expr.parts.length < 3) {
+            return undefined
+        }
+
+        const name = exprToString(expr.parts[1]) ?? ''
+        const args = exprToStringArray(expr.parts[2]) ?? []
+        const body = expr.parts.slice(3)
+
+        return new Defun(expr.start, expr.end, name, args, body)
     }
 }
 
@@ -189,5 +170,41 @@ export class Let extends Expr {
 
         this.vars = vars
         this.body = body
+    }
+
+    static from(expr: SExpr): Let | undefined {
+        const exprName = expr.getName()?.toUpperCase()
+
+        if (!isLetName(exprName) || expr.parts.length < 2) {
+            return undefined
+        }
+
+        const vars = this.getVarsMap(expr.parts[1])
+        const body = expr.parts.slice(2)
+
+        return new Let(expr.start, expr.end, vars, body)
+    }
+
+    static getVarsMap(expr: Expr): ExprMap {
+        const exprMap: ExprMap = {}
+
+        if (!(expr instanceof SExpr)) {
+            return exprMap
+        }
+
+        for (const item of expr.parts) {
+            if (!(item instanceof SExpr) || item.parts.length !== 2) {
+                continue
+            }
+
+            const name = exprToString(item.parts[0])
+            const value = item.parts[1]
+
+            if (name !== undefined && value !== undefined) {
+                exprMap[name] = value
+            }
+        }
+
+        return exprMap
     }
 }

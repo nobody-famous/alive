@@ -1,7 +1,8 @@
 import { allLabels } from './keywords'
 import * as types from './Types'
-import { DefPackage, Defun, Expr, InPackage } from './Expr'
+import { DefPackage, Defun, Expr, InPackage, SExpr } from './Expr'
 import { Node } from './Node'
+import { exprToString } from './Utils'
 
 const CL_USER_PKG = 'CL-USER'
 
@@ -82,7 +83,13 @@ export class PackageMgr {
     }
 
     processExpr(expr: Expr) {
-        if (expr instanceof DefPackage) {
+        if (!(expr instanceof SExpr) || expr.parts.length === 0) {
+            return
+        }
+
+        const name = exprToString(expr.parts[0])?.toUpperCase()
+
+        if (name === 'DEFPACKAGE') {
             this.processDefPackage(expr)
         } else if (expr instanceof Defun) {
             this.processDefun(expr)
@@ -100,8 +107,13 @@ export class PackageMgr {
         this.curPackage.symbols[expr.name] = expr
     }
 
-    processDefPackage(defPkgExpr: Expr) {
-        const expr = defPkgExpr as DefPackage
+    processDefPackage(sexpr: SExpr) {
+        const expr = DefPackage.from(sexpr)
+
+        if (expr === undefined) {
+            return
+        }
+
         const pkg = new Package(expr.name, expr.start.line, expr.end.line)
 
         pkg.exports = expr.exports !== undefined ? expr.exports : []
@@ -109,22 +121,6 @@ export class PackageMgr {
 
         this.pkgs[expr.name] = pkg
     }
-
-    // createPackage(name: string, nodes: Node[]) {
-    //     const pkg = new Package(name)
-
-    //     for (let ndx = 0; ndx < nodes.length; ndx += 2) {
-    //         const node = nodes[ndx]
-
-    //         if (node.type === types.WHITE_SPACE) {
-    //             continue
-    //         }
-
-    //         this.packageElement(pkg, node)
-    //     }
-
-    //     this.pkgs[name] = pkg
-    // }
 
     packageElement(pkg: Package, node: Node) {
         if (node.kids.length === 0) {
@@ -175,15 +171,18 @@ export class PackageMgr {
         }
     }
 
-    processInPackage(inPkgExpr: Expr) {
-        const expr = inPkgExpr as InPackage
-        let name = expr.name.toUpperCase()
+    processInPackage(expr: SExpr) {
+        if (expr.parts.length < 2) {
+            return
+        }
 
-        if (name === 'COMMON-LISP-USER') {
+        let name = exprToString(expr.parts[1])
+
+        if (name?.toUpperCase() === 'COMMON-LISP-USER') {
             name = CL_USER_PKG
         }
 
-        if (this.pkgs[name] === undefined) {
+        if (name === undefined || this.pkgs[name] === undefined) {
             return
         }
 

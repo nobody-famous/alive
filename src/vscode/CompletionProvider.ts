@@ -1,6 +1,6 @@
 import { CompletionItem, Position } from 'vscode'
-import { exprToString } from '../lisp'
-import { Defun, Expr, findAtom, findExpr, findInnerExpr, InPackage, Let, posInExpr } from '../lisp/Expr'
+import { exprToString, findAtom, findExpr, findInnerExpr, isLetName, posInExpr } from '../lisp'
+import { Defun, Expr, InPackage, Let, SExpr } from '../lisp/Expr'
 import { PackageMgr } from '../lisp/PackageMgr'
 import { Repl } from './repl'
 
@@ -84,18 +84,25 @@ export class CompletionProvider {
     }
 
     getLocals(expr: Expr, pos: Position): string[] {
-        if (!posInExpr(expr, pos)) {
+        if (!(expr instanceof SExpr) || !posInExpr(expr, pos)) {
             return []
         }
 
         let locals: string[] = []
+        const name = expr.getName()?.toUpperCase()
 
-        if (expr instanceof Defun) {
-            locals = locals.concat(expr.args)
-            expr.body.forEach((expr) => (locals = locals.concat(this.getLocals(expr, pos))))
-        } else if (expr instanceof Let) {
-            locals = locals.concat(Object.keys(expr.vars))
-            expr.body.forEach((expr) => (locals = locals.concat(this.getLocals(expr, pos))))
+        if (name === 'DEFUN') {
+            const defun = Defun.from(expr)
+            if (defun !== undefined) {
+                locals = locals.concat(defun.args)
+                defun.body.forEach((expr) => (locals = locals.concat(this.getLocals(expr, pos))))
+            }
+        } else if (isLetName(name)) {
+            const letExpr = Let.from(expr)
+            if (letExpr !== undefined) {
+                locals = locals.concat(Object.keys(letExpr.vars))
+                letExpr.body.forEach((expr) => (locals = locals.concat(this.getLocals(expr, pos))))
+            }
         }
 
         return locals

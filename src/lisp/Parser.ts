@@ -60,6 +60,14 @@ export class Parser {
             }
 
             if (this.peek()?.type === types.CLOSE_PARENS || this.peek()?.type === types.MISMATCHED_CLOSE_PARENS) {
+                if (node.kids.length === 0) {
+                    const n = new Node()
+
+                    n.open = node.open
+                    n.close = this.peek()
+
+                    node.kids.push(n)
+                }
                 break
             }
 

@@ -8,12 +8,20 @@ function parser() {
     const exprs = parser.parse()
     const atom = findAtom(exprs, { line: 0, character: 13 })
 
-    expect(true, exprs[0] instanceof InPackage)
     expect('S', atom?.value)
 }
 
+function parseEmpty() {
+    const lex = new Lexer('()')
+    const parser = new Parser(lex.getTokens())
+    const exprs = parser.parse()
+
+    console.log(exprs)
+}
+
 function runAllTests() {
-    parser()
+    // parser()
+    parseEmpty()
 }
 
 try {

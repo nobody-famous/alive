@@ -1,11 +1,11 @@
 import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { View } from './View'
-import { Lexer, readLexTokens, getLexTokens } from '../../lisp'
+import { readLexTokens } from '../../lisp'
 import { decorateText } from '../Utils'
+import { View } from './View'
 
-const OUTPUT_DIR = '.alive'
+const OUTPUT_DIR = '.vscode/alive'
 
 export class FileView implements View {
     prompt: string = ''
