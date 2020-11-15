@@ -1,6 +1,5 @@
-import { valueToArray, valueToMap, valueToNumber, valueToString, Expr, SExpr } from '../../lisp'
+import { valueToArray, valueToMap, valueToNumber, valueToString, Expr, SExpr, isObject, isString } from '../../lisp'
 import { ConnInfo, Encoding, StringMap, PkgInfo } from '../Types'
-import { isObject, isString } from 'util'
 import { plistToObj } from '../SwankUtils'
 import { Return } from '../event/Return'
 
@@ -60,8 +59,8 @@ export class ConnectionInfo {
         }
 
         return {
-            name: obj.name,
-            prompt: obj.prompt,
+            name: obj.name as string,
+            prompt: obj.prompt as string,
         }
     }
 }

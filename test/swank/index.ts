@@ -1,6 +1,7 @@
 import { SwankConn } from '../../src/swank/SwankConn'
-import { expect } from '../Utils'
+import { expect, expectFail } from '../Utils'
 import { DebugActivate } from '../../src/swank/event/DebugActivate'
+import { Debug } from '../../src/swank/event'
 
 async function testConnInfo(conn: SwankConn) {
     const resp = await conn.connectionInfo()
@@ -18,6 +19,29 @@ async function testListPkgs(conn: SwankConn) {
     console.log(resp)
 }
 
+async function testDebug() {
+    const conn = new SwankConn('localhost', 4005)
+    let debugEvent: Debug | undefined = undefined
+    let activateEvent: DebugActivate | undefined = undefined
+
+    try {
+        conn.on('debug', (event) => (debugEvent = event))
+        conn.on('activate', (event) => (activateEvent = event))
+
+        await conn.connect()
+
+        conn.timeout = 50
+        await expectFail(() => conn.eval('(foo)'))
+
+        conn.trace = true
+        // await conn.listThreads()
+        await conn.debugAbort(debugEvent!.threadID)
+        console.log('after abort')
+    } finally {
+        conn.close()
+    }
+}
+
 // Wrap in an IIFE so await works
 ;(async () => {
     const conn = new SwankConn('localhost', 4005)
@@ -31,7 +55,8 @@ async function testListPkgs(conn: SwankConn) {
 
         // await testConnInfo(conn)
         // await testPackage(conn)
-        await testListPkgs(conn)
+        // await testListPkgs(conn)
+        await testDebug()
     } catch (err) {
         console.log('FAILED', err)
     } finally {

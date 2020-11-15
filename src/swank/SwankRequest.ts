@@ -21,7 +21,7 @@ export class SwankRequest {
 }
 
 export class EmacsRex extends SwankRequest {
-    constructor(msgID: number, data: string, pkg: any, threadID: string | boolean) {
+    constructor(msgID: number, data: string, pkg: any, threadID: number | boolean) {
         super(msgID, [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)])
     }
 }
@@ -34,7 +34,12 @@ export class SetPackageReq extends EmacsRex {
 
 export class ListPackagesReq extends EmacsRex {
     constructor(msgID: number, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:list-all-package-names'), true, new LispID(pkg ?? '')]), new LispID(pkg ?? 'nil'), true)
+        super(
+            msgID,
+            toWire([new LispID('swank:list-all-package-names'), true, new LispID(pkg ?? '')]),
+            new LispID(pkg ?? 'nil'),
+            true
+        )
     }
 }
 
@@ -75,14 +80,20 @@ export class ThreadsReq extends EmacsRex {
 }
 
 export class FrameLocalsReq extends EmacsRex {
-    constructor(msgID: number, threadID: string, frameID: string, pkg?: string) {
+    constructor(msgID: number, threadID: number, frameID: string, pkg?: string) {
         super(msgID, toWire([new LispID('swank:frame-locals-and-catch-tags'), frameID]), new LispID(pkg ?? 'nil'), threadID)
     }
 }
 
 export class DebuggerInfoReq extends EmacsRex {
-    constructor(msgID: number, threadID: string, start: number, end: number, pkg?: string) {
+    constructor(msgID: number, threadID: number, start: number, end: number, pkg?: string) {
         super(msgID, toWire([new LispID('swank:debugger-info-for-emacs'), start, end]), new LispID(pkg ?? 'nil'), threadID)
+    }
+}
+
+export class DebuggerAbortReq extends EmacsRex {
+    constructor(msgID: number, threadID: number, pkg?: string) {
+        super(msgID, toWire([new LispID('swank:sldb-abort')]), new LispID(pkg ?? 'nil'), threadID)
     }
 }
 

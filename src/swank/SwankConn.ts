@@ -2,8 +2,8 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import { format } from 'util'
 import * as event from './event'
+import { DebugActivate } from './event'
 import * as response from './response'
-import { ConnectionInfo } from './response'
 import {
     CompletionsReq,
     ConnectionInfoReq,
@@ -13,6 +13,8 @@ import {
     SwankRequest,
     DocSymbolReq,
     ListPackagesReq,
+    DebuggerAbortReq,
+    ThreadsReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -42,6 +44,7 @@ export class SwankConn extends EventEmitter {
     port: number
 
     trace: boolean = false
+    timeout: number = 10000
     conn?: net.Socket
 
     buffer?: Buffer
@@ -73,91 +76,51 @@ export class SwankConn extends EventEmitter {
     }
 
     async connectionInfo(pkg?: string): Promise<response.ConnectionInfo> {
-        const req = new ConnectionInfoReq(this.nextID(), pkg)
-        const resp = await this.sendRequest(req)
-        const info = ConnectionInfo.parse(resp)
-
-        if (info === undefined) {
-            throw new Error(`Connection Info invalid response ${format(resp)}`)
-        }
-
-        return info
+        return await this.requestFn(ConnectionInfoReq, response.ConnectionInfo, pkg)
     }
 
     async docSymbol(symbol: string, pkg: string): Promise<response.DocSymbol> {
-        const req = new DocSymbolReq(this.nextID(), symbol, pkg)
-        const resp = await this.sendRequest(req)
-        const docResp = response.DocSymbol.parse(resp)
-
-        if (docResp === undefined) {
-            throw new Error(`Doc Symbol invalid response ${format(resp)}`)
-        }
-
-        return docResp
+        return await this.requestFn(DocSymbolReq, response.DocSymbol, symbol, pkg)
     }
 
     async completions(prefix: string, pkg: string): Promise<response.Completions> {
-        const req = new CompletionsReq(this.nextID(), prefix, pkg)
-        const resp = await this.sendRequest(req)
-        const compResp = response.Completions.parse(resp)
-
-        if (compResp === undefined) {
-            throw new Error(`Completions invalid response ${format(resp)}`)
-        }
-
-        return compResp
+        return await this.requestFn(CompletionsReq, response.Completions, prefix, pkg)
     }
 
     async opArgsList(name: string, pkg: string): Promise<response.OpArgs> {
-        const req = new OpArgsReq(this.nextID(), name, pkg)
-        const resp = await this.sendRequest(req)
-        const opArgsResp = response.OpArgs.parse(resp)
-
-        if (opArgsResp === undefined) {
-            throw new Error(`Op Args List invalid response ${format(resp)}`)
-        }
-
-        return opArgsResp
+        return await this.requestFn(OpArgsReq, response.OpArgs, name, pkg)
     }
 
     async listPackages(pkg?: string): Promise<response.ListPackages> {
-        const req = new ListPackagesReq(this.nextID(), pkg)
-        const resp = await this.sendRequest(req)
-        const listPkgResp = response.ListPackages.parse(resp)
-
-        if (listPkgResp === undefined) {
-            throw new Error(`List Packages invalid response ${format(resp)}`)
-        }
-
-        return listPkgResp
+        return await this.requestFn(ListPackagesReq, response.ListPackages, pkg)
     }
 
     async setPackage(pkg: string): Promise<response.SetPackage> {
-        const req = new SetPackageReq(this.nextID(), pkg)
-        const resp = await this.sendRequest(req)
-        const setPkgResp = response.SetPackage.parse(resp)
-
-        if (setPkgResp === undefined) {
-            throw new Error(`Set Package invalid response ${format(resp)}`)
-        }
-
-        return setPkgResp
+        return await this.requestFn(SetPackageReq, response.SetPackage, pkg)
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval> {
-        const req = new EvalReq(this.nextID(), str, pkg)
-        const resp = await this.sendRequest(req)
-        const evalResp = response.Eval.parse(resp)
+        return await this.requestFn(EvalReq, response.Eval, str, pkg)
+    }
 
-        if (evalResp === undefined) {
-            throw new Error(`Eval invalid response ${format(resp)}`)
+    async debugAbort(threadID: number): Promise<response.DebuggerAbort> {
+        return await this.requestFn(DebuggerAbortReq, response.DebuggerAbort, threadID)
+    }
+
+    async requestFn<T extends SwankRequest>(req: new (...args: any[]) => T, respType: any, ...args: any[]) {
+        const request = new req(this.nextID(), ...args)
+        const resp = await this.sendRequest(request)
+        const parsed = respType.parse(resp)
+
+        if (parsed === undefined) {
+            throw new Error(`Inavlid response ${format(resp)}`)
         }
 
-        return evalResp
+        return parsed
     }
 
     // async listThreads() {
-    //     const req = new ThreadsReq()
+    //     const req = new ThreadsReq(this.nextID())
     //     const resp = await this.sendRequest(req)
 
     //     return new ThreadsResp(resp)
@@ -281,7 +244,7 @@ export class SwankConn extends EventEmitter {
 
             this.handlerDone(event.id)
 
-            status === ':OK' ? resolve(event) : reject(status)
+            status === ':OK' || status === ':ABORT' ? resolve(event) : reject(status)
         } catch (err) {
             this.emit('conn-err', err)
         }
@@ -314,7 +277,7 @@ export class SwankConn extends EventEmitter {
                     delete this.handlers[id]
                     reject('Timed Out')
                 }
-            }, 10000)
+            }, this.timeout)
         })
     }
 
