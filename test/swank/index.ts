@@ -19,6 +19,20 @@ async function testListPkgs(conn: SwankConn) {
     console.log(resp)
 }
 
+async function testCompileFile() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+
+        conn.trace = true
+        const resp = await conn.compileFile('hello.lisp')
+        console.log(resp)
+    } finally {
+        conn.close()
+    }
+}
+
 async function testDebug() {
     const conn = new SwankConn('localhost', 4005)
     let debugEvent: Debug | undefined = undefined
@@ -56,7 +70,8 @@ async function testDebug() {
         // await testConnInfo(conn)
         // await testPackage(conn)
         // await testListPkgs(conn)
-        await testDebug()
+        // await testDebug()
+        await testCompileFile()
     } catch (err) {
         console.log('FAILED', err)
     } finally {

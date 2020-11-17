@@ -20,91 +20,72 @@ export class SwankRequest {
     }
 }
 
-export class EmacsRex extends SwankRequest {
-    constructor(msgID: number, data: string, pkg: any, threadID: number | boolean) {
-        super(msgID, [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)])
-    }
+export function emacsRex(msgID: number, data: string, pkg: any, threadID: number | boolean) {
+    const rexData = [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)]
+    return new SwankRequest(msgID, rexData)
 }
 
-export class SetPackageReq extends EmacsRex {
-    constructor(msgID: number, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:set-package'), new LispID(pkg ?? '')]), new LispID(pkg ?? 'nil'), true)
-    }
+export function setPackageReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank:set-package'), new LispID(pkg ?? '')]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class ListPackagesReq extends EmacsRex {
-    constructor(msgID: number, pkg?: string) {
-        super(
-            msgID,
-            toWire([new LispID('swank:list-all-package-names'), true, new LispID(pkg ?? '')]),
-            new LispID(pkg ?? 'nil'),
-            true
-        )
-    }
+export function listPackagesReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank:list-all-package-names'), true, new LispID(pkg ?? '')]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class DocSymbolReq extends EmacsRex {
-    constructor(msgID: number, symbol: string, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:documentation-symbol'), symbol]), new LispID(pkg ?? 'nil'), true)
-    }
+export function docSymbolReq(msgID: number, symbol: string, pkg?: string) {
+    const data = [new LispID('swank:documentation-symbol'), symbol]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class CompletionsReq extends EmacsRex {
-    constructor(msgID: number, prefix: string, pkg: string) {
-        super(msgID, toWire([new LispID('swank:simple-completions'), prefix, pkg]), new LispID(pkg ?? 'nil'), true)
-    }
+export function completionsReq(msgID: number, prefix: string, pkg: string) {
+    const data = [new LispID('swank:simple-completions'), prefix, pkg]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class OpArgsReq extends EmacsRex {
-    constructor(msgID: number, name: string, pkg: string) {
-        super(msgID, toWire([new LispID('swank:operator-arglist'), name, pkg]), new LispID(pkg ?? 'nil'), true)
-    }
+export function opArgsReq(msgID: number, name: string, pkg: string) {
+    const data = [new LispID('swank:operator-arglist'), name, pkg]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class ConnectionInfoReq extends EmacsRex {
-    constructor(msgID: number, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:connection-info')]), new LispID(pkg ?? 'nil'), true)
-    }
+export function connectionInfoReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank:connection-info')]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class EvalReq extends EmacsRex {
-    constructor(msgID: number, form: string, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:eval-and-grab-output'), form]), new LispID(pkg ?? 'nil'), true)
-    }
+export function evalReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank:eval-and-grab-output'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class ThreadsReq extends EmacsRex {
-    constructor(msgID: number, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:list-threads')]), new LispID(pkg ?? 'nil'), true)
-    }
+export function compileFileReq(msgID: number, fileName: string, pkg?: string) {
+    const data = [new LispID('swank:compile-file-for-emacs'), fileName, false]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class FrameLocalsReq extends EmacsRex {
-    constructor(msgID: number, threadID: number, frameID: string, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:frame-locals-and-catch-tags'), frameID]), new LispID(pkg ?? 'nil'), threadID)
-    }
+export function threadsReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank:list-threads')]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export class DebuggerInfoReq extends EmacsRex {
-    constructor(msgID: number, threadID: number, start: number, end: number, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:debugger-info-for-emacs'), start, end]), new LispID(pkg ?? 'nil'), threadID)
-    }
+export function frameLocalsReq(msgID: number, threadID: number, frameID: string, pkg?: string) {
+    const data = [new LispID('swank:frame-locals-and-catch-tags'), frameID]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
 }
 
-export class DebuggerAbortReq extends EmacsRex {
-    constructor(msgID: number, threadID: number, pkg?: string) {
-        super(msgID, toWire([new LispID('swank:sldb-abort')]), new LispID(pkg ?? 'nil'), threadID)
-    }
+export function debuggerInfoReq(msgID: number, threadID: number, start: number, end: number, pkg?: string) {
+    const data = [new LispID('swank:debugger-info-for-emacs'), start, end]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
 }
 
-export class DebugThreadReq extends EmacsRex {
-    constructor(msgID: number, threadNdx: number, pid: number, pkg?: string) {
-        // super(toWire([new LispID('swank:debug-nth-thread'), threadID]), 'COMMON-LISP-USER', true);
-        super(
-            msgID,
-            toWire([new LispID('swank:start-swank-server-in-thread'), threadNdx, `/tmp/slime.${pid}`]),
-            new LispID(pkg ?? 'nil'),
-            true
-        )
-    }
+export function debuggerAbortReq(msgID: number, threadID: number, pkg?: string) {
+    const data = [new LispID('swank:sldb-abort')]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
+}
+
+export function debugThreadReq(msgID: number, threadNdx: number, pid: number, pkg?: string) {
+    const data = [new LispID('swank:start-swank-server-in-thread'), threadNdx, `/tmp/slime.${pid}`]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }

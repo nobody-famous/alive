@@ -107,7 +107,11 @@ export class InPackage extends Expr {
         this.name = name
     }
 
-    static from(expr: SExpr): InPackage | undefined {
+    static from(expr: Expr): InPackage | undefined {
+        if (!(expr instanceof SExpr)) {
+            return undefined
+        }
+
         const exprName = expr.getName()?.toUpperCase()
         const pkgName = exprToString(expr.parts[1])
 

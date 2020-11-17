@@ -5,16 +5,17 @@ import * as event from './event'
 import { DebugActivate } from './event'
 import * as response from './response'
 import {
-    CompletionsReq,
-    ConnectionInfoReq,
-    EvalReq,
-    OpArgsReq,
-    SetPackageReq,
+    completionsReq,
+    connectionInfoReq,
+    evalReq,
+    opArgsReq,
+    setPackageReq,
     SwankRequest,
-    DocSymbolReq,
-    ListPackagesReq,
-    DebuggerAbortReq,
-    ThreadsReq,
+    docSymbolReq,
+    listPackagesReq,
+    debuggerAbortReq,
+    threadsReq,
+    compileFileReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -76,39 +77,43 @@ export class SwankConn extends EventEmitter {
     }
 
     async connectionInfo(pkg?: string): Promise<response.ConnectionInfo> {
-        return await this.requestFn(ConnectionInfoReq, response.ConnectionInfo, pkg)
+        return await this.requestFn(connectionInfoReq, response.ConnectionInfo, pkg)
     }
 
     async docSymbol(symbol: string, pkg: string): Promise<response.DocSymbol> {
-        return await this.requestFn(DocSymbolReq, response.DocSymbol, symbol, pkg)
+        return await this.requestFn(docSymbolReq, response.DocSymbol, symbol, pkg)
     }
 
     async completions(prefix: string, pkg: string): Promise<response.Completions> {
-        return await this.requestFn(CompletionsReq, response.Completions, prefix, pkg)
+        return await this.requestFn(completionsReq, response.Completions, prefix, pkg)
     }
 
     async opArgsList(name: string, pkg: string): Promise<response.OpArgs> {
-        return await this.requestFn(OpArgsReq, response.OpArgs, name, pkg)
+        return await this.requestFn(opArgsReq, response.OpArgs, name, pkg)
     }
 
     async listPackages(pkg?: string): Promise<response.ListPackages> {
-        return await this.requestFn(ListPackagesReq, response.ListPackages, pkg)
+        return await this.requestFn(listPackagesReq, response.ListPackages, pkg)
     }
 
     async setPackage(pkg: string): Promise<response.SetPackage> {
-        return await this.requestFn(SetPackageReq, response.SetPackage, pkg)
+        return await this.requestFn(setPackageReq, response.SetPackage, pkg)
+    }
+
+    async compileFile(str: string, pkg?: string): Promise<response.Eval> {
+        return await this.requestFn(compileFileReq, response.CompileFile, str, pkg)
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval> {
-        return await this.requestFn(EvalReq, response.Eval, str, pkg)
+        return await this.requestFn(evalReq, response.Eval, str, pkg)
     }
 
     async debugAbort(threadID: number): Promise<response.DebuggerAbort> {
-        return await this.requestFn(DebuggerAbortReq, response.DebuggerAbort, threadID)
+        return await this.requestFn(debuggerAbortReq, response.DebuggerAbort, threadID)
     }
 
-    async requestFn<T extends SwankRequest>(req: new (...args: any[]) => T, respType: any, ...args: any[]) {
-        const request = new req(this.nextID(), ...args)
+    async requestFn(req: (...args: any[]) => SwankRequest, respType: any, ...args: any[]) {
+        const request = req(this.nextID(), ...args)
         const resp = await this.sendRequest(request)
         const parsed = respType.parse(resp)
 

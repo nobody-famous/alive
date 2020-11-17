@@ -1,6 +1,6 @@
 import { CompletionItem, Position } from 'vscode'
 import { exprToString, findAtom, findExpr, findInnerExpr, isLetName, posInExpr } from '../lisp'
-import { Defun, Expr, InPackage, Let, SExpr } from '../lisp/Expr'
+import { Defun, Expr, Let, SExpr } from '../lisp/Expr'
 import { PackageMgr } from '../lisp/PackageMgr'
 import { Repl } from './repl'
 
@@ -23,7 +23,7 @@ export class CompletionProvider {
             }
         }
 
-        if (innerExpr instanceof InPackage) {
+        if (innerExpr instanceof SExpr && innerExpr.getName()?.toUpperCase() === 'IN-PACKAGE') {
             return repl === undefined || str === '' ? this.staticPkgCompletions(exprs, pos) : this.replPkgCompletions(repl, str)
         }
 

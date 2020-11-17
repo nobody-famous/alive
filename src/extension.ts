@@ -39,6 +39,8 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl(ctx)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.compileFile', compileFile))
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.evalFile', evalFile))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -105,6 +107,31 @@ async function readPackageLisp() {
     const exprs = parser.parse()
 
     pkgMgr.update(exprs)
+}
+
+async function evalFile() {
+    if (clRepl === undefined || activeEditor?.document.languageId !== COMMON_LISP_ID) {
+        return
+    }
+
+    const exprs = getDocumentExprs(activeEditor.document)
+
+    for (const expr of exprs) {
+        const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+        const text = activeEditor.document.getText(range)
+
+        await clRepl.send(text, false)
+    }
+
+    await clRepl.updateConnInfo()
+}
+
+async function compileFile() {
+    if (clRepl === undefined || activeEditor?.document.languageId !== COMMON_LISP_ID) {
+        return
+    }
+
+    await clRepl.compileFile(activeEditor.document.fileName)
 }
 
 function attachRepl(ctx: vscode.ExtensionContext): () => void {

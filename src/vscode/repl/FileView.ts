@@ -82,19 +82,19 @@ export class FileView implements View {
             builder.insert(line.range.end, text)
         })
 
-        setTimeout(() => this.colorize(this.replEditor), 10)
+        setTimeout(() => this.colorize(), 10)
 
         doc.save()
     }
 
-    colorize(editor: vscode.TextEditor | undefined) {
-        if (editor === undefined || this.replFile === undefined) {
+    colorize() {
+        if (this.replEditor === undefined || this.replFile === undefined) {
             return
         }
 
-        const tokens = readLexTokens(this.replFile.fsPath, editor.document.getText())
+        const tokens = readLexTokens(this.replFile.fsPath, this.replEditor.document.getText())
 
-        decorateText(editor, tokens)
+        decorateText(this.replEditor, tokens)
     }
 
     isEditorVisible(): boolean {

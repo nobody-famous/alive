@@ -65,6 +65,14 @@
                 "title": "Send To REPL"
             },
             {
+                "command": "common-lisp.compileFile",
+                "title": "Compile File"
+            },
+            {
+                "command": "common-lisp.evalFile",
+                "title": "Eval File"
+            },
+            {
                 "command": "common-lisp.attachRepl",
                 "title": "Attach To REPL"
             }
@@ -73,6 +81,10 @@
             "commandPalette": [
                 {
                     "command": "common-lisp.attachRepl",
+                    "when": "editorLangId == common-lisp"
+                },
+                {
+                    "command": "common-lisp.compileFile",
                     "when": "editorLangId == common-lisp"
                 },
                 {
@@ -91,6 +103,16 @@
             ]
         },
         "keybindings": [
+            {
+                "command": "common-lisp.compileFile",
+                "when": "editorLangId == common-lisp",
+                "key": "alt+shift+x"
+            },
+            {
+                "command": "common-lisp.evalFile",
+                "when": "editorLangId == common-lisp",
+                "key": "alt+shift+e"
+            },
             {
                 "command": "common-lisp.selectSexpr",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
