@@ -1,8 +1,6 @@
 import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { readLexTokens } from '../../lisp'
-import { decorateText } from '../Utils'
 import { View } from './View'
 
 const OUTPUT_DIR = '.vscode/alive'
@@ -82,19 +80,7 @@ export class FileView implements View {
             builder.insert(line.range.end, text)
         })
 
-        setTimeout(() => this.colorize(), 10)
-
         doc.save()
-    }
-
-    colorize() {
-        if (this.replEditor === undefined || this.replFile === undefined) {
-            return
-        }
-
-        const tokens = readLexTokens(this.replFile.fsPath, this.replEditor.document.getText())
-
-        decorateText(this.replEditor, tokens)
     }
 
     isEditorVisible(): boolean {

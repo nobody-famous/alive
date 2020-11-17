@@ -169,7 +169,7 @@ export class Repl extends EventEmitter {
                 }
             }
         } catch (err) {
-            this.emit('error', err)
+            vscode.window.showErrorMessage(err)
         }
     }
 

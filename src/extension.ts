@@ -80,12 +80,27 @@ function openTextDocument(doc: vscode.TextDocument) {
 }
 
 function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
-    if (!hasValidLangId(activeEditor?.document) || event.document !== activeEditor?.document) {
+    if (!hasValidLangId(event.document)) {
         return
     }
 
-    readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-    decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
+    readLexTokens(event.document.fileName, event.document.getText())
+
+    const editor = findEditorForDoc(event.document)
+
+    if (editor !== undefined) {
+        decorateText(editor, getLexTokens(event.document.fileName) ?? [])
+    }
+}
+
+function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | undefined {
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (editor.document === doc) {
+            return editor
+        }
+    }
+
+    return undefined
 }
 
 async function readPackageLisp() {
