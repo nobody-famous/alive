@@ -23,11 +23,12 @@ export class CompletionProvider {
             }
         }
 
+        const getFromRepl = repl !== undefined && str.length > 2
         if (innerExpr instanceof SExpr && innerExpr.getName()?.toUpperCase() === 'IN-PACKAGE') {
-            return repl === undefined || str === '' ? this.staticPkgCompletions(exprs, pos) : this.replPkgCompletions(repl, str)
+            return repl !== undefined && getFromRepl ? this.replPkgCompletions(repl, str) : this.staticPkgCompletions(exprs, pos)
         }
 
-        return repl === undefined || str === '' ? this.staticCompletions(exprs, pos) : this.replCompletions(repl, str)
+        return repl !== undefined && getFromRepl ? this.replCompletions(repl, str) : this.staticCompletions(exprs, pos)
     }
 
     async replPkgCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
