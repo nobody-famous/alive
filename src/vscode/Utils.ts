@@ -26,3 +26,10 @@ export function decorateText(editor: vscode.TextEditor | undefined, tokens: Toke
         vscode.window.showErrorMessage(`Failed to colorize file: ${err.toString()}`)
     }
 }
+
+export function jumpToBottom(editor: vscode.TextEditor) {
+    const pos = editor.document.positionAt(Infinity)
+
+    editor.selection = new vscode.Selection(pos, pos)
+    editor.revealRange(new vscode.Range(pos, pos))
+}

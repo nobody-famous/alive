@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { Expr, InPackage, isString, Lexer, Parser } from '../../lisp'
+import { Expr, InPackage, Lexer, Parser } from '../../lisp'
 import { allLabels } from '../../lisp/keywords'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
@@ -52,6 +52,10 @@ export class Repl extends EventEmitter {
         } catch (err) {
             this.displayErrMsg(err)
         }
+    }
+
+    documentChanged() {
+        this.view?.documentChanged()
     }
 
     async updateConnInfo() {
@@ -165,7 +169,8 @@ export class Repl extends EventEmitter {
             } else {
                 const resp = await this.conn.eval(text)
                 if (output) {
-                    this.view.addText(resp.result.join(''))
+                    const str = resp.result.join('').replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
+                    this.view.addText(str)
                 }
             }
         } catch (err) {

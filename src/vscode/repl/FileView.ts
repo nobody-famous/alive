@@ -1,6 +1,7 @@
 import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
+import { jumpToBottom } from '../Utils'
 import { View } from './View'
 
 const OUTPUT_DIR = '.vscode/alive'
@@ -11,6 +12,7 @@ export class FileView implements View {
     port: number
     scheme: string
     name: string
+    needJump: boolean = true
 
     activeDoc?: vscode.TextDocument
     folder?: vscode.Uri
@@ -47,6 +49,14 @@ export class FileView implements View {
 
         if (!this.isEditorVisible()) {
             this.replEditor = await vscode.window.showTextDocument(this.replDoc, vscode.ViewColumn.Beside)
+            this.needJump = true
+        }
+    }
+
+    documentChanged() {
+        if (this.needJump && this.replEditor !== undefined) {
+            this.needJump = false
+            jumpToBottom(this.replEditor)
         }
     }
 
@@ -71,16 +81,18 @@ export class FileView implements View {
         const doc = this.replEditor.document
 
         this.replEditor.edit((builder: vscode.TextEditorEdit) => {
-            const line = doc.lineAt(doc.lineCount - 1)
+            const pos = doc.positionAt(Infinity)
             let text = doc.lineCount === 0 ? '' : '\n'
 
-            this.replEditor!.selection = new vscode.Selection(line.range.end, line.range.end)
+            this.replEditor!.selection = new vscode.Selection(pos, pos)
 
             text += toAppend
-            builder.insert(line.range.end, text)
+            builder.insert(pos, text)
         })
 
         doc.save()
+
+        this.needJump = true
     }
 
     isEditorVisible(): boolean {

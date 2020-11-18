@@ -88,8 +88,20 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
 
     const editor = findEditorForDoc(event.document)
 
-    if (editor !== undefined) {
-        decorateText(editor, getLexTokens(event.document.fileName) ?? [])
+    if (editor === undefined) {
+        return
+    }
+
+    decorateText(editor, getLexTokens(event.document.fileName) ?? [])
+
+    if (editor.document.languageId !== REPL_ID) {
+        return
+    }
+
+    for (const change of event.contentChanges) {
+        if (change.range !== undefined) {
+            clRepl?.documentChanged()
+        }
     }
 }
 
