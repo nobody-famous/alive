@@ -23,7 +23,7 @@ export class Debug implements SwankEvent {
         this.conts = conts
     }
 
-    static fromRaw(event: SwankRawEvent): Debug | undefined {
+    static from(event: SwankRawEvent): Debug | undefined {
         if (event.payload.length !== 6 || !(event.payload[2] instanceof SExpr)) {
             throw new Error(`DebugEvent Invalid ${format(event)}`)
         }

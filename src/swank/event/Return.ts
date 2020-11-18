@@ -18,7 +18,7 @@ export class Return implements SwankEvent {
         this.info = info
     }
 
-    static fromRaw(event: SwankRawEvent): Return | undefined {
+    static from(event: SwankRawEvent): Return | undefined {
         if (event.op !== ':RETURN' || event.payload.length !== 2) {
             return undefined
         }

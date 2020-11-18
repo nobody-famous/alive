@@ -10,7 +10,7 @@ export class NewFeatures implements SwankEvent {
         this.features = features
     }
 
-    static fromRaw(event: SwankRawEvent): NewFeatures | undefined {
+    static from(event: SwankRawEvent): NewFeatures | undefined {
         if (event.payload.length === 0 || !(event.payload[0] instanceof SExpr)) {
             return undefined
         }

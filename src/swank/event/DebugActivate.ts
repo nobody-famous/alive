@@ -14,7 +14,7 @@ export class DebugActivate implements SwankEvent {
         this.select = select
     }
 
-    static fromRaw(event: SwankRawEvent): DebugActivate | undefined {
+    static from(event: SwankRawEvent): DebugActivate | undefined {
         if (event.payload.length < 2) {
             return undefined
         }

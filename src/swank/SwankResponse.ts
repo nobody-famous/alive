@@ -31,7 +31,7 @@ export class SwankResponse {
         return this.parseEvent(exprs)
     }
 
-    parseEvent(exprs: Expr[]): SwankEvent | undefined {
+    private parseEvent(exprs: Expr[]): SwankEvent | undefined {
         if (exprs.length > 1) {
             throw new Error('parseEvent MORE THAN ONE EVENT')
         }
@@ -46,16 +46,16 @@ export class SwankResponse {
         return rawEvent !== undefined ? this.convertRawEvent(rawEvent) : undefined
     }
 
-    convertRawEvent(rawEvent: SwankRawEvent): SwankEvent | undefined {
+    private convertRawEvent(rawEvent: SwankRawEvent): SwankEvent | undefined {
         switch (rawEvent.op) {
             case ':RETURN':
-                return event.Return.fromRaw(rawEvent)
+                return event.Return.from(rawEvent)
             case ':DEBUG':
-                return event.Debug.fromRaw(rawEvent)
+                return event.Debug.from(rawEvent)
             case ':DEBUG-ACTIVATE':
-                return event.DebugActivate.fromRaw(rawEvent)
+                return event.DebugActivate.from(rawEvent)
             case ':NEW-FEATURES':
-                return NewFeatures.fromRaw(rawEvent)
+                return NewFeatures.from(rawEvent)
             case ':INDENTATION-UPDATE':
                 return undefined
         }
@@ -63,20 +63,12 @@ export class SwankResponse {
         throw new Error(`UNHANDLED OP ${format(rawEvent)}`)
     }
 
-    getRawEvent(expr: SExpr): SwankRawEvent | undefined {
+    private getRawEvent(expr: SExpr): SwankRawEvent | undefined {
         const sexpr = expr as SExpr
         const [opExpr, ...payload] = sexpr.parts
 
         return SwankRawEvent.create(opExpr, payload)
     }
-
-    // buildReturnEvent(rawEvent: SwankRawEvent): ReturnEvent {
-    //     if (rawEvent.msgID === undefined) {
-    //         throw new Error(`Return Event missing message ID ${rawEvent}`)
-    //     }
-
-    //     return new ReturnEvent(rawEvent.msgID, rawEvent.args)
-    // }
 
     addData(data: Buffer): Buffer {
         if (this.length === undefined) {
@@ -114,41 +106,3 @@ export class SwankResponse {
         return remaining
     }
 }
-
-// export class LocalsResp {
-//     constructor(data) {
-//         this.vars = this.fromArray(data[0])
-//         this.catchTags = data[1]
-//     }
-
-//     fromArray(arr) {
-//         if (!Array.isArray(arr)) {
-//             return arr
-//         }
-
-//         return arr.map((item) => plistToObj(item))
-//     }
-// }
-
-// export class ThreadsResp {
-//     constructor(data) {
-//         this.headers = data[0]
-//         this.info = []
-
-//         for (let ndx = 1; ndx < data.length; ndx += 1) {
-//             const [id, name, status] = data[ndx]
-
-//             this.info.push({
-//                 id: parseInt(id),
-//                 name: convert(name),
-//                 status: convert(status),
-//             })
-//         }
-//     }
-// }
-
-// export class DebuggerInfoResp {
-//     constructor(data: any) {
-//         console.log('DebuggerInfo', data)
-//     }
-// }
