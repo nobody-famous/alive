@@ -13,4 +13,4 @@ export default [
     { label: 'with-hash-table-iterator', type: 'Macro' },
     { label: 'clrhash', type: 'Function' },
     { label: 'sxhash', type: 'Function' },
-];
+]

@@ -207,4 +207,4 @@ export default [
     { label: 'floating-point-inexact', type: 'Condition Type' },
     { label: 'floating-point-overflow', type: 'Condition Type' },
     { label: 'floating-point-underflow', type: 'Condition Type' },
-];
+]

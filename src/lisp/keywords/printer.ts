@@ -40,4 +40,4 @@ export default [
     { label: 'print-not-readable', type: 'Condition Type' },
     { label: 'print-not-readable-object', type: 'Function' },
     { label: 'format', type: 'Function' },
-];
+]

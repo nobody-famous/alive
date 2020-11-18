@@ -29,4 +29,4 @@ export default [
     { label: 'string-not-lessp', type: 'Function' },
     { label: 'stringp', type: 'Function' },
     { label: 'make-string', type: 'Function' },
-];
+]

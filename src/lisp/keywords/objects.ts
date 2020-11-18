@@ -41,4 +41,4 @@ export default [
     { label: 'class-of', type: 'Function' },
     { label: 'unbound-slot', type: 'Condition Type' },
     { label: 'unbound-slot-instance', type: 'Function' },
-];
+]

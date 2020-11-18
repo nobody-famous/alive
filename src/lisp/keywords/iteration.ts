@@ -5,4 +5,4 @@ export default [
     { label: 'dolist', type: 'Macro' },
     { label: 'loop', type: 'Macro' },
     { label: 'loop-finish', type: 'Local Macro' },
-];
+]

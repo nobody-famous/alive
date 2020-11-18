@@ -69,4 +69,4 @@ export default [
     { label: 'stream-error', type: 'Condition Type' },
     { label: 'stream-error-stream', type: 'Function' },
     { label: 'end-of-file', type: 'Condition Type' },
-];
+]

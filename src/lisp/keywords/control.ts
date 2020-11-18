@@ -83,4 +83,4 @@ export default [
     { label: 'control-error', type: 'Condition Type' },
     { label: 'program-error', type: 'Condition Type' },
     { label: 'undefined-function', type: 'Condition Type' },
-];
+]

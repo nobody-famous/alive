@@ -50,4 +50,4 @@ export default [
     { label: 'muffle-warning', type: 'Function' },
     { label: 'store-value', type: 'Function' },
     { label: 'use-value', type: 'Function' },
-];
+]

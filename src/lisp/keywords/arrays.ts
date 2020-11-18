@@ -47,4 +47,4 @@ export default [
     { label: 'bit-xor', type: 'Function' },
     { label: 'bit-vector-p', type: 'Function' },
     { label: 'simple-bit-vector-p', type: 'Function' },
-];
+]

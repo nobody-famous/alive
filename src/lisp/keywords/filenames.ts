@@ -23,4 +23,4 @@ export default [
     { label: 'translate-logical-pathname', type: 'Function' },
     { label: 'translate-pathname', type: 'Function' },
     { label: 'merge-pathnames', type: 'Function' },
-];
+]

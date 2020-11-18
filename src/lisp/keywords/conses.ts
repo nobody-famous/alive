@@ -109,4 +109,4 @@ export default [
     { label: 'subsetp', type: 'Function' },
     { label: 'union', type: 'Function' },
     { label: 'nunion', type: 'Function' },
-];
+]

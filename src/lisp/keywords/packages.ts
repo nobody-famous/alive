@@ -31,4 +31,4 @@ export default [
     { label: '*package*', type: 'Variable' },
     { label: 'package-error', type: 'Condition Type' },
     { label: 'package-error-package', type: 'Function' },
-];
+]

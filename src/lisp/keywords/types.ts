@@ -22,4 +22,4 @@ export default [
     { label: 'type-error-datum', type: 'Function' },
     { label: 'type-error-expected-type', type: 'Function' },
     { label: 'simple-type-error', type: 'Condition Type' },
-];
+]

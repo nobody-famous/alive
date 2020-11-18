@@ -36,4 +36,4 @@ export default [
     { label: 'software-type', type: 'Function' },
     { label: 'software-version', type: 'Function' },
     { label: 'user-homedir-pathname', type: 'Function' },
-];
+]

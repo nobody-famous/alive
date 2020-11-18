@@ -9,4 +9,4 @@ export default [
     { label: 'delete-file', type: 'Function' },
     { label: 'file-error', type: 'Condition Type' },
     { label: 'file-error-pathname', type: 'Function' },
-];
+]

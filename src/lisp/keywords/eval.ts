@@ -31,4 +31,4 @@ export default [
     { label: 'the', type: 'Special Operator' },
     { label: 'special-operator-p', type: 'Function' },
     { label: 'constantp', type: 'Function' },
-];
+]

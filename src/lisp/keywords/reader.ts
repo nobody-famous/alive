@@ -20,4 +20,4 @@ export default [
     { label: '*read-suppress*', type: 'Variable' },
     { label: '*readtable*', type: 'Variable' },
     { label: 'reader-error', type: 'Condition Type' },
-];
+]

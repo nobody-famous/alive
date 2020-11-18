@@ -41,4 +41,4 @@ export default [
     { label: 'delete-if-not', type: 'Function' },
     { label: 'remove-duplicates', type: 'Function' },
     { label: 'delete-duplicates', type: 'Function' },
-];
+]

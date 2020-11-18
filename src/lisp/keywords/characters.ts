@@ -34,4 +34,4 @@ export default [
     { label: 'char-code-limit', type: 'Constant Variable' },
     { label: 'char-name', type: 'Function' },
     { label: 'name-char', type: 'Function' },
-];
+]

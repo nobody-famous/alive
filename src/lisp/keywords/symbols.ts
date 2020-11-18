@@ -19,4 +19,4 @@ export default [
     { label: 'makunbound', type: 'Function' },
     { label: 'set', type: 'Function' },
     { label: 'unbound-variable', type: 'Condition Type' },
-];
+]

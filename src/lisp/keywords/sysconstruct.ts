@@ -15,4 +15,4 @@ export default [
     { label: '*modules*', type: 'Variable' },
     { label: 'provide', type: 'Function' },
     { label: 'require', type: 'Function' },
-];
+]
