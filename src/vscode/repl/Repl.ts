@@ -153,7 +153,7 @@ export class Repl extends EventEmitter {
         }
     }
 
-    async send(text: string, output: boolean = true) {
+    async send(text: string, pkg: string, output: boolean = true) {
         if (this.conn === undefined || this.view === undefined) {
             return
         }
@@ -167,7 +167,8 @@ export class Repl extends EventEmitter {
             if (inPkg !== undefined) {
                 await this.changePackage(inPkg, output)
             } else {
-                const resp = await this.conn.eval(text)
+                const resp = await this.conn.eval(text, pkg)
+
                 if (output) {
                     const str = resp.result.join('').replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
                     this.view.addText(str)
@@ -213,6 +214,7 @@ export class Repl extends EventEmitter {
         }
 
         if (info.package?.prompt !== undefined) {
+            this.curPackage = info.package.name
             this.view.setPrompt(info.package.prompt)
             this.view.show()
         }

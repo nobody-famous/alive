@@ -43,14 +43,16 @@ async function testDebug() {
         conn.on('activate', (event) => (activateEvent = event))
 
         await conn.connect()
+        await conn.connectionInfo()
 
+        conn.trace = true
         conn.timeout = 50
-        await expectFail(() => conn.eval('(foo)'))
+        await expectFail(() => conn.eval('(+ 1 2 3)'))
 
         conn.trace = true
         // await conn.listThreads()
-        await conn.debugAbort(debugEvent!.threadID)
-        console.log('after abort')
+        // await conn.debugAbort(debugEvent!.threadID)
+        // setTimeout(() => console.log('DONE'), 2000)
     } finally {
         conn.close()
     }
@@ -70,8 +72,8 @@ async function testDebug() {
         // await testConnInfo(conn)
         // await testPackage(conn)
         // await testListPkgs(conn)
-        // await testDebug()
-        await testCompileFile()
+        await testDebug()
+        // await testCompileFile()
     } catch (err) {
         console.log('FAILED', err)
     } finally {

@@ -23,7 +23,8 @@ export class CompletionProvider {
             }
         }
 
-        const getFromRepl = repl !== undefined && str.length > 2
+        const getFromRepl = repl !== undefined && str !== ''
+
         if (innerExpr instanceof SExpr && innerExpr.getName()?.toUpperCase() === 'IN-PACKAGE') {
             return repl !== undefined && getFromRepl ? this.replPkgCompletions(repl, str) : this.staticPkgCompletions(exprs, pos)
         }

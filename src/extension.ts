@@ -146,8 +146,9 @@ async function evalFile() {
     for (const expr of exprs) {
         const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
         const text = activeEditor.document.getText(range)
+        const pkg = pkgMgr.getPackageForLine(expr.start.line)
 
-        await clRepl.send(text, false)
+        await clRepl.send(text, pkg.name, false)
     }
 
     await clRepl.updateConnInfo()
@@ -214,8 +215,10 @@ async function sendToRepl() {
 
         const range = getExprRange(editor, expr)
         const text = editor.document.getText(range)
+        const pkg = pkgMgr.getPackageForLine(expr.start.line)
+        const pkgName = editor.document.languageId === REPL_ID ? clRepl.curPackage : pkg.name
 
-        await clRepl.send(text)
+        await clRepl.send(text, pkgName)
     } catch (err) {
         console.log(err)
     }

@@ -276,13 +276,6 @@ export class SwankConn extends EventEmitter {
     waitForResponse(id: number): Promise<event.Return> {
         return new Promise((resolve, reject) => {
             this.handlers[id] = { resolve, reject }
-
-            this.timeouts[id] = setTimeout(() => {
-                if (id in this.handlers) {
-                    delete this.handlers[id]
-                    reject('Timed Out')
-                }
-            }, this.timeout)
         })
     }
 

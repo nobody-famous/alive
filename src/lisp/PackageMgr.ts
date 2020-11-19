@@ -60,6 +60,23 @@ export class PackageMgr {
         }
     }
 
+    getPackageForLine(line: number): Package {
+        for (const pkg of Object.values(this.pkgs)) {
+            if (this.lineInPackage(line, pkg)) {
+                return pkg
+            }
+        }
+
+        return this.pkgs[CL_USER_PKG]
+    }
+
+    private lineInPackage(line: number, pkg: Package): boolean {
+        const start = pkg.startLine
+        const end = pkg.endLine
+
+        return start !== undefined && end !== undefined && start <= line && end >= line
+    }
+
     getSymbols(line: number) {
         if (this.curPackage === undefined) {
             return undefined
@@ -69,7 +86,7 @@ export class PackageMgr {
         const uses = this.curPackage.uses
 
         for (let pkg of Object.values(this.pkgs)) {
-            if (pkg.startLine !== undefined && pkg.endLine !== undefined && pkg.startLine <= line && pkg.endLine >= line) {
+            if (this.lineInPackage(line, pkg)) {
                 Object.keys(pkg.symbols).forEach((sym) => (symbols[sym] = true))
             } else {
                 const usesPkg = uses.includes(pkg.name)
@@ -82,7 +99,7 @@ export class PackageMgr {
         return Object.keys(symbols)
     }
 
-    processExpr(expr: Expr) {
+    private processExpr(expr: Expr) {
         if (!(expr instanceof SExpr) || expr.parts.length === 0) {
             return
         }
@@ -91,14 +108,14 @@ export class PackageMgr {
 
         if (name === 'DEFPACKAGE') {
             this.processDefPackage(expr)
-        } else if (expr instanceof Defun) {
+        } else if (name === 'DEFUN') {
             this.processDefun(expr)
-        } else if (expr instanceof InPackage) {
+        } else if (name === 'IN-PACKAGE') {
             this.processInPackage(expr)
         }
     }
 
-    processDefun(defunExpr: Expr) {
+    private processDefun(defunExpr: Expr) {
         if (this.curPackage === undefined) {
             return
         }
@@ -107,7 +124,7 @@ export class PackageMgr {
         this.curPackage.symbols[expr.name] = expr
     }
 
-    processDefPackage(sexpr: SExpr) {
+    private processDefPackage(sexpr: SExpr) {
         const expr = DefPackage.from(sexpr)
 
         if (expr === undefined) {
@@ -122,56 +139,56 @@ export class PackageMgr {
         this.pkgs[expr.name] = pkg
     }
 
-    packageElement(pkg: Package, node: Node) {
-        if (node.kids.length === 0) {
-            return
-        }
+    // packageElement(pkg: Package, node: Node) {
+    //     if (node.kids.length === 0) {
+    //         return
+    //     }
 
-        const ndx = node.kids[0].value?.type === types.WHITE_SPACE ? 1 : 0
-        const token = node.kids[ndx].value
+    //     const ndx = node.kids[0].value?.type === types.WHITE_SPACE ? 1 : 0
+    //     const token = node.kids[ndx].value
 
-        if (token?.type !== types.SYMBOL) {
-            return
-        }
+    //     if (token?.type !== types.SYMBOL) {
+    //         return
+    //     }
 
-        if (token.text === ':EXPORT') {
-            this.packageExports(pkg, node.kids.slice(ndx + 1))
-        } else if (token.text === ':USE') {
-            this.packageUses(pkg, node.kids.slice(ndx + 1))
-        }
-    }
+    //     if (token.text === ':EXPORT') {
+    //         this.packageExports(pkg, node.kids.slice(ndx + 1))
+    //     } else if (token.text === ':USE') {
+    //         this.packageUses(pkg, node.kids.slice(ndx + 1))
+    //     }
+    // }
 
-    packageExports(pkg: Package, nodes: Node[]) {
-        for (const node of nodes) {
-            const token = node.value
-            if (token === undefined || token.type === types.WHITE_SPACE) {
-                continue
-            }
+    // packageExports(pkg: Package, nodes: Node[]) {
+    //     for (const node of nodes) {
+    //         const token = node.value
+    //         if (token === undefined || token.type === types.WHITE_SPACE) {
+    //             continue
+    //         }
 
-            const name = token.type === types.SYMBOL ? token.text.substring(1) : token.text
+    //         const name = token.type === types.SYMBOL ? token.text.substring(1) : token.text
 
-            pkg.exports.push(name.toUpperCase())
-        }
-    }
+    //         pkg.exports.push(name.toUpperCase())
+    //     }
+    // }
 
-    packageUses(pkg: Package, nodes: Node[]) {
-        for (const node of nodes) {
-            const token = node.value
-            if (token === undefined || token.type === types.WHITE_SPACE) {
-                continue
-            }
+    // packageUses(pkg: Package, nodes: Node[]) {
+    //     for (const node of nodes) {
+    //         const token = node.value
+    //         if (token === undefined || token.type === types.WHITE_SPACE) {
+    //             continue
+    //         }
 
-            let name = token.type === types.SYMBOL ? token.text.substring(1).toUpperCase() : token.text.toUpperCase()
+    //         let name = token.type === types.SYMBOL ? token.text.substring(1).toUpperCase() : token.text.toUpperCase()
 
-            if (name === 'CL' || name === 'COMMON-LISP' || name === 'COMMON-LISP-USER') {
-                name = CL_USER_PKG
-            }
+    //         if (name === 'CL' || name === 'COMMON-LISP' || name === 'COMMON-LISP-USER') {
+    //             name = CL_USER_PKG
+    //         }
 
-            pkg.uses.push(name)
-        }
-    }
+    //         pkg.uses.push(name)
+    //     }
+    // }
 
-    processInPackage(expr: SExpr) {
+    private processInPackage(expr: SExpr) {
         if (expr.parts.length < 2) {
             return
         }
