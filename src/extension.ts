@@ -55,6 +55,14 @@ function hasValidLangId(doc?: vscode.TextDocument): boolean {
     return doc?.languageId === COMMON_LISP_ID || doc?.languageId === REPL_ID
 }
 
+function updatePkgMgr(doc: vscode.TextDocument | undefined, exprs: Expr[]) {
+    if (doc?.languageId !== COMMON_LISP_ID) {
+        return
+    }
+
+    pkgMgr.update(doc?.fileName, exprs)
+}
+
 function editorChanged(editor?: vscode.TextEditor) {
     activeEditor = editor
 
@@ -68,6 +76,12 @@ function editorChanged(editor?: vscode.TextEditor) {
     }
 
     decorateText(activeEditor, tokens ?? [])
+
+    const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
+    const exprs = parser.parse()
+
+    updatePkgMgr(editor.document, exprs)
+    // pkgMgr.update(editor.document.fileName, exprs)
 }
 
 function openTextDocument(doc: vscode.TextDocument) {
@@ -133,7 +147,8 @@ async function readPackageLisp() {
     const parser = new Parser(getLexTokens(pkgFile) ?? [])
     const exprs = parser.parse()
 
-    pkgMgr.update(exprs)
+    updatePkgMgr(undefined, exprs)
+    // pkgMgr.update(pkgFile, exprs)
 }
 
 async function evalFile() {
@@ -141,12 +156,13 @@ async function evalFile() {
         return
     }
 
-    const exprs = getDocumentExprs(activeEditor.document)
+    const doc = activeEditor.document
+    const exprs = getDocumentExprs(doc)
 
     for (const expr of exprs) {
         const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
-        const text = activeEditor.document.getText(range)
-        const pkg = pkgMgr.getPackageForLine(expr.start.line)
+        const text = doc.getText(range)
+        const pkg = pkgMgr.getPackageForLine(doc.fileName, expr.start.line)
 
         await clRepl.send(text, pkg.name, false)
     }
@@ -215,7 +231,7 @@ async function sendToRepl() {
 
         const range = getExprRange(editor, expr)
         const text = editor.document.getText(range)
-        const pkg = pkgMgr.getPackageForLine(expr.start.line)
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, expr.start.line)
         const pkgName = editor.document.languageId === REPL_ID ? clRepl.curPackage : pkg.name
 
         await clRepl.send(text, pkgName)
@@ -256,7 +272,8 @@ function getTopExpr() {
             return undefined
         }
 
-        pkgMgr.update(exprs)
+        updatePkgMgr(editor.document, exprs)
+        // pkgMgr.update(editor.document.fileName, exprs)
 
         return expr
     } catch (err) {
@@ -289,10 +306,11 @@ function getCompletionProvider(): vscode.CompletionItemProvider {
         ) {
             try {
                 const exprs = getDocumentExprs(document)
-                pkgMgr.update(exprs)
-                return await completionProvider.getCompletions(clRepl, exprs, pos)
+                updatePkgMgr(document, exprs)
+                // pkgMgr.update(document.fileName, exprs)
+                return await completionProvider.getCompletions(document.fileName, clRepl, exprs, pos)
             } catch (err) {
-                console.log(err)
+                vscode.window.showErrorMessage(err)
                 return []
             }
         },

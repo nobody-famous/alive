@@ -11,7 +11,7 @@ export class CompletionProvider {
         this.packageMgr = pkgMgr
     }
 
-    async getCompletions(repl: Repl | undefined, exprs: Expr[], pos: Position): Promise<CompletionItem[]> {
+    async getCompletions(fileName: string, repl: Repl | undefined, exprs: Expr[], pos: Position): Promise<CompletionItem[]> {
         const expr = findAtom(exprs, pos)
         const innerExpr = findInnerExpr(exprs, pos)
         let str = ''
@@ -29,10 +29,10 @@ export class CompletionProvider {
             return repl !== undefined && getFromRepl ? this.replPkgCompletions(repl, str) : this.staticPkgCompletions(exprs, pos)
         }
 
-        return repl !== undefined && getFromRepl ? this.replCompletions(repl, str) : this.staticCompletions(exprs, pos)
+        return repl !== undefined && getFromRepl ? this.replCompletions(repl, str) : this.staticCompletions(fileName, exprs, pos)
     }
 
-    async replPkgCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
+    private async replPkgCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
         const names = await repl.getPackageNames()
         const items = []
 
@@ -45,7 +45,7 @@ export class CompletionProvider {
         return items
     }
 
-    async replCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
+    private async replCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
         const comps = await repl.getCompletions(str)
         const items = []
 
@@ -61,20 +61,20 @@ export class CompletionProvider {
         return items
     }
 
-    staticPkgCompletions(exprs: Expr[], pos: Position): CompletionItem[] {
+    private staticPkgCompletions(exprs: Expr[], pos: Position): CompletionItem[] {
         const pkgs = this.packageMgr.pkgs
         const pkgNames = Object.keys(pkgs)
 
         return pkgNames.map((pkg) => new CompletionItem(pkg.toLowerCase()))
     }
 
-    staticCompletions(exprs: Expr[], pos: Position): CompletionItem[] {
+    private staticCompletions(fileName: string, exprs: Expr[], pos: Position): CompletionItem[] {
         const expr = findExpr(exprs, pos)
         if (expr === undefined) {
             return []
         }
 
-        const symbols = this.packageMgr.getSymbols(expr.start.line)
+        const symbols = this.packageMgr.getSymbols(fileName, expr.start.line)
         if (symbols === undefined) {
             return []
         }
@@ -85,7 +85,7 @@ export class CompletionProvider {
         return completions.map((item) => new CompletionItem(item.toLowerCase()))
     }
 
-    getLocals(expr: Expr, pos: Position): string[] {
+    private getLocals(expr: Expr, pos: Position): string[] {
         if (!(expr instanceof SExpr) || !posInExpr(expr, pos)) {
             return []
         }

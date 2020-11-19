@@ -1,7 +1,5 @@
+import { DefPackage, Defun, Expr, SExpr } from './Expr'
 import { allLabels } from './keywords'
-import * as types from './Types'
-import { DefPackage, Defun, Expr, InPackage, SExpr } from './Expr'
-import { Node } from './Node'
 import { exprToString } from './Utils'
 
 const CL_USER_PKG = 'CL-USER'
@@ -10,21 +8,20 @@ interface SymbolDict {
     [index: string]: boolean
 }
 
+interface LineRange {
+    start: number
+    end: number
+}
+
 class Package {
     name: string
-    exports: string[]
-    uses: string[]
-    symbols: { [index: string]: SymbolDict | Expr }
-    startLine?: number
-    endLine?: number
+    exports: string[] = []
+    uses: string[] = []
+    symbols: { [index: string]: SymbolDict | Expr } = {}
+    ranges: { [index: string]: LineRange } = {}
 
-    constructor(name: string, startLine?: number, endLine?: number) {
+    constructor(name: string) {
         this.name = name.toUpperCase()
-        this.exports = []
-        this.uses = []
-        this.symbols = {}
-        this.startLine = startLine
-        this.endLine = endLine
     }
 }
 
@@ -35,34 +32,39 @@ export class PackageMgr {
     constructor() {
         this.curPackage = undefined
         this.pkgs = {}
-        this.pkgs[CL_USER_PKG] = new Package(CL_USER_PKG, -1, -1)
+        this.pkgs[CL_USER_PKG] = new Package(CL_USER_PKG)
 
         this.initMainPackage()
     }
 
-    update(exprs: Expr[]) {
+    update(fileName: string | undefined, exprs: Expr[]) {
         this.curPackage = this.pkgs[CL_USER_PKG]
+
+        if (fileName !== undefined && this.curPackage.ranges[fileName] === undefined) {
+            this.curPackage.ranges[fileName] = { start: 0, end: 0 }
+        }
 
         for (let ndx = 0; ndx < exprs.length; ndx += 1) {
             const expr = exprs[ndx]
 
-            this.curPackage.endLine = expr.end.line
-            this.processExpr(expr)
+            if (fileName !== undefined && this.curPackage.ranges[fileName] !== undefined) {
+                this.curPackage.ranges[fileName].end = expr.end.line
+            }
+
+            this.processExpr(fileName, expr)
         }
     }
 
     initMainPackage() {
-        this.pkgs[CL_USER_PKG].startLine = 0
-
         for (const label of allLabels) {
             this.pkgs[CL_USER_PKG].exports.push(label.toUpperCase())
             this.pkgs[CL_USER_PKG].symbols[label.toUpperCase()] = {}
         }
     }
 
-    getPackageForLine(line: number): Package {
+    getPackageForLine(fileName: string, line: number): Package {
         for (const pkg of Object.values(this.pkgs)) {
-            if (this.lineInPackage(line, pkg)) {
+            if (this.lineInPackage(fileName, line, pkg)) {
                 return pkg
             }
         }
@@ -70,14 +72,18 @@ export class PackageMgr {
         return this.pkgs[CL_USER_PKG]
     }
 
-    private lineInPackage(line: number, pkg: Package): boolean {
-        const start = pkg.startLine
-        const end = pkg.endLine
+    private lineInPackage(fileName: string, line: number, pkg: Package): boolean {
+        if (pkg.ranges[fileName] === undefined) {
+            return false
+        }
+
+        const start = pkg.ranges[fileName].start
+        const end = pkg.ranges[fileName].end
 
         return start !== undefined && end !== undefined && start <= line && end >= line
     }
 
-    getSymbols(line: number) {
+    getSymbols(fileName: string, line: number) {
         if (this.curPackage === undefined) {
             return undefined
         }
@@ -86,7 +92,7 @@ export class PackageMgr {
         const uses = this.curPackage.uses
 
         for (let pkg of Object.values(this.pkgs)) {
-            if (this.lineInPackage(line, pkg)) {
+            if (this.lineInPackage(fileName, line, pkg)) {
                 Object.keys(pkg.symbols).forEach((sym) => (symbols[sym] = true))
             } else {
                 const usesPkg = uses.includes(pkg.name)
@@ -99,7 +105,7 @@ export class PackageMgr {
         return Object.keys(symbols)
     }
 
-    private processExpr(expr: Expr) {
+    private processExpr(fileName: string | undefined, expr: Expr) {
         if (!(expr instanceof SExpr) || expr.parts.length === 0) {
             return
         }
@@ -111,7 +117,7 @@ export class PackageMgr {
         } else if (name === 'DEFUN') {
             this.processDefun(expr)
         } else if (name === 'IN-PACKAGE') {
-            this.processInPackage(expr)
+            this.processInPackage(fileName, expr)
         }
     }
 
@@ -131,7 +137,7 @@ export class PackageMgr {
             return
         }
 
-        const pkg = new Package(expr.name, expr.start.line, expr.end.line)
+        const pkg = new Package(expr.name)
 
         pkg.exports = expr.exports !== undefined ? expr.exports : []
         pkg.uses = expr.uses !== undefined ? expr.uses : []
@@ -139,56 +145,7 @@ export class PackageMgr {
         this.pkgs[expr.name] = pkg
     }
 
-    // packageElement(pkg: Package, node: Node) {
-    //     if (node.kids.length === 0) {
-    //         return
-    //     }
-
-    //     const ndx = node.kids[0].value?.type === types.WHITE_SPACE ? 1 : 0
-    //     const token = node.kids[ndx].value
-
-    //     if (token?.type !== types.SYMBOL) {
-    //         return
-    //     }
-
-    //     if (token.text === ':EXPORT') {
-    //         this.packageExports(pkg, node.kids.slice(ndx + 1))
-    //     } else if (token.text === ':USE') {
-    //         this.packageUses(pkg, node.kids.slice(ndx + 1))
-    //     }
-    // }
-
-    // packageExports(pkg: Package, nodes: Node[]) {
-    //     for (const node of nodes) {
-    //         const token = node.value
-    //         if (token === undefined || token.type === types.WHITE_SPACE) {
-    //             continue
-    //         }
-
-    //         const name = token.type === types.SYMBOL ? token.text.substring(1) : token.text
-
-    //         pkg.exports.push(name.toUpperCase())
-    //     }
-    // }
-
-    // packageUses(pkg: Package, nodes: Node[]) {
-    //     for (const node of nodes) {
-    //         const token = node.value
-    //         if (token === undefined || token.type === types.WHITE_SPACE) {
-    //             continue
-    //         }
-
-    //         let name = token.type === types.SYMBOL ? token.text.substring(1).toUpperCase() : token.text.toUpperCase()
-
-    //         if (name === 'CL' || name === 'COMMON-LISP' || name === 'COMMON-LISP-USER') {
-    //             name = CL_USER_PKG
-    //         }
-
-    //         pkg.uses.push(name)
-    //     }
-    // }
-
-    private processInPackage(expr: SExpr) {
+    private processInPackage(fileName: string | undefined, expr: SExpr) {
         if (expr.parts.length < 2) {
             return
         }
@@ -203,11 +160,17 @@ export class PackageMgr {
             return
         }
 
-        if (this.curPackage !== undefined) {
-            this.curPackage.endLine = expr.start.line - 1
+        if (fileName !== undefined && this.curPackage !== undefined && this.curPackage.ranges[fileName] !== undefined) {
+            this.curPackage.ranges[fileName].end = expr.start.line - 1
         }
 
         this.curPackage = this.pkgs[name]
-        this.curPackage.startLine = expr.start.line
+
+        if (fileName !== undefined && this.curPackage !== undefined) {
+            this.curPackage.ranges[fileName] = {
+                start: expr.start.line,
+                end: expr.start.line,
+            }
+        }
     }
 }
