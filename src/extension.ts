@@ -41,6 +41,7 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl(ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.compileFile', compileFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.evalFile', evalFile))
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.startDebugger', startDebugger(ctx)))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -49,6 +50,30 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
     decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
     readPackageLisp()
+}
+
+function startDebugger(ctx: vscode.ExtensionContext) {
+    return async () => {
+        const panel = vscode.window.createWebviewPanel('cl-debug', 'CL Debugger', vscode.ViewColumn.Beside, {
+            enableScripts: true,
+        })
+        const jsPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.js'))
+        const cssPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.css'))
+
+        panel.webview.html = `
+            <html>
+            <head>
+                <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
+            </head>
+            <body>
+                <div id="app">
+                </div>
+
+                <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
+            </body>
+            </html>
+        `
+    }
 }
 
 function hasValidLangId(doc?: vscode.TextDocument): boolean {

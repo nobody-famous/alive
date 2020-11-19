@@ -57,6 +57,10 @@
         ],
         "commands": [
             {
+                "command": "common-lisp.startDebugger",
+                "title": "Alive: Start Debugger"
+            },
+            {
                 "command": "common-lisp.selectSexpr",
                 "title": "Select S-Expression"
             },
@@ -79,6 +83,10 @@
         ],
         "menus": {
             "commandPalette": [
+                {
+                    "command": "common-lisp.startDebugger",
+                    "when": "editorLangId == common-lisp"
+                },
                 {
                     "command": "common-lisp.attachRepl",
                     "when": "editorLangId == common-lisp"
