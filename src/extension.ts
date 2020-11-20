@@ -7,6 +7,7 @@ import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
 import { decorateText, getDocumentExprs, toVscodePos } from './vscode/Utils'
+import * as swankEvent from './swank/event'
 
 const COMMON_LISP_ID = 'common-lisp'
 const REPL_ID = 'common-lisp-repl'
@@ -54,25 +55,40 @@ export const activate = (ctx: vscode.ExtensionContext) => {
 
 function startDebugger(ctx: vscode.ExtensionContext) {
     return async () => {
-        const panel = vscode.window.createWebviewPanel('cl-debug', 'CL Debugger', vscode.ViewColumn.Beside, {
-            enableScripts: true,
-        })
-        const jsPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.js'))
-        const cssPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.css'))
+        const debug = new repl.DebugView(
+            ctx,
+            'CL Debugger',
+            new swankEvent.Debug(
+                1,
+                1,
+                ['Cond 1', '    Cond 2'],
+                [{ name: 'Restart 1', desc: 'First' }],
+                [{ num: 0, desc: 'Frame 1' }],
+                []
+            )
+        )
 
-        panel.webview.html = `
-            <html>
-            <head>
-                <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
-            </head>
-            <body>
-                <div id="app">
-                </div>
+        debug.run()
 
-                <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
-            </body>
-            </html>
-        `
+        //     const panel = vscode.window.createWebviewPanel('cl-debug', 'CL Debugger', vscode.ViewColumn.Beside, {
+        //         enableScripts: true,
+        //     })
+        //     const jsPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.js'))
+        //     const cssPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.css'))
+
+        //     panel.webview.html = `
+        //         <html>
+        //         <head>
+        //             <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
+        //         </head>
+        //         <body>
+        //             <div id="app">
+        //             </div>
+
+        //             <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
+        //         </body>
+        //         </html>
+        //     `
     }
 }
 
@@ -211,16 +227,16 @@ function attachRepl(ctx: vscode.ExtensionContext): () => void {
                 return
             }
 
-            await newReplConnection()
+            await newReplConnection(ctx)
         } catch (err) {
             console.log(err)
         }
     }
 }
 
-async function newReplConnection() {
+async function newReplConnection(ctx: vscode.ExtensionContext) {
     if (clRepl === undefined) {
-        clRepl = new repl.Repl('localhost', 4005)
+        clRepl = new repl.Repl(ctx, 'localhost', 4005)
         clRepl.on('close', () => (clRepl = undefined))
     }
 

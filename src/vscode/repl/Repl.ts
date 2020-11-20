@@ -3,9 +3,11 @@ import { format } from 'util'
 import * as vscode from 'vscode'
 import { Expr, InPackage, Lexer, Parser } from '../../lisp'
 import { allLabels } from '../../lisp/keywords'
+import { Debug } from '../../swank/event'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo } from '../../swank/Types'
+import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { View } from './View'
 
@@ -13,13 +15,15 @@ export class Repl extends EventEmitter {
     conn?: SwankConn
     view?: View
     curPackage: string = ':cl-user'
+    ctx: vscode.ExtensionContext
     host: string
     port: number
     kwDocs: { [index: string]: string } = {}
 
-    constructor(host: string, port: number) {
+    constructor(ctx: vscode.ExtensionContext, host: string, port: number) {
         super()
 
+        this.ctx = ctx
         this.host = host
         this.port = port
     }
@@ -38,7 +42,7 @@ export class Repl extends EventEmitter {
             this.conn.on('conn-err', (err) => this.displayErrMsg(err))
             this.conn.on('msg', (msg) => this.displayInfoMsg(msg))
             this.conn.on('activate', (event) => this.displayInfoMsg(event))
-            this.conn.on('debug', (event) => this.displayInfoMsg(event))
+            this.conn.on('debug', (event) => this.handleDebug(event))
             this.conn.on('close', () => this.onClose())
 
             await this.conn.connect()
@@ -56,6 +60,12 @@ export class Repl extends EventEmitter {
 
     documentChanged() {
         this.view?.documentChanged()
+    }
+
+    handleDebug(event: Debug) {
+        const view = new DebugView(this.ctx, `Debug TH-${event.threadID}`, event)
+
+        view.run()
     }
 
     async updateConnInfo() {
@@ -170,13 +180,17 @@ export class Repl extends EventEmitter {
                 const resp = await this.conn.eval(text, pkg)
 
                 if (output) {
-                    const str = resp.result.join('').replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
+                    const str = this.unescape(resp.result.join(''))
                     this.view.addText(str)
                 }
             }
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
+    }
+
+    private unescape(str: string): string {
+        return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
     }
 
     private displayErrMsg(msg: unknown) {

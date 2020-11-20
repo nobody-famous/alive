@@ -118,8 +118,15 @@ export class Debug implements SwankEvent {
             const name = exprToString(part.parts[0])
             const desc = exprToString(part.parts[1])
 
-            if (name !== undefined && desc !== undefined) {
-                restarts.push({ name, desc })
+            if (name === undefined || desc === undefined) {
+                return undefined
+            }
+
+            const nameCvt = convert(name)
+            const descCvt = convert(desc)
+
+            if (typeof nameCvt === 'string' && typeof descCvt === 'string') {
+                restarts.push({ name: nameCvt, desc: descCvt })
             }
         }
 
