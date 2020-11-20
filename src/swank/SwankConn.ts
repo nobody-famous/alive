@@ -124,32 +124,6 @@ export class SwankConn extends EventEmitter {
         return parsed
     }
 
-    // async listThreads() {
-    //     const req = new ThreadsReq(this.nextID())
-    //     const resp = await this.sendRequest(req)
-
-    //     return new ThreadsResp(resp)
-    // }
-
-    // async debugThread(ndx, file) {
-    //     const req = new DebugThreadReq(ndx, file)
-    //     return this.sendRequest(req)
-    // }
-
-    // async frameLocals(threadID, frameID) {
-    //     const req = new FrameLocalsReq(threadID, frameID)
-    //     const resp = await this.sendRequest(req)
-
-    //     return new LocalsResp(resp)
-    // }
-
-    // async debuggerInfo(threadID, level) {
-    //     const req = new DebuggerInfoReq(threadID, 0, 10)
-    //     const resp = await this.sendRequest(req)
-
-    //     return new DebuggerInfoResp(resp)
-    // }
-
     connError(err: Error) {
         this.emit('conn-err', `REPL Connection error ${err.toString()}`)
     }

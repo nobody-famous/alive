@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { Expr, InPackage, Lexer, Parser } from '../../lisp'
+import { Expr, InPackage, Lexer, Parser, unescape } from '../../lisp'
 import { allLabels } from '../../lisp/keywords'
 import { Debug } from '../../swank/event'
 import { SwankConn } from '../../swank/SwankConn'
@@ -83,13 +83,11 @@ export class Repl extends EventEmitter {
         }
 
         try {
-            this.conn.trace = true
             const resp = await this.conn.compileFile(fileName)
             vscode.window.showInformationMessage(format(resp))
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
-        this.conn.trace = false
     }
 
     async getDoc(symbol: string): Promise<string> {
@@ -180,17 +178,13 @@ export class Repl extends EventEmitter {
                 const resp = await this.conn.eval(text, pkg)
 
                 if (output) {
-                    const str = this.unescape(resp.result.join(''))
+                    const str = unescape(resp.result.join(''))
                     this.view.addText(str)
                 }
             }
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
-    }
-
-    private unescape(str: string): string {
-        return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
     }
 
     private displayErrMsg(msg: unknown) {

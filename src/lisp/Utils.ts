@@ -189,3 +189,7 @@ export function isLetName(name: string | undefined): boolean {
 
     return upper === 'LET' || upper === 'LET*'
 }
+
+export function unescape(str: string): string {
+    return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
+}

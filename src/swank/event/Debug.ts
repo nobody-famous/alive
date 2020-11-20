@@ -1,5 +1,5 @@
 import { format } from 'util'
-import { Atom, Expr, exprToNumber, exprToNumberArray, exprToString, exprToStringArray, SExpr } from '../../lisp'
+import { Atom, Expr, exprToNumber, exprToNumberArray, exprToString, exprToStringArray, SExpr, unescape } from '../../lisp'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
 import { convert } from '../SwankUtils'
 import { Frame, FrameOption, Restart } from '../Types'
@@ -33,7 +33,7 @@ export class Debug implements SwankEvent {
         const condition = exprToStringArray(event.payload[2])
         const restarts = this.convertRestarts(event.payload[3])
         const frames = this.convertFrames(event.payload[4])
-        const conts = exprToNumberArray(event.payload[5])
+        const conts = exprToNumberArray(event.payload[5]) ?? []
 
         if (
             threadID === undefined ||
@@ -69,7 +69,7 @@ export class Debug implements SwankEvent {
 
                 frames.push({
                     num: frameNum,
-                    desc: typeof converted === 'string' ? converted : frameDesc,
+                    desc: typeof converted === 'string' ? unescape(converted) : frameDesc,
                     opts,
                 })
             }

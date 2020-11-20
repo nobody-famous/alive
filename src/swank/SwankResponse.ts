@@ -51,7 +51,7 @@ export class SwankResponse {
             case ':RETURN':
                 return event.Return.from(rawEvent)
             case ':DEBUG':
-                return event.Debug.from(rawEvent)
+            return event.Debug.from(rawEvent)
             case ':DEBUG-ACTIVATE':
                 return event.DebugActivate.from(rawEvent)
             case ':NEW-FEATURES':

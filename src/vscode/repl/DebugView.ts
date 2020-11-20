@@ -29,7 +29,7 @@ export class DebugView {
         let str = ''
 
         for (const cond of this.event.condition) {
-            str += `<div>${cond.replace(/ /g, '&nbsp;')}</div>`
+            str += `<div class="list-item">${cond.replace(/ /g, '&nbsp;')}</div>`
         }
 
         return str
@@ -47,7 +47,7 @@ export class DebugView {
         let str = ''
 
         for (const bt of this.event.frames) {
-            str += `<div>${bt.num}: ${bt.desc}</div>`
+            str += `<div class="list-item">${bt.num}: ${bt.desc}</div>`
         }
 
         return str
@@ -56,7 +56,10 @@ export class DebugView {
     private renderBacktrace() {
         return `
             <div id="backtrace">
-                ${this.renderBtList()}
+                <div class="title">Backtrace</div>
+                <div class="list-box">
+                    ${this.renderBtList()}
+                </div>
             </div>
         `
     }
@@ -66,7 +69,7 @@ export class DebugView {
         let ndx = 0
 
         for (const restart of this.event.restarts) {
-            str += `<div>${ndx}: [${restart.name}] ${restart.desc}</div>`
+            str += `<div class="list-item">${ndx}: [${restart.name}] ${restart.desc}</div>`
             ndx += 1
         }
 
@@ -76,13 +79,17 @@ export class DebugView {
     private renderRestarts() {
         return `
             <div id="restarts">
-                ${this.renderRestartList()}
+                <div class="title">Restarts</div>
+                <div class="list-box">
+                    ${this.renderRestartList()}
+                </div>
             </div>
         `
     }
 
     private renderHtml() {
         if (this.panel === undefined) {
+            vscode.window.showInformationMessage('Panel not undefined')
             return
         }
 

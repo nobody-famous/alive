@@ -1,18 +1,28 @@
 #content {
-    background: red;
+    font: 'Consolas', 'Courier New', 'monospace';
 }
 
 #condition {
-    background: yellow;
-    color: black;
     margin-bottom: 1.5rem;
-}
-
-#backtrace {
-    background: green;
 }
 
 #restarts {
-    background: blue;
     margin-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.list-box {
+    margin-left: 0.5rem;
+    padding: 0.5rem;
+    background: #222;
+    border-radius: 5px;
+}
+
+.list-item {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
 }
