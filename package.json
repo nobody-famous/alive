@@ -1,7 +1,7 @@
 {
-    "name": "common-lisp",
-    "displayName": "Common Lisp",
-    "description": "Syntax highlighting for Common Lisp",
+    "name": "alive",
+    "displayName": "Alive",
+    "description": "Average Lisp VSCode Environment",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.43.0"
@@ -11,8 +11,7 @@
     ],
     "main": "./dist/extension.js",
     "activationEvents": [
-        "onLanguage:common-lisp",
-        "onDebug"
+        "onLanguage:common-lisp"
     ],
     "scripts": {
         "vscode:prepublish": "npm run compile",
@@ -57,123 +56,95 @@
         ],
         "commands": [
             {
-                "command": "common-lisp.selectSexpr",
+                "command": "alive.selectSexpr",
                 "title": "Alive: Select S-Expression"
             },
             {
-                "command": "common-lisp.sendToRepl",
+                "command": "alive.sendToRepl",
                 "title": "Alive: Send To REPL"
             },
             {
-                "command": "common-lisp.compileFile",
+                "command": "alive.compileFile",
                 "title": "Alive: Compile File"
             },
             {
-                "command": "common-lisp.evalFile",
+                "command": "alive.evalFile",
                 "title": "Alive: Eval File"
             },
             {
-                "command": "common-lisp.attachRepl",
+                "command": "alive.attachRepl",
                 "title": "Alive: Attach To REPL"
             },
             {
-                "command": "common-lisp.debugAbort",
+                "command": "alive.debugAbort",
                 "title": "Alive: Debug Abort"
             }
         ],
         "menus": {
             "commandPalette": [
                 {
-                    "command": "common-lisp.attachRepl",
+                    "command": "alive.attachRepl",
                     "when": "editorLangId == common-lisp"
                 },
                 {
-                    "command": "common-lisp.compileFile",
+                    "command": "alive.compileFile",
                     "when": "editorLangId == common-lisp"
                 },
                 {
-                    "command": "common-lisp.sendToRepl",
+                    "command": "alive.sendToRepl",
                     "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
                 },
                 {
-                    "command": "common-lisp.selectSexpr",
+                    "command": "alive.selectSexpr",
                     "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
                 },
                 {
-                    "command": "common-lisp.debugAbort",
+                    "command": "alive.debugAbort",
                     "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive"
-                }
-            ],
-            "debug/callstack/context": [
-                {
-                    "command": "common-lisp.sendToRepl"
                 }
             ]
         },
         "keybindings": [
             {
-                "command": "common-lisp.compileFile",
+                "command": "alive.compileFile",
                 "when": "editorLangId == common-lisp",
                 "key": "alt+shift+x"
             },
             {
-                "command": "common-lisp.evalFile",
+                "command": "alive.evalFile",
                 "when": "editorLangId == common-lisp",
                 "key": "alt+shift+e"
             },
             {
-                "command": "common-lisp.selectSexpr",
+                "command": "alive.selectSexpr",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
                 "key": "alt+shift+up"
             },
             {
-                "command": "common-lisp.sendToRepl",
+                "command": "alive.sendToRepl",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
                 "key": "alt+shift+enter"
             },
             {
-                "command": "common-lisp.debugAbort",
+                "command": "alive.debugAbort",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+a"
             }
         ],
-        "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "common-lisp-repl",
-                    "title": "REPL",
-                    "icon": "images/lisp-icon.svg"
-                }
-            ]
-        },
-        "views": {
-            "common-lisp-repl": [
-                {
-                    "id": "common-lisp-repl-view",
-                    "name": "Common Lisp REPL",
-                    "when": "commonLispView == 'One'"
-                },
-                {
-                    "id": "common-lisp-repl-view-2",
-                    "name": "Common Lisp REPL 2",
-                    "when": "commonLispView == 'Two'"
-                }
-            ]
-        },
         "configuration": {
             "title": "Common Lisp",
             "properties": {
-                "common_lisp.format.indentWidth": {
+                "alive.format.indentWidth": {
                     "type": "number",
                     "default": 4,
                     "description": "Indentation Level"
                 },
-                "common_lisp.format.indentCloseParenStack": {
+                "alive.format.indentCloseParenStack": {
                     "type": "boolean",
                     "default": true,
                     "description": "If true, align closing parens stack with nearest parent"
                 },
-                "common_lisp.format.closeParenStacked": {
+                "alive.format.closeParenStacked": {
                     "type": "string",
                     "enum": [
                         "always",
@@ -181,6 +152,21 @@
                     ],
                     "default": "always",
                     "description": "When to stack all close parens together"
+                },
+                "alive.format.fixWhitespace": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If true, fix white space issues"
+                },
+                "alive.format.closeParenOwnLine": {
+                    "type": "string",
+                    "enum": [
+                        "always",
+                        "never",
+                        "multiline"
+                    ],
+                    "default": true,
+                    "description": "If true, fix white space issues"
                 }
             }
         },
@@ -320,55 +306,7 @@
                     "highContrast": "#ff0000"
                 }
             }
-        ],
-        "debuggers": [
-            {
-                "type": "common-lisp-repl",
-                "label": "Common Lisp REPL",
-                "program": "./src/debug/Adapter.js",
-                "runtime": "node",
-                "configurationAttributes": {
-                    "launch": {
-                        "properties": {
-                            "host": {
-                                "type": "string",
-                                "description": "Hostname of the REPL",
-                                "default": "localhost"
-                            },
-                            "port": {
-                                "type": "number",
-                                "description": "Port of the REPL",
-                                "default": 4005
-                            }
-                        }
-                    }
-                },
-                "initialConfigurations": [
-                    {
-                        "type": "common-lisp-repl",
-                        "request": "launch",
-                        "name": "Common Lisp REPL",
-                        "host": "localhost",
-                        "port": 4005
-                    }
-                ],
-                "configurationSnippets": [
-                    {
-                        "label": "Common Lisp REPL: Launch",
-                        "body": {
-                            "type": "common-lisp-repl",
-                            "request": "launch",
-                            "name": "Common Lisp REPL",
-                            "host": "localhost",
-                            "port": 4005
-                        }
-                    }
-                ]
-            }
         ]
-    },
-    "dependencies": {
-        "vscode-debugadapter": "^1.40.0"
     },
     "devDependencies": {
         "@types/node": "^14.14.2",

@@ -1,14 +1,14 @@
-# Common Lisp Extension
+# Alive: The Average Lisp VSCode Environment
 
-Language extension to add support for editing Common Lisp files. Very much a work in progress. I wouldn't even call it alpha quality at this point, it's more "works for me, YMMV" quality.
+An attempt to create a Common Lisp extension for VSCode. It's still a work in progress, though some basic things are working. I wouldn't currently recommend it for doing serious work.
 
 ## Features
 
-* Basic syntax highlighting
-* Minimal code completion
+* Syntax highlighting
+* Code completion
 * Code formatter
 * Snippets
-* Basic REPL integration
+* REPL integration
 
 ## Extension Settings
 
@@ -18,6 +18,7 @@ This extension contributes the following settings:
 * `common_lisp.format.indentCloseParenStack`: If false, align close stack with furthest parent instead of closest
 * `common_lisp.format.closeParenStacked`: ['always', 'never'] Specify whether to stack close parens.
 * `common_lisp.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
+* `common_lisp.format.fixWhitespace`: If true, try to fix white space issues.
 
 workbench.colorCustomizations:
 * `common_lisp.default`: Default text
@@ -37,30 +38,23 @@ workbench.colorCustomizations:
 
 ## Commands
 
-### Select S-Expression
-Selects the surrounding top level expression for the current cursor position. Bound to Alt+Shift+Up.
+### Select S-Expression (alt+shift+up)
+Selects the surrounding top level expression for the current cursor position.
 
-### Send To REPL
-Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position. Bound to Alt+Shift+Enter.
+### Attach To REPL
+Connect to the swank server running on localhost:4005
+
+### Send To REPL (alt+shift+enter)
+Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position.
+
+### Debug Abort (alt+ctrl+a)
+Tells the currently visible debugger to send the abort restart.
 
 ## REPL Integration
-I use SBCL, so I don't know if other evironments will work.
+Currently, a swank server must be running on the local machine using port 4005.
 
-My original idea was to implement a debug extension, but that didn't work out as well as I had hoped. Now, I've switched gears and
-am working on a Swank client. The only thing kind of working right now is sending an expression to the repl.
-
-* Attach To REPL
-    * Connects to a swank server running on localhost:4005
-* Alt-Shift-Enter
-    * Sends the current selection to the repl for eval, or the top level form if nothing selected
-
-## Known Issues
-
-Code completion only shows built-in words and top level variables. It doesn't show variables defined in let blocks, for example.
-
-Back quoted expressions are entirely colorized as quoted. The plan is to have the unquoted elements be colorized normally.
-
-I'm not a Lisp guru, so there may be plenty of cases that don't work as expected.
+### Evaluate File (alt+shift+e)
+Has the REPL evaluate each expression in the file in order.
 
 ## Release Notes
 

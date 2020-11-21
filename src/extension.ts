@@ -7,7 +7,6 @@ import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
 import { decorateText, getDocumentExprs, toVscodePos } from './vscode/Utils'
-import * as swankEvent from './swank/event'
 
 const COMMON_LISP_ID = 'common-lisp'
 const REPL_ID = 'common-lisp-repl'
@@ -37,12 +36,12 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, documentFormatter())
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, documentFormatter())
 
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.selectSexpr', selectSexpr))
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.sendToRepl', sendToRepl))
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl(ctx)))
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.compileFile', compileFile))
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.evalFile', evalFile))
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.debugAbort', debugAbort))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', selectSexpr))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', sendToRepl))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', attachRepl(ctx)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', compileFile))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.evalFile', evalFile))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
