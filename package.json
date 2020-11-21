@@ -57,36 +57,32 @@
         ],
         "commands": [
             {
-                "command": "common-lisp.startDebugger",
-                "title": "Alive: Start Debugger"
-            },
-            {
                 "command": "common-lisp.selectSexpr",
-                "title": "Select S-Expression"
+                "title": "Alive: Select S-Expression"
             },
             {
                 "command": "common-lisp.sendToRepl",
-                "title": "Send To REPL"
+                "title": "Alive: Send To REPL"
             },
             {
                 "command": "common-lisp.compileFile",
-                "title": "Compile File"
+                "title": "Alive: Compile File"
             },
             {
                 "command": "common-lisp.evalFile",
-                "title": "Eval File"
+                "title": "Alive: Eval File"
             },
             {
                 "command": "common-lisp.attachRepl",
-                "title": "Attach To REPL"
+                "title": "Alive: Attach To REPL"
+            },
+            {
+                "command": "common-lisp.debugAbort",
+                "title": "Alive: Debug Abort"
             }
         ],
         "menus": {
             "commandPalette": [
-                {
-                    "command": "common-lisp.startDebugger",
-                    "when": "editorLangId == common-lisp"
-                },
                 {
                     "command": "common-lisp.attachRepl",
                     "when": "editorLangId == common-lisp"
@@ -102,6 +98,10 @@
                 {
                     "command": "common-lisp.selectSexpr",
                     "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                },
+                {
+                    "command": "common-lisp.debugAbort",
+                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive"
                 }
             ],
             "debug/callstack/context": [
@@ -130,6 +130,11 @@
                 "command": "common-lisp.sendToRepl",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
                 "key": "alt+shift+enter"
+            },
+            {
+                "command": "common-lisp.debugAbort",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "key": "alt+ctrl+a"
             }
         ],
         "viewsContainers": {

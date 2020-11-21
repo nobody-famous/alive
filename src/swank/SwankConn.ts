@@ -36,6 +36,9 @@ export interface SwankConn {
     emit(event: 'debug', swankEvent: event.Debug): boolean
     on(event: 'debug', listener: (swankEvent: event.Debug) => void): this
 
+    emit(event: 'debug-return', swankEvent: event.DebugReturn): boolean
+    on(event: 'debug-return', listener: (swankEvent: event.DebugReturn) => void): this
+
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
 }
@@ -113,7 +116,8 @@ export class SwankConn extends EventEmitter {
     }
 
     async requestFn(req: (...args: any[]) => SwankRequest, respType: any, ...args: any[]) {
-        const request = req(this.nextID(), ...args)
+        const id = this.nextID()
+        const request = req(id, ...args)
         const resp = await this.sendRequest(request)
         const parsed = respType.parse(resp)
 
@@ -188,6 +192,8 @@ export class SwankConn extends EventEmitter {
             this.processDebug(event as event.Debug)
         } else if (event.op === ':DEBUG-ACTIVATE') {
             this.processDebugActivate(event as event.DebugActivate)
+        } else if (event.op === ':DEBUG-RETURN') {
+            this.processDebugReturn(event as event.DebugReturn)
         } else if (event.op === ':NEW-FEATURES') {
             // Ignore
         } else {
@@ -198,6 +204,14 @@ export class SwankConn extends EventEmitter {
     processDebugActivate(event: event.DebugActivate) {
         try {
             this.emit('activate', event)
+        } catch (err) {
+            this.emit('msg', err.toString())
+        }
+    }
+
+    processDebugReturn(event: event.DebugReturn) {
+        try {
+            this.emit('debug-return', event)
         } catch (err) {
             this.emit('msg', err.toString())
         }

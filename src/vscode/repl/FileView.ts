@@ -42,6 +42,10 @@ export class FileView implements View {
 
     close() {}
 
+    getViewColumn() {
+        return this.replEditor?.viewColumn
+    }
+
     async show() {
         if (this.replDoc === undefined) {
             throw new Error('No REPL document')
@@ -101,6 +105,7 @@ export class FileView implements View {
         }
 
         for (const editor of vscode.window.visibleTextEditors) {
+            console.log('is visible?', editor, 'repl', this.replEditor)
             if (editor === this.replEditor) {
                 return true
             }

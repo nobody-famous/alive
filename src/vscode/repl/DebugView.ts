@@ -7,10 +7,12 @@ export class DebugView {
     title: string
     panel?: vscode.WebviewPanel
     event: event.Debug
+    viewCol: vscode.ViewColumn
 
-    constructor(ctx: vscode.ExtensionContext, title: string, event: event.Debug) {
+    constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, event: event.Debug) {
         this.ctx = ctx
         this.title = title
+        this.viewCol = viewCol
         this.event = event
     }
 
@@ -20,9 +22,17 @@ export class DebugView {
             return
         }
 
-        this.panel = vscode.window.createWebviewPanel('cl-debug', this.title, vscode.ViewColumn.Beside, { enableScripts: true })
+        this.panel = vscode.window.createWebviewPanel('cl-debug', this.title, this.viewCol, { enableScripts: true })
+
+        this.panel.onDidChangeViewState(() => {
+            vscode.commands.executeCommand('setContext', 'clDebugViewActive', this.panel?.active)
+        })
 
         this.renderHtml()
+    }
+
+    stop() {
+        this.panel?.dispose()
     }
 
     private renderCondList() {
@@ -38,7 +48,10 @@ export class DebugView {
     private renderCondition() {
         return `
             <div id="condition">
-                ${this.renderCondList()}
+                <div class="title">Condition</div>
+                <div class="list-box">
+                    ${this.renderCondList()}
+                </div>
             </div>
         `
     }

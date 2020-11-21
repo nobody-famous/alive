@@ -42,7 +42,7 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.attachRepl', attachRepl(ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.compileFile', compileFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.evalFile', evalFile))
-    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.startDebugger', startDebugger(ctx)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('common-lisp.debugAbort', debugAbort))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -51,45 +51,6 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
     decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
     readPackageLisp()
-}
-
-function startDebugger(ctx: vscode.ExtensionContext) {
-    return async () => {
-        const debug = new repl.DebugView(
-            ctx,
-            'CL Debugger',
-            new swankEvent.Debug(
-                1,
-                1,
-                ['Cond 1', '    Cond 2'],
-                [{ name: 'Restart 1', desc: 'First' }],
-                [{ num: 0, desc: 'Frame 1' }],
-                []
-            )
-        )
-
-        debug.run()
-
-        //     const panel = vscode.window.createWebviewPanel('cl-debug', 'CL Debugger', vscode.ViewColumn.Beside, {
-        //         enableScripts: true,
-        //     })
-        //     const jsPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.js'))
-        //     const cssPath = vscode.Uri.file(path.join(ctx.extensionPath, 'resource', 'debug', 'debug.css'))
-
-        //     panel.webview.html = `
-        //         <html>
-        //         <head>
-        //             <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
-        //         </head>
-        //         <body>
-        //             <div id="app">
-        //             </div>
-
-        //             <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
-        //         </body>
-        //         </html>
-        //     `
-    }
 }
 
 function hasValidLangId(doc?: vscode.TextDocument): boolean {
@@ -102,6 +63,12 @@ function updatePkgMgr(doc: vscode.TextDocument | undefined, exprs: Expr[]) {
     }
 
     pkgMgr.update(doc?.fileName, exprs)
+}
+
+function debugAbort() {
+    if (clRepl !== undefined) {
+        clRepl.abort()
+    }
 }
 
 function editorChanged(editor?: vscode.TextEditor) {
@@ -122,7 +89,6 @@ function editorChanged(editor?: vscode.TextEditor) {
     const exprs = parser.parse()
 
     updatePkgMgr(editor.document, exprs)
-    // pkgMgr.update(editor.document.fileName, exprs)
 }
 
 function openTextDocument(doc: vscode.TextDocument) {
@@ -189,7 +155,6 @@ async function readPackageLisp() {
     const exprs = parser.parse()
 
     updatePkgMgr(undefined, exprs)
-    // pkgMgr.update(pkgFile, exprs)
 }
 
 async function evalFile() {
@@ -314,7 +279,6 @@ function getTopExpr() {
         }
 
         updatePkgMgr(editor.document, exprs)
-        // pkgMgr.update(editor.document.fileName, exprs)
 
         return expr
     } catch (err) {
@@ -348,7 +312,6 @@ function getCompletionProvider(): vscode.CompletionItemProvider {
             try {
                 const exprs = getDocumentExprs(document)
                 updatePkgMgr(document, exprs)
-                // pkgMgr.update(document.fileName, exprs)
                 return await completionProvider.getCompletions(document.fileName, clRepl, exprs, pos)
             } catch (err) {
                 vscode.window.showErrorMessage(err)

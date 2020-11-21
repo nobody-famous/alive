@@ -3,7 +3,7 @@ import { format } from 'util'
 import * as vscode from 'vscode'
 import { Expr, InPackage, Lexer, Parser, unescape } from '../../lisp'
 import { allLabels } from '../../lisp/keywords'
-import { Debug } from '../../swank/event'
+import { Debug, DebugActivate, DebugReturn } from '../../swank/event'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo } from '../../swank/Types'
@@ -14,6 +14,7 @@ import { View } from './View'
 export class Repl extends EventEmitter {
     conn?: SwankConn
     view?: View
+    dbgViews: { [index: number]: DebugView } = {}
     curPackage: string = ':cl-user'
     ctx: vscode.ExtensionContext
     host: string
@@ -41,8 +42,9 @@ export class Repl extends EventEmitter {
             this.conn.on('conn-info', (info) => this.handleConnInfo(info))
             this.conn.on('conn-err', (err) => this.displayErrMsg(err))
             this.conn.on('msg', (msg) => this.displayInfoMsg(msg))
-            this.conn.on('activate', (event) => this.displayInfoMsg(event))
+            this.conn.on('activate', (event) => this.handleDebugActivate(event))
             this.conn.on('debug', (event) => this.handleDebug(event))
+            this.conn.on('debug-return', (event) => this.handleDebugReturn(event))
             this.conn.on('close', () => this.onClose())
 
             await this.conn.connect()
@@ -62,10 +64,20 @@ export class Repl extends EventEmitter {
         this.view?.documentChanged()
     }
 
-    handleDebug(event: Debug) {
-        const view = new DebugView(this.ctx, `Debug TH-${event.threadID}`, event)
+    async abort() {
+        if (this.conn === undefined) {
+            return
+        }
 
-        view.run()
+        for (const [key, value] of Object.entries(this.dbgViews)) {
+            if (value.panel?.active) {
+                const threadID = parseInt(key)
+
+                if (!Number.isNaN(threadID)) {
+                    this.conn.debugAbort(threadID)
+                }
+            }
+        }
     }
 
     async updateConnInfo() {
@@ -185,6 +197,40 @@ export class Repl extends EventEmitter {
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
+    }
+
+    private handleDebugActivate(event: DebugActivate) {
+        const view = this.dbgViews[event.threadID]
+
+        if (view === undefined) {
+            vscode.window.showInformationMessage(`Debug could not activate ${event.threadID}`)
+            return
+        }
+
+        view.run()
+    }
+
+    private handleDebug(event: Debug) {
+        const view = new DebugView(
+            this.ctx,
+            `Debug TH-${event.threadID}`,
+            this.view?.getViewColumn() ?? vscode.ViewColumn.Beside,
+            event
+        )
+
+        this.dbgViews[event.threadID] = view
+    }
+
+    private handleDebugReturn(event: DebugReturn) {
+        const dbgView = this.dbgViews[event.threadID]
+
+        if (dbgView === undefined) {
+            vscode.window.showErrorMessage(`Debug Return for ${event.threadID} has no view`)
+            return
+        }
+
+        dbgView.stop()
+        this.view?.show()
     }
 
     private displayErrMsg(msg: unknown) {
