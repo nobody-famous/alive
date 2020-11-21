@@ -221,7 +221,7 @@ export class Repl extends EventEmitter {
         this.dbgViews[event.threadID] = view
     }
 
-    private handleDebugReturn(event: DebugReturn) {
+    private async handleDebugReturn(event: DebugReturn) {
         const dbgView = this.dbgViews[event.threadID]
 
         if (dbgView === undefined) {
@@ -231,6 +231,8 @@ export class Repl extends EventEmitter {
 
         dbgView.stop()
         this.view?.show()
+
+        delete this.dbgViews[event.threadID]
     }
 
     private displayErrMsg(msg: unknown) {

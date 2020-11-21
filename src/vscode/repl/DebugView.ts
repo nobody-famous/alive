@@ -33,6 +33,7 @@ export class DebugView {
 
     stop() {
         this.panel?.dispose()
+        this.panel = undefined
     }
 
     private renderCondList() {

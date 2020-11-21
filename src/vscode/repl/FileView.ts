@@ -51,8 +51,13 @@ export class FileView implements View {
             throw new Error('No REPL document')
         }
 
+        // if (this.replEditor === undefined) {
+        //     this.replEditor = await vscode.window.showTextDocument(this.replDoc, vscode.ViewColumn.Beside)
+        // }
+
         if (!this.isEditorVisible()) {
-            this.replEditor = await vscode.window.showTextDocument(this.replDoc, vscode.ViewColumn.Beside)
+            const column = this.replEditor !== undefined ? this.replEditor.viewColumn : vscode.ViewColumn.Beside
+            this.replEditor = await vscode.window.showTextDocument(this.replDoc, column)
             this.needJump = true
         }
     }
@@ -105,7 +110,6 @@ export class FileView implements View {
         }
 
         for (const editor of vscode.window.visibleTextEditors) {
-            console.log('is visible?', editor, 'repl', this.replEditor)
             if (editor === this.replEditor) {
                 return true
             }
