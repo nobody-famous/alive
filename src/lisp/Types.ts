@@ -23,6 +23,7 @@ export const SPECIAL = 18
 export const PACKAGES = 19
 export const IN_PACKAGE = 20
 export const DEFPACKAGE = 21
+export const COMMA = 22
 
 export const MISMATCHED_OPEN_PARENS = 100
 export const MISMATCHED_CLOSE_PARENS = 101

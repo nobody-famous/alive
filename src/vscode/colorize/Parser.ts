@@ -1,20 +1,18 @@
+import { type } from 'os'
 import { Token, Lexer, types } from '../../lisp'
 
 export class Parser {
     lex: Lexer
-    curNdx: number
     tokens: Token[]
-    parens: Token[]
     unclosedString?: Token
     mismatchedBar?: Token
 
+    curNdx: number = 0
+    parens: Token[] = []
+
     constructor(text: string, tokens: Token[]) {
         this.lex = new Lexer(text)
-        this.curNdx = 0
         this.tokens = tokens
-        this.parens = []
-        this.unclosedString = undefined
-        this.mismatchedBar = undefined
     }
 
     parse() {
@@ -29,10 +27,26 @@ export class Parser {
             this.expr()
         }
 
+        for (const token of this.tokens) {
+            if (token.quoted || token.backquoted) {
+                token.type = types.QUOTED
+            }
+        }
+
         return this.tokens
     }
 
-    expr() {
+    private parentQuoted(): boolean {
+        if (this.parens.length === 0) {
+            return false
+        }
+
+        const parent = this.parens[this.parens.length - 1]
+
+        return parent.backquoted || parent.quoted
+    }
+
+    private expr() {
         const token = this.peek()
         if (token === undefined) {
             return
@@ -43,14 +57,27 @@ export class Parser {
         } else if (token.type === types.CLOSE_PARENS) {
             token.type = types.MISMATCHED_CLOSE_PARENS
             this.consume()
-        } else if (token.type === types.SINGLE_QUOTE || token.type === types.BACK_QUOTE) {
-            this.quote()
+        } else if (token.type === types.BACK_QUOTE) {
+            this.quote(true)
+        } else if (token.type === types.SINGLE_QUOTE) {
+            this.quote(false)
+        } else if (token.type === types.COMMA) {
+            this.comma()
         } else {
             this.consume()
         }
     }
 
-    quote() {
+    private comma() {
+        const cur = this.peek()
+
+        if (cur === undefined) {
+            return
+        }
+
+        cur.backquoted = false
+        cur.quoted = false
+
         this.consumeNoSkip()
 
         const next = this.peek()
@@ -58,12 +85,27 @@ export class Parser {
             return
         }
 
-        const start = this.curNdx
         this.expr()
-        this.quoteItems(start, this.curNdx)
     }
 
-    quoteItems(start: number, end: number) {
+    private quote(backquote: boolean) {
+        this.consumeNoSkip()
+
+        const next = this.peek()
+        if (next === undefined || next.type === types.WHITE_SPACE) {
+            return
+        }
+
+        if (backquote) {
+            next.backquoted = true
+        } else {
+            next.quoted = true
+        }
+
+        this.expr()
+    }
+
+    private quoteItems(start: number, end: number) {
         for (let ndx = start; ndx < end; ndx += 1) {
             const token = this.tokens[ndx]
 
@@ -73,7 +115,7 @@ export class Parser {
         }
     }
 
-    sexpr(openParen: Token) {
+    private sexpr(openParen: Token) {
         this.parens.push(openParen)
         this.consume()
 
@@ -116,7 +158,7 @@ export class Parser {
         }
     }
 
-    quoteFn() {
+    private quoteFn() {
         this.consume()
 
         const start = this.curNdx
@@ -124,7 +166,7 @@ export class Parser {
         this.quoteItems(start, this.curNdx)
     }
 
-    sexprCheckFunctionCall() {
+    private sexprCheckFunctionCall() {
         let next = this.peek()
 
         if (next === undefined) {
@@ -148,14 +190,14 @@ export class Parser {
         }
     }
 
-    load() {
+    private load() {
         const next = this.consume()
         while (next !== undefined && next.type !== types.CLOSE_PARENS) {
             this.consume()
         }
     }
 
-    defPackage() {
+    private defPackage() {
         this.consume()
         this.skipWS()
 
@@ -173,7 +215,7 @@ export class Parser {
         }
     }
 
-    inPackage() {
+    private inPackage() {
         this.consume()
         this.skipWS()
 
@@ -186,7 +228,7 @@ export class Parser {
         token.type = types.PACKAGE_NAME
     }
 
-    defun() {
+    private defun() {
         this.consume()
 
         let token = this.peek()
@@ -218,7 +260,7 @@ export class Parser {
         }
     }
 
-    paramList() {
+    private paramList() {
         let parenCount = 0
 
         while (true) {
@@ -251,14 +293,14 @@ export class Parser {
         }
     }
 
-    skipWS() {
+    private skipWS() {
         let next = this.peek()
         while (next !== undefined && next.type === types.WHITE_SPACE) {
             next = this.consume()
         }
     }
 
-    peek(): Token | undefined {
+    private peek(): Token | undefined {
         if (this.curNdx >= this.tokens.length) {
             return undefined
         }
@@ -273,7 +315,7 @@ export class Parser {
         return token
     }
 
-    consumeNoSkip() {
+    private consumeNoSkip() {
         if (this.curNdx >= this.tokens.length) {
             return
         }
@@ -281,10 +323,16 @@ export class Parser {
         this.curNdx += 1
     }
 
-    consume(): Token | undefined {
+    private consume(): Token | undefined {
         this.consumeNoSkip()
         this.skipWS()
 
-        return this.peek()
+        const token = this.peek()
+
+        if (token !== undefined && this.parentQuoted()) {
+            token.quoted = true
+        }
+
+        return token
     }
 }

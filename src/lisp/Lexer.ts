@@ -123,6 +123,8 @@ export class Lexer {
                 return this.char(types.SINGLE_QUOTE)
             case '`':
                 return this.char(types.BACK_QUOTE)
+            case ',':
+                return this.char(types.COMMA)
             case '"':
                 return this.quotedString()
             case '#':
