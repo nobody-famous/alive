@@ -6,7 +6,7 @@ import { allLabels } from '../../lisp/keywords'
 import { Debug, DebugActivate, DebugReturn } from '../../swank/event'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
-import { ConnInfo } from '../../swank/Types'
+import { ConnInfo, Restart } from '../../swank/Types'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { View } from './View'
@@ -217,6 +217,8 @@ export class Repl extends EventEmitter {
             this.view?.getViewColumn() ?? vscode.ViewColumn.Beside,
             event
         )
+
+        view.on('restart', (ndx: number, event: Restart) => this.abort())
 
         this.dbgViews[event.threadID] = view
     }

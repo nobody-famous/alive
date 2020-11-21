@@ -1,8 +1,9 @@
-import * as vscode from 'vscode'
+import { EventEmitter } from 'events'
 import * as path from 'path'
+import * as vscode from 'vscode'
 import * as event from '../../swank/event'
 
-export class DebugView {
+export class DebugView extends EventEmitter {
     ctx: vscode.ExtensionContext
     title: string
     panel?: vscode.WebviewPanel
@@ -10,6 +11,8 @@ export class DebugView {
     viewCol: vscode.ViewColumn
 
     constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, event: event.Debug) {
+        super()
+
         this.ctx = ctx
         this.title = title
         this.viewCol = viewCol
@@ -23,6 +26,15 @@ export class DebugView {
         }
 
         this.panel = vscode.window.createWebviewPanel('cl-debug', this.title, this.viewCol, { enableScripts: true })
+
+        this.panel.webview.onDidReceiveMessage(
+            (msg: { command: string; number: number }) => {
+                const restart = this.event.restarts[msg.number]
+                this.emit('restart', msg.number, restart)
+            },
+            undefined,
+            this.ctx.subscriptions
+        )
 
         this.panel.onDidChangeViewState(() => {
             vscode.commands.executeCommand('setContext', 'clDebugViewActive', this.panel?.active)
@@ -78,12 +90,20 @@ export class DebugView {
         `
     }
 
+    private renderRestartItem(ndx: number, name: string, desc: string) {
+        return `
+            <div class="list-item restart" onclick="restart(${ndx})">
+                ${ndx}: [${name}] ${desc}
+            </div>
+        `
+    }
+
     private renderRestartList() {
         let str = ''
         let ndx = 0
 
         for (const restart of this.event.restarts) {
-            str += `<div class="list-item">${ndx}: [${restart.name}] ${restart.desc}</div>`
+            str += this.renderRestartItem(ndx, restart.name, restart.desc)
             ndx += 1
         }
 
