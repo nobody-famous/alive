@@ -52,7 +52,7 @@ export class Formatter {
     }
 
     setConfiguration() {
-        const cfg = workspace.getConfiguration('common_lisp')
+        const cfg = workspace.getConfiguration('alive')
         const haveCfg = cfg !== undefined && cfg.format !== undefined
 
         if (!haveCfg) {
