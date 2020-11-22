@@ -4,8 +4,15 @@ import { Colorizer } from './colorize/Colorizer'
 
 const colorizer = new Colorizer()
 
+export const COMMON_LISP_ID = 'common-lisp'
+export const REPL_ID = 'common-lisp-repl'
+
 export function toVscodePos(pos: types.Position): vscode.Position {
     return new vscode.Position(pos.line, pos.character)
+}
+
+export function isReplDoc(doc: vscode.TextDocument) {
+    return doc.languageId === REPL_ID
 }
 
 export function getDocumentExprs(doc: vscode.TextDocument) {

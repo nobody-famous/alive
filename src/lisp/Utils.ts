@@ -114,6 +114,22 @@ export function isString(value: unknown): boolean {
     return typeof value === 'string'
 }
 
+export function posBeforeExpr(expr: Expr, pos: Position): boolean {
+    if (pos.line > expr.start.line) {
+        return false
+    }
+
+    return pos.line < expr.start.line || pos.character < expr.start.character
+}
+
+export function posAfterExpr(expr: Expr, pos: Position): boolean {
+    if (pos.line < expr.end.line) {
+        return false
+    }
+
+    return pos.line > expr.end.line || pos.character > expr.end.character
+}
+
 export function posInExpr(expr: Expr, pos: Position): boolean {
     if (pos.line === expr.start.line) {
         if (expr.start.line === expr.end.line) {

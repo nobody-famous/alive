@@ -8,6 +8,7 @@ import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
+import { isReplDoc } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { View } from './View'
@@ -33,7 +34,7 @@ export class Repl extends EventEmitter {
     async connect() {
         try {
             if (this.conn !== undefined && this.view !== undefined) {
-                this.view.show()
+                await this.view.show()
                 return
             }
 
@@ -74,7 +75,7 @@ export class Repl extends EventEmitter {
         }
 
         for (const [key, value] of Object.entries(this.dbgViews)) {
-            if (value.panel?.active) {
+            if (value.panel?.visible) {
                 const threadID = parseInt(key)
 
                 if (!Number.isNaN(threadID)) {
@@ -165,7 +166,8 @@ export class Repl extends EventEmitter {
     }
 
     async changePackage(expr: InPackage, output: boolean = true) {
-        const pkgName = expr.name.startsWith(':') ? expr.name : `:${expr.name}`
+        // const pkgName = expr.name.startsWith(':') ? expr.name : `:${expr.name}`
+        const pkgName = expr.name
         const pkg = await this.conn?.setPackage(pkgName)
 
         if (pkg instanceof response.SetPackage) {
@@ -192,7 +194,7 @@ export class Repl extends EventEmitter {
             const expr = this.parseEvalText(text)
             const inPkg = expr !== undefined ? InPackage.from(expr) : undefined
 
-            if (inPkg !== undefined) {
+            if (isReplDoc(editor.document) && inPkg !== undefined) {
                 await this.changePackage(inPkg, output)
             } else {
                 const resp = await this.conn.eval(text, pkg)
@@ -277,15 +279,22 @@ export class Repl extends EventEmitter {
         this.emit('close')
     }
 
-    private handleConnInfo(info: ConnInfo) {
+    private async handleConnInfo(info: ConnInfo) {
         if (this.view === undefined) {
             return
         }
 
-        if (info.package?.prompt !== undefined) {
-            this.curPackage = info.package.name
+        if (info.package?.prompt === undefined) {
+            return
+        }
+
+        this.curPackage = info.package.name
+
+        try {
+            await this.view.show()
             this.view.setPrompt(info.package.prompt)
-            this.view.show()
+        } catch (err) {
+            vscode.window.showErrorMessage(format(err))
         }
     }
 

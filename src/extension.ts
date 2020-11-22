@@ -6,10 +6,8 @@ import { CompletionProvider } from './vscode/CompletionProvider'
 import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
-import { decorateText, getDocumentExprs, toVscodePos } from './vscode/Utils'
+import { COMMON_LISP_ID, decorateText, getDocumentExprs, REPL_ID, toVscodePos } from './vscode/Utils'
 
-const COMMON_LISP_ID = 'common-lisp'
-const REPL_ID = 'common-lisp-repl'
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
 
@@ -17,6 +15,7 @@ let clRepl: repl.Repl | undefined = undefined
 let activeEditor = vscode.window.activeTextEditor
 
 export const activate = (ctx: vscode.ExtensionContext) => {
+    vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
     vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
     vscode.workspace.onDidChangeTextDocument(
@@ -48,12 +47,21 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     }
 
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-    decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
+    visibleEditorsChanged(vscode.window.visibleTextEditors)
     readPackageLisp()
 }
 
 function hasValidLangId(doc?: vscode.TextDocument): boolean {
     return doc?.languageId === COMMON_LISP_ID || doc?.languageId === REPL_ID
+}
+
+function visibleEditorsChanged(editors: vscode.TextEditor[]) {
+    for (const editor of editors) {
+        if (hasValidLangId(editor.document)) {
+            readLexTokens(editor.document.fileName, editor.document.getText())
+            decorateText(editor, getLexTokens(editor.document.fileName) ?? [])
+        }
+    }
 }
 
 function updatePkgMgr(doc: vscode.TextDocument | undefined, exprs: Expr[]) {
@@ -82,7 +90,7 @@ function editorChanged(editor?: vscode.TextEditor) {
         tokens = readLexTokens(editor.document.fileName, editor.document.getText())
     }
 
-    decorateText(activeEditor, tokens ?? [])
+    decorateText(editor, tokens ?? [])
 
     const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
     const exprs = parser.parse()
