@@ -4,6 +4,7 @@ import * as vscode from 'vscode'
 import { Expr, InPackage, Lexer, Parser, unescape } from '../../lisp'
 import { allLabels } from '../../lisp/keywords'
 import { Debug, DebugActivate, DebugReturn } from '../../swank/event'
+import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
@@ -52,7 +53,10 @@ export class Repl extends EventEmitter {
             await this.view.show()
 
             const resp = await this.conn.connectionInfo()
-            this.handleConnInfo(resp.info)
+
+            if (resp instanceof response.ConnectionInfo) {
+                this.handleConnInfo(resp.info)
+            }
 
             await this.getKwDocs()
         } catch (err) {
@@ -86,7 +90,9 @@ export class Repl extends EventEmitter {
         }
 
         const resp = await this.conn.connectionInfo()
-        this.handleConnInfo(resp.info)
+        if (resp instanceof response.ConnectionInfo) {
+            this.handleConnInfo(resp.info)
+        }
     }
 
     async compileFile(fileName: string) {
@@ -113,7 +119,7 @@ export class Repl extends EventEmitter {
             }
 
             const resp = await this.conn.docSymbol(symbol, ':cl-user')
-            return resp.doc
+            return resp instanceof response.DocSymbol ? resp.doc : ''
         } catch (err) {
             return ''
         }
@@ -126,7 +132,7 @@ export class Repl extends EventEmitter {
 
         try {
             const resp = await this.conn.listPackages()
-            return resp.names
+            return resp instanceof response.ListPackages ? resp.names : []
         } catch (err) {
             return []
         }
@@ -139,7 +145,7 @@ export class Repl extends EventEmitter {
 
         try {
             const resp = await this.conn.completions(prefix, this.curPackage)
-            return resp.strings
+            return resp instanceof response.Completions ? resp.strings : []
         } catch (err) {
             return []
         }
@@ -152,7 +158,7 @@ export class Repl extends EventEmitter {
 
         try {
             const resp = await this.conn.opArgsList(name, this.curPackage)
-            return resp.desc
+            return resp instanceof response.OpArgs ? resp.desc : ''
         } catch (err) {
             return ''
         }
@@ -162,18 +168,20 @@ export class Repl extends EventEmitter {
         const pkgName = expr.name.startsWith(':') ? expr.name : `:${expr.name}`
         const pkg = await this.conn?.setPackage(pkgName)
 
-        this.updatePackage(pkg?.name)
+        if (pkg instanceof response.SetPackage) {
+            this.updatePackage(pkg.name)
+        }
 
         if (output) {
             const infoResp = await this.conn?.connectionInfo(pkgName)
 
-            if (infoResp !== undefined) {
+            if (infoResp instanceof response.ConnectionInfo) {
                 this.handleConnInfo(infoResp.info)
             }
         }
     }
 
-    async send(text: string, pkg: string, output: boolean = true) {
+    async send(editor: vscode.TextEditor, text: string, pkg: string, output: boolean = true) {
         if (this.conn === undefined || this.view === undefined) {
             return
         }
@@ -189,13 +197,15 @@ export class Repl extends EventEmitter {
             } else {
                 const resp = await this.conn.eval(text, pkg)
 
-                if (output) {
+                if (output && resp instanceof response.Eval) {
                     const str = unescape(resp.result.join(''))
                     this.view.addText(str)
                 }
+
+                vscode.window.showTextDocument(editor.document, editor.viewColumn)
             }
         } catch (err) {
-            vscode.window.showErrorMessage(err)
+            vscode.window.showErrorMessage(format(err))
         }
     }
 
@@ -232,7 +242,6 @@ export class Repl extends EventEmitter {
         }
 
         dbgView.stop()
-        this.view?.show()
 
         delete this.dbgViews[event.threadID]
     }
@@ -253,7 +262,9 @@ export class Repl extends EventEmitter {
         for (const label of allLabels) {
             const resp = await this.conn.docSymbol(label, ':cl-user')
 
-            this.kwDocs[label] = resp.doc
+            if (resp instanceof response.DocSymbol) {
+                this.kwDocs[label] = resp.doc
+            }
         }
     }
 

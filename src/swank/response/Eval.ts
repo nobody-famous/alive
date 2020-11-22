@@ -1,6 +1,6 @@
-import { Atom, valueToString, SExpr } from '../../lisp'
-import { convert } from '../SwankUtils'
+import { Atom, SExpr, valueToString } from '../../lisp'
 import { Return } from '../event/Return'
+import { convert } from '../SwankUtils'
 
 export class Eval {
     result: string[]

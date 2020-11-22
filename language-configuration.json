@@ -14,7 +14,7 @@
         ["(", ")"],
         ["\"", "\""],
     ],
-    "wordPattern": "[^()# \t\n\r][^() \t\n\r]*",
+    "wordPattern": "[^:()# \t\n\r][^() \t\n\r]*",
     // symbols that can be used to surround a selection
     "surroundingPairs": [
         ["(", ")"],

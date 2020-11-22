@@ -79,35 +79,35 @@ export class SwankConn extends EventEmitter {
         this.conn?.destroy()
     }
 
-    async connectionInfo(pkg?: string): Promise<response.ConnectionInfo> {
+    async connectionInfo(pkg?: string): Promise<response.ConnectionInfo | response.Abort> {
         return await this.requestFn(connectionInfoReq, response.ConnectionInfo, pkg)
     }
 
-    async docSymbol(symbol: string, pkg: string): Promise<response.DocSymbol> {
+    async docSymbol(symbol: string, pkg: string): Promise<response.DocSymbol | response.Abort> {
         return await this.requestFn(docSymbolReq, response.DocSymbol, symbol, pkg)
     }
 
-    async completions(prefix: string, pkg: string): Promise<response.Completions> {
+    async completions(prefix: string, pkg: string): Promise<response.Completions | response.Abort> {
         return await this.requestFn(completionsReq, response.Completions, prefix, pkg)
     }
 
-    async opArgsList(name: string, pkg: string): Promise<response.OpArgs> {
+    async opArgsList(name: string, pkg: string): Promise<response.OpArgs | response.Abort> {
         return await this.requestFn(opArgsReq, response.OpArgs, name, pkg)
     }
 
-    async listPackages(pkg?: string): Promise<response.ListPackages> {
+    async listPackages(pkg?: string): Promise<response.ListPackages | response.Abort> {
         return await this.requestFn(listPackagesReq, response.ListPackages, pkg)
     }
 
-    async setPackage(pkg: string): Promise<response.SetPackage> {
+    async setPackage(pkg: string): Promise<response.SetPackage | response.Abort> {
         return await this.requestFn(setPackageReq, response.SetPackage, pkg)
     }
 
-    async compileFile(str: string, pkg?: string): Promise<response.Eval> {
+    async compileFile(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
         return await this.requestFn(compileFileReq, response.CompileFile, str, pkg)
     }
 
-    async eval(str: string, pkg?: string): Promise<response.Eval> {
+    async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
         return await this.requestFn(evalReq, response.Eval, str, pkg)
     }
 
@@ -119,7 +119,15 @@ export class SwankConn extends EventEmitter {
         const id = this.nextID()
         const request = req(id, ...args)
         const resp = await this.sendRequest(request)
-        const parsed = respType.parse(resp)
+        let parsed = undefined
+
+        if (resp.info.status === ':OK') {
+            parsed = respType.parse(resp)
+        } else if (resp.info.status === ':ABORT') {
+            parsed = response.Abort.parse(resp)
+        } else {
+            throw new Error(`Inavlid response ${format(resp)}`)
+        }
 
         if (parsed === undefined) {
             throw new Error(`Inavlid response ${format(resp)}`)

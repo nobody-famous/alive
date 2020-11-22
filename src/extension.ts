@@ -161,7 +161,8 @@ async function evalFile() {
         return
     }
 
-    const doc = activeEditor.document
+    const editor = activeEditor
+    const doc = editor.document
     const exprs = getDocumentExprs(doc)
 
     for (const expr of exprs) {
@@ -169,7 +170,7 @@ async function evalFile() {
         const text = doc.getText(range)
         const pkg = pkgMgr.getPackageForLine(doc.fileName, expr.start.line)
 
-        await clRepl.send(text, pkg.name, false)
+        await clRepl.send(editor, text, pkg.name, false)
     }
 
     await clRepl.updateConnInfo()
@@ -239,7 +240,7 @@ async function sendToRepl() {
         const pkg = pkgMgr.getPackageForLine(editor.document.fileName, expr.start.line)
         const pkgName = editor.document.languageId === REPL_ID ? clRepl.curPackage : pkg.name
 
-        await clRepl.send(text, pkgName)
+        await clRepl.send(editor, text, pkgName)
     } catch (err) {
         console.log(err)
     }

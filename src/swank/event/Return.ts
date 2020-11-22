@@ -32,7 +32,7 @@ export class Return implements SwankEvent {
 
         const status = exprToString(retValue.parts[0])
         if (status === undefined) {
-            throw new Error(`ReturnEvent Invalid Event ${format(event)}`)
+            throw new Error(`ReturnEvent no status ${format(event)}`)
         }
 
         const payload = retValue.parts[1]
