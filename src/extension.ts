@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { Expr, findExpr, getLexTokens, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
+import { Atom, Expr, findExpr, getLexTokens, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
@@ -174,6 +174,10 @@ async function evalFile() {
     const exprs = getDocumentExprs(doc)
 
     for (const expr of exprs) {
+        if (expr instanceof Atom) {
+            continue
+        }
+
         const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
         const text = doc.getText(range)
         const pkg = pkgMgr.getPackageForLine(doc.fileName, expr.start.line)

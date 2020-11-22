@@ -167,9 +167,21 @@ export class PackageMgr {
         this.curPackage = this.pkgs[name]
 
         if (fileName !== undefined && this.curPackage !== undefined) {
+            this.removeDuplicates(fileName, expr.start.line)
+
             this.curPackage.ranges[fileName] = {
                 start: expr.start.line,
                 end: expr.start.line,
+            }
+        }
+    }
+
+    private removeDuplicates(fileName: string, line: number) {
+        for (const pkg of Object.values(this.pkgs)) {
+            const ranges = pkg.ranges[fileName]
+
+            if (ranges !== undefined && ranges.start === line) {
+                delete pkg.ranges[fileName]
             }
         }
     }

@@ -166,7 +166,6 @@ export class Repl extends EventEmitter {
     }
 
     async changePackage(expr: InPackage, output: boolean = true) {
-        // const pkgName = expr.name.startsWith(':') ? expr.name : `:${expr.name}`
         const pkgName = expr.name
         const pkg = await this.conn?.setPackage(pkgName)
 
