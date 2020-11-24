@@ -12,7 +12,7 @@ typeStyles[types.CLOSE_PARENS] = 'default'
 typeStyles[types.KEYWORD] = 'keyword'
 typeStyles[types.COMMENT] = 'comment'
 typeStyles[types.CONTROL] = 'function'
-typeStyles[types.MACRO] = 'macro'
+typeStyles[types.MACRO] = 'keyword'
 typeStyles[types.SPECIAL] = 'variable'
 typeStyles[types.ID] = 'variable'
 typeStyles[types.FUNCTION] = 'function'
@@ -92,7 +92,6 @@ export class Colorizer {
                 const split = this.splitRange(range)
 
                 for (const r of split) {
-                    console.log(r)
                     builder.push(r, str)
                 }
             }
