@@ -48,6 +48,12 @@
                 "configuration": "./language-configuration.json"
             }
         ],
+        "semanticTokenTypes": [
+            {
+                "id": "error",
+                "description": "An error token"
+            }
+        ],
         "snippets": [
             {
                 "language": "common-lisp",
@@ -169,144 +175,7 @@
                     "description": "If true, fix white space issues"
                 }
             }
-        },
-        "colors": [
-            {
-                "id": "common_lisp.default",
-                "description": "Common Lisp Default",
-                "defaults": {
-                    "light": "#d4d4d4ff",
-                    "dark": "#d4d4d4ff",
-                    "highContrast": "#d4d4d4ff"
-                }
-            },
-            {
-                "id": "common_lisp.keyword",
-                "description": "Common Lisp Keyword",
-                "defaults": {
-                    "light": "#569cd6ff",
-                    "dark": "#569cd6ff",
-                    "highContrast": "#569cd6ff"
-                }
-            },
-            {
-                "id": "common_lisp.packages",
-                "description": "Common Lisp Packages Keyword",
-                "defaults": {
-                    "light": "#569cd6ff",
-                    "dark": "#569cd6ff",
-                    "highContrast": "#569cd6ff"
-                }
-            },
-            {
-                "id": "common_lisp.control",
-                "description": "Common Lisp Control Words",
-                "defaults": {
-                    "light": "#c586c0ff",
-                    "dark": "#c586c0ff",
-                    "highContrast": "#c586c0ff"
-                }
-            },
-            {
-                "id": "common_lisp.macro",
-                "description": "Common Lisp Macro",
-                "defaults": {
-                    "light": "#c586c0ff",
-                    "dark": "#c586c0ff",
-                    "highContrast": "#c586c0ff"
-                }
-            },
-            {
-                "id": "common_lisp.special",
-                "description": "Common Lisp Special Operators",
-                "defaults": {
-                    "light": "#c586c0ff",
-                    "dark": "#c586c0ff",
-                    "highContrast": "#c586c0ff"
-                }
-            },
-            {
-                "id": "common_lisp.function",
-                "description": "Common Lisp Function",
-                "defaults": {
-                    "light": "#dcdcaaff",
-                    "dark": "#dcdcaaff",
-                    "highContrast": "#dcdcaaff"
-                }
-            },
-            {
-                "id": "common_lisp.string",
-                "description": "Common Lisp String",
-                "defaults": {
-                    "light": "#ce9178ff",
-                    "dark": "#ce9178ff",
-                    "highContrast": "#ce9178ff"
-                }
-            },
-            {
-                "id": "common_lisp.quoted",
-                "description": "Common Lisp Quoted Item",
-                "defaults": {
-                    "light": "#ce9178ff",
-                    "dark": "#ce9178ff",
-                    "highContrast": "#ce9178ff"
-                }
-            },
-            {
-                "id": "common_lisp.package",
-                "description": "Common Lisp Package",
-                "defaults": {
-                    "light": "#4ec9b0ff",
-                    "dark": "#4ec9b0ff",
-                    "highContrast": "#4ec9b0ff"
-                }
-            },
-            {
-                "id": "common_lisp.symbol",
-                "description": "Common Lisp Symbol",
-                "defaults": {
-                    "light": "#9cdcfeff",
-                    "dark": "#9cdcfeff",
-                    "highContrast": "#9cdcfeff"
-                }
-            },
-            {
-                "id": "common_lisp.id",
-                "description": "Common Lisp Identifier",
-                "defaults": {
-                    "light": "#9cdcfeff",
-                    "dark": "#9cdcfeff",
-                    "highContrast": "#9cdcfeff"
-                }
-            },
-            {
-                "id": "common_lisp.parameter",
-                "description": "Common Lisp Parameter",
-                "defaults": {
-                    "light": "#9cdcfeff",
-                    "dark": "#9cdcfeff",
-                    "highContrast": "#9cdcfeff"
-                }
-            },
-            {
-                "id": "common_lisp.comment",
-                "description": "Common Lisp Comment",
-                "defaults": {
-                    "light": "#6a9955ff",
-                    "dark": "#6a9955ff",
-                    "highContrast": "#6a9955ff"
-                }
-            },
-            {
-                "id": "common_lisp.error",
-                "description": "Common Lisp Error",
-                "defaults": {
-                    "light": "#ff0000",
-                    "dark": "#ff0000",
-                    "highContrast": "#ff0000"
-                }
-            }
-        ]
+        }
     },
     "devDependencies": {
         "@types/node": "^14.14.2",

@@ -1,151 +1,153 @@
-import * as types from '../../lisp/Types'
 import * as vscode from 'vscode'
 import { Token } from '../../lisp/Token'
-import { Range, window } from 'vscode'
-import { Parser } from './Parser'
+import * as types from '../../lisp/Types'
 import { toVscodePos } from '../Utils'
-
-type decoratonDict = { [index: string]: any }
-const decorationTypes: decoratonDict = {
-    'common_lisp.default': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.default' },
-    }),
-    'common_lisp.comment': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.comment' },
-    }),
-    'common_lisp.id': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.id' },
-    }),
-    'common_lisp.error': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.error' },
-    }),
-    'common_lisp.keyword': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.keyword' },
-    }),
-    'common_lisp.packages': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.packages' },
-    }),
-    'common_lisp.control': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.control' },
-    }),
-    'common_lisp.function': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.function' },
-    }),
-    'common_lisp.macro': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.macro' },
-    }),
-    'common_lisp.special': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.special' },
-    }),
-    'common_lisp.string': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.string' },
-    }),
-    'common_lisp.quoted': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.quoted' },
-    }),
-    'common_lisp.package': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.package' },
-    }),
-    'common_lisp.symbol': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.symbol' },
-    }),
-    'common_lisp.parameter': window.createTextEditorDecorationType({
-        color: { id: 'common_lisp.parameter' },
-    }),
-    'editorWhitespace.foreground': window.createTextEditorDecorationType({
-        color: { id: 'editorWhitespace.foreground' },
-    }),
-}
+import { SemanticAnalyzer } from './SemanticAnalyzer'
 
 type stylesDict = { [index: number]: string }
 
 const typeStyles: stylesDict = {}
-typeStyles[types.OPEN_PARENS] = 'common_lisp.default'
-typeStyles[types.CLOSE_PARENS] = 'common_lisp.default'
-typeStyles[types.KEYWORD] = 'common_lisp.keyword'
-typeStyles[types.COMMENT] = 'common_lisp.comment'
-typeStyles[types.CONTROL] = 'common_lisp.control'
-typeStyles[types.MACRO] = 'common_lisp.macro'
-typeStyles[types.SPECIAL] = 'common_lisp.special'
-typeStyles[types.ID] = 'common_lisp.id'
-typeStyles[types.FUNCTION] = 'common_lisp.function'
-typeStyles[types.STRING] = 'common_lisp.string'
-typeStyles[types.QUOTED] = 'common_lisp.quoted'
-typeStyles[types.SINGLE_QUOTE] = 'common_lisp.quoted'
-typeStyles[types.BACK_QUOTE] = 'common_lisp.quoted'
-typeStyles[types.PACKAGE_NAME] = 'common_lisp.package'
-typeStyles[types.SYMBOL] = 'common_lisp.symbol'
-typeStyles[types.PARAMETER] = 'common_lisp.parameter'
-typeStyles[types.MISMATCHED_OPEN_PARENS] = 'common_lisp.default'
-typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'common_lisp.error'
-typeStyles[types.MISMATCHED_DBL_QUOTE] = 'common_lisp.error'
-typeStyles[types.MISMATCHED_BAR] = 'common_lisp.error'
-typeStyles[types.MISMATCHED_COMMENT] = 'common_lisp.error'
-
-interface rangeValue {
-    range: Range
-}
+typeStyles[types.OPEN_PARENS] = 'default'
+typeStyles[types.CLOSE_PARENS] = 'default'
+typeStyles[types.KEYWORD] = 'keyword'
+typeStyles[types.COMMENT] = 'comment'
+typeStyles[types.CONTROL] = 'function'
+typeStyles[types.MACRO] = 'macro'
+typeStyles[types.SPECIAL] = 'variable'
+typeStyles[types.ID] = 'variable'
+typeStyles[types.FUNCTION] = 'function'
+typeStyles[types.STRING] = 'string'
+typeStyles[types.QUOTED] = 'string'
+typeStyles[types.SINGLE_QUOTE] = 'string'
+typeStyles[types.BACK_QUOTE] = 'string'
+typeStyles[types.PACKAGE_NAME] = 'namespace'
+typeStyles[types.SYMBOL] = 'variable'
+typeStyles[types.PARAMETER] = 'parameter'
+typeStyles[types.MISMATCHED_OPEN_PARENS] = 'default'
+typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'error'
+typeStyles[types.MISMATCHED_DBL_QUOTE] = 'error'
+typeStyles[types.MISMATCHED_BAR] = 'error'
+typeStyles[types.MISMATCHED_COMMENT] = 'error'
 
 interface styleMapType {
-    [index: string]: rangeValue[]
+    [index: string]: vscode.Range[]
 }
 
+export const tokenTypesLegend = [
+    'comment',
+    'string',
+    'keyword',
+    'number',
+    'regexp',
+    'operator',
+    'namespace',
+    'type',
+    'struct',
+    'class',
+    'interface',
+    'enum',
+    'typeParameter',
+    'function',
+    'member',
+    'macro',
+    'variable',
+    'parameter',
+    'property',
+    'label',
+    'error',
+]
+
+export const tokenModifiersLegend = [
+    'declaration',
+    'documentation',
+    'readonly',
+    'static',
+    'abstract',
+    'deprecated',
+    'modification',
+    'async',
+]
+
 export class Colorizer {
-    constructor() {}
+    typesMap: { [index: string]: number | undefined } = {}
+    modsMap: { [index: string]: number | undefined } = {}
 
-    run(editor: vscode.TextEditor, tokens: Token[]) {
-        if (tokens === undefined || tokens.length === 0) {
-            return
-        }
+    constructor() {
+        tokenTypesLegend.forEach((type, index) => (this.typesMap[type] = index))
+        tokenModifiersLegend.forEach((mod, index) => (this.modsMap[mod] = index))
+    }
 
-        const styleMap = this.buildStyleMap(editor, tokens)
+    run(tokens: Token[]) {
+        const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
+        const styleMap = this.buildStyleMap(tokens)
         const entries = Object.entries(styleMap)
+        const builder = new vscode.SemanticTokensBuilder(legend)
 
-        this.clearEmptyTypes(editor, styleMap)
+        for (const [str, ranges] of entries) {
+            for (const range of ranges) {
+                if (this.typesMap[str] === undefined) {
+                    continue
+                }
 
-        for (let ndx = 0; ndx < entries.length; ndx += 1) {
-            const [style, list] = entries[ndx]
-            const decoration = decorationTypes[style]
+                const split = this.splitRange(range)
 
-            if (decoration === undefined) {
-                continue
-            }
-
-            editor.setDecorations(decoration, list)
-        }
-    }
-
-    clearEmptyTypes(editor: vscode.TextEditor, styleMap: styleMapType) {
-        const styles = Object.keys(decorationTypes)
-
-        for (let ndx = 0; ndx < styles.length; ndx += 1) {
-            const style = styles[ndx]
-
-            if (styleMap[style] === undefined) {
-                editor.setDecorations(decorationTypes[style], [])
+                for (const r of split) {
+                    console.log(r)
+                    builder.push(r, str)
+                }
             }
         }
+
+        return builder.build()
     }
 
-    buildStyleMap(editor: vscode.TextEditor, lexTokens: Token[]): styleMapType {
-        const parser = new Parser(editor.document.getText(), lexTokens)
+    private splitRange(range: vscode.Range): vscode.Range[] {
+        if (range.start.line === range.end.line) {
+            return [range]
+        }
+
+        const split: vscode.Range[] = []
+
+        split.push(this.buildRange(range.start.line, range.start.character))
+
+        for (let line = range.start.line + 1; line <= range.end.line; line += 1) {
+            split.push(this.buildRange(line, 0))
+        }
+
+        return split
+    }
+
+    private buildRange(line: number, char: number): vscode.Range {
+        const start = new vscode.Position(line, char)
+        const end = new vscode.Position(line, Number.MAX_SAFE_INTEGER)
+
+        return new vscode.Range(start, end)
+    }
+
+    private buildStyleMap(lexTokens: Token[]): styleMapType {
+        if (lexTokens.length === 0) {
+            return {}
+        }
+
+        const analyzer = new SemanticAnalyzer(lexTokens)
+        analyzer.analyze()
+
         const map = {}
-
-        const tokens = parser.parse()
         let mismatched = false
-        for (const token of tokens) {
-            let style = typeStyles[token.type] || 'common_lisp.default'
-            const target = { range: new Range(toVscodePos(token.start), toVscodePos(token.end)) }
+
+        for (const token of lexTokens) {
+            let style = typeStyles[token.type] ?? 'default'
+            const target = new vscode.Range(toVscodePos(token.start), toVscodePos(token.end))
 
             if (token.type === types.WHITE_SPACE) {
                 continue
             }
 
             if (mismatched) {
-                style = 'common_lisp.error'
+                style = 'error'
             }
 
-            if (this.isMismatched(parser, token)) {
+            if (this.isMismatched(analyzer, token)) {
                 mismatched = true
             }
 
@@ -155,17 +157,23 @@ export class Colorizer {
         return map
     }
 
-    isMismatched(parser: Parser, token: Token) {
+    private isMismatched(parser: SemanticAnalyzer, token: Token) {
         if (parser.unclosedString !== undefined) {
             return false
         }
 
-        if (token.type === types.MISMATCHED_OPEN_PARENS || token.type === types.MISMATCHED_CLOSE_PARENS) {
-            return true
-        }
+        const mismatched = [
+            types.MISMATCHED_BAR,
+            types.MISMATCHED_CLOSE_PARENS,
+            types.MISMATCHED_COMMENT,
+            types.MISMATCHED_DBL_QUOTE,
+            types.MISMATCHED_OPEN_PARENS,
+        ]
+
+        return mismatched.includes(token.type)
     }
 
-    addToMap(map: styleMapType, key: string, entry: rangeValue) {
+    private addToMap(map: styleMapType, key: string, entry: vscode.Range) {
         if (map[key] === undefined) {
             map[key] = []
         }

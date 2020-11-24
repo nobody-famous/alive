@@ -6,10 +6,13 @@ import { CompletionProvider } from './vscode/CompletionProvider'
 import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
-import { COMMON_LISP_ID, decorateText, getDocumentExprs, REPL_ID, toVscodePos } from './vscode/Utils'
+import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
+import { COMMON_LISP_ID, getDocumentExprs, REPL_ID, toVscodePos } from './vscode/Utils'
+import { format } from 'util'
 
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
+const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
 
 let clRepl: repl.Repl | undefined = undefined
 let activeEditor = vscode.window.activeTextEditor
@@ -35,6 +38,18 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, documentFormatter())
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, documentFormatter())
 
+    vscode.languages.registerDocumentSemanticTokensProvider(
+        { scheme: 'untitled', language: COMMON_LISP_ID },
+        semTokensProvider(),
+        legend
+    )
+    vscode.languages.registerDocumentSemanticTokensProvider(
+        { scheme: 'file', language: COMMON_LISP_ID },
+        semTokensProvider(),
+        legend
+    )
+    vscode.languages.registerDocumentSemanticTokensProvider({ scheme: 'file', language: REPL_ID }, semTokensProvider(), legend)
+
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', sendToRepl))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', attachRepl(ctx)))
@@ -59,8 +74,32 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
     for (const editor of editors) {
         if (hasValidLangId(editor.document)) {
             readLexTokens(editor.document.fileName, editor.document.getText())
-            decorateText(editor, getLexTokens(editor.document.fileName) ?? [])
         }
+    }
+}
+
+function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
+    return {
+        async provideDocumentSemanticTokens(
+            doc: vscode.TextDocument,
+            token: vscode.CancellationToken
+        ): Promise<vscode.SemanticTokens> {
+            const colorizer = new Colorizer()
+            const tokens = getLexTokens(doc.fileName)
+            const emptyTokens = new vscode.SemanticTokens(new Uint32Array(0))
+
+            if (tokens === undefined || tokens.length === 0) {
+                return emptyTokens
+            }
+
+            try {
+                return colorizer.run(tokens)
+            } catch (err) {
+                vscode.window.showErrorMessage(format(err))
+            }
+
+            return emptyTokens
+        },
     }
 }
 
@@ -90,8 +129,6 @@ function editorChanged(editor?: vscode.TextEditor) {
         tokens = readLexTokens(editor.document.fileName, editor.document.getText())
     }
 
-    decorateText(editor, tokens ?? [])
-
     const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
     const exprs = parser.parse()
 
@@ -104,7 +141,6 @@ function openTextDocument(doc: vscode.TextDocument) {
     }
 
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
-    decorateText(activeEditor, getLexTokens(activeEditor.document.fileName) ?? [])
 }
 
 function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
@@ -119,8 +155,6 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
     if (editor === undefined) {
         return
     }
-
-    decorateText(editor, getLexTokens(event.document.fileName) ?? [])
 
     if (editor.document.languageId !== REPL_ID) {
         return

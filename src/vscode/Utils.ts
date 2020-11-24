@@ -1,8 +1,5 @@
 import * as vscode from 'vscode'
-import { types, Lexer, Parser, Token } from '../lisp'
-import { Colorizer } from './colorize/Colorizer'
-
-const colorizer = new Colorizer()
+import { Lexer, Parser, types } from '../lisp'
 
 export const COMMON_LISP_ID = 'common-lisp'
 export const REPL_ID = 'common-lisp-repl'
@@ -22,16 +19,6 @@ export function getDocumentExprs(doc: vscode.TextDocument) {
     const exprs = parser.parse()
 
     return exprs
-}
-
-export function decorateText(editor: vscode.TextEditor | undefined, tokens: Token[]) {
-    try {
-        if (editor !== undefined) {
-            colorizer.run(editor, tokens)
-        }
-    } catch (err) {
-        vscode.window.showErrorMessage(`Failed to colorize file: ${err.toString()}`)
-    }
 }
 
 export function jumpToBottom(editor: vscode.TextEditor) {

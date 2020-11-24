@@ -1,8 +1,6 @@
-import { type } from 'os'
-import { Token, Lexer, types } from '../../lisp'
+import { Token, types } from '../../lisp'
 
-export class Parser {
-    lex: Lexer
+export class SemanticAnalyzer {
     tokens: Token[]
     unclosedString?: Token
     mismatchedBar?: Token
@@ -10,12 +8,11 @@ export class Parser {
     curNdx: number = 0
     parens: Token[] = []
 
-    constructor(text: string, tokens: Token[]) {
-        this.lex = new Lexer(text)
+    constructor(tokens: Token[]) {
         this.tokens = tokens
     }
 
-    parse() {
+    analyze() {
         this.curNdx = 0
 
         while (true) {
@@ -32,8 +29,6 @@ export class Parser {
                 token.type = types.QUOTED
             }
         }
-
-        return this.tokens
     }
 
     private parentQuoted(): boolean {
