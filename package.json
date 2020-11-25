@@ -206,7 +206,7 @@
                         "multiline"
                     ],
                     "default": true,
-                    "description": "If true, fix white space issues"
+                    "description": "Specify when to put close parens on their own line"
                 }
             }
         }
