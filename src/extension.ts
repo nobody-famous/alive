@@ -53,6 +53,7 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', sendToRepl))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', attachRepl(ctx)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', detachRepl))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', compileFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.evalFile', evalFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
@@ -252,10 +253,21 @@ async function compileFile() {
     await clRepl.compileFile(activeEditor.document.fileName)
 }
 
+async function detachRepl() {
+    if (clRepl === undefined) {
+        return
+    }
+
+    await clRepl.disconnect()
+    clRepl = undefined
+
+    vscode.window.showInformationMessage('Disconnected from REPL')
+}
+
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
-            if (activeEditor?.document.languageId !== COMMON_LISP_ID) {
+            if (!hasValidLangId(activeEditor?.document)) {
                 vscode.window.showErrorMessage(`Not in a ${COMMON_LISP_ID} document`)
                 return
             }

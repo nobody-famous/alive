@@ -65,6 +65,17 @@ export class Repl extends EventEmitter {
         }
     }
 
+    async disconnect() {
+        if (this.conn === undefined) {
+            return
+        }
+
+        this.conn.close()
+        this.conn = undefined
+
+        this.view?.close()
+    }
+
     documentChanged() {
         this.view?.documentChanged()
     }
@@ -89,6 +100,11 @@ export class Repl extends EventEmitter {
         }
 
         const id = threadIDs[0]
+        if (this.dbgViews[id] !== undefined) {
+            this.dbgViews[id].stop()
+            delete this.dbgViews[id]
+        }
+
         await this.conn.nthRestart(id, n)
     }
 
@@ -217,10 +233,12 @@ export class Repl extends EventEmitter {
 
     private getVisibleDebugThreads(): number[] {
         const threadIDs: number[] = []
+
         for (const [key, value] of Object.entries(this.dbgViews)) {
             if (!value.panel?.visible) {
                 continue
             }
+
             const threadID = parseInt(key)
 
             if (!Number.isNaN(threadID)) {
@@ -259,12 +277,10 @@ export class Repl extends EventEmitter {
         const dbgView = this.dbgViews[event.threadID]
 
         if (dbgView === undefined) {
-            vscode.window.showErrorMessage(`Debug Return for ${event.threadID} has no view`)
             return
         }
 
         dbgView.stop()
-
         delete this.dbgViews[event.threadID]
     }
 
