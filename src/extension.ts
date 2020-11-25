@@ -267,14 +267,9 @@ async function detachRepl() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
-            if (!hasValidLangId(activeEditor?.document)) {
-                vscode.window.showErrorMessage(`Not in a ${COMMON_LISP_ID} document`)
-                return
-            }
-
             await newReplConnection(ctx)
         } catch (err) {
-            console.log(err)
+            vscode.window.showErrorMessage(err)
         }
     }
 }
