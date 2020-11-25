@@ -65,7 +65,8 @@ export class FileView implements View {
         }
     }
 
-    addText(text: string) {
+    async addText(text: string) {
+        await this.show()
         this.appendLine(`\n${text}\n${this.prompt}`)
     }
 
@@ -78,8 +79,9 @@ export class FileView implements View {
         this.appendLine(this.prompt)
     }
 
-    appendLine(toAppend: string) {
-        if (this.replEditor === undefined) {
+    private appendLine(toAppend: string) {
+        if (this.replEditor === undefined || !this.isEditorVisible()) {
+            vscode.window.showWarningMessage(`REPL not visible for ${toAppend}`)
             return
         }
 

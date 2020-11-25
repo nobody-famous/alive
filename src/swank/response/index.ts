@@ -7,4 +7,6 @@ export * from './DocSymbol'
 export * from './Eval'
 export * from './ListPackages'
 export * from './OpArgs'
+export * from './Restart'
 export * from './SetPackage'
+

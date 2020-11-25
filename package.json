@@ -84,6 +84,10 @@
             {
                 "command": "alive.debugAbort",
                 "title": "Alive: Debug Abort"
+            },
+            {
+                "command": "alive.nthRestart",
+                "title": "Alive: Nth Restart"
             }
         ],
         "menus": {
@@ -135,6 +139,36 @@
                 "command": "alive.debugAbort",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+a"
+            },
+            {
+                "command": "alive.nthRestart",
+                "args": "0",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "key": "alt+ctrl+0"
+            },
+            {
+                "command": "alive.nthRestart",
+                "args": "1",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "key": "alt+ctrl+1"
+            },
+            {
+                "command": "alive.nthRestart",
+                "args": "2",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "key": "alt+ctrl+2"
+            },
+            {
+                "command": "alive.nthRestart",
+                "args": "3",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "key": "alt+ctrl+3"
+            },
+            {
+                "command": "alive.nthRestart",
+                "args": "4",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "key": "alt+ctrl+4"
             }
         ],
         "configuration": {

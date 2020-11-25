@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { Atom, Expr, findExpr, getLexTokens, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
+import { Atom, Expr, findExpr, getLexTokens, isString, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { Formatter } from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
@@ -56,6 +56,7 @@ export const activate = (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', compileFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.evalFile', evalFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', nthRestart))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -75,6 +76,27 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
         if (hasValidLangId(editor.document)) {
             readLexTokens(editor.document.fileName, editor.document.getText())
         }
+    }
+}
+
+async function nthRestart(n: unknown) {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    try {
+        if (typeof n !== 'string') {
+            return
+        }
+
+        const num = Number.parseInt(n)
+
+        if (!Number.isNaN(num)) {
+            await clRepl.nthRestart(num)
+        }
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
     }
 }
 

@@ -56,7 +56,8 @@ export function connectionInfoReq(msgID: number, pkg?: string) {
 }
 
 export function evalReq(msgID: number, form: string, pkg?: string) {
-    const data = [new LispID('swank:eval-and-grab-output'), form]
+    // const data = [new LispID('swank:eval-and-grab-output'), form]
+    const data = [new LispID('swank:interactive-eval'), form]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
@@ -68,6 +69,11 @@ export function compileFileReq(msgID: number, fileName: string, pkg?: string) {
 export function threadsReq(msgID: number, pkg?: string) {
     const data = [new LispID('swank:list-threads')]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function nthRestartReq(msgID: number, threadID: number, restart: number, pkg?: string) {
+    const data = [new LispID('swank:invoke-nth-restart-for-emacs'), 1, restart]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
 }
 
 export function frameLocalsReq(msgID: number, threadID: number, frameID: string, pkg?: string) {

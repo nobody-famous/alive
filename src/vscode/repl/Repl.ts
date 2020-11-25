@@ -70,19 +70,26 @@ export class Repl extends EventEmitter {
     }
 
     async abort() {
-        if (this.conn === undefined) {
+        const threadIDs = this.getVisibleDebugThreads()
+        if (this.conn === undefined || threadIDs.length === 0) {
+            vscode.window.showInformationMessage('No debug to abort')
             return
         }
 
-        for (const [key, value] of Object.entries(this.dbgViews)) {
-            if (value.panel?.visible) {
-                const threadID = parseInt(key)
-
-                if (!Number.isNaN(threadID)) {
-                    this.conn.debugAbort(threadID)
-                }
-            }
+        for (const id of threadIDs) {
+            await this.conn.debugAbort(id)
         }
+    }
+
+    async nthRestart(n: number) {
+        const threadIDs = this.getVisibleDebugThreads()
+        if (this.conn === undefined || threadIDs.length === 0) {
+            vscode.window.showInformationMessage('No debug to restart')
+            return
+        }
+
+        const id = threadIDs[0]
+        await this.conn.nthRestart(id, n)
     }
 
     async updateConnInfo() {
@@ -188,8 +195,6 @@ export class Repl extends EventEmitter {
         }
 
         try {
-            await this.view.show()
-
             const expr = this.parseEvalText(text)
             const inPkg = expr !== undefined ? InPackage.from(expr) : undefined
 
@@ -208,6 +213,22 @@ export class Repl extends EventEmitter {
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
         }
+    }
+
+    private getVisibleDebugThreads(): number[] {
+        const threadIDs: number[] = []
+        for (const [key, value] of Object.entries(this.dbgViews)) {
+            if (!value.panel?.visible) {
+                continue
+            }
+            const threadID = parseInt(key)
+
+            if (!Number.isNaN(threadID)) {
+                threadIDs.push(threadID)
+            }
+        }
+
+        return threadIDs
     }
 
     private handleDebugActivate(event: DebugActivate) {
@@ -229,7 +250,7 @@ export class Repl extends EventEmitter {
             event
         )
 
-        view.on('restart', (ndx: number, event: Restart) => this.abort())
+        view.on('restart', (ndx: number, event: Restart) => this.nthRestart(ndx))
 
         this.dbgViews[event.threadID] = view
     }

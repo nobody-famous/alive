@@ -16,6 +16,7 @@ import {
     debuggerAbortReq,
     threadsReq,
     compileFileReq,
+    nthRestartReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -109,6 +110,10 @@ export class SwankConn extends EventEmitter {
 
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
         return await this.requestFn(evalReq, response.Eval, str, pkg)
+    }
+
+    async nthRestart(threadID: number, restart: number): Promise<response.DebuggerAbort> {
+        return await this.requestFn(nthRestartReq, response.Restart, threadID, restart)
     }
 
     async debugAbort(threadID: number): Promise<response.DebuggerAbort> {

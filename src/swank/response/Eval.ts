@@ -1,4 +1,4 @@
-import { Atom, SExpr, valueToString } from '../../lisp'
+import { Atom, exprToString, isString } from '../../lisp'
 import { Return } from '../event/Return'
 import { convert } from '../SwankUtils'
 
@@ -16,21 +16,20 @@ export class Eval {
 
         const payload = event.info.payload
 
-        if (!(payload instanceof SExpr)) {
+        if (!(payload instanceof Atom)) {
             return undefined
         }
 
-        const lines = []
-        for (const item of payload.parts) {
-            const expr = item as Atom
-            const line = expr.value !== undefined ? valueToString(expr.value) : undefined
-
-            if (line !== undefined) {
-                const converted = convert(line)
-                lines.push(`${converted}`)
-            }
+        const output = exprToString(payload)
+        if (output === undefined) {
+            return undefined
         }
 
-        return new Eval(lines)
+        const converted = convert(output)
+        if (!isString(converted)) {
+            return undefined
+        }
+
+        return new Eval([converted as string])
     }
 }
