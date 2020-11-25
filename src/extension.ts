@@ -267,7 +267,9 @@ async function detachRepl() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
+            vscode.window.showInformationMessage('Connecting to REPL...')
             await newReplConnection(ctx)
+            vscode.window.showInformationMessage('Connected')
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
