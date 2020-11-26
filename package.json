@@ -3,8 +3,12 @@
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
     "version": "0.0.1",
+    "publisher": "rheller",
+    "repository": {
+        "url": "https://github.com/nobody-famous/alive"
+    },
     "engines": {
-        "vscode": "^1.43.0"
+        "vscode": "^1.50.0"
     },
     "categories": [
         "Programming Languages"
