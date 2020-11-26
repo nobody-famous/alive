@@ -20,22 +20,6 @@ This extension contributes the following settings:
 * `common_lisp.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
 * `common_lisp.format.fixWhitespace`: If true, try to fix white space issues.
 
-workbench.colorCustomizations:
-* `common_lisp.default`: Default text
-* `common_lisp.keyword`: Keywords
-* `common_lisp.control`: Control words, such as 'if', 'and', etc
-* `common_lisp.function`: Function names
-* `common_lisp.macro`: Macro names
-* `common_lisp.special`: Special operators
-* `common_lisp.string`: String constants
-* `common_lisp.quoted`: Quoted elements
-* `common_lisp.package`: Package names
-* `common_lisp.symbol`: Symbols
-* `common_lisp.id`: Identifiers
-* `common_lisp.parameter`: Function parameters
-* `common_lisp.comment`: Comments
-* `common_lisp.error`: Errors
-
 ## Commands
 
 ### Select S-Expression (alt+shift+up)
