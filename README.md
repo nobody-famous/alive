@@ -20,13 +20,41 @@ This extension contributes the following settings:
 * `alive.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
 * `alive.format.fixWhitespace`: If true, try to fix white space issues.
 
+## Syntax Highlighting
+
+Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. I originally implemented it using text decorations, but those don't add highlighting to the minimap. With semantic tokens, I can reuse the parsing logic that was already there and have the minimap behave correctly.
+
+It may or may not be necessary to enable semantic token processing. If it doesn't add the highlighting, put this block in your settings.json file.
+
+```
+"editor.semanticTokenColorCustomizations": {
+    "enabled": true
+}
+```
+
+The various colors can be changed by adding a rules section.
+
+```
+"editor.semanticTokenColorCustomizations": {
+    "rules": {
+        "variable": "#00ff00"
+    }
+}
+```
+
+## REPL Integration
+Currently, a swank server must be running on the local machine using port 4005.
+
 ## Commands
 
 ### Select S-Expression (alt+shift+up)
 Selects the surrounding top level expression for the current cursor position.
 
 ### Attach To REPL
-Connect to the swank server running on localhost:4005
+Connect to the swank server running on localhost:4005.
+
+### Detach From REPL
+Disconnect from the swank server.
 
 ### Send To REPL (alt+shift+enter)
 Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position.
@@ -34,11 +62,15 @@ Sends selected text to the REPL. If nothing is selected, sends the top level for
 ### Debug Abort (alt+ctrl+a)
 Tells the currently visible debugger to send the abort restart.
 
-## REPL Integration
-Currently, a swank server must be running on the local machine using port 4005.
+### Nth Restart (alt+ctrl+{n})
+Tells the currently visible debugger to send the nth restart. For example, alt+ctrl+0 sends restart 0, alt+ctrl+2 sends restart 2, etc.
 
 ### Evaluate File (alt+shift+e)
 Has the REPL evaluate each expression in the file in order.
+
+## License
+
+Unless otherwise noted, all code is in the Public Domain.
 
 ## Release Notes
 

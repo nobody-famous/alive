@@ -15,7 +15,8 @@
     ],
     "main": "./out/src/extension.js",
     "activationEvents": [
-        "onLanguage:common-lisp"
+        "onLanguage:common-lisp",
+        "onLanguage:common-lisp-repl"
     ],
     "scripts": {
         "vscode:prepublish": "npm run compile",
