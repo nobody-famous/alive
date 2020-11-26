@@ -67,7 +67,7 @@ export class SwankConn extends EventEmitter {
     }
 
     connect() {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.conn = net.createConnection(this.port, this.host, async () => resolve())
 
             this.conn.on('error', (err) => this.connError(err))
@@ -281,7 +281,7 @@ export class SwankConn extends EventEmitter {
     }
 
     writeMessage(msg: string) {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             if (this.conn === undefined) {
                 return reject('No connection')
             }

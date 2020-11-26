@@ -58,14 +58,6 @@ export function convert(symbol: string): string | boolean | undefined {
     return symbol
 }
 
-export function convertArray(arr: unknown[]): unknown[] {
-    if (!Array.isArray(arr)) {
-        return arr
-    }
-
-    return arr.map((item) => convert(item))
-}
-
 export function toWire(item: unknown): string {
     let str = ''
 
