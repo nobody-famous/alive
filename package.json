@@ -22,7 +22,7 @@
         "compile": "tsc -p ./",
         "build": "tsc -p ./tsconfig.build.json",
         "lint": "eslint src --ext ts",
-        "watch": "tsc -watch -p ./tsconfig.build.json"
+        "watch": "tsc -watch -p ./tsconfig.watch.json"
     },
     "contributes": {
         "languages": [
