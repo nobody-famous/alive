@@ -14,11 +14,11 @@ An attempt to create a Common Lisp extension for VSCode. It's still a work in pr
 
 This extension contributes the following settings:
 
-* `common_lisp.format.indentWidth`: Default indentation width
-* `common_lisp.format.indentCloseParenStack`: If false, align close stack with furthest parent instead of closest
-* `common_lisp.format.closeParenStacked`: ['always', 'never'] Specify whether to stack close parens.
-* `common_lisp.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
-* `common_lisp.format.fixWhitespace`: If true, try to fix white space issues.
+* `alive.format.indentWidth`: Default indentation width
+* `alive.format.indentCloseParenStack`: If false, align close stack with furthest parent instead of closest
+* `alive.format.closeParenStacked`: ['always', 'never'] Specify whether to stack close parens.
+* `alive.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
+* `alive.format.fixWhitespace`: If true, try to fix white space issues.
 
 ## Commands
 
