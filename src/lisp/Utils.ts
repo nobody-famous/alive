@@ -178,11 +178,7 @@ export function findInnerExpr(exprs: Expr[], pos: Position): Expr | undefined {
 }
 
 export function posInRange(exprStart: Position, exprEnd: Position, pos: Position): boolean {
-    if (pos.line === exprStart.line) {
-        return pos.character >= exprStart.character && pos.character <= exprEnd.character
-    }
-
-    return false
+    return posAfterStart(exprStart, pos) && posBeforeEnd(exprEnd, pos)
 }
 
 export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
@@ -208,4 +204,24 @@ export function isLetName(name: string | undefined): boolean {
 
 export function unescape(str: string): string {
     return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
+}
+
+function posAfterStart(start: Position, pos: Position): boolean {
+    if (pos.line < start.line) {
+        return false
+    } else if (pos.line === start.line) {
+        return pos.character >= start.character
+    } else {
+        return true
+    }
+}
+
+function posBeforeEnd(end: Position, pos: Position): boolean {
+    if (pos.line > end.line) {
+        return false
+    } else if (pos.line === end.line) {
+        return pos.character <= end.character
+    } else {
+        return true
+    }
 }
