@@ -2,6 +2,8 @@
 
 An attempt to create a Common Lisp extension for VSCode. It's still a work in progress, though some basic things are working. I wouldn't currently recommend it for doing serious work.
 
+The name is partly a self-deprecating take on SLIME's name, but also reflects the goal of the project which is to reach Minimum Viable Product status. For VSCode language extensions, there is a lot that is expected for the bare minimum, including formatting, code completion, syntax highlighting, etc. Being a Lisp environment, having REPL integration is required. Without that, it's not viable.
+
 ## Features
 
 * Syntax highlighting
@@ -42,6 +44,8 @@ The various colors can be changed by adding a rules section.
 }
 ```
 
+One token that has been added is the "error" token, which is used to mark text after a mismatched parenthesis or quote. The purpose of this is to make it as obvious as possible when things aren't balanced. Since it's not a built-in token, it is highlighted the same as default text unless a rule is added for it.
+
 ## REPL Integration
 Currently, a swank server must be running on the local machine using port 4005.
 
@@ -70,7 +74,7 @@ Has the REPL evaluate each expression in the file in order.
 
 ## License
 
-Unless otherwise noted, all code is in the Public Domain.
+Unless otherwise noted, all files are in the Public Domain.
 
 ## Release Notes
 
