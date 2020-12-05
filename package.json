@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -57,6 +57,14 @@
             {
                 "id": "error",
                 "description": "An error token"
+            },
+            {
+                "id": "symbol",
+                "description": "A symbol token"
+            },
+            {
+                "id": "parenthesis",
+                "description": "An open or close parenthesis"
             }
         ],
         "snippets": [
@@ -219,27 +227,8 @@
             "properties": {
                 "alive.format.indentWidth": {
                     "type": "number",
-                    "default": 4,
+                    "default": 2,
                     "description": "Indentation Level"
-                },
-                "alive.format.indentCloseParenStack": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "If true, align closing parens stack with nearest parent"
-                },
-                "alive.format.closeParenStacked": {
-                    "type": "string",
-                    "enum": [
-                        "always",
-                        "never"
-                    ],
-                    "default": "always",
-                    "description": "When to stack all close parens together"
-                },
-                "alive.format.fixWhitespace": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "If true, fix white space issues"
                 },
                 "alive.format.closeParenOwnLine": {
                     "type": "string",
@@ -248,7 +237,7 @@
                         "never",
                         "multiline"
                     ],
-                    "default": true,
+                    "default": "never",
                     "description": "Specify when to put close parens on their own line"
                 }
             }

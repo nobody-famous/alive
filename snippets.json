@@ -3,41 +3,44 @@
         "prefix": "format",
         "body": ["format ${1:T} \"$2\" $0"]
     },
-    "Load File": {
-        "prefix": "load",
-        "body": ["load \"$1\""]
-    },
     "Comment": {
         "prefix": "comment",
-        "body": ["#| $0 |#"]
+        "body": ["#|", "..$0", "|#"]
     },
     "Let Expression": {
         "prefix": "let",
-        "body": ["let (($1))", "    $0", ""]
+        "body": ["let (($1))", "  $0"]
     },
     "Let-Star Expression": {
         "prefix": "let*",
-        "body": ["let* (($1))", "    $0", ""]
+        "body": ["let* (($1))", "  $0"]
     },
     "Define Class": {
         "prefix": "defclass",
-        "body": ["defclass ${1:name} ($2)", "    ($0)", ""]
-    },
-    "Class Slot": {
-        "prefix": "slot",
         "body": [
-            "(${1:name}",
-            "    :accessor $1",
-            "    :initform nil",
-            "    :initarg :$1)"
+            "defclass ${1:name} (${2:#| base classes |#})",
+            "  (${3:#| slots |#})",
+            "  (${4:#| options |#})"
+        ]
+    },
+    "Slot": {
+        "prefix": "slot",
+        "body": ["${1:name}", "  :accessor $1", "  :initform ${2:nil}", "  :initarg :$1"]
+    },
+    "Define Condition": {
+        "prefix": "define-condition",
+        "body": [
+            "define-condition ${1:name} (${2:#| base type |#})",
+            "  (${3:#| slots |#})",
+            "  (:report (lambda (c s) ${4:#| report |#}))"
         ]
     },
     "Define Function": {
         "prefix": "defun",
-        "body": ["defun ${1:name} ($2)", "    $0", ""]
+        "body": ["defun ${1:name} ($2)", "  $0"]
     },
     "Define Method": {
         "prefix": "defmethod",
-        "body": ["defmethod ${1:name} ($2)", "    $0", ""]
+        "body": ["defmethod ${1:name} ($2)", "  $0"]
     }
 }

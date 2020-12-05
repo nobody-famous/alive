@@ -53,7 +53,7 @@ export class FileView implements View {
 
         if (!this.isEditorVisible()) {
             const column = this.replEditor !== undefined ? this.replEditor.viewColumn : vscode.ViewColumn.Beside
-            this.replEditor = await vscode.window.showTextDocument(this.replDoc, column)
+            this.replEditor = await vscode.window.showTextDocument(this.replDoc, column, true)
             this.needJump = true
         }
     }
@@ -67,7 +67,12 @@ export class FileView implements View {
 
     async addText(text: string) {
         await this.show()
-        this.appendLine(`\n${text}\n${this.prompt}`)
+        await this.appendLine(`\n${text}`)
+    }
+
+    async addTextAndPrompt(text: string) {
+        await this.show()
+        await this.appendLine(`\n${text}\n${this.prompt}`)
     }
 
     setPrompt(prompt: string) {
@@ -79,7 +84,7 @@ export class FileView implements View {
         this.appendLine(this.prompt)
     }
 
-    private appendLine(toAppend: string) {
+    private async appendLine(toAppend: string) {
         if (this.replEditor === undefined || !this.isEditorVisible()) {
             vscode.window.showWarningMessage(`REPL not visible for ${toAppend}`)
             return
@@ -87,6 +92,7 @@ export class FileView implements View {
 
         const doc = this.replEditor.document
 
+        this.needJump = true
         this.replEditor.edit((builder: vscode.TextEditorEdit) => {
             const pos = doc.positionAt(Infinity)
             let text = doc.lineCount === 0 ? '' : '\n'
@@ -97,9 +103,7 @@ export class FileView implements View {
             builder.insert(pos, text)
         })
 
-        doc.save()
-
-        this.needJump = true
+        await doc.save()
     }
 
     isEditorVisible(): boolean {

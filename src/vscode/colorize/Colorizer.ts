@@ -7,13 +7,19 @@ import { SemanticAnalyzer } from './SemanticAnalyzer'
 type stylesDict = { [index: number]: string }
 
 const typeStyles: stylesDict = {}
-typeStyles[types.OPEN_PARENS] = 'default'
-typeStyles[types.CLOSE_PARENS] = 'default'
+typeStyles[types.OPEN_PARENS] = 'parenthesis'
+typeStyles[types.CLOSE_PARENS] = 'parenthesis'
 typeStyles[types.KEYWORD] = 'keyword'
 typeStyles[types.COMMENT] = 'comment'
 typeStyles[types.CONTROL] = 'function'
 typeStyles[types.MACRO] = 'keyword'
-typeStyles[types.SPECIAL] = 'variable'
+typeStyles[types.DEFUN] = 'keyword'
+typeStyles[types.DEFINE_CONDITION] = 'keyword'
+typeStyles[types.DEFCLASS] = 'keyword'
+typeStyles[types.DEFMACRO] = 'keyword'
+typeStyles[types.DEFMETHOD] = 'keyword'
+typeStyles[types.LOOP] = 'keyword'
+typeStyles[types.SPECIAL] = 'keyword'
 typeStyles[types.ID] = 'variable'
 typeStyles[types.FUNCTION] = 'function'
 typeStyles[types.STRING] = 'string'
@@ -21,8 +27,9 @@ typeStyles[types.QUOTED] = 'string'
 typeStyles[types.SINGLE_QUOTE] = 'string'
 typeStyles[types.BACK_QUOTE] = 'string'
 typeStyles[types.PACKAGE_NAME] = 'namespace'
-typeStyles[types.SYMBOL] = 'variable'
+typeStyles[types.SYMBOL] = 'symbol'
 typeStyles[types.PARAMETER] = 'parameter'
+typeStyles[types.VARIABLE] = 'variable'
 typeStyles[types.MISMATCHED_OPEN_PARENS] = 'default'
 typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'error'
 typeStyles[types.MISMATCHED_DBL_QUOTE] = 'error'
@@ -55,6 +62,8 @@ export const tokenTypesLegend = [
     'property',
     'label',
     'error',
+    'parenthesis',
+    'symbol',
 ]
 
 export const tokenModifiersLegend = [

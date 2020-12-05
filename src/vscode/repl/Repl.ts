@@ -214,6 +214,10 @@ export class Repl extends EventEmitter {
             const expr = this.parseEvalText(text)
             const inPkg = expr !== undefined ? InPackage.from(expr) : undefined
 
+            if (output) {
+                await this.view.addText(text)
+            }
+
             if (isReplDoc(editor.document) && inPkg !== undefined) {
                 await this.changePackage(inPkg, output)
             } else {
@@ -221,11 +225,15 @@ export class Repl extends EventEmitter {
 
                 if (output && resp instanceof response.Eval) {
                     const str = unescape(resp.result.join(''))
-                    this.view.addText(str)
-                }
+                    await this.view.addTextAndPrompt(str)
 
-                vscode.window.showTextDocument(editor.document, editor.viewColumn)
+                    vscode.window.showTextDocument(editor.document, editor.viewColumn)
+                } else if (resp instanceof response.Abort) {
+                    await this.view.addTextAndPrompt('')
+                }
             }
+
+            editor.document.save()
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
         }

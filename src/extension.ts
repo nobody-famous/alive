@@ -1,14 +1,14 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import { format } from 'util'
 import * as vscode from 'vscode'
-import { Atom, Expr, findExpr, getLexTokens, isString, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
+import { Atom, Expr, findExpr, getLexTokens, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
+import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
-import { Formatter } from './vscode/format/Formatter'
+import * as fmt from './vscode/format/Formatter'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
-import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { COMMON_LISP_ID, getDocumentExprs, REPL_ID, toVscodePos } from './vscode/Utils'
-import { format } from 'util'
 
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
@@ -116,6 +116,9 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
             }
 
             try {
+                const exprs = getDocumentExprs(doc)
+                updatePkgMgr(doc, exprs)
+
                 return colorizer.run(tokens)
             } catch (err) {
                 vscode.window.showErrorMessage(format(err))
@@ -267,9 +270,7 @@ async function detachRepl() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
-            vscode.window.showInformationMessage('Connecting to REPL...')
             await newReplConnection(ctx)
-            vscode.window.showInformationMessage('Connected')
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
@@ -403,10 +404,37 @@ function documentFormatter(): vscode.DocumentFormattingEditProvider {
         provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
             const lex = new Lexer(doc.getText())
             const tokens = lex.getTokens()
-            const formatter = new Formatter(doc, opts, tokens)
+            const formatter = new fmt.Formatter(readFormatterOptions(), tokens)
 
             const edits = formatter.format()
             return edits.length > 0 ? edits : undefined
         },
+    }
+}
+
+function readFormatterOptions(): fmt.Options {
+    const cfg = vscode.workspace.getConfiguration('alive')
+    const defaults: fmt.Options = {
+        indentWidth: 2,
+        closeParenOwnLine: 'never',
+        closeParenStacked: 'always',
+        indentCloseParenStack: true,
+    }
+
+    if (cfg?.format === undefined) {
+        return defaults
+    }
+
+    const indentWidth = cfg.format.indentWidth ?? defaults.indentWidth
+
+    const indentCloseParenStack = cfg.format.indentCloseParenStack ?? defaults.indentCloseParenStack
+    const closeParenStacked = cfg.format.closeParenStacked ?? defaults.closeParenStacked
+    const closeParenOwnLine = cfg.format.closeParenOwnLine ?? defaults.closeParenOwnLine
+
+    return {
+        indentWidth,
+        indentCloseParenStack,
+        closeParenStacked,
+        closeParenOwnLine,
     }
 }

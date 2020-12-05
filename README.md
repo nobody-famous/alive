@@ -17,37 +17,23 @@ The name is partly a self-deprecating take on SLIME's name, but also reflects th
 This extension contributes the following settings:
 
 * `alive.format.indentWidth`: Default indentation width
-* `alive.format.indentCloseParenStack`: If false, align close stack with furthest parent instead of closest
-* `alive.format.closeParenStacked`: ['always', 'never'] Specify whether to stack close parens.
 * `alive.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
-* `alive.format.fixWhitespace`: If true, try to fix white space issues.
 
-## Syntax Highlighting
+Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
+* `error`: Mark code that is after a mismatched paren or quote
+* `parenthesis`: Color to use for parenthesis
+* `symbol`: Color to use for symbols
 
-Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. I originally implemented it using text decorations, but those don't add highlighting to the minimap. With semantic tokens, I can reuse the parsing logic that was already there and have the minimap behave correctly.
+![Settings](https://github.com/nobody-famous/alive/raw/master/resource/gifs/settings.gif)
 
-It may or may not be necessary to enable semantic token processing. If it doesn't add the highlighting, put this block in your settings.json file.
+## Snippets
 
-```
-"editor.semanticTokenColorCustomizations": {
-    "enabled": true
-}
-```
-
-The various colors can be changed by adding a rules section.
-
-```
-"editor.semanticTokenColorCustomizations": {
-    "rules": {
-        "variable": "#00ff00"
-    }
-}
-```
-
-One token that has been added is the "error" token, which is used to mark text after a mismatched parenthesis or quote. The purpose of this is to make it as obvious as possible when things aren't balanced. Since it's not a built-in token, it is highlighted the same as default text unless a rule is added for it.
+![Snippets](https://github.com/nobody-famous/alive/raw/master/resource/gifs/snippets.gif)
 
 ## REPL Integration
 Currently, a swank server must be running on the local machine using port 4005.
+
+![Debug](https://github.com/nobody-famous/alive/raw/master/resource/gifs/debug.gif)
 
 ## Commands
 

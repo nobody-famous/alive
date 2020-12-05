@@ -62,6 +62,8 @@ function addKeyword(item: kw.kwEntry, wordType: number) {
         keywords[label] = types.MACRO
     } else if (item.type === 'Special Operator') {
         keywords[label] = types.SPECIAL
+    } else if (item.type === 'Variable') {
+        keywords[label] = types.VARIABLE
     } else {
         keywords[label] = types.KEYWORD
     }
@@ -297,17 +299,42 @@ export class Lexer {
             this.consume()
         }
 
-        if (this.curText.charAt(0) === ':') {
+        if (this.curText.charAt(0) === ':' && this.curText.length > 1 && this.curText.charAt(1) !== ':') {
             return this.newToken(types.SYMBOL, true)
         }
 
         this.curText = this.curText.toUpperCase()
         const keywordID = keywords[this.curText]
         if (keywordID !== undefined) {
-            return this.newToken(keywordID, true)
+            return this.keywordToken()
         }
 
         return this.newToken(types.ID, true)
+    }
+
+    keywordToken() {
+        const keywordID = keywords[this.curText]
+
+        switch (this.curText) {
+            case 'DEFPACKAGE':
+                return this.newToken(types.DEFPACKAGE, true)
+            case 'IN-PACKAGE':
+                return this.newToken(types.IN_PACKAGE, true)
+            case 'DEFUN':
+                return this.newToken(types.DEFUN, true)
+            case 'DEFMACRO':
+                return this.newToken(types.DEFMACRO, true)
+            case 'DEFMETHOD':
+                return this.newToken(types.DEFMETHOD, true)
+            case 'DEFINE-CONDITION':
+                return this.newToken(types.DEFINE_CONDITION, true)
+            case 'DEFCLASS':
+                return this.newToken(types.DEFCLASS, true)
+            case 'LOOP':
+                return this.newToken(types.LOOP, true)
+            default:
+                return this.newToken(keywordID, true)
+        }
     }
 
     char(type: number) {

@@ -144,8 +144,10 @@ export class SemanticAnalyzer {
             } else if (next.type === types.QUOTE_FUNC) {
                 this.quoteFn()
             } else if (next.type === types.IN_PACKAGE) {
+                next.type = types.MACRO
                 this.inPackage()
             } else if (next.type === types.DEFPACKAGE) {
+                next.type = types.MACRO
                 this.defPackage()
             } else {
                 this.expr()
@@ -182,13 +184,6 @@ export class SemanticAnalyzer {
                 next.type = types.FUNCTION
                 this.consume()
             }
-        }
-    }
-
-    private load() {
-        const next = this.consume()
-        while (next !== undefined && next.type !== types.CLOSE_PARENS) {
-            this.consume()
         }
     }
 

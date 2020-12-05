@@ -24,6 +24,13 @@ export const PACKAGES = 19
 export const IN_PACKAGE = 20
 export const DEFPACKAGE = 21
 export const COMMA = 22
+export const VARIABLE = 23
+export const DEFUN = 24
+export const DEFINE_CONDITION = 25
+export const DEFCLASS = 26
+export const LOOP = 27
+export const DEFMACRO = 28
+export const DEFMETHOD = 29
 
 export const MISMATCHED_OPEN_PARENS = 100
 export const MISMATCHED_CLOSE_PARENS = 101
