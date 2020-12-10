@@ -1,8 +1,8 @@
-import { types } from '../../lisp'
 import { Expr } from './Expr'
 import { ExprFormatter } from './ExprFormatter'
-import { FormatToken } from './FormatToken'
-import { isExprEnd, setTarget, State, withIncIndent, withIndent } from './Utils'
+import { SlotListExpr } from './SlotListExpr'
+import { isExprEnd, setTarget, State, withIncIndent } from './Utils'
+import { WrappedExpr } from './WrappedExpr'
 
 export class DefClass extends ExprFormatter {
     constructor(state: State) {
@@ -64,41 +64,7 @@ export class DefClass extends ExprFormatter {
 
         this.addLineIndent(curToken!)
 
-        let first = true
-        this.wrappedParens((curToken: FormatToken) => {
-            if (!first) {
-                this.addLineIndent(curToken)
-            }
-
-            if (curToken.token.type === types.OPEN_PARENS) {
-                this.formatSlot()
-            } else {
-                this.consumeToken()
-            }
-
-            first = false
-        })
-    }
-
-    formatSlot() {
-        let count = 0
-        let align = 0
-
-        this.wrappedParens((curToken: FormatToken) => {
-            if (count === 1) {
-                setTarget(this.state, curToken, ' ')
-                align = this.state.lineLength
-                this.formatPair()
-            } else if (count > 1) {
-                withIndent(this.state, align, () => {
-                    this.addLineIndent(curToken)
-                    this.formatPair()
-                })
-            } else {
-                this.consumeToken()
-            }
-
-            count += 1
-        })
+        const wrapped = new WrappedExpr(this.state, new SlotListExpr(this.state))
+        this.formatExpr(wrapped)
     }
 }

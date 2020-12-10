@@ -43,7 +43,7 @@ export class DefPackage extends ExprFormatter {
 
         if (curToken.token.type === types.OPEN_PARENS) {
             const expr = new DefPkgList(this.state)
-            expr.format()
+            this.formatExpr(expr)
             return
         }
 

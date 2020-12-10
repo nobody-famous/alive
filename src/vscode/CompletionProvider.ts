@@ -1,7 +1,7 @@
 import { CompletionItem, Position } from 'vscode'
-import { exprToString, findAtom, findExpr, findInnerExpr, isLetName, posInExpr } from '../lisp'
+import { exprToString, findAtom, findInnerExpr, isLetName, posInExpr } from '../lisp'
 import { Defun, Expr, Let, SExpr } from '../lisp/Expr'
-import { PackageMgr } from '../lisp/PackageMgr'
+import { PackageMgr } from './PackageMgr'
 import { Repl } from './repl'
 
 export class CompletionProvider {
@@ -11,28 +11,35 @@ export class CompletionProvider {
         this.packageMgr = pkgMgr
     }
 
-    async getCompletions(fileName: string, repl: Repl | undefined, exprs: Expr[], pos: Position): Promise<CompletionItem[]> {
+    async getCompletions(repl: Repl | undefined, exprs: Expr[], pos: Position, pkg: string): Promise<CompletionItem[]> {
         const expr = findAtom(exprs, pos)
         const innerExpr = findInnerExpr(exprs, pos)
+        let locals: string[] = []
         let str = ''
 
         if (expr !== undefined) {
             const exprStr = exprToString(expr)
+
             if (exprStr !== undefined) {
                 str = exprStr
             }
         }
 
-        const getFromRepl = repl !== undefined && str !== ''
-
-        if (innerExpr instanceof SExpr && innerExpr.getName()?.toUpperCase() === 'IN-PACKAGE') {
-            return repl !== undefined && getFromRepl ? this.replPkgCompletions(repl, str) : this.staticPkgCompletions(exprs, pos)
+        if (innerExpr !== undefined) {
+            locals = this.getLocals(innerExpr, pos)
         }
 
-        return repl !== undefined && getFromRepl ? this.replCompletions(repl, str) : this.staticCompletions(fileName, exprs, pos)
+        if (innerExpr instanceof SExpr && innerExpr.getName()?.toUpperCase() === 'IN-PACKAGE') {
+            return repl !== undefined ? await this.replPkgCompletions(repl) : []
+        }
+
+        const comps = locals.map((i) => new CompletionItem(i.toLowerCase()))
+        const replComps = repl !== undefined ? await this.replCompletions(repl, str, pkg) : []
+
+        return comps.concat(replComps)
     }
 
-    private async replPkgCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
+    private async replPkgCompletions(repl: Repl): Promise<CompletionItem[]> {
         const names = await repl.getPackageNames()
         const items = []
 
@@ -45,13 +52,13 @@ export class CompletionProvider {
         return items
     }
 
-    private async replCompletions(repl: Repl, str: string): Promise<CompletionItem[]> {
-        const comps = await repl.getCompletions(str)
+    private async replCompletions(repl: Repl, str: string, pkg: string): Promise<CompletionItem[]> {
+        const comps = await repl.getCompletions(str, pkg)
         const items = []
 
         for (const comp of comps) {
             const item = new CompletionItem(comp.toLowerCase())
-            const doc = await repl.getDoc(item.label)
+            const doc = await repl.getDoc(item.label, pkg)
 
             item.documentation = doc
 
@@ -59,30 +66,6 @@ export class CompletionProvider {
         }
 
         return items
-    }
-
-    private staticPkgCompletions(exprs: Expr[], pos: Position): CompletionItem[] {
-        const pkgs = this.packageMgr.pkgs
-        const pkgNames = Object.keys(pkgs)
-
-        return pkgNames.map((pkg) => new CompletionItem(pkg.toLowerCase()))
-    }
-
-    private staticCompletions(fileName: string, exprs: Expr[], pos: Position): CompletionItem[] {
-        const expr = findExpr(exprs, pos)
-        if (expr === undefined) {
-            return []
-        }
-
-        const symbols = this.packageMgr.getSymbols(fileName, expr.start.line)
-        if (symbols === undefined) {
-            return []
-        }
-
-        const locals = this.getLocals(expr, pos)
-        const completions = locals.concat(symbols)
-
-        return completions.map((item) => new CompletionItem(item.toLowerCase()))
     }
 
     private getLocals(expr: Expr, pos: Position): string[] {

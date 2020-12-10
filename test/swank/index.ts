@@ -1,3 +1,4 @@
+import * as path from 'path'
 import { Debug } from '../../src/swank/event'
 import { DebugActivate } from '../../src/swank/event/DebugActivate'
 import { ConnectionInfo } from '../../src/swank/response'
@@ -28,6 +29,39 @@ async function testCompileFile() {
 
         conn.trace = true
         const resp = await conn.compileFile('hello.lisp')
+        console.log(resp)
+    } finally {
+        conn.close()
+    }
+}
+
+async function testLoadFile() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+
+        conn.trace = true
+
+        const resp = await conn.loadFile('/home/rich/cl/demo/math.lisp')
+        console.log(resp)
+    } finally {
+        conn.close()
+    }
+}
+
+async function testFindDefs() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+
+        conn.trace = true
+
+        await conn.loadFile('/home/rich/cl/demo/math.lisp')
+
+        const resp = await conn.findDefs('add', ':math/test')
+
         console.log(resp)
     } finally {
         conn.close()
@@ -96,6 +130,46 @@ async function testRestarts() {
     }
 }
 
+async function testFrame() {
+    const funExpr = `(defun divide (x y)
+                        (restart-case (/ x y)
+                            (return-zero () 0)))`
+    const evalExpr = `(divide 3 0)`
+
+    const conn = new SwankConn('localhost', 4005)
+    let debugEvent: Debug | undefined = undefined
+
+    try {
+        conn.on('debug', (event) => (debugEvent = event))
+        conn.on('activate', async (event) => {
+            if (debugEvent === undefined) {
+                console.log('debugEvent is undefined')
+                return
+            }
+
+            try {
+                const pkg = await conn.framePackage(debugEvent.threadID, 1)
+                await conn.evalInFrame(debugEvent.threadID, '(setf y 5)', 1, pkg.name)
+                const resp = await conn.frameRestart(debugEvent.threadID, 1)
+                console.log('after restart', resp)
+            } catch (err) {
+                console.log(err)
+            }
+        })
+
+        await conn.connect()
+        await conn.connectionInfo()
+
+        // conn.trace = true
+        await conn.eval(funExpr)
+        const resp = await conn.eval(evalExpr)
+        console.log('after eval', resp)
+    } finally {
+        console.log('close connection')
+        conn.close()
+    }
+}
+
 // Wrap in an IIFE so await works
 ;(async () => {
     const conn = new SwankConn('localhost', 4005)
@@ -111,8 +185,11 @@ async function testRestarts() {
         // await testPackage(conn)
         // await testListPkgs(conn)
         // await testDebug()
-        await testRestarts()
+        // await testRestarts()
         // await testCompileFile()
+        // await testFrame()
+        // await testLoadFile()
+        await testFindDefs()
     } catch (err) {
         console.log('FAILED', err)
     } finally {

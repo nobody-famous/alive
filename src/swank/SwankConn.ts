@@ -2,7 +2,6 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import { format } from 'util'
 import * as event from './event'
-import { DebugActivate } from './event'
 import * as response from './response'
 import {
     completionsReq,
@@ -14,9 +13,15 @@ import {
     docSymbolReq,
     listPackagesReq,
     debuggerAbortReq,
-    threadsReq,
     compileFileReq,
     nthRestartReq,
+    frameLocalsReq,
+    framePackageReq,
+    frameEvalReq,
+    frameRestartReq,
+    loadFileReq,
+    findDefsReq,
+    evalAndGrabReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -104,12 +109,28 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(setPackageReq, response.SetPackage, pkg)
     }
 
-    async compileFile(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+    async compileFile(str: string, pkg?: string): Promise<response.CompileFile | response.Abort> {
         return await this.requestFn(compileFileReq, response.CompileFile, str, pkg)
+    }
+
+    async loadFile(path: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(loadFileReq, response.Eval, path, pkg)
+    }
+
+    async findDefs(str: string, pkg?: string): Promise<response.FindDefs | response.Abort> {
+        return await this.requestFn(findDefsReq, response.FindDefs, str, pkg)
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
         return await this.requestFn(evalReq, response.Eval, str, pkg)
+    }
+
+    async evalAndGrab(str: string, pkg?: string): Promise<response.EvalAndGrab | response.Abort> {
+        return await this.requestFn(evalAndGrabReq, response.EvalAndGrab, str, pkg)
+    }
+
+    async evalInFrame(threadID: number, str: string, frameNum: number, pkg: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(frameEvalReq, response.Eval, threadID, str, frameNum, pkg)
     }
 
     async nthRestart(threadID: number, restart: number): Promise<response.DebuggerAbort> {
@@ -118,6 +139,18 @@ export class SwankConn extends EventEmitter {
 
     async debugAbort(threadID: number): Promise<response.DebuggerAbort> {
         return await this.requestFn(debuggerAbortReq, response.DebuggerAbort, threadID)
+    }
+
+    async frameLocals(threadID: number, frameNum: number): Promise<response.FrameLocals> {
+        return await this.requestFn(frameLocalsReq, response.FrameLocals, threadID, frameNum)
+    }
+
+    async framePackage(threadID: number, frameNum: number): Promise<response.FramePackage> {
+        return await this.requestFn(framePackageReq, response.FramePackage, threadID, frameNum)
+    }
+
+    async frameRestart(threadID: number, frameNum: number): Promise<response.Eval> {
+        return await this.requestFn(frameRestartReq, response.Eval, threadID, frameNum)
     }
 
     async requestFn(req: (...args: any[]) => SwankRequest, respType: any, ...args: any[]) {

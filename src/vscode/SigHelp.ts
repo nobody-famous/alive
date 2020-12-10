@@ -1,9 +1,9 @@
 import { ParameterInformation, Position, SignatureHelp, SignatureInformation, TextDocument } from 'vscode'
-import { Expr, exprToString, findInnerExpr, Lexer, Parser, posInExpr, posBeforeExpr, SExpr } from '../lisp'
+import { Expr, exprToString, findInnerExpr, Lexer, Parser, posInExpr, SExpr } from '../lisp'
 import { Repl } from './repl'
 import { getDocumentExprs } from './Utils'
 
-export async function getHelp(repl: Repl | undefined, doc: TextDocument, pos: Position): Promise<SignatureHelp> {
+export async function getHelp(repl: Repl | undefined, doc: TextDocument, pos: Position, pkg: string): Promise<SignatureHelp> {
     const exprs = getDocumentExprs(doc)
     const expr = findInnerExpr(exprs, pos)
 
@@ -11,21 +11,21 @@ export async function getHelp(repl: Repl | undefined, doc: TextDocument, pos: Po
         return new SignatureHelp()
     }
 
-    return getSexprHelp(repl, expr as SExpr, pos)
+    return getSexprHelp(repl, expr as SExpr, pos, pkg)
 }
 
-async function getSexprHelp(repl: Repl, expr: SExpr, pos: Position): Promise<SignatureHelp> {
+async function getSexprHelp(repl: Repl, expr: SExpr, pos: Position, pkg: string): Promise<SignatureHelp> {
     const label = exprToString(expr.parts[0])
 
     if (label === undefined) {
         return new SignatureHelp()
     }
 
-    return await getFuncHelp(repl, label, expr.parts.slice(1), pos)
+    return await getFuncHelp(repl, label, expr.parts.slice(1), pos, pkg)
 }
 
-async function getFuncHelp(repl: Repl, label: string, args: Expr[], pos: Position): Promise<SignatureHelp> {
-    const desc = await repl.getOpArgs(label)
+async function getFuncHelp(repl: Repl, label: string, args: Expr[], pos: Position, pkg: string): Promise<SignatureHelp> {
+    const desc = await repl.getOpArgs(label, pkg)
     const descExprs = parseFuncDesc(desc)
 
     if (descExprs.length === 0) {

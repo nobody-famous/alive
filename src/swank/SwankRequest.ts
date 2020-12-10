@@ -56,13 +56,27 @@ export function connectionInfoReq(msgID: number, pkg?: string) {
 }
 
 export function evalReq(msgID: number, form: string, pkg?: string) {
-    // const data = [new LispID('swank:eval-and-grab-output'), form]
     const data = [new LispID('swank:interactive-eval'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function evalAndGrabReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank:eval-and-grab-output'), form]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
 export function compileFileReq(msgID: number, fileName: string, pkg?: string) {
     const data = [new LispID('swank:compile-file-for-emacs'), fileName, false]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function loadFileReq(msgID: number, fileName: string, pkg?: string) {
+    const data = [new LispID('swank:load-file'), fileName]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function findDefsReq(msgID: number, str: string, pkg?: string) {
+    const data = [new LispID('swank:find-definitions-for-emacs'), str]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
@@ -78,6 +92,21 @@ export function nthRestartReq(msgID: number, threadID: number, restart: number, 
 
 export function frameLocalsReq(msgID: number, threadID: number, frameID: string, pkg?: string) {
     const data = [new LispID('swank:frame-locals-and-catch-tags'), frameID]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
+}
+
+export function frameEvalReq(msgID: number, threadID: number, text: string, frameID: string, pkg: string) {
+    const data = [new LispID('swank:eval-string-in-frame'), text, frameID, pkg]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
+}
+
+export function framePackageReq(msgID: number, threadID: number, frameID: string, pkg?: string) {
+    const data = [new LispID('swank:frame-package-name'), frameID]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
+}
+
+export function frameRestartReq(msgID: number, threadID: number, frameID: string, pkg?: string) {
+    const data = [new LispID('swank:restart-frame'), frameID]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
 }
 

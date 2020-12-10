@@ -3,8 +3,10 @@ import { DefClass } from './DefClass'
 import { DefPackage } from './DefPackage'
 import { Defun } from './Defun'
 import { ExprFormatter } from './ExprFormatter'
+import { Flet } from './Flet'
 import { FormatToken } from './FormatToken'
 import { IfExpr } from './IfExpr'
+import { LambdaExpr } from './LambdaExpr'
 import { ListExpr } from './ListExpr'
 import { Loop } from './Loop'
 import { isExprEnd, State } from './Utils'
@@ -57,7 +59,7 @@ export class SExpr extends ExprFormatter {
             case types.CLOSE_PARENS:
                 break
             default:
-                this.formatExpr(new ListExpr(this.state))
+                this.formatSpecial(curToken)
         }
     }
 
@@ -69,6 +71,15 @@ export class SExpr extends ExprFormatter {
             case 'WHEN':
             case 'UNLESS':
                 this.formatExpr(new IfExpr(this.state))
+                break
+            case 'LAMBDA':
+            case 'RESTART-CASE':
+            case 'HANDLER-CASE':
+                this.formatExpr(new LambdaExpr(this.state))
+                break
+            case 'FLET':
+            case 'LABELS':
+                this.formatExpr(new Flet(this.state))
                 break
             default:
                 this.formatExpr(new ListExpr(this.state))

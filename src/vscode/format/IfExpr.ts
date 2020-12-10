@@ -27,7 +27,7 @@ export class IfExpr extends ExprFormatter {
             return false
         }
 
-        this.consumeToken('IF')
+        this.consumeToken()
         return true
     }
 

@@ -27,7 +27,105 @@
     margin-bottom: 0.25rem;
 }
 
-.restart:hover {
+.clickable:hover {
     background: green;
     color: yellow;
+}
+
+.frame-table {
+    width: 100%;
+}
+
+.frame-num-cell {
+    vertical-align: top;
+    width: 1rem;
+    text-align: right;
+}
+
+.frame-btn-cell {
+    vertical-align: top;
+    width: 1rem;
+    text-align: center;
+}
+
+.locals-box {
+    background: #555;
+    border: 1px solid #999;
+    border-radius: 0 0 5px 5px;
+}
+
+.locals-title {
+    padding-left: 0.5rem;
+}
+
+.locals-var {
+    padding-left: 1.5rem;
+}
+
+.debug-btn {
+    background: #999;
+    color: black;
+}
+
+.restart-btn {
+    width: 1rem;
+    padding: unset;
+    border-radius: 4px;
+}
+
+.eval-btn {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    border-radius: 4px;
+}
+
+.eval-box {
+    display: table;
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.eval-row {
+    display: table-row;
+}
+
+.eval-label {
+    display: table-cell;
+    padding-left: 0.5rem;
+    width: 3rem;
+    text-align: center;
+}
+
+.eval-input.box {
+    display: table-cell;
+}
+
+.eval-input {
+    width: calc(100% - 5.5rem);
+    height: 1.25rem;
+    line-height: 1.25rem;
+    border-radius: 4px;
+    border: unset;
+    margin: unset;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    background: #999;
+    color: black;
+}
+
+.eval-result-box {
+    margin-top: 0.25rem;
+}
+
+.eval-result {
+    width: calc(100% - 5.5rem);
+    height: 1.25rem;
+    line-height: 1.25rem;
+    border-radius: 4px;
+    border: unset;
+    margin: unset;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    background: #333;
+    color: #ccc;
 }

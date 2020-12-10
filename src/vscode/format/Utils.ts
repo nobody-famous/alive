@@ -42,10 +42,15 @@ export function withIndent(state: State, length: number, fn: () => void) {
     }
 }
 
-export function withIncIndent(state: State, inc: number, fn: () => void) {
+export function incIndent(state: State, inc: number) {
     const indent = state.indent
     const curIndent = indent[indent.length - 1]
-    const newIndent = curIndent + inc
+
+    return curIndent + inc
+}
+
+export function withIncIndent(state: State, inc: number, fn: () => void) {
+    const newIndent = incIndent(state, inc)
 
     withIndent(state, newIndent, fn)
 }

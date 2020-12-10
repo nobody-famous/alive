@@ -83,12 +83,16 @@
                 "title": "Alive: Send To REPL"
             },
             {
-                "command": "alive.compileFile",
-                "title": "Alive: Compile File"
+                "command": "alive.inlineEval",
+                "title": "Alive: Inline Eval"
             },
             {
-                "command": "alive.evalFile",
-                "title": "Alive: Eval File"
+                "command": "alive.clearInlineResults",
+                "title": "Alive: Clear Inline Results"
+            },
+            {
+                "command": "alive.compileFile",
+                "title": "Alive: Compile File"
             },
             {
                 "command": "alive.attachRepl",
@@ -105,25 +109,37 @@
             {
                 "command": "alive.nthRestart",
                 "title": "Alive: Nth Restart"
+            },
+            {
+                "command": "alive.loadFile",
+                "title": "Alive: Load File Into REPL"
             }
         ],
         "menus": {
             "commandPalette": [
                 {
                     "command": "alive.attachRepl",
-                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                    "when": "editorLangId == common-lisp"
                 },
                 {
                     "command": "alive.detachRepl",
                     "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
                 },
                 {
-                    "command": "alive.compileFile",
+                    "command": "alive.loadFile",
                     "when": "editorLangId == common-lisp"
                 },
                 {
                     "command": "alive.sendToRepl",
                     "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                },
+                {
+                    "command": "alive.inlineEval",
+                    "when": "editorLangId == common-lisp"
+                },
+                {
+                    "command": "alive.clearInlineResults",
+                    "when": "editorLangId == common-lisp"
                 },
                 {
                     "command": "alive.selectSexpr",
@@ -137,12 +153,12 @@
         },
         "keybindings": [
             {
-                "command": "alive.compileFile",
+                "command": "alive.loadFile",
                 "when": "editorLangId == common-lisp",
-                "key": "alt+shift+x"
+                "key": "alt+shift+l"
             },
             {
-                "command": "alive.evalFile",
+                "command": "alive.inlineEval",
                 "when": "editorLangId == common-lisp",
                 "key": "alt+shift+e"
             },

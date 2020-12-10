@@ -80,6 +80,16 @@ export class Repl extends EventEmitter {
         this.view?.documentChanged()
     }
 
+    async findDefs(label: string, pkg: string) {
+        return await this.conn?.findDefs(label, pkg)
+    }
+
+    async loadFile(path: string) {
+        await this.view?.addText(`;; Loading ${path}`)
+        await this.conn?.loadFile(path)
+        await this.view?.addTextAndPrompt(`;; Done loading ${path}`)
+    }
+
     async abort() {
         const threadIDs = this.getVisibleDebugThreads()
         if (this.conn === undefined || threadIDs.length === 0) {
@@ -132,7 +142,7 @@ export class Repl extends EventEmitter {
         }
     }
 
-    async getDoc(symbol: string): Promise<string> {
+    async getDoc(symbol: string, pkg: string): Promise<string> {
         if (this.conn === undefined) {
             return ''
         }
@@ -142,7 +152,7 @@ export class Repl extends EventEmitter {
                 return this.kwDocs[symbol]
             }
 
-            const resp = await this.conn.docSymbol(symbol, this.curPackage)
+            const resp = await this.conn.docSymbol(symbol, pkg)
             return resp instanceof response.DocSymbol ? resp.doc : ''
         } catch (err) {
             return ''
@@ -162,26 +172,26 @@ export class Repl extends EventEmitter {
         }
     }
 
-    async getCompletions(prefix: string): Promise<string[]> {
+    async getCompletions(prefix: string, pkg: string): Promise<string[]> {
         if (this.conn === undefined) {
             return []
         }
 
         try {
-            const resp = await this.conn.completions(prefix, this.curPackage)
+            const resp = await this.conn.completions(prefix, pkg)
             return resp instanceof response.Completions ? resp.strings : []
         } catch (err) {
             return []
         }
     }
 
-    async getOpArgs(name: string): Promise<string> {
+    async getOpArgs(name: string, pkg: string): Promise<string> {
         if (this.conn === undefined) {
             return ''
         }
 
         try {
-            const resp = await this.conn.opArgsList(name, this.curPackage)
+            const resp = await this.conn.opArgsList(name, pkg)
             return resp instanceof response.OpArgs ? resp.desc : ''
         } catch (err) {
             return ''
@@ -205,6 +215,36 @@ export class Repl extends EventEmitter {
         }
     }
 
+    async eval(text: string, pkg?: string): Promise<string | undefined> {
+        if (this.conn === undefined) {
+            return undefined
+        }
+
+        const resp = await this.conn.evalAndGrab(text, pkg)
+
+        if (resp instanceof response.EvalAndGrab) {
+            const converted = resp.result.map((i) => convert(i))
+            return unescape(converted.join(''))
+        }
+
+        return undefined
+    }
+    
+    async inlineEval(text: string, pkg?: string): Promise<string | undefined> {
+        if (this.conn === undefined) {
+            return undefined
+        }
+
+        const resp = await this.conn.eval(text, pkg)
+
+        if (resp instanceof response.Eval) {
+            const converted = resp.result.map((i) => convert(i))
+            return unescape(converted.join(''))
+        }
+
+        return undefined
+    }
+
     async send(editor: vscode.TextEditor, text: string, pkg: string, output: boolean = true) {
         if (this.conn === undefined || this.view === undefined) {
             return
@@ -223,13 +263,15 @@ export class Repl extends EventEmitter {
             } else {
                 const resp = await this.conn.eval(text, pkg)
 
-                if (output && resp instanceof response.Eval) {
-                    const str = unescape(resp.result.join(''))
-                    await this.view.addTextAndPrompt(str)
+                if (output) {
+                    if (resp instanceof response.Eval) {
+                        const str = unescape(resp.result.join(''))
+                        await this.view.addTextAndPrompt(str)
+                    } else {
+                        await this.view.addTextAndPrompt('')
+                    }
 
                     vscode.window.showTextDocument(editor.document, editor.viewColumn)
-                } else if (resp instanceof response.Abort) {
-                    await this.view.addTextAndPrompt('')
                 }
             }
 
@@ -278,7 +320,46 @@ export class Repl extends EventEmitter {
 
         view.on('restart', (ndx: number, event: Restart) => this.nthRestart(ndx))
 
+        view.on('frame-restart', async (ndx: number) => this.conn?.frameRestart(event.threadID, ndx))
+
+        view.on('frame-eval', async (ndx: number, text: string) => {
+            const result = await this.evalInFrame(ndx, text, event.threadID)
+
+            if (result !== undefined) {
+                await this.updateLocals(view, ndx, event.threadID)
+                view.setEvalResponse(ndx, result)
+            }
+        })
+
+        view.on('frame-locals', async (ndx: number) => this.updateLocals(view, ndx, event.threadID))
+
         this.dbgViews[event.threadID] = view
+    }
+
+    private async updateLocals(view: DebugView, ndx: number, threadID: number) {
+        const resp = await this.retrieveFrameLocals(ndx, threadID)
+
+        if (resp !== undefined) {
+            view.setLocals(ndx, resp.locals)
+        }
+    }
+
+    private async evalInFrame(ndx: number, text: string, threadID: number) {
+        const pkg = await this.conn?.framePackage(threadID, ndx)
+
+        if (pkg === undefined || this.conn === undefined || this.view === undefined) {
+            return
+        }
+
+        const resp = await this.conn.evalInFrame(threadID, text, ndx, pkg.name)
+
+        if (resp instanceof response.Eval) {
+            return unescape(resp.result.join(''))
+        }
+    }
+
+    private async retrieveFrameLocals(ndx: number, threadID: number) {
+        return await this.conn?.frameLocals(threadID, ndx)
     }
 
     private async handleDebugReturn(event: DebugReturn) {

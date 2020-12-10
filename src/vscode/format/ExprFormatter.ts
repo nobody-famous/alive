@@ -123,7 +123,21 @@ export abstract class ExprFormatter {
     }
 
     addLineIndent(token: FormatToken) {
-        token.before.target = EOL
+        const numNewLines = countNewLines(token.before.existing)
+        let count = 0
+
+        switch (numNewLines) {
+            case 0:
+                count = 1
+                break
+            case 1:
+                count = 1
+                break
+            default:
+                count = 2
+        }
+
+        token.before.target = EOL.repeat(count)
         token.onOwnLine = true
 
         this.state.lineLength = 0
@@ -181,7 +195,7 @@ export abstract class ExprFormatter {
         this.consumeToken(')')
     }
 
-    formatPair() {
+    formatPair(fn: () => void) {
         let curToken = this.peekToken()
 
         curToken = this.consumeToken()
@@ -191,7 +205,7 @@ export abstract class ExprFormatter {
 
         setTarget(this.state, curToken!, ' ')
 
-        this.consumeToken()
+        fn()
     }
 
     private addIndent(token: FormatToken) {

@@ -9,8 +9,10 @@ The name is partly a self-deprecating take on SLIME's name, but also reflects th
 * Syntax highlighting
 * Code completion
 * Code formatter
+* Jump to definition
 * Snippets
 * REPL integration
+* Inline evaluation
 
 ## Extension Settings
 
@@ -35,9 +37,12 @@ Currently, a swank server must be running on the local machine using port 4005.
 
 ![Debug](https://github.com/nobody-famous/alive/raw/master/resource/gifs/debug.gif)
 
+## Jump To Definition
+In order for jump to definition to work, the files need to be loaded into the REPL using the Load File (Alt+Shift+L) command, ASDF, or whatever else works.
+
 ## Commands
 
-### Select S-Expression (alt+shift+up)
+### Select S-Expression (Alt+Shift+Up)
 Selects the surrounding top level expression for the current cursor position.
 
 ### Attach To REPL
@@ -46,17 +51,20 @@ Connect to the swank server running on localhost:4005.
 ### Detach From REPL
 Disconnect from the swank server.
 
-### Send To REPL (alt+shift+enter)
+### Send To REPL (Alt+Shift+Enter)
 Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position.
 
-### Debug Abort (alt+ctrl+a)
+### Debug Abort (Alt+Ctrl+A)
 Tells the currently visible debugger to send the abort restart.
 
-### Nth Restart (alt+ctrl+{n})
+### Nth Restart (Alt+Ctrl+{N})
 Tells the currently visible debugger to send the nth restart. For example, alt+ctrl+0 sends restart 0, alt+ctrl+2 sends restart 2, etc.
 
-### Evaluate File (alt+shift+e)
-Has the REPL evaluate each expression in the file in order.
+### Load File (Alt+Shift+L)
+Load the current file into the REPL.
+
+### Inline Evaluation (Alt+Shift+E)
+Evaluate the enclosing form, showing the result inline. If there is a selection, evaluates the selected code.
 
 ## License
 

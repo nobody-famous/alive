@@ -1,11 +1,11 @@
-import * as fs from 'fs'
-import * as path from 'path'
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { Atom, Expr, findExpr, getLexTokens, Lexer, PackageMgr, Parser, readLexTokens } from './lisp'
+import { Expr, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
+import { DefinitionProvider } from './vscode/DefinitionProvider'
 import * as fmt from './vscode/format/Formatter'
+import { PackageMgr } from './vscode/PackageMgr'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
 import { COMMON_LISP_ID, getDocumentExprs, REPL_ID, toVscodePos } from './vscode/Utils'
@@ -13,11 +13,18 @@ import { COMMON_LISP_ID, getDocumentExprs, REPL_ID, toVscodePos } from './vscode
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
+const inlineDecoration = vscode.window.createTextEditorDecorationType({
+    before: {
+        textDecoration: 'none',
+        fontWeight: 'normal',
+        fontStyle: 'normal',
+    },
+})
 
 let clRepl: repl.Repl | undefined = undefined
 let activeEditor = vscode.window.activeTextEditor
 
-export const activate = (ctx: vscode.ExtensionContext) => {
+export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
     vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
@@ -27,16 +34,26 @@ export const activate = (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions
     )
 
-    vscode.languages.registerCompletionItemProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getCompletionProvider())
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider())
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider())
+    vscode.languages.registerCompletionItemProvider(
+        { scheme: 'untitled', language: COMMON_LISP_ID },
+        await getCompletionProvider()
+    )
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, await getCompletionProvider())
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, await getCompletionProvider())
 
     vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
     vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
     vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: REPL_ID }, getSigHelpProvider(), ' ')
 
-    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, documentFormatter())
-    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, documentFormatter())
+    vscode.languages.registerDocumentFormattingEditProvider(
+        { scheme: 'untitled', language: COMMON_LISP_ID },
+        getDocumentFormatter()
+    )
+    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDocumentFormatter())
+
+    vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider())
+    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider())
+    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: REPL_ID }, getDefinitionProvider())
 
     vscode.languages.registerDocumentSemanticTokensProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -52,12 +69,13 @@ export const activate = (ctx: vscode.ExtensionContext) => {
 
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', selectSexpr))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', sendToRepl))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inlineEval', inlineEval))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', clearInlineResults))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', attachRepl(ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', detachRepl))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', compileFile))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.evalFile', evalFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', nthRestart))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -65,7 +83,6 @@ export const activate = (ctx: vscode.ExtensionContext) => {
 
     readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
     visibleEditorsChanged(vscode.window.visibleTextEditors)
-    readPackageLisp()
 }
 
 function hasValidLangId(doc?: vscode.TextDocument): boolean {
@@ -78,6 +95,23 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
             readLexTokens(editor.document.fileName, editor.document.getText())
         }
     }
+}
+
+async function replLoadFile() {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+    if (editor === undefined || editor.document.languageId !== COMMON_LISP_ID) {
+        vscode.window.showInformationMessage(`Not a Lisp file`)
+        return
+    }
+
+    await editor.document.save()
+    await clRepl.loadFile(editor.document.uri.fsPath)
+    await updatePackageNames()
 }
 
 async function nthRestart(n: unknown) {
@@ -95,6 +129,7 @@ async function nthRestart(n: unknown) {
 
         if (!Number.isNaN(num)) {
             await clRepl.nthRestart(num)
+            await updatePackageNames()
         }
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
@@ -117,7 +152,8 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
 
             try {
                 const exprs = getDocumentExprs(doc)
-                updatePkgMgr(doc, exprs)
+
+                await updatePkgMgr(doc, exprs)
 
                 return colorizer.run(tokens)
             } catch (err) {
@@ -129,12 +165,8 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
     }
 }
 
-function updatePkgMgr(doc: vscode.TextDocument | undefined, exprs: Expr[]) {
-    if (doc?.languageId !== COMMON_LISP_ID) {
-        return
-    }
-
-    pkgMgr.update(doc?.fileName, exprs)
+async function updatePkgMgr(doc: vscode.TextDocument | undefined, exprs: Expr[]) {
+    await pkgMgr.update(clRepl, doc, exprs)
 }
 
 function debugAbort() {
@@ -143,7 +175,7 @@ function debugAbort() {
     }
 }
 
-function editorChanged(editor?: vscode.TextEditor) {
+async function editorChanged(editor?: vscode.TextEditor) {
     activeEditor = editor
 
     if (editor === undefined || !hasValidLangId(editor.document)) {
@@ -158,7 +190,7 @@ function editorChanged(editor?: vscode.TextEditor) {
     const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
     const exprs = parser.parse()
 
-    updatePkgMgr(editor.document, exprs)
+    await updatePkgMgr(editor.document, exprs)
 }
 
 function openTextDocument(doc: vscode.TextDocument) {
@@ -174,6 +206,7 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
         return
     }
 
+    clearInlineResults()
     readLexTokens(event.document.fileName, event.document.getText())
 
     const editor = findEditorForDoc(event.document)
@@ -203,59 +236,6 @@ function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | undefin
     return undefined
 }
 
-async function readPackageLisp() {
-    if (vscode.workspace.workspaceFolders === undefined) {
-        return
-    }
-
-    const folder = vscode.workspace.workspaceFolders[0]
-    const pkgFile = path.join(folder.uri.path, 'package.lisp')
-
-    if (!fs.existsSync(pkgFile) || !fs.lstatSync(pkgFile).isFile()) {
-        return
-    }
-
-    const textBuf = await fs.promises.readFile(pkgFile)
-    readLexTokens(pkgFile, textBuf.toString())
-
-    const parser = new Parser(getLexTokens(pkgFile) ?? [])
-    const exprs = parser.parse()
-
-    updatePkgMgr(undefined, exprs)
-}
-
-async function evalFile() {
-    if (clRepl === undefined || activeEditor?.document.languageId !== COMMON_LISP_ID) {
-        return
-    }
-
-    const editor = activeEditor
-    const doc = editor.document
-    const exprs = getDocumentExprs(doc)
-
-    for (const expr of exprs) {
-        if (expr instanceof Atom) {
-            continue
-        }
-
-        const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
-        const text = doc.getText(range)
-        const pkg = pkgMgr.getPackageForLine(doc.fileName, expr.start.line)
-
-        await clRepl.send(editor, text, pkg.name, false)
-    }
-
-    await clRepl.updateConnInfo()
-}
-
-async function compileFile() {
-    if (clRepl === undefined || activeEditor?.document.languageId !== COMMON_LISP_ID) {
-        return
-    }
-
-    await clRepl.compileFile(activeEditor.document.fileName)
-}
-
 async function detachRepl() {
     if (clRepl === undefined) {
         return
@@ -270,9 +250,11 @@ async function detachRepl() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
+            vscode.window.showInformationMessage('Connecting to REPL')
             await newReplConnection(ctx)
+            vscode.window.showInformationMessage('REPL Connected')
         } catch (err) {
-            vscode.window.showErrorMessage(err)
+            vscode.window.showErrorMessage(format(err))
         }
     }
 }
@@ -284,6 +266,19 @@ async function newReplConnection(ctx: vscode.ExtensionContext) {
     }
 
     await clRepl.connect()
+    await updatePackageNames()
+}
+
+async function updatePackageNames() {
+    if (clRepl === undefined) {
+        return
+    }
+
+    const pkgs = await clRepl.getPackageNames()
+
+    for (const pkg of pkgs) {
+        pkgMgr.addPackage(pkg)
+    }
 }
 
 function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
@@ -294,6 +289,79 @@ function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
     }
 
     return new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+}
+
+async function inlineEval() {
+    if (clRepl === undefined) {
+        vscode.window.showErrorMessage('REPL not connected')
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+    const expr = await getInnerExpr(editor)
+
+    if (editor?.document.languageId !== COMMON_LISP_ID || expr === undefined) {
+        return
+    }
+
+    const range = getExprRange(editor, expr)
+    const text = editor.document.getText(range)
+    const pkg = pkgMgr.getPackageForLine(editor.document.fileName, range.start.line)
+    const pkgName = pkg?.name ?? ':cl-user'
+    const result = await clRepl.inlineEval(text, pkgName)
+
+    if (result === undefined) {
+        return
+    }
+
+    const decOpts: vscode.DecorationOptions[] = []
+
+    decOpts.push(getInlineResult(result, range))
+    editor.setDecorations(inlineDecoration, decOpts)
+}
+
+function clearInlineResults() {
+    const editor = vscode.window.activeTextEditor
+    if (editor?.document.languageId !== COMMON_LISP_ID) {
+        return
+    }
+
+    editor?.setDecorations(inlineDecoration, [])
+}
+
+function getInlineResult(result: string, range: vscode.Range) {
+    return {
+        renderOptions: {
+            before: {
+                contentText: result,
+                backgroundColor: 'black',
+                color: '#999',
+                margin: '0 0.25rem 0 0.25rem',
+                border: '1px solid #777',
+                whiteSpace: 'pre',
+            },
+        },
+        range: new vscode.Range(range.end, range.end),
+    }
+}
+
+async function getInnerExpr(editor: vscode.TextEditor | undefined): Promise<Expr | undefined> {
+    if (editor === undefined) {
+        return undefined
+    }
+
+    const exprs = getDocumentExprs(editor.document)
+
+    await updatePkgMgr(editor.document, exprs)
+
+    const pos = editor.selection.start
+    let expr = findInnerExpr(exprs, pos)
+
+    if (expr !== undefined) {
+        return expr
+    }
+
+    return findAtom(exprs, pos)
 }
 
 async function sendToRepl() {
@@ -308,7 +376,7 @@ async function sendToRepl() {
             return
         }
 
-        const expr = getTopExpr()
+        const expr = await getTopExpr()
         if (editor === undefined || expr === undefined) {
             return
         }
@@ -316,22 +384,23 @@ async function sendToRepl() {
         const range = getExprRange(editor, expr)
         const text = editor.document.getText(range)
         const pkg = pkgMgr.getPackageForLine(editor.document.fileName, expr.start.line)
-        const pkgName = editor.document.languageId === REPL_ID ? clRepl.curPackage : pkg.name
+        const pkgName = editor.document.languageId === REPL_ID ? clRepl.curPackage : pkg?.name
 
-        await clRepl.send(editor, text, pkgName)
+        await clRepl.send(editor, text, pkgName ?? ':cl-user')
+        await updatePackageNames()
     } catch (err) {
         console.log(err)
     }
 }
 
-function selectSexpr() {
+async function selectSexpr() {
     try {
         const editor = vscode.window.activeTextEditor
         if (editor === undefined || !hasValidLangId(editor.document)) {
             return
         }
 
-        const expr = getTopExpr()
+        const expr = await getTopExpr()
 
         if (expr !== undefined) {
             editor.selection = new vscode.Selection(toVscodePos(expr.start), toVscodePos(expr.end))
@@ -341,7 +410,7 @@ function selectSexpr() {
     }
 }
 
-function getTopExpr() {
+async function getTopExpr() {
     try {
         const editor = vscode.window.activeTextEditor
         if (editor === undefined || !hasValidLangId(editor.document)) {
@@ -356,7 +425,7 @@ function getTopExpr() {
             return undefined
         }
 
-        updatePkgMgr(editor.document, exprs)
+        await updatePkgMgr(editor.document, exprs)
 
         return expr
     } catch (err) {
@@ -374,12 +443,18 @@ function getSigHelpProvider(): vscode.SignatureHelpProvider {
             token: vscode.CancellationToken,
             ctx: vscode.SignatureHelpContext
         ): Promise<vscode.SignatureHelp> {
-            return await getHelp(clRepl, document, pos)
+            const pkg = pkgMgr.getPackageForLine(document.fileName, pos.line)
+
+            if (pkg === undefined) {
+                return new vscode.SignatureHelp()
+            }
+
+            return await getHelp(clRepl, document, pos, pkg.name)
         },
     }
 }
 
-function getCompletionProvider(): vscode.CompletionItemProvider {
+async function getCompletionProvider(): Promise<vscode.CompletionItemProvider> {
     return {
         async provideCompletionItems(
             document: vscode.TextDocument,
@@ -389,25 +464,57 @@ function getCompletionProvider(): vscode.CompletionItemProvider {
         ) {
             try {
                 const exprs = getDocumentExprs(document)
-                updatePkgMgr(document, exprs)
-                return await completionProvider.getCompletions(document.fileName, clRepl, exprs, pos)
+
+                await updatePkgMgr(document, exprs)
+
+                const pkg = pkgMgr.getPackageForLine(document.fileName, pos.line)
+
+                if (pkg === undefined) {
+                    return []
+                }
+
+                return await completionProvider.getCompletions(clRepl, exprs, pos, pkg.name)
             } catch (err) {
-                vscode.window.showErrorMessage(err)
+                vscode.window.showErrorMessage(format(err))
                 return []
             }
         },
     }
 }
 
-function documentFormatter(): vscode.DocumentFormattingEditProvider {
+function getDocumentFormatter(): vscode.DocumentFormattingEditProvider {
     return {
         provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
             const lex = new Lexer(doc.getText())
             const tokens = lex.getTokens()
             const formatter = new fmt.Formatter(readFormatterOptions(), tokens)
-
             const edits = formatter.format()
+
             return edits.length > 0 ? edits : undefined
+        },
+    }
+}
+
+function getDefinitionProvider(): vscode.DefinitionProvider {
+    return {
+        async provideDefinition(doc: vscode.TextDocument, pos: vscode.Position, token: vscode.CancellationToken) {
+            try {
+                const provider = new DefinitionProvider()
+                const exprs = getDocumentExprs(doc)
+
+                await updatePkgMgr(doc, exprs)
+
+                const pkg = pkgMgr.getPackageForLine(doc.fileName, pos.line)
+
+                if (clRepl !== undefined && pkg !== undefined) {
+                    return await provider.getDefinitions(clRepl, pkg.name, exprs, pos)
+                } else {
+                    return []
+                }
+            } catch (err) {
+                vscode.window.showErrorMessage(format(err))
+                return []
+            }
         },
     }
 }

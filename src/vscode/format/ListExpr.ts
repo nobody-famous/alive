@@ -49,8 +49,6 @@ export class ListExpr extends ExprFormatter {
 
                 if (first) {
                     setTarget(this.state, curToken, '')
-                } else if (this.prevIsSymbol()) {
-                    setTarget(this.state, curToken, ' ')
                 } else if (countNewLines(curToken.before.existing) > 0) {
                     this.addLineIndent(curToken)
                 } else {
@@ -62,19 +60,15 @@ export class ListExpr extends ExprFormatter {
                     alignChanged = true
                 }
 
-                const expr = new Expr(this.state)
-                this.formatExpr(expr)
+                withIndent(this.state, this.state.lineLength, () => {
+                    const expr = new Expr(this.state)
+                    this.formatExpr(expr)
+                })
 
                 first = false
             })
 
             curToken = this.peekToken()
         }
-    }
-
-    private prevIsSymbol() {
-        const prev = this.prevToken()
-
-        return prev?.token.type === types.SYMBOL
     }
 }

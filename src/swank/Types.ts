@@ -37,3 +37,9 @@ export interface FrameOption {
     name: string
     value: string | boolean
 }
+
+export interface FrameVariable {
+    name: string
+    id: number
+    value: string
+}
