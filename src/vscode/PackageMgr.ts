@@ -55,6 +55,10 @@ export class PackageMgr {
 
         const fileName = doc?.fileName
 
+        if (fileName !== undefined) {
+            this.purgeFilename(fileName)
+        }
+
         if (fileName !== undefined && this.curPackage.ranges[fileName] === undefined) {
             this.curPackage.ranges[fileName] = { start: 0, end: 0 }
         }
@@ -82,6 +86,16 @@ export class PackageMgr {
         }
 
         return this.pkgs[CL_USER_PKG]
+    }
+
+    private purgeFilename(fileName: string) {
+        for (const pkg of Object.values(this.pkgs)) {
+            if (pkg === undefined) {
+                continue
+            }
+
+            delete pkg.ranges[fileName]
+        }
     }
 
     private lineInPackage(fileName: string, line: number, pkg: Package): boolean {
@@ -151,20 +165,22 @@ export class PackageMgr {
             name = CL_USER_PKG
         }
 
-        if (fileName !== undefined && this.curPackage !== undefined && this.curPackage.ranges[fileName] !== undefined) {
+        if (fileName !== undefined && this.curPackage?.ranges[fileName] !== undefined) {
             this.curPackage.ranges[fileName].end = expr.start.line - 1
         }
 
-        if (this.pkgs[name] !== undefined) {
-            this.curPackage = this.pkgs[name]
+        if (this.pkgs[name] === undefined) {
+            this.pkgs[name] = new Package(name)
         }
+
+        this.curPackage = this.pkgs[name]
 
         if (fileName !== undefined && this.curPackage !== undefined) {
             this.removeDuplicates(fileName, expr.start.line)
 
             this.curPackage.ranges[fileName] = {
-                start: expr.start.line,
-                end: expr.start.line,
+                start: expr.start.line + 1,
+                end: expr.start.line + 1,
             }
         }
     }

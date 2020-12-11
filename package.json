@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -103,6 +103,10 @@
                 "title": "Alive: Detach From REPL"
             },
             {
+                "command": "alive.replHistory",
+                "title": "Alive: REPL History"
+            },
+            {
                 "command": "alive.debugAbort",
                 "title": "Alive: Debug Abort"
             },
@@ -123,6 +127,10 @@
                 },
                 {
                     "command": "alive.detachRepl",
+                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                },
+                {
+                    "command": "alive.replHistory",
                     "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
                 },
                 {
@@ -163,6 +171,11 @@
                 "key": "alt+shift+e"
             },
             {
+                "command": "alive.clearInlineResults",
+                "when": "editorLangId == common-lisp",
+                "key": "alt+shift+c"
+            },
+            {
                 "command": "alive.selectSexpr",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
                 "key": "alt+shift+up"
@@ -171,6 +184,11 @@
                 "command": "alive.sendToRepl",
                 "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
                 "key": "alt+shift+enter"
+            },
+            {
+                "command": "alive.replHistory",
+                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
+                "key": "alt+shift+r"
             },
             {
                 "command": "alive.debugAbort",

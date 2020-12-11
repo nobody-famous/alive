@@ -22,6 +22,7 @@ const inlineDecoration = vscode.window.createTextEditorDecorationType({
 })
 
 let clRepl: repl.Repl | undefined = undefined
+let clReplHistory: repl.History = new repl.History()
 let activeEditor = vscode.window.activeTextEditor
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
@@ -73,6 +74,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', clearInlineResults))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', attachRepl(ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', detachRepl))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', replHistory))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', nthRestart))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
@@ -112,6 +114,42 @@ async function replLoadFile() {
     await editor.document.save()
     await clRepl.loadFile(editor.document.uri.fsPath)
     await updatePackageNames()
+}
+
+async function replHistory() {
+    const items: repl.HistoryItem[] = []
+
+    for (let ndx = clReplHistory.list.length - 1; ndx >= 0; ndx -= 1) {
+        const item = clReplHistory.list[ndx]
+
+        items.push(item)
+    }
+
+    const qp = vscode.window.createQuickPick()
+
+    qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
+
+    qp.onDidChangeSelection(async (e) => {
+        const item = e[0]
+
+        if (item === undefined) {
+            return
+        }
+
+        const text = item.label
+        const pkg = item.description
+        const editor = vscode.window.activeTextEditor
+
+        if (clRepl === undefined || editor === undefined) {
+            return
+        }
+
+        await clRepl.send(editor, text, pkg ?? ':cl-user')
+        clReplHistory.add(text, pkg ?? ':cl-user')
+    })
+
+    qp.onDidHide(() => qp.dispose())
+    qp.show()
 }
 
 async function nthRestart(n: unknown) {
@@ -250,9 +288,17 @@ async function detachRepl() {
 function attachRepl(ctx: vscode.ExtensionContext): () => void {
     return async () => {
         try {
-            vscode.window.showInformationMessage('Connecting to REPL')
+            const showMsgs = clRepl === undefined
+
+            if (showMsgs) {
+                vscode.window.showInformationMessage('Connecting to REPL')
+            }
+
             await newReplConnection(ctx)
-            vscode.window.showInformationMessage('REPL Connected')
+
+            if (showMsgs) {
+                vscode.window.showInformationMessage('REPL Connected')
+            }
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
         }
@@ -387,6 +433,11 @@ async function sendToRepl() {
         const pkgName = editor.document.languageId === REPL_ID ? clRepl.curPackage : pkg?.name
 
         await clRepl.send(editor, text, pkgName ?? ':cl-user')
+
+        if (editor.document.languageId === REPL_ID) {
+            clReplHistory.add(text, pkgName ?? ':cl-user')
+        }
+
         await updatePackageNames()
     } catch (err) {
         console.log(err)

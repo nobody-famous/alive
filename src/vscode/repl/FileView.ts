@@ -54,7 +54,7 @@ export class FileView implements View {
         if (!this.isEditorVisible()) {
             const column = this.replEditor !== undefined ? this.replEditor.viewColumn : vscode.ViewColumn.Beside
             this.replEditor = await vscode.window.showTextDocument(this.replDoc, column, true)
-            this.needJump = true
+            jumpToBottom(this.replEditor)
         }
     }
 
