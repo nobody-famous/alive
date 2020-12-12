@@ -140,7 +140,7 @@ export class Colorizer {
         const analyzer = new SemanticAnalyzer(lexTokens)
         analyzer.analyze()
 
-        const map = {}
+        const styleMap = {}
         let mismatched = false
 
         for (const token of lexTokens) {
@@ -151,6 +151,21 @@ export class Colorizer {
                 continue
             }
 
+            if (!mismatched && token.type === types.SYMBOL) {
+                const ndx = token.text.indexOf(':')
+
+                if (ndx >= 0) {
+                    const pkgStart = toVscodePos(token.start)
+                    const pkgEnd = new vscode.Position(token.end.line, token.start.character + ndx)
+
+                    this.addToMap(styleMap, typeStyles[types.PACKAGE_NAME], new vscode.Range(pkgStart, pkgEnd))
+
+                    const symStart = new vscode.Position(token.start.line, token.start.character + ndx)
+                    this.addToMap(styleMap, typeStyles[types.SYMBOL], new vscode.Range(symStart, toVscodePos(token.end)))
+                    continue
+                }
+            }
+
             if (mismatched) {
                 style = 'error'
             }
@@ -159,10 +174,10 @@ export class Colorizer {
                 mismatched = true
             }
 
-            this.addToMap(map, style, target)
+            this.addToMap(styleMap, style, target)
         }
 
-        return map
+        return styleMap
     }
 
     private isMismatched(parser: SemanticAnalyzer, token: Token) {

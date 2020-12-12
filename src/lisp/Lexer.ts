@@ -291,15 +291,11 @@ export class Lexer {
         this.consume()
 
         while (!this.isDelimiter(this.peek())) {
-            if (this.curText.length > 1 && this.curText.charAt(0) !== ':' && this.peek() === ':') {
-                return this.newToken(types.PACKAGE_NAME, true)
-            }
-
             this.curText += this.peek() ?? ''
             this.consume()
         }
 
-        if (this.curText.charAt(0) === ':' && this.curText.length > 1 && this.curText.charAt(1) !== ':') {
+        if (this.curText.indexOf(':') >= 0) {
             return this.newToken(types.SYMBOL, true)
         }
 

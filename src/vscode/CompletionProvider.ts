@@ -22,6 +22,12 @@ export class CompletionProvider {
 
             if (exprStr !== undefined) {
                 str = exprStr
+
+                const ndx = str.indexOf(':')
+
+                if (ndx > 0) {
+                    str = str.substr(ndx + 1)
+                }
             }
         }
 

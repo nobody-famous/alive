@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
 import { Lexer, Parser, types } from '../lisp'
 
-export const COMMON_LISP_ID = 'common-lisp'
-export const REPL_ID = 'common-lisp-repl'
+export const COMMON_LISP_ID = 'lisp'
+export const REPL_ID = 'lisp-repl'
 
 export function toVscodePos(pos: types.Position): vscode.Position {
     return new vscode.Position(pos.line, pos.character)

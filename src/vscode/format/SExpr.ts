@@ -1,6 +1,7 @@
 import { types } from '../../lisp'
 import { DefClass } from './DefClass'
 import { DefPackage } from './DefPackage'
+import { DefSystem } from './DefSystem'
 import { Defun } from './Defun'
 import { ExprFormatter } from './ExprFormatter'
 import { Flet } from './Flet'
@@ -64,7 +65,9 @@ export class SExpr extends ExprFormatter {
     }
 
     private formatSpecial(curToken: FormatToken) {
-        const name = curToken.token.text.toUpperCase()
+        const text = curToken.token.text.toUpperCase()
+        const ndx = text.lastIndexOf(':')
+        const name = ndx >= 0 ? text.substr(ndx + 1) : text
 
         switch (name) {
             case 'IF':
@@ -80,6 +83,9 @@ export class SExpr extends ExprFormatter {
             case 'FLET':
             case 'LABELS':
                 this.formatExpr(new Flet(this.state))
+                break
+            case 'DEFSYSTEM':
+                this.formatExpr(new DefSystem(this.state))
                 break
             default:
                 this.formatExpr(new ListExpr(this.state))

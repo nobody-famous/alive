@@ -227,7 +227,7 @@ export class PackageMgr {
                 return false
             }
 
-            if (token.type === types.ID && token.text === ':') {
+            if (token.text === ':') {
                 return false
             }
         }

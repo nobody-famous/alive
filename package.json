@@ -15,8 +15,8 @@
     ],
     "main": "./out/src/extension.js",
     "activationEvents": [
-        "onLanguage:common-lisp",
-        "onLanguage:common-lisp-repl"
+        "onLanguage:lisp",
+        "onLanguage:lisp-repl"
     ],
     "scripts": {
         "vscode:prepublish": "npm run compile",
@@ -28,7 +28,7 @@
     "contributes": {
         "languages": [
             {
-                "id": "common-lisp",
+                "id": "lisp",
                 "aliases": [
                     "Common Lisp",
                     "common-lisp"
@@ -42,7 +42,7 @@
                 "configuration": "./language-configuration.json"
             },
             {
-                "id": "common-lisp-repl",
+                "id": "lisp-repl",
                 "aliases": [
                     "Common Lisp REPL",
                     "common-lisp-repl"
@@ -69,7 +69,7 @@
         ],
         "snippets": [
             {
-                "language": "common-lisp",
+                "language": "lisp",
                 "path": "./snippets.json"
             }
         ],
@@ -123,136 +123,136 @@
             "commandPalette": [
                 {
                     "command": "alive.attachRepl",
-                    "when": "editorLangId == common-lisp"
+                    "when": "editorLangId == lisp"
                 },
                 {
                     "command": "alive.detachRepl",
-                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
                 },
                 {
                     "command": "alive.replHistory",
-                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
                 },
                 {
                     "command": "alive.loadFile",
-                    "when": "editorLangId == common-lisp"
+                    "when": "editorLangId == lisp"
                 },
                 {
                     "command": "alive.sendToRepl",
-                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
                 },
                 {
                     "command": "alive.inlineEval",
-                    "when": "editorLangId == common-lisp"
+                    "when": "editorLangId == lisp"
                 },
                 {
                     "command": "alive.clearInlineResults",
-                    "when": "editorLangId == common-lisp"
+                    "when": "editorLangId == lisp"
                 },
                 {
                     "command": "alive.selectSexpr",
-                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl"
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
                 },
                 {
                     "command": "alive.debugAbort",
-                    "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive"
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
                 }
             ]
         },
         "keybindings": [
             {
                 "command": "alive.loadFile",
-                "when": "editorLangId == common-lisp",
+                "when": "editorLangId == lisp",
                 "key": "alt+shift+l"
             },
             {
                 "command": "alive.inlineEval",
-                "when": "editorLangId == common-lisp",
+                "when": "editorLangId == lisp",
                 "key": "alt+shift+e"
             },
             {
                 "command": "alive.clearInlineResults",
-                "when": "editorLangId == common-lisp",
+                "when": "editorLangId == lisp",
                 "key": "alt+shift+c"
             },
             {
                 "command": "alive.selectSexpr",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl",
                 "key": "alt+shift+up"
             },
             {
                 "command": "alive.sendToRepl",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl",
                 "key": "alt+shift+enter"
             },
             {
                 "command": "alive.replHistory",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl",
                 "key": "alt+shift+r"
             },
             {
                 "command": "alive.debugAbort",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+a"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "0",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+0"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "1",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+1"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "2",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+2"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "3",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+3"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "4",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+4"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "5",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+5"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "6",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+6"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "7",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+7"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "8",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+8"
             },
             {
                 "command": "alive.nthRestart",
                 "args": "9",
-                "when": "editorLangId == common-lisp || editorLangId == common-lisp-repl || clDebugViewActive",
+                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
                 "key": "alt+ctrl+9"
             }
         ],

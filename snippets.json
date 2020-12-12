@@ -5,7 +5,7 @@
     },
     "Comment": {
         "prefix": "comment",
-        "body": ["#|", "..$0", "|#"]
+        "body": ["#|", "  $0", "|#"]
     },
     "Let Expression": {
         "prefix": "let",
@@ -17,11 +17,7 @@
     },
     "Define Class": {
         "prefix": "defclass",
-        "body": [
-            "defclass ${1:name} (${2:#| base classes |#})",
-            "  (${3:#| slots |#})",
-            "  (${4:#| options |#})"
-        ]
+        "body": ["defclass ${1:name} (${2:#| base classes |#})", "  (${3:#| slots |#})", "  (${4:#| options |#})"]
     },
     "Slot": {
         "prefix": "slot",
@@ -42,5 +38,15 @@
     "Define Method": {
         "prefix": "defmethod",
         "body": ["defmethod ${1:name} ($2)", "  $0"]
+    },
+    "Define System": {
+        "prefix": "defsystem",
+        "body": [
+            "defsystem \"${1:name}\"",
+            "  :description \"$2\"",
+            "  :serial t",
+            "  :components ((:file \"package\")",
+            "                ($0))"
+        ]
     }
 }

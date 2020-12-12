@@ -1,6 +1,6 @@
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { Expr, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
+import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
@@ -204,6 +204,10 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
 }
 
 async function updatePkgMgr(doc: vscode.TextDocument | undefined, exprs: Expr[]) {
+    if (doc?.languageId !== COMMON_LISP_ID) {
+        return
+    }
+
     await pkgMgr.update(clRepl, doc, exprs)
 }
 
@@ -519,12 +523,23 @@ async function getCompletionProvider(): Promise<vscode.CompletionItemProvider> {
                 await updatePkgMgr(document, exprs)
 
                 const pkg = pkgMgr.getPackageForLine(document.fileName, pos.line)
+                const atom = findAtom(exprs, pos)
+                const textStr = atom !== undefined ? exprToString(atom) : undefined
+                let pkgName = pkg?.name
 
-                if (pkg === undefined) {
+                if (textStr !== undefined) {
+                    const ndx = textStr.indexOf(':')
+
+                    if (ndx > 0) {
+                        pkgName = textStr.substr(0, ndx)
+                    }
+                }
+
+                if (pkgName === undefined) {
                     return []
                 }
 
-                return await completionProvider.getCompletions(clRepl, exprs, pos, pkg.name)
+                return await completionProvider.getCompletions(clRepl, exprs, pos, pkgName)
             } catch (err) {
                 vscode.window.showErrorMessage(format(err))
                 return []
