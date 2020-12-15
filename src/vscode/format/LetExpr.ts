@@ -1,10 +1,9 @@
 import { types } from '../../lisp'
 import { ExprFormatter } from './ExprFormatter'
-import { LambdaExpr } from './LambdaExpr'
 import { isExprEnd, setTarget, State, withIncIndent, withIndent } from './Utils'
 import { WrappedExpr } from './WrappedExpr'
 
-export class Flet extends ExprFormatter {
+export class LetExpr extends ExprFormatter {
     constructor(state: State) {
         super(state)
     }
@@ -57,10 +56,20 @@ class BindClause extends ExprFormatter {
         }
 
         withIndent(this.state, this.state.lineLength, () => {
-            const expr = new WrappedExpr(this.state, new LambdaExpr(this.state))
+            const expr = new WrappedExpr(this.state, new BindPair(this.state))
             this.formatExpr(expr)
         })
 
         this.first = false
+    }
+}
+
+class BindPair extends ExprFormatter {
+    constructor(state: State) {
+        super(state)
+    }
+
+    format() {
+        this.formatPair(() => this.consumeExpr())
     }
 }

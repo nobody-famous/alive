@@ -208,6 +208,15 @@ export abstract class ExprFormatter {
         fn()
     }
 
+    consumeRest() {
+        let curToken = this.peekToken()
+
+        while (!isExprEnd(curToken)) {
+            this.consumeExpr()
+            curToken = this.peekToken()
+        }
+    }
+
     private addIndent(token: FormatToken) {
         const stack = this.state.indent
         const indent = stack[stack.length - 1]

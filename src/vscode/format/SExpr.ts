@@ -8,6 +8,7 @@ import { Flet } from './Flet'
 import { FormatToken } from './FormatToken'
 import { IfExpr } from './IfExpr'
 import { LambdaExpr } from './LambdaExpr'
+import { LetExpr } from './LetExpr'
 import { ListExpr } from './ListExpr'
 import { Loop } from './Loop'
 import { isExprEnd, State } from './Utils'
@@ -79,6 +80,10 @@ export class SExpr extends ExprFormatter {
             case 'RESTART-CASE':
             case 'HANDLER-CASE':
                 this.formatExpr(new LambdaExpr(this.state))
+                break
+            case 'LET':
+            case 'LET*':
+                this.formatExpr(new LetExpr(this.state))
                 break
             case 'FLET':
             case 'LABELS':

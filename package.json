@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -15,6 +15,7 @@
     ],
     "main": "./out/src/extension.js",
     "activationEvents": [
+        "onStartupFinished",
         "onLanguage:lisp",
         "onLanguage:lisp-repl"
     ],
@@ -117,17 +118,19 @@
             {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
+            },
+            {
+                "command": "alive.createSystem",
+                "title": "Alive: Create System"
             }
         ],
         "menus": {
             "commandPalette": [
                 {
-                    "command": "alive.attachRepl",
-                    "when": "editorLangId == lisp"
+                    "command": "alive.attachRepl"
                 },
                 {
-                    "command": "alive.detachRepl",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                    "command": "alive.detachRepl"
                 },
                 {
                     "command": "alive.replHistory",
@@ -156,6 +159,9 @@
                 {
                     "command": "alive.debugAbort",
                     "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
+                },
+                {
+                    "command": "alive.createSystem"
                 }
             ]
         },

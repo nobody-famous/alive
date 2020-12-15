@@ -1,4 +1,3 @@
-import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { jumpToBottom } from '../Utils'
@@ -14,7 +13,6 @@ export class FileView implements View {
     name: string
     needJump: boolean = true
 
-    activeDoc?: vscode.TextDocument
     folder?: vscode.Uri
     replFile?: vscode.Uri
     replDoc?: vscode.TextDocument
@@ -29,8 +27,7 @@ export class FileView implements View {
 
     async open() {
         try {
-            this.getActiveDoc()
-            this.getFolder()
+            await this.getFolder()
             this.getReplFile()
 
             await this.createFolder()
@@ -106,7 +103,7 @@ export class FileView implements View {
         await doc.save()
     }
 
-    isEditorVisible(): boolean {
+    private isEditorVisible(): boolean {
         if (this.replEditor === undefined) {
             return false
         }
@@ -120,7 +117,7 @@ export class FileView implements View {
         return false
     }
 
-    async openFile() {
+    private async openFile() {
         if (this.replFile === undefined) {
             throw new Error('No file to open')
         }
@@ -132,7 +129,7 @@ export class FileView implements View {
         }
     }
 
-    getReplFile() {
+    private getReplFile() {
         if (this.folder === undefined) {
             throw new Error('No folder for REPL file')
         }
@@ -140,33 +137,61 @@ export class FileView implements View {
         this.replFile = vscode.Uri.joinPath(this.folder, this.name)
     }
 
-    getFolder() {
-        if (this.activeDoc === undefined) {
-            throw new Error('No active document')
+    private async getOpenFolder() {
+        const folders = vscode.workspace.workspaceFolders
+
+        if (folders === undefined) {
+            return undefined
         }
 
-        const wsFolder = vscode.workspace.getWorkspaceFolder(this.activeDoc.uri)
+        const uriMap: { [index: string]: vscode.WorkspaceFolder | undefined } = {}
 
-        if (wsFolder !== undefined) {
-            this.folder = vscode.Uri.joinPath(wsFolder.uri, OUTPUT_DIR)
-            return
+        for (const folder of folders) {
+            uriMap[folder.uri.fsPath] = folder
         }
 
-        const fsPath = this.activeDoc.uri.fsPath
-        const dir = path.dirname(fsPath)
+        let openFolder: vscode.Uri | undefined = undefined
 
-        this.folder = vscode.Uri.file(dir)
+        if (folders.length > 1) {
+            const pick = await vscode.window.showQuickPick(Object.keys(uriMap), { placeHolder: 'Select folder' })
+
+            if (pick !== undefined) {
+                openFolder = uriMap[pick]?.uri
+            }
+        } else {
+            openFolder = folders[0].uri
+        }
+
+        return openFolder
     }
 
-    getActiveDoc() {
-        this.activeDoc = vscode.window.activeTextEditor?.document
+    private getActiveDocFolder() {
+        const activeDoc = vscode.window.activeTextEditor?.document
 
-        if (this.activeDoc === undefined) {
-            throw new Error(`No active document`)
+        if (activeDoc === undefined) {
+            return undefined
         }
+
+        const wsFolder = vscode.workspace.getWorkspaceFolder(activeDoc.uri)
+
+        return wsFolder?.uri
     }
 
-    async createFolder() {
+    private async getFolder() {
+        let baseFolder = await this.getOpenFolder()
+
+        if (baseFolder === undefined) {
+            baseFolder = this.getActiveDocFolder()
+        }
+
+        if (baseFolder === undefined) {
+            throw new Error('No folder for REPL file')
+        }
+
+        this.folder = vscode.Uri.joinPath(baseFolder, OUTPUT_DIR)
+    }
+
+    private async createFolder() {
         if (this.folder === undefined) {
             throw new Error('No folder to create')
         }
@@ -174,12 +199,12 @@ export class FileView implements View {
         await vscode.workspace.fs.createDirectory(this.folder)
     }
 
-    async tryCreate(path: vscode.Uri): Promise<vscode.TextDocument> {
+    private async tryCreate(path: vscode.Uri): Promise<vscode.TextDocument> {
         await vscode.workspace.fs.writeFile(path, new TextEncoder().encode(''))
         return await this.tryOpen(path)
     }
 
-    async tryOpen(path: vscode.Uri): Promise<vscode.TextDocument> {
+    private async tryOpen(path: vscode.Uri): Promise<vscode.TextDocument> {
         return await vscode.workspace.openTextDocument(path)
     }
 }

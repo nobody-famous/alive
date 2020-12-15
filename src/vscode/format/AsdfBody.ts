@@ -59,6 +59,8 @@ export class AsdfBody extends ExprFormatter {
         }
 
         setTarget(this.state, curToken!, ' ')
-        this.consumeExpr()
+        withIndent(this.state, this.state.lineLength, () => {
+            this.consumeExpr()
+        })
     }
 }

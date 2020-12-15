@@ -3,6 +3,7 @@ import * as vscode from 'vscode'
 import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
+import * as CreateSystem from './vscode/CreateSystem'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
 import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
@@ -13,17 +14,11 @@ import { COMMON_LISP_ID, getDocumentExprs, REPL_ID, toVscodePos } from './vscode
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
-const inlineDecoration = vscode.window.createTextEditorDecorationType({
-    before: {
-        textDecoration: 'none',
-        fontWeight: 'normal',
-        fontStyle: 'normal',
-    },
-})
 
 let clRepl: repl.Repl | undefined = undefined
 let clReplHistory: repl.History = new repl.History()
 let activeEditor = vscode.window.activeTextEditor
+let hoverText: string = ''
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
@@ -45,6 +40,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
     vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
     vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: REPL_ID }, getSigHelpProvider(), ' ')
+
+    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider())
 
     vscode.languages.registerDocumentFormattingEditProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -78,6 +75,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', nthRestart))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.createSystem', createSystem))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -96,6 +94,42 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
         if (hasValidLangId(editor.document)) {
             readLexTokens(editor.document.fileName, editor.document.getText())
         }
+    }
+}
+
+async function pickFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder | undefined> {
+    const nameMap: { [index: string]: vscode.WorkspaceFolder | undefined } = {}
+
+    for (const folder of folders) {
+        nameMap[folder.uri.fsPath] = folder
+    }
+
+    const pick = await vscode.window.showQuickPick(Object.keys(nameMap), { placeHolder: 'Select folder' })
+
+    if (pick === undefined) {
+        return undefined
+    }
+
+    return nameMap[pick]
+}
+
+async function createSystem() {
+    const folders = vscode.workspace.workspaceFolders
+
+    if (folders === undefined) {
+        vscode.window.showErrorMessage('No open folders')
+        return
+    }
+
+    const folder = folders.length > 1 ? await pickFolder(folders) : folders[0]
+    if (folder === undefined) {
+        return
+    }
+
+    try {
+        await CreateSystem.create(folder)
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
     }
 }
 
@@ -171,6 +205,18 @@ async function nthRestart(n: unknown) {
         }
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
+    }
+}
+
+function getHoverProvider(): vscode.HoverProvider {
+    return {
+        async provideHover(
+            doc: vscode.TextDocument,
+            pos: vscode.Position,
+            token: vscode.CancellationToken
+        ): Promise<vscode.Hover> {
+            return new vscode.Hover(hoverText)
+        },
     }
 }
 
@@ -364,10 +410,8 @@ async function inlineEval() {
         return
     }
 
-    const decOpts: vscode.DecorationOptions[] = []
-
-    decOpts.push(getInlineResult(result, range))
-    editor.setDecorations(inlineDecoration, decOpts)
+    hoverText = result.replace(/\n/g, '  \n')
+    vscode.commands.executeCommand('editor.action.showHover')
 }
 
 function clearInlineResults() {
@@ -376,7 +420,7 @@ function clearInlineResults() {
         return
     }
 
-    editor?.setDecorations(inlineDecoration, [])
+    hoverText = ''
 }
 
 function getInlineResult(result: string, range: vscode.Range) {
