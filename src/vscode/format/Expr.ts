@@ -1,7 +1,7 @@
 import { types } from '../../lisp'
 import { ExprFormatter } from './ExprFormatter'
 import { SExpr } from './SExpr'
-import { isExprEnd, State, withIncIndent } from './Utils'
+import { countNewLines, setTarget, State } from './Utils'
 
 export class Expr extends ExprFormatter {
     constructor(state: State) {
@@ -20,9 +20,16 @@ export class Expr extends ExprFormatter {
             case types.BACK_QUOTE:
             case types.SINGLE_QUOTE:
                 return this.formatQuote()
+            case types.POUND_SEQ:
+                return this.formatPoundSeq()
             default:
                 this.consumeToken()
         }
+    }
+
+    formatPoundSeq() {
+        const expr = new PoundExpr(this.state)
+        this.doFormat(expr)
     }
 
     formatQuote() {
@@ -68,14 +75,53 @@ export class Expr extends ExprFormatter {
     formatSExpr() {
         const sexpr = new SExpr(this.state)
 
-        sexpr.format()
+        this.doFormat(sexpr)
+    }
 
-        if (sexpr.isMultiline) {
+    doFormat(expr: ExprFormatter) {
+        expr.format()
+
+        if (expr.isMultiline) {
             this.isMultiline = true
         }
 
-        if (sexpr.isOrigML) {
+        if (expr.isOrigML) {
             this.isOrigML = true
         }
+    }
+}
+
+class PoundExpr extends ExprFormatter {
+    constructor(state: State) {
+        super(state)
+    }
+
+    format() {
+        let curToken = this.peekToken()
+
+        if (curToken === undefined) {
+            return
+        }
+
+        const text = curToken.token.text
+
+        this.consumeToken()
+
+        if (!text.startsWith('#+') && !text.startsWith('#-')) {
+            return
+        }
+
+        curToken = this.peekToken()
+        if (curToken === undefined) {
+            return
+        }
+
+        if (countNewLines(curToken.before.existing) > 0) {
+            this.addLineIndent(curToken)
+        } else {
+            setTarget(this.state, curToken, ' ')
+        }
+
+        this.consumeExpr()
     }
 }

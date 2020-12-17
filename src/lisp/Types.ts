@@ -31,6 +31,7 @@ export const DEFCLASS = 26
 export const LOOP = 27
 export const DEFMACRO = 28
 export const DEFMETHOD = 29
+export const ERROR = 30
 
 export const MISMATCHED_OPEN_PARENS = 100
 export const MISMATCHED_CLOSE_PARENS = 101

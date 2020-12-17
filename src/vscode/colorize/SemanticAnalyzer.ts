@@ -1,18 +1,21 @@
 import { Token, types } from '../../lisp'
+import { Repl } from '../repl'
 
 export class SemanticAnalyzer {
     tokens: Token[]
+    repl?: Repl
     unclosedString?: Token
     mismatchedBar?: Token
 
     curNdx: number = 0
     parens: Token[] = []
 
-    constructor(tokens: Token[]) {
+    constructor(repl: Repl | undefined, tokens: Token[]) {
+        this.repl = repl
         this.tokens = tokens
     }
 
-    analyze() {
+    async analyze() {
         this.curNdx = 0
 
         while (true) {
@@ -21,7 +24,7 @@ export class SemanticAnalyzer {
                 break
             }
 
-            this.expr()
+            await this.expr()
         }
 
         for (const token of this.tokens) {
@@ -41,29 +44,115 @@ export class SemanticAnalyzer {
         return parent.backquoted || parent.quoted
     }
 
-    private expr() {
+    private async expr() {
         const token = this.peek()
         if (token === undefined) {
             return
         }
 
         if (token.type === types.OPEN_PARENS) {
-            this.sexpr(token)
+            await this.sexpr(token)
         } else if (token.type === types.CLOSE_PARENS) {
             token.type = types.MISMATCHED_CLOSE_PARENS
             this.consume()
         } else if (token.type === types.BACK_QUOTE) {
-            this.quote(true)
+            await this.quote(true)
         } else if (token.type === types.SINGLE_QUOTE) {
-            this.quote(false)
+            await this.quote(false)
         } else if (token.type === types.COMMA) {
-            this.comma()
+            await this.comma()
+        } else if (token.type === types.POUND_SEQ) {
+            await this.pound()
         } else {
             this.consume()
         }
     }
 
-    private comma() {
+    private async pound() {
+        let cur = this.peek()
+
+        if (cur === undefined) {
+            return
+        }
+
+        this.consume()
+
+        if (this.repl === undefined || !this.isReaderMacro(cur.text)) {
+            return
+        }
+
+        const toEval = `(ignore-errors ${cur.text} t)`
+
+        try {
+            this.repl.setIgnoreDebug(true)
+            const resp = await this.repl.eval(toEval)
+
+            if (resp) {
+                return
+            }
+        } catch (err) {
+            cur.type = types.ERROR
+            return
+        } finally {
+            this.repl.setIgnoreDebug(false)
+        }
+
+        cur.type = types.COMMENT
+
+        this.commentOutExpr()
+    }
+
+    private commentOutExpr() {
+        let cur = this.peek()
+
+        if (cur === undefined) {
+            return
+        }
+
+        if (cur.type !== types.OPEN_PARENS && cur.type !== types.SINGLE_QUOTE && cur.type !== types.BACK_QUOTE) {
+            cur.type = types.COMMENT
+            this.consume()
+            return
+        }
+
+        while (cur.type === types.SINGLE_QUOTE || cur.type === types.BACK_QUOTE) {
+            cur.type = types.COMMENT
+            this.consumeNoSkip()
+
+            cur = this.peek()
+            if (cur === undefined || cur.type === types.WHITE_SPACE) {
+                return
+            }
+        }
+
+        if (cur === undefined || cur.type === types.WHITE_SPACE) {
+            return
+        }
+
+        let count = 0
+        while (cur !== undefined) {
+            if (cur.type === types.OPEN_PARENS) {
+                count += 1
+            } else if (cur.type === types.CLOSE_PARENS) {
+                count -= 1
+            }
+
+            cur.type = types.COMMENT
+            this.consume()
+
+            cur = this.peek()
+
+            if (count === 0) {
+                break
+            }
+        }
+    }
+
+    private isReaderMacro(text: string): boolean {
+        return text.startsWith('#+') || text.startsWith('#-')
+    }
+
+    private async comma() {
         const cur = this.peek()
 
         if (cur === undefined) {
@@ -80,10 +169,10 @@ export class SemanticAnalyzer {
             return
         }
 
-        this.expr()
+        await this.expr()
     }
 
-    private quote(backquote: boolean) {
+    private async quote(backquote: boolean) {
         this.consumeNoSkip()
 
         const next = this.peek()
@@ -97,7 +186,7 @@ export class SemanticAnalyzer {
             next.quoted = true
         }
 
-        this.expr()
+        await this.expr()
     }
 
     private quoteItems(start: number, end: number) {
@@ -110,7 +199,7 @@ export class SemanticAnalyzer {
         }
     }
 
-    private sexpr(openParen: Token) {
+    private async sexpr(openParen: Token) {
         this.parens.push(openParen)
         this.consume()
 
@@ -140,26 +229,26 @@ export class SemanticAnalyzer {
             }
 
             if (next.text === 'DEFUN') {
-                this.defun()
+                await this.defun()
             } else if (next.type === types.QUOTE_FUNC) {
-                this.quoteFn()
+                await this.quoteFn()
             } else if (next.type === types.IN_PACKAGE) {
                 next.type = types.MACRO
-                this.inPackage()
+                await this.inPackage()
             } else if (next.type === types.DEFPACKAGE) {
                 next.type = types.MACRO
-                this.defPackage()
+                await this.defPackage()
             } else {
-                this.expr()
+                await this.expr()
             }
         }
     }
 
-    private quoteFn() {
+    private async quoteFn() {
         this.consume()
 
         const start = this.curNdx
-        this.expr()
+        await this.expr()
         this.quoteItems(start, this.curNdx)
     }
 
@@ -187,7 +276,7 @@ export class SemanticAnalyzer {
         }
     }
 
-    private defPackage() {
+    private async defPackage() {
         this.consume()
         this.skipWS()
 
@@ -200,7 +289,7 @@ export class SemanticAnalyzer {
 
         let next = this.consume()
         while (next !== undefined && next.type !== types.CLOSE_PARENS) {
-            this.expr()
+            await this.expr()
             next = this.peek()
         }
     }
@@ -218,7 +307,7 @@ export class SemanticAnalyzer {
         token.type = types.PACKAGE_NAME
     }
 
-    private defun() {
+    private async defun() {
         this.consume()
 
         let token = this.peek()
@@ -237,7 +326,7 @@ export class SemanticAnalyzer {
         this.parens.push(token)
         this.consume()
 
-        this.paramList()
+        await this.paramList()
 
         if (this.peek() === undefined) {
             return
@@ -245,12 +334,12 @@ export class SemanticAnalyzer {
 
         let next = this.peek()
         while (next !== undefined && next.type !== types.CLOSE_PARENS) {
-            this.expr()
+            await this.expr()
             next = this.peek()
         }
     }
 
-    private paramList() {
+    private async paramList() {
         let parenCount = 0
 
         while (true) {
@@ -278,7 +367,12 @@ export class SemanticAnalyzer {
                 parenCount += 1
             }
 
-            next.type = types.PARAMETER
+            if (next.type === types.POUND_SEQ) {
+                await this.pound()
+            } else {
+                next.type = types.PARAMETER
+            }
+
             next = this.consume()
         }
     }

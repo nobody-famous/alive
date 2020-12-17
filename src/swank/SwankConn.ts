@@ -22,6 +22,9 @@ import {
     loadFileReq,
     findDefsReq,
     evalAndGrabReq,
+    macroExpandReq,
+    macroExpandAllReq,
+    disassembleReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -63,6 +66,8 @@ export class SwankConn extends EventEmitter {
     handlers: { [index: number]: any } = {}
     timeouts: { [index: number]: NodeJS.Timeout } = {}
     msgID: number = 1
+    ignoreDebug: boolean = false
+    rejectAbort: boolean = false
 
     constructor(host: string, port: number) {
         super()
@@ -83,6 +88,11 @@ export class SwankConn extends EventEmitter {
 
     close() {
         this.conn?.destroy()
+    }
+
+    setIgnoreDebug(ignore: boolean) {
+        this.ignoreDebug = ignore
+        this.rejectAbort = ignore
     }
 
     async connectionInfo(pkg?: string): Promise<response.ConnectionInfo | response.Abort> {
@@ -119,6 +129,18 @@ export class SwankConn extends EventEmitter {
 
     async findDefs(str: string, pkg?: string): Promise<response.FindDefs | response.Abort> {
         return await this.requestFn(findDefsReq, response.FindDefs, str, pkg)
+    }
+
+    async macroExpand(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(macroExpandReq, response.Eval, str, pkg)
+    }
+
+    async macroExpandAll(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(macroExpandAllReq, response.Eval, str, pkg)
+    }
+
+    async disassemble(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(disassembleReq, response.Eval, str, pkg)
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
@@ -248,6 +270,10 @@ export class SwankConn extends EventEmitter {
     }
 
     processDebugActivate(event: event.DebugActivate) {
+        if (this.ignoreDebug) {
+            return
+        }
+
         try {
             this.emit('activate', event)
         } catch (err) {
@@ -263,7 +289,17 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processDebug(event: event.Debug) {
+    async processDebug(event: event.Debug) {
+        if (this.ignoreDebug) {
+            try {
+                await this.debugAbort(event.threadID)
+            } catch (err) {
+                // Ignore
+            }
+
+            return
+        }
+
         this.emit('debug', event)
     }
 
@@ -282,6 +318,10 @@ export class SwankConn extends EventEmitter {
             const status = event.info?.status
 
             this.handlerDone(event.id)
+
+            if (status === ':ABORT' && this.rejectAbort) {
+                return reject(status)
+            }
 
             status === ':OK' || status === ':ABORT' ? resolve(event) : reject(status)
         } catch (err) {

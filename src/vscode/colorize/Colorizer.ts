@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { Token } from '../../lisp/Token'
 import * as types from '../../lisp/Types'
+import { Repl } from '../repl'
 import { toVscodePos } from '../Utils'
 import { SemanticAnalyzer } from './SemanticAnalyzer'
 
@@ -35,6 +36,7 @@ typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'error'
 typeStyles[types.MISMATCHED_DBL_QUOTE] = 'error'
 typeStyles[types.MISMATCHED_BAR] = 'error'
 typeStyles[types.MISMATCHED_COMMENT] = 'error'
+typeStyles[types.ERROR] = 'error'
 
 interface styleMapType {
     [index: string]: vscode.Range[]
@@ -78,17 +80,20 @@ export const tokenModifiersLegend = [
 ]
 
 export class Colorizer {
+    repl?: Repl
     typesMap: { [index: string]: number | undefined } = {}
     modsMap: { [index: string]: number | undefined } = {}
 
-    constructor() {
+    constructor(repl?: Repl) {
+        this.repl = repl
+
         tokenTypesLegend.forEach((type, index) => (this.typesMap[type] = index))
         tokenModifiersLegend.forEach((mod, index) => (this.modsMap[mod] = index))
     }
 
-    run(tokens: Token[]) {
+    async run(tokens: Token[]) {
         const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
-        const styleMap = this.buildStyleMap(tokens)
+        const styleMap = await this.buildStyleMap(tokens)
         const entries = Object.entries(styleMap)
         const builder = new vscode.SemanticTokensBuilder(legend)
 
@@ -132,13 +137,13 @@ export class Colorizer {
         return new vscode.Range(start, end)
     }
 
-    private buildStyleMap(lexTokens: Token[]): styleMapType {
+    private async buildStyleMap(lexTokens: Token[]): Promise<styleMapType> {
         if (lexTokens.length === 0) {
             return {}
         }
 
-        const analyzer = new SemanticAnalyzer(lexTokens)
-        analyzer.analyze()
+        const analyzer = new SemanticAnalyzer(this.repl, lexTokens)
+        await analyzer.analyze()
 
         const styleMap = {}
         let mismatched = false

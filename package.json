@@ -116,12 +116,24 @@
                 "title": "Alive: Nth Restart"
             },
             {
+                "command": "alive.macroExpand",
+                "title": "Alive: Macro Expand"
+            },
+            {
+                "command": "alive.macroExpandAll",
+                "title": "Alive: Macro Expand All"
+            },
+            {
+                "command": "alive.disassemble",
+                "title": "Alive: Disassemble"
+            },
+            {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
             },
             {
-                "command": "alive.createSystem",
-                "title": "Alive: Create System"
+                "command": "alive.systemSkeleton",
+                "title": "Alive: System Skeleton"
             }
         ],
         "menus": {
@@ -139,6 +151,18 @@
                 {
                     "command": "alive.loadFile",
                     "when": "editorLangId == lisp"
+                },
+                {
+                    "command": "alive.macroExpand",
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                },
+                {
+                    "command": "alive.macroExpandAll",
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                },
+                {
+                    "command": "alive.disassemble",
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
                 },
                 {
                     "command": "alive.sendToRepl",
@@ -161,7 +185,7 @@
                     "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
                 },
                 {
-                    "command": "alive.createSystem"
+                    "command": "alive.systemSkeleton"
                 }
             ]
         },

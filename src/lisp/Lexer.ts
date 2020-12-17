@@ -204,12 +204,48 @@ export class Lexer {
             return this.newToken(types.POUND_SEQ)
         }
 
-        while (!this.isDelimiter(this.peek())) {
-            this.curText += this.peek() ?? ''
-            this.consume()
+        while (!this.isWS(this.peek())) {
+            const ch = this.peek()
+            if (ch === undefined) {
+                break
+            }
+
+            if (ch === '(') {
+                this.curText += '('
+                this.consumeExpr()
+                break
+            } else if (ch === ')') {
+                break
+            } else {
+                this.curText += this.peek() ?? ''
+                this.consume()
+            }
         }
 
         return this.newToken(types.POUND_SEQ)
+    }
+
+    consumeExpr() {
+        let opens = 1
+
+        this.consume()
+
+        while (opens > 0) {
+            const ch = this.peek()
+
+            if (ch === undefined) {
+                break
+            }
+
+            if (ch === '(') {
+                opens += 1
+            } else if (ch === ')') {
+                opens -= 1
+            }
+
+            this.curText += ch
+            this.consume()
+        }
     }
 
     nestedComment() {

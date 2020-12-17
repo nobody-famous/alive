@@ -1,6 +1,7 @@
-import * as vscode from 'vscode'
 import * as path from 'path'
 import { TextEncoder } from 'util'
+import * as vscode from 'vscode'
+import { createFolder, openFile } from './Utils'
 
 export async function create(folder: vscode.WorkspaceFolder) {
     const empty = await isFolderEmpty(folder.uri)
@@ -12,34 +13,30 @@ export async function create(folder: vscode.WorkspaceFolder) {
     const part = lastDirPart(base.fsPath)
 
     const src = vscode.Uri.joinPath(base, 'src')
-    const app = vscode.Uri.joinPath(src, 'app.lisp')
     const test = vscode.Uri.joinPath(base, 'test')
+
+    await createFolder(src)
+    await createFolder(test)
+
+    const app = vscode.Uri.joinPath(src, 'app.lisp')
     const all = vscode.Uri.joinPath(test, 'all.lisp')
     const asdf = vscode.Uri.joinPath(base, `${part}.asd`)
 
-    const asdfStr = asdfContent(part)
-    const asdfUint8 = new TextEncoder().encode(asdfStr)
+    const asdfUint8 = new TextEncoder().encode(asdfContent(part))
+    const appUint8 = new TextEncoder().encode(appContent())
+    const testUint8 = new TextEncoder().encode(testContent())
 
-    const appStr = appContent()
-    const appUint8 = new TextEncoder().encode(appStr)
+    const asdfDoc = await openFile(asdf)
+    const appDoc = await openFile(app)
+    const allDoc = await openFile(all)
 
-    const testStr = testContent()
-    const testUint8 = new TextEncoder().encode(testStr)
-
-    await vscode.workspace.fs.createDirectory(src)
-    await vscode.workspace.fs.createDirectory(test)
     await vscode.workspace.fs.writeFile(asdf, asdfUint8)
     await vscode.workspace.fs.writeFile(app, appUint8)
     await vscode.workspace.fs.writeFile(all, testUint8)
 
-    const asdfDoc = await vscode.workspace.openTextDocument(asdf.fsPath)
-    vscode.window.showTextDocument(asdfDoc)
-
-    const appDoc = await vscode.workspace.openTextDocument(app.fsPath)
-    vscode.window.showTextDocument(appDoc)
-
-    const allDoc = await vscode.workspace.openTextDocument(all.fsPath)
-    vscode.window.showTextDocument(allDoc)
+    await vscode.window.showTextDocument(appDoc)
+    await vscode.window.showTextDocument(allDoc)
+    await vscode.window.showTextDocument(asdfDoc)
 }
 
 function lastDirPart(dir: string): string {

@@ -55,6 +55,21 @@ export function connectionInfoReq(msgID: number, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
+export function macroExpandReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank:swank-macroexpand-1'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function macroExpandAllReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank:swank-macroexpand-all'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function disassembleReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank:disassemble-form'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
 export function evalReq(msgID: number, form: string, pkg?: string) {
     const data = [new LispID('swank:interactive-eval'), form]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)

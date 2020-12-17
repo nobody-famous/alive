@@ -1,15 +1,24 @@
-import { format } from 'util'
+import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
+import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
-import * as CreateSystem from './vscode/CreateSystem'
+import * as Skeleton from './vscode/SystemSkeleton'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
 import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
-import { COMMON_LISP_ID, getDocumentExprs, REPL_ID, toVscodePos } from './vscode/Utils'
+import {
+    COMMON_LISP_ID,
+    createFolder,
+    getDocumentExprs,
+    getTempFolder,
+    jumpToTop,
+    openFile,
+    REPL_ID,
+    toVscodePos,
+} from './vscode/Utils'
 
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
@@ -74,8 +83,11 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', replHistory))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', nthRestart))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpand', macroExpand))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', macroExpandAll))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', disassemble))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.createSystem', createSystem))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.systemSkeleton', systemSkeleton))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -113,7 +125,7 @@ async function pickFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<v
     return nameMap[pick]
 }
 
-async function createSystem() {
+async function systemSkeleton() {
     const folders = vscode.workspace.workspaceFolders
 
     if (folders === undefined) {
@@ -127,7 +139,142 @@ async function createSystem() {
     }
 
     try {
-        await CreateSystem.create(folder)
+        await Skeleton.create(folder)
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+function strToMarkdown(text: string): string {
+    return text.replace(/ /g, '&nbsp;').replace(/\n/g, '  \n')
+}
+
+async function disassemble() {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined || !hasValidLangId(editor.document)) {
+        return
+    }
+
+    try {
+        const expr = await getTopExpr()
+        if (expr === undefined || !(expr instanceof SExpr) || expr.parts.length < 2) {
+            return
+        }
+
+        const name = exprToString(expr.parts[1])
+        if (name === undefined) {
+            return
+        }
+
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, expr.start.line)
+        const pkgName = pkg?.name ?? ':cl-user'
+        const result = await clRepl.disassemble(`'${name}`, pkgName)
+
+        if (result === undefined) {
+            return
+        }
+
+        const file = await writeDisassemble(result)
+
+        if (file !== undefined) {
+            const editor = await vscode.window.showTextDocument(file, vscode.ViewColumn.Two, true)
+            jumpToTop(editor)
+        }
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+async function writeDisassemble(text: string) {
+    const folder = await getTempFolder()
+
+    if (folder === undefined) {
+        vscode.window.showErrorMessage('No folder for disassemble output')
+        return
+    }
+
+    await createFolder(folder)
+
+    const filePath = vscode.Uri.joinPath(folder, 'disassemble.lisp')
+    const file = await openFile(filePath)
+    const content = new TextEncoder().encode(text)
+
+    await vscode.workspace.fs.writeFile(file.uri, content)
+
+    return file
+}
+
+async function macroExpand() {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined || !hasValidLangId(editor.document)) {
+        return
+    }
+
+    try {
+        const expr = await getInnerExpr(editor)
+        if (expr === undefined) {
+            return
+        }
+
+        const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+        const text = editor.document.getText(range)
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, range.start.line)
+        const pkgName = pkg?.name ?? ':cl-user'
+        const result = await clRepl.macroExpand(text, pkgName)
+
+        if (result === undefined) {
+            return
+        }
+
+        hoverText = strToMarkdown(result)
+        vscode.commands.executeCommand('editor.action.showHover')
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+async function macroExpandAll() {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined || !hasValidLangId(editor.document)) {
+        return
+    }
+
+    try {
+        const expr = await getInnerExpr(editor)
+        if (expr === undefined) {
+            return
+        }
+
+        const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+        const text = editor.document.getText(range)
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, range.start.line)
+        const pkgName = pkg?.name ?? ':cl-user'
+        const result = await clRepl.macroExpandAll(text, pkgName)
+
+        if (result === undefined) {
+            return
+        }
+
+        hoverText = strToMarkdown(result)
+        vscode.commands.executeCommand('editor.action.showHover')
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }
@@ -226,7 +373,7 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
             doc: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.SemanticTokens> {
-            const colorizer = new Colorizer()
+            const colorizer = new Colorizer(clRepl)
             const tokens = getLexTokens(doc.fileName)
             const emptyTokens = new vscode.SemanticTokens(new Uint32Array(0))
 
@@ -239,7 +386,7 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
 
                 await updatePkgMgr(doc, exprs)
 
-                return colorizer.run(tokens)
+                return await colorizer.run(tokens)
             } catch (err) {
                 vscode.window.showErrorMessage(format(err))
             }
@@ -410,7 +557,7 @@ async function inlineEval() {
         return
     }
 
-    hoverText = result.replace(/\n/g, '  \n')
+    hoverText = strToMarkdown(result)
     vscode.commands.executeCommand('editor.action.showHover')
 }
 
@@ -421,22 +568,6 @@ function clearInlineResults() {
     }
 
     hoverText = ''
-}
-
-function getInlineResult(result: string, range: vscode.Range) {
-    return {
-        renderOptions: {
-            before: {
-                contentText: result,
-                backgroundColor: 'black',
-                color: '#999',
-                margin: '0 0.25rem 0 0.25rem',
-                border: '1px solid #777',
-                whiteSpace: 'pre',
-            },
-        },
-        range: new vscode.Range(range.end, range.end),
-    }
 }
 
 async function getInnerExpr(editor: vscode.TextEditor | undefined): Promise<Expr | undefined> {

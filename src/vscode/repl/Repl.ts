@@ -76,6 +76,10 @@ export class Repl extends EventEmitter {
         this.view?.close()
     }
 
+    setIgnoreDebug(ignore: boolean) {
+        this.conn?.setIgnoreDebug(ignore)
+    }
+
     documentChanged() {
         this.view?.documentChanged()
     }
@@ -215,6 +219,51 @@ export class Repl extends EventEmitter {
         }
     }
 
+    async disassemble(text: string, pkg?: string): Promise<string | undefined> {
+        if (this.conn === undefined) {
+            return undefined
+        }
+
+        const resp = await this.conn.disassemble(text, pkg)
+
+        if (resp instanceof response.Eval) {
+            const converted = resp.result.map((i) => convert(i))
+            return unescape(converted.join(''))
+        }
+
+        return undefined
+    }
+
+    async macroExpand(text: string, pkg?: string): Promise<string | undefined> {
+        if (this.conn === undefined) {
+            return undefined
+        }
+
+        const resp = await this.conn.macroExpand(text, pkg)
+
+        if (resp instanceof response.Eval) {
+            const converted = resp.result.map((i) => convert(i))
+            return unescape(converted.join(''))
+        }
+
+        return undefined
+    }
+
+    async macroExpandAll(text: string, pkg?: string): Promise<string | undefined> {
+        if (this.conn === undefined) {
+            return undefined
+        }
+
+        const resp = await this.conn.macroExpandAll(text, pkg)
+
+        if (resp instanceof response.Eval) {
+            const converted = resp.result.map((i) => convert(i))
+            return unescape(converted.join(''))
+        }
+
+        return undefined
+    }
+
     async eval(text: string, pkg?: string): Promise<string | undefined> {
         if (this.conn === undefined) {
             return undefined
@@ -229,7 +278,7 @@ export class Repl extends EventEmitter {
 
         return undefined
     }
-    
+
     async inlineEval(text: string, pkg?: string): Promise<string | undefined> {
         if (this.conn === undefined) {
             return undefined

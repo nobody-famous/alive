@@ -1,9 +1,6 @@
-import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { jumpToBottom } from '../Utils'
+import { createFolder, getTempFolder, jumpToBottom, openFile } from '../Utils'
 import { View } from './View'
-
-const OUTPUT_DIR = '.vscode/alive'
 
 export class FileView implements View {
     prompt: string = ''
@@ -27,11 +24,17 @@ export class FileView implements View {
 
     async open() {
         try {
-            await this.getFolder()
-            this.getReplFile()
+            this.folder = await getTempFolder()
 
-            await this.createFolder()
-            await this.openFile()
+            if (this.folder === undefined) {
+                throw new Error('No folder for REPL file')
+            }
+
+            this.replFile = vscode.Uri.joinPath(this.folder, this.name)
+
+            await createFolder(this.folder)
+
+            this.replDoc = await openFile(this.replFile)
         } catch (err) {
             vscode.window.showErrorMessage(err)
         }
@@ -49,7 +52,7 @@ export class FileView implements View {
         }
 
         if (!this.isEditorVisible()) {
-            const column = this.replEditor !== undefined ? this.replEditor.viewColumn : vscode.ViewColumn.Beside
+            const column = vscode.ViewColumn.Two
             this.replEditor = await vscode.window.showTextDocument(this.replDoc, column, true)
             jumpToBottom(this.replEditor)
         }
@@ -115,96 +118,5 @@ export class FileView implements View {
         }
 
         return false
-    }
-
-    private async openFile() {
-        if (this.replFile === undefined) {
-            throw new Error('No file to open')
-        }
-
-        try {
-            this.replDoc = await this.tryOpen(this.replFile)
-        } catch (err) {
-            this.replDoc = await this.tryCreate(this.replFile)
-        }
-    }
-
-    private getReplFile() {
-        if (this.folder === undefined) {
-            throw new Error('No folder for REPL file')
-        }
-
-        this.replFile = vscode.Uri.joinPath(this.folder, this.name)
-    }
-
-    private async getOpenFolder() {
-        const folders = vscode.workspace.workspaceFolders
-
-        if (folders === undefined) {
-            return undefined
-        }
-
-        const uriMap: { [index: string]: vscode.WorkspaceFolder | undefined } = {}
-
-        for (const folder of folders) {
-            uriMap[folder.uri.fsPath] = folder
-        }
-
-        let openFolder: vscode.Uri | undefined = undefined
-
-        if (folders.length > 1) {
-            const pick = await vscode.window.showQuickPick(Object.keys(uriMap), { placeHolder: 'Select folder' })
-
-            if (pick !== undefined) {
-                openFolder = uriMap[pick]?.uri
-            }
-        } else {
-            openFolder = folders[0].uri
-        }
-
-        return openFolder
-    }
-
-    private getActiveDocFolder() {
-        const activeDoc = vscode.window.activeTextEditor?.document
-
-        if (activeDoc === undefined) {
-            return undefined
-        }
-
-        const wsFolder = vscode.workspace.getWorkspaceFolder(activeDoc.uri)
-
-        return wsFolder?.uri
-    }
-
-    private async getFolder() {
-        let baseFolder = await this.getOpenFolder()
-
-        if (baseFolder === undefined) {
-            baseFolder = this.getActiveDocFolder()
-        }
-
-        if (baseFolder === undefined) {
-            throw new Error('No folder for REPL file')
-        }
-
-        this.folder = vscode.Uri.joinPath(baseFolder, OUTPUT_DIR)
-    }
-
-    private async createFolder() {
-        if (this.folder === undefined) {
-            throw new Error('No folder to create')
-        }
-
-        await vscode.workspace.fs.createDirectory(this.folder)
-    }
-
-    private async tryCreate(path: vscode.Uri): Promise<vscode.TextDocument> {
-        await vscode.workspace.fs.writeFile(path, new TextEncoder().encode(''))
-        return await this.tryOpen(path)
-    }
-
-    private async tryOpen(path: vscode.Uri): Promise<vscode.TextDocument> {
-        return await vscode.workspace.openTextDocument(path)
     }
 }
