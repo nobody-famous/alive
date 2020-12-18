@@ -1,7 +1,7 @@
 import { Expr } from './Expr'
 import { ExprFormatter } from './ExprFormatter'
 import { FormatToken } from './FormatToken'
-import { isExprEnd, setTarget, State, withIndent, withIncIndent } from './Utils'
+import { countNewLines, isExprEnd, setTarget, State, withIndent } from './Utils'
 
 const baseClauses = [
     'named',
@@ -55,6 +55,7 @@ export class Loop extends ExprFormatter {
 
         let first = true
         let inFor = false
+
         while (!isExprEnd(curToken)) {
             if (this.isNamedClause('for', curToken!)) {
                 inFor = true
@@ -65,6 +66,12 @@ export class Loop extends ExprFormatter {
                     setTarget(this.state, curToken!, ' ')
                 } else {
                     this.addLineIndent(curToken!)
+                }
+            } else if (!this.isClause(curToken)) {
+                if (countNewLines(curToken!.before.existing) > 0) {
+                    this.addLineIndent(curToken!)
+                } else {
+                    setTarget(this.state, curToken!, ' ')
                 }
             } else {
                 setTarget(this.state, curToken!, ' ')
