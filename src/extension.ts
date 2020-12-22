@@ -611,12 +611,8 @@ async function updatePackageNames() {
 async function inlineEval() {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
         useRepl(async (repl: Repl) => {
-            let text = getSelectionText(editor)
+            let text = getSelectOrExpr(editor, editor.selection.start)
             const pkgName = getPkgName(editor.document, editor.selection.start.line, repl)
-
-            if (text === undefined) {
-                text = getInnerExprText(editor.document, editor.selection.start)
-            }
 
             if (text === undefined) {
                 return
