@@ -16,6 +16,7 @@ import {
     getDocumentExprs,
     getExprText,
     getInnerExprText,
+    getSelectionText,
     getSelectOrExpr,
     getTempFolder,
     getTopExpr,
@@ -610,8 +611,12 @@ async function updatePackageNames() {
 async function inlineEval() {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
         useRepl(async (repl: Repl) => {
-            const text = getExprText(editor, editor.selection.start)
+            let text = getSelectionText(editor)
             const pkgName = getPkgName(editor.document, editor.selection.start.line, repl)
+
+            if (text === undefined) {
+                text = getInnerExprText(editor.document, editor.selection.start)
+            }
 
             if (text === undefined) {
                 return

@@ -1,6 +1,6 @@
 # Alive: The Average Lisp VSCode Environment
 
-An attempt to create a Common Lisp extension for VSCode. It's still a work in progress, though some basic things are working. I wouldn't currently recommend it for doing serious work.
+An attempt to create a Common Lisp extension for VSCode. It's still a work in progress, though getting better.
 
 The name is partly a self-deprecating take on SLIME's name, but also reflects the goal of the project which is to reach Minimum Viable Product status. For VSCode language extensions, there is a lot that is expected for the bare minimum, including formatting, code completion, syntax highlighting, etc. Being a Lisp environment, having REPL integration is required. Without that, it's not viable.
 
