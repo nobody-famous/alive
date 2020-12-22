@@ -4,7 +4,12 @@ import { FindDefs } from '../swank/response'
 import { Repl } from './repl'
 
 export class DefinitionProvider {
-    async getDefinitions(repl: Repl, pkgName: string, exprs: Expr[], pos: vscode.Position) {
+    async getDefinitions(
+        repl: Repl,
+        pkgName: string,
+        exprs: Expr[],
+        pos: vscode.Position
+    ): Promise<vscode.Location[] | undefined> {
         if (repl === undefined) {
             return undefined
         }

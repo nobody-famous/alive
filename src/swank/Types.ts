@@ -43,3 +43,19 @@ export interface FrameVariable {
     id: number
     value: string
 }
+
+export interface InspectContentAction {
+    action: string
+    display: string
+    index: number
+}
+
+export interface InspectContent {
+    display: Array<InspectContentAction | string>
+}
+
+export interface InspectInfo {
+    title: string
+    id: number
+    content: InspectContent
+}

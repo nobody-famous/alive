@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.0.9",
+    "version": "0.1.0",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -132,6 +132,26 @@
                 "title": "Alive: Load File Into REPL"
             },
             {
+                "command": "alive.inspector",
+                "title": "Alive: Inspector"
+            },
+            {
+                "command": "alive.inspector-prev",
+                "title": "Alive: Inspector Prev"
+            },
+            {
+                "command": "alive.inspector-next",
+                "title": "Alive: Inspector Next"
+            },
+            {
+                "command": "alive.inspector-refresh",
+                "title": "Alive: Inspector Refresh"
+            },
+            {
+                "command": "alive.inspector-quit",
+                "title": "Alive: Inspector Quit"
+            },
+            {
                 "command": "alive.systemSkeleton",
                 "title": "Alive: System Skeleton"
             }
@@ -185,11 +205,46 @@
                     "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
                 },
                 {
+                    "command": "alive.inspector"
+                },
+                {
+                    "command": "alive.inspector-prev"
+                },
+                {
+                    "command": "alive.inspector-next"
+                },
+                {
+                    "command": "alive.inspector-refresh"
+                },
+                {
+                    "command": "alive.inspector-quit"
+                },
+                {
                     "command": "alive.systemSkeleton"
                 }
             ]
         },
         "keybindings": [
+            {
+                "command": "alive.inspector-prev",
+                "when": "clInspectorActive",
+                "key": "ctrl+p"
+            },
+            {
+                "command": "alive.inspector-next",
+                "when": "clInspectorActive",
+                "key": "ctrl+n"
+            },
+            {
+                "command": "alive.inspector-refresh",
+                "when": "clInspectorActive",
+                "key": "ctrl+r"
+            },
+            {
+                "command": "alive.inspector-quit",
+                "when": "clInspectorActive",
+                "key": "ctrl+q"
+            },
             {
                 "command": "alive.loadFile",
                 "when": "editorLangId == lisp",

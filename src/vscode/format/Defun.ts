@@ -68,7 +68,9 @@ class ArgsList extends ExprFormatter {
                 setTarget(this.state, curToken!, first ? '' : ' ')
             }
 
-            this.consumeExpr()
+            withIndent(this.state, this.state.lineLength, () => {
+                this.consumeExpr()
+            })
 
             curToken = this.peekToken()
             first = false

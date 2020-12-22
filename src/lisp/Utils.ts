@@ -196,14 +196,128 @@ export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
     return undefined
 }
 
+export function findString(exprs: Expr[], pos: Position): string | undefined {
+    const atom = findAtom(exprs, pos)
+
+    if (atom === undefined) {
+        return undefined
+    }
+
+    return exprToString(atom)
+}
+
 export function isLetName(name: string | undefined): boolean {
     const upper = name?.toUpperCase()
 
     return upper === 'LET' || upper === 'LET*'
 }
 
+export function isFletName(name: string | undefined): boolean {
+    const upper = name?.toUpperCase()
+
+    return upper === 'FLET' || upper === 'LABELS'
+}
+
 export function unescape(str: string): string {
     return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
+}
+
+export function getLocalDef(expr: Expr, pos: Position, label: string): Expr | undefined {
+    if (!(expr instanceof SExpr) || !posInExpr(expr, pos)) {
+        return
+    }
+
+    const name = expr.getName()?.toUpperCase()
+
+    if (name === 'DEFUN') {
+        const argExpr = getDefunArg(expr, label)
+        const bodyExpr = getBodyLocal(expr.parts.slice(3), pos, label)
+
+        return bodyExpr ?? argExpr
+    } else if (isLetName(name)) {
+        return getLetDef(expr, pos, label)
+    }
+
+    return undefined
+}
+
+function getLetDef(expr: SExpr, pos: Position, label: string): Expr | undefined {
+    if (expr.parts.length < 2) {
+        return undefined
+    }
+
+    const bindings = expr.parts[1]
+    let def: Expr | undefined = undefined
+
+    if (bindings instanceof SExpr) {
+        for (const binding of bindings.parts) {
+            if (!(binding instanceof SExpr)) {
+                continue
+            }
+
+            def = getComplexArg(binding, label)
+
+            if (def !== undefined) {
+                break
+            }
+        }
+    }
+
+    const bodyDef = getBodyLocal(expr.parts.slice(2), pos, label)
+
+    return bodyDef ?? def
+}
+
+function getBodyLocal(body: Expr[], pos: Position, label: string): Expr | undefined {
+    for (const expr of body) {
+        if (posInExpr(expr, pos)) {
+            return getLocalDef(expr, pos, label)
+        }
+    }
+
+    return undefined
+}
+
+function getDefunArg(expr: SExpr, label: string): Expr | undefined {
+    if (expr.parts.length < 3) {
+        return undefined
+    }
+
+    const argList = expr.parts[2]
+
+    if (!(argList instanceof SExpr)) {
+        return undefined
+    }
+
+    for (const arg of argList.parts) {
+        const nameStr = exprToString(arg)
+
+        if (nameStr === label) {
+            return arg
+        } else if (arg instanceof SExpr) {
+            const nameExpr = getComplexArg(arg, label)
+
+            if (nameExpr !== undefined) {
+                return nameExpr
+            }
+        }
+    }
+
+    return undefined
+}
+
+function getComplexArg(expr: SExpr, label: string): Expr | undefined {
+    if (expr.parts.length === 0) {
+        return undefined
+    }
+
+    const part = exprToString(expr.parts[0])
+
+    if (part === label) {
+        return expr.parts[0]
+    }
+
+    return undefined
 }
 
 function posAfterStart(start: Position, pos: Position): boolean {

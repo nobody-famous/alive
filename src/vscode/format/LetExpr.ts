@@ -70,6 +70,10 @@ class BindPair extends ExprFormatter {
     }
 
     format() {
-        this.formatPair(() => this.consumeExpr())
+        this.formatPair(() => {
+            withIndent(this.state, this.state.lineLength, () => {
+                this.consumeExpr()
+            })
+        })
     }
 }

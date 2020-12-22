@@ -1,3 +1,4 @@
+import { EOL } from 'os'
 import * as vscode from 'vscode'
 import { createFolder, getTempFolder, jumpToBottom, openFile } from '../Utils'
 import { View } from './View'
@@ -67,12 +68,12 @@ export class FileView implements View {
 
     async addText(text: string) {
         await this.show()
-        await this.appendLine(`\n${text}`)
+        await this.appendLine(`${EOL}${text}`)
     }
 
     async addTextAndPrompt(text: string) {
         await this.show()
-        await this.appendLine(`\n${text}\n${this.prompt}`)
+        await this.appendLine(`${EOL}${text}${EOL}${this.prompt}`)
     }
 
     setPrompt(prompt: string) {
@@ -95,7 +96,7 @@ export class FileView implements View {
         this.needJump = true
         this.replEditor.edit((builder: vscode.TextEditorEdit) => {
             const pos = doc.positionAt(Infinity)
-            let text = doc.lineCount === 0 ? '' : '\n'
+            let text = doc.lineCount === 0 ? '' : EOL
 
             this.replEditor!.selection = new vscode.Selection(pos, pos)
 
