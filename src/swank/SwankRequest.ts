@@ -70,6 +70,41 @@ export function disassembleReq(msgID: number, form: string, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
+export function inspectorReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank:init-inspector'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function inspectNthPartReq(msgID: number, index: number, pkg?: string) {
+    const data = [new LispID('swank:inspect-nth-part'), index]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function inspectNthActionReq(msgID: number, index: number, pkg?: string) {
+    const data = [new LispID('swank:inspector-call-nth-action'), index]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function inspectorPrevReq(msgID: number) {
+    const data = [new LispID('swank:inspector-pop')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
+export function inspectorNextReq(msgID: number) {
+    const data = [new LispID('swank:inspector-next')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
+export function inspectorRefreshReq(msgID: number) {
+    const data = [new LispID('swank:inspector-reinspect')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
+export function inspectorQuitReq(msgID: number) {
+    const data = [new LispID('swank:quit-inspector')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
 export function evalReq(msgID: number, form: string, pkg?: string) {
     const data = [new LispID('swank:interactive-eval'), form]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)

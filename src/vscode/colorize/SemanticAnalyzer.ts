@@ -230,6 +230,8 @@ export class SemanticAnalyzer {
 
             if (next.text === 'DEFUN') {
                 await this.defun()
+            } else if (this.isLambdaName(next.text)) {
+                await this.lambda()
             } else if (next.type === types.QUOTE_FUNC) {
                 await this.quoteFn()
             } else if (next.type === types.IN_PACKAGE) {
@@ -241,6 +243,16 @@ export class SemanticAnalyzer {
             } else {
                 await this.expr()
             }
+        }
+    }
+
+    private isLambdaName(text: string): boolean {
+        switch (text) {
+            case 'LAMBDA':
+            case 'DESTRUCTURING-BIND':
+                return true
+            default:
+                return false
         }
     }
 
@@ -256,7 +268,7 @@ export class SemanticAnalyzer {
         let next = this.peek()
 
         if (next === undefined) {
-            throw new Error('sexprCheckFunctionCall SOMETHING IS WRONG')
+            return
         }
 
         if (next.type === types.ID) {
@@ -305,6 +317,27 @@ export class SemanticAnalyzer {
         this.consume()
 
         token.type = types.PACKAGE_NAME
+    }
+
+    private async lambda() {
+        this.consume()
+
+        let token = this.peek()
+        if (token?.type !== types.OPEN_PARENS) {
+            return
+        }
+
+        this.parens.push(token)
+        this.consume()
+
+        await this.paramList()
+
+        let next = this.peek()
+
+        while (next !== undefined && next.type !== types.CLOSE_PARENS) {
+            await this.expr()
+            next = this.peek()
+        }
     }
 
     private async defun() {

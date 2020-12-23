@@ -1,6 +1,6 @@
 # Alive: The Average Lisp VSCode Environment
 
-An attempt to create a Common Lisp extension for VSCode. It's still a work in progress, though some basic things are working. I wouldn't currently recommend it for doing serious work.
+An attempt to create a Common Lisp extension for VSCode. It's still a work in progress, though getting better.
 
 The name is partly a self-deprecating take on SLIME's name, but also reflects the goal of the project which is to reach Minimum Viable Product status. For VSCode language extensions, there is a lot that is expected for the bare minimum, including formatting, code completion, syntax highlighting, etc. Being a Lisp environment, having REPL integration is required. Without that, it's not viable.
 
@@ -16,6 +16,7 @@ The name is partly a self-deprecating take on SLIME's name, but also reflects th
 -   Inline evaluation
 -   Macro expand
 -   Disassemble
+-   Inspector
 
 ## Extension Settings
 
@@ -53,6 +54,19 @@ Currently, a swank server must be running on the local machine using port 4005.
 ## Jump To Definition
 
 In order for jump to definition to work, the files need to be loaded into the REPL using the Load File (Alt+Shift+L) command, ASDF, or whatever else works.
+
+## Inspector
+
+The inspector will ask for a form to inspect, defaulting to the current token or current selection.
+
+![Inspector](https://github.com/nobody-famous/alive/raw/master/resource/gifs/inspect.gif)
+
+### Inspector Commands
+
+-   Ctrl+P - Previous Item
+-   Ctrl+N - Next Item
+-   Ctrl+R - Refresh Item
+-   Ctrl+Q - Quit
 
 ## Commands
 

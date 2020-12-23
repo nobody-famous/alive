@@ -1,0 +1,31 @@
+#content {
+    font: 'Consolas', 'Courier New', 'monospace';
+}
+
+.inspect-title {
+    font-weight: bold;
+    padding-top: 0.5rem;
+}
+
+.inspect-item {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.inspect-action-box {
+    display: inline-block;
+}
+
+.inspect-action-box button {
+    background: unset;
+    border: unset;
+    cursor: pointer;
+}
+
+.inspect-btn-value {
+    color: #55dd55;
+}
+
+.inspect-btn-action {
+    color: #ffbbcc;
+}

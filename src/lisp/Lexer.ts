@@ -199,8 +199,11 @@ export class Lexer {
             this.curText += this.peek() ?? ''
             this.consume()
 
-            this.curText += this.peek() ?? ''
-            this.consume()
+            while (!this.isDelimiter(this.peek())) {
+                this.curText += this.peek() ?? ''
+                this.consume()
+            }
+
             return this.newToken(types.POUND_SEQ)
         }
 

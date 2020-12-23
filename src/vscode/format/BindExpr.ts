@@ -1,7 +1,7 @@
 import { ExprFormatter } from './ExprFormatter'
 import { countNewLines, incIndent, isExprEnd, setTarget, State, withIncIndent, withIndent } from './Utils'
 
-export class LambdaExpr extends ExprFormatter {
+export class BindExpr extends ExprFormatter {
     constructor(state: State) {
         super(state)
     }
@@ -11,6 +11,12 @@ export class LambdaExpr extends ExprFormatter {
         if (isExprEnd(curToken)) {
             return
         }
+
+        setTarget(this.state, curToken!, ' ')
+        withIndent(this.state, this.state.lineLength, () => {
+            this.consumeExpr()
+            curToken = this.peekToken()
+        })
 
         if (countNewLines(curToken!.before.existing) > 0) {
             withIncIndent(this.state, this.state.options.indentWidth * 2, () => {
@@ -35,9 +41,7 @@ export class LambdaExpr extends ExprFormatter {
                     setTarget(this.state, curToken!, ' ')
                 }
 
-                withIndent(this.state, this.state.lineLength, () => {
-                    this.consumeExpr()
-                })
+                this.consumeExpr()
 
                 curToken = this.peekToken()
             }

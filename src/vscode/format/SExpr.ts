@@ -1,4 +1,5 @@
 import { types } from '../../lisp'
+import { BindExpr } from './BindExpr'
 import { DefClass } from './DefClass'
 import { DefPackage } from './DefPackage'
 import { DefSystem } from './DefSystem'
@@ -80,6 +81,9 @@ export class SExpr extends ExprFormatter {
             case 'RESTART-CASE':
             case 'HANDLER-CASE':
                 this.formatExpr(new LambdaExpr(this.state))
+                break
+            case 'DESTRUCTURING-BIND':
+                this.formatExpr(new BindExpr(this.state))
                 break
             case 'LET':
             case 'LET*':

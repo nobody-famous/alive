@@ -2,7 +2,7 @@ import { EOL } from 'os'
 import { types } from '../../lisp'
 import { Expr } from './Expr'
 import { ExprFormatter } from './ExprFormatter'
-import { State } from './Utils'
+import { countNewLines, State } from './Utils'
 
 export class RootExpr extends ExprFormatter {
     constructor(state: State) {
@@ -24,7 +24,14 @@ export class RootExpr extends ExprFormatter {
             const prev = this.prevToken()
 
             if (prev?.token.type !== types.COMMENT) {
-                curToken.before.target = `${EOL}${EOL}`
+                const count = countNewLines(curToken.before.existing)
+
+                if (count <= 1) {
+                    curToken.before.target = `${EOL}`
+                } else {
+                    curToken.before.target = `${EOL}${EOL}`
+                }
+
                 this.state.lineLength = 0
             } else {
                 this.copyExistingWS(curToken)

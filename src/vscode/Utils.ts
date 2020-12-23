@@ -1,11 +1,15 @@
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { Lexer, Parser, types } from '../lisp'
+import { Expr, findAtom, findExpr, findInnerExpr, Lexer, Parser, types } from '../lisp'
 
 export const COMMON_LISP_ID = 'lisp'
 export const REPL_ID = 'lisp-repl'
 
 const OUTPUT_DIR = '.vscode/alive'
+
+export function hasValidLangId(doc: vscode.TextDocument, ids: string[]): boolean {
+    return ids.includes(doc.languageId)
+}
 
 export function toVscodePos(pos: types.Position): vscode.Position {
     return new vscode.Position(pos.line, pos.character)
@@ -22,6 +26,82 @@ export function getDocumentExprs(doc: vscode.TextDocument) {
     const exprs = parser.parse()
 
     return exprs
+}
+
+export function getExprRange(editor: vscode.TextEditor, expr: Expr): vscode.Range {
+    const selection = editor.selection
+
+    if (!selection.isEmpty) {
+        return new vscode.Range(selection.start, selection.end)
+    }
+
+    return new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+}
+
+export function getSelectionText(editor: vscode.TextEditor): string | undefined {
+    if (editor.selection.isEmpty) {
+        return undefined
+    }
+
+    const range = new vscode.Range(editor.selection.start, editor.selection.end)
+
+    return editor.document.getText(range)
+}
+
+export function getExprText(editor: vscode.TextEditor, pos: vscode.Position): string | undefined {
+    const expr = getTopExpr(editor.document, pos)
+
+    if (expr === undefined) {
+        return undefined
+    }
+
+    const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+
+    return editor.document.getText(range)
+}
+
+export function getInnerExprText(doc: vscode.TextDocument, pos: vscode.Position): string | undefined {
+    const expr = getInnerExpr(doc, pos)
+
+    if (expr === undefined) {
+        return undefined
+    }
+
+    const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+
+    return doc.getText(range)
+}
+
+export function getSelectOrExpr(editor: vscode.TextEditor, pos: vscode.Position): string | undefined {
+    let text = getSelectionText(editor)
+
+    if (text === undefined) {
+        text = getExprText(editor, pos)
+    }
+
+    return text
+}
+
+export function getTopExpr(doc: vscode.TextDocument, pos: vscode.Position) {
+    const exprs = getDocumentExprs(doc)
+    const expr = findExpr(exprs, pos)
+
+    if (expr === undefined || expr.start === undefined || expr.end === undefined) {
+        return undefined
+    }
+
+    return expr
+}
+
+export function getInnerExpr(doc: vscode.TextDocument, pos: vscode.Position): Expr | undefined {
+    const exprs = getDocumentExprs(doc)
+    let expr = findInnerExpr(exprs, pos)
+
+    if (expr !== undefined) {
+        return expr
+    }
+
+    return findAtom(exprs, pos)
 }
 
 export function jumpToBottom(editor: vscode.TextEditor) {

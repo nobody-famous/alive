@@ -1,7 +1,7 @@
 import { types } from '../../lisp'
 import { ExprFormatter } from './ExprFormatter'
 import { SExpr } from './SExpr'
-import { countNewLines, setTarget, State } from './Utils'
+import { countNewLines, setTarget, State, withIndent } from './Utils'
 
 export class Expr extends ExprFormatter {
     constructor(state: State) {
@@ -122,6 +122,8 @@ class PoundExpr extends ExprFormatter {
             setTarget(this.state, curToken, ' ')
         }
 
-        this.consumeExpr()
+        withIndent(this.state, this.state.lineLength, () => {
+            this.consumeExpr()
+        })
     }
 }
