@@ -14,9 +14,7 @@ import {
     COMMON_LISP_ID,
     createFolder,
     getDocumentExprs,
-    getExprText,
     getInnerExprText,
-    getSelectionText,
     getSelectOrExpr,
     getTempFolder,
     getTopExpr,
@@ -24,7 +22,7 @@ import {
     jumpToTop,
     openFile,
     REPL_ID,
-    toVscodePos,
+    toVscodePos
 } from './vscode/Utils'
 
 const pkgMgr = new PackageMgr()
@@ -445,7 +443,32 @@ function getHoverProvider(): vscode.HoverProvider {
             pos: vscode.Position,
             token: vscode.CancellationToken
         ): Promise<vscode.Hover> {
-            return new vscode.Hover(hoverText)
+            if (hoverText !== '') {
+                return new vscode.Hover(hoverText)
+            }
+
+            let text = ''
+
+            if (clRepl === undefined) {
+                return new vscode.Hover('')
+            }
+
+            const exprs = getDocumentExprs(doc)
+            const atom = findAtom(exprs, pos)
+            const textStr = atom !== undefined ? exprToString(atom) : undefined
+            let pkgName = getPkgName(doc, pos.line, clRepl)
+
+            if (textStr === undefined) {
+                return new vscode.Hover('')
+            }
+
+            text = await clRepl.getDoc(textStr, pkgName)
+
+            if (text.startsWith('No such symbol')) {
+                text = ''
+            }
+
+            return new vscode.Hover(text)
         },
     }
 }
@@ -670,14 +693,17 @@ async function getCompletionProvider(): Promise<vscode.CompletionItemProvider> {
             ctx: vscode.CompletionContext
         ) {
             try {
+                if (clRepl === undefined) {
+                    return
+                }
+
                 const exprs = getDocumentExprs(document)
 
                 await updatePkgMgr(document, exprs)
 
-                const pkg = pkgMgr.getPackageForLine(document.fileName, pos.line)
                 const atom = findAtom(exprs, pos)
                 const textStr = atom !== undefined ? exprToString(atom) : undefined
-                let pkgName = pkg?.name
+                let pkgName = getPkgName(document, pos.line, clRepl)
 
                 if (textStr !== undefined) {
                     const ndx = textStr.indexOf(':')

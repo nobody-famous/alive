@@ -17,6 +17,7 @@ The name is partly a self-deprecating take on SLIME's name, but also reflects th
 -   Macro expand
 -   Disassemble
 -   Inspector
+-   Hover Text
 
 ## Extension Settings
 
@@ -68,6 +69,12 @@ The inspector will ask for a form to inspect, defaulting to the current token or
 -   Ctrl+R - Refresh Item
 -   Ctrl+Q - Quit
 
+## Hover Text
+
+Will provide documentation from the REPL for the symbol under the cursor.
+
+Note that the inline result feature uses a hover to display results, so those results will display if they have not been cleared by editing the document or using the Clear Inline Results command (Alt+Shift+C).
+
 ## Commands
 
 ### Select S-Expression (Alt+Shift+Up)
@@ -101,6 +108,10 @@ Load the current file into the REPL.
 ### Inline Evaluation (Alt+Shift+E)
 
 Evaluate the enclosing form, showing the result inline. If there is a selection, evaluates the selected code.
+
+### Clear Inline Results (Alt+Shift+C)
+
+Clear the inline results.
 
 ### REPL History (Alt+Shift+R)
 

@@ -1,6 +1,6 @@
 import { EOL } from 'os'
 import * as vscode from 'vscode'
-import { createFolder, getTempFolder, jumpToBottom, openFile } from '../Utils'
+import { createFolder, getTempFolder, jumpToBottom, openFile, REPL_ID } from '../Utils'
 import { View } from './View'
 
 export class FileView implements View {
@@ -108,12 +108,9 @@ export class FileView implements View {
     }
 
     private isEditorVisible(): boolean {
-        if (this.replEditor === undefined) {
-            return false
-        }
-
         for (const editor of vscode.window.visibleTextEditors) {
-            if (editor === this.replEditor) {
+            if (editor.document.languageId === REPL_ID) {
+                this.replEditor = editor
                 return true
             }
         }

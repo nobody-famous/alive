@@ -14,6 +14,21 @@ import { ListExpr } from './ListExpr'
 import { Loop } from './Loop'
 import { isExprEnd, State } from './Utils'
 
+const LamdaLikeForms = [
+    'LAMBDA',
+    'RESTART-CASE',
+    'HANDLER-CASE',
+    'WITH-OUTPUT-TO-STRING',
+    'WITH-ALIEN',
+    'WITH-COMPILATION-UNIT',
+    'WITH-HASH-TABLE-ITERATOR',
+    'WITH-INPUT-FROM-STRING',
+    'WITH-OPEN-FILE',
+    'WITH-OPEN-STREAM',
+    'WITH-PACKAGE-ITERATOR',
+    'WITH-SIMPLE-RESTART',
+]
+
 export class SExpr extends ExprFormatter {
     constructor(state: State) {
         super(state)
@@ -71,16 +86,16 @@ export class SExpr extends ExprFormatter {
         const ndx = text.lastIndexOf(':')
         const name = ndx >= 0 ? text.substr(ndx + 1) : text
 
+        if (LamdaLikeForms.includes(name)) {
+            this.formatExpr(new LambdaExpr(this.state))
+            return
+        }
+
         switch (name) {
             case 'IF':
             case 'WHEN':
             case 'UNLESS':
                 this.formatExpr(new IfExpr(this.state))
-                break
-            case 'LAMBDA':
-            case 'RESTART-CASE':
-            case 'HANDLER-CASE':
-                this.formatExpr(new LambdaExpr(this.state))
                 break
             case 'DESTRUCTURING-BIND':
                 this.formatExpr(new BindExpr(this.state))

@@ -1,5 +1,5 @@
 import { ParameterInformation, Position, SignatureHelp, SignatureInformation, TextDocument } from 'vscode'
-import { Expr, exprToString, findInnerExpr, Lexer, Parser, posInExpr, SExpr } from '../lisp'
+import { Expr, exprToString, findInnerExpr, Lexer, Parser, SExpr } from '../lisp'
 import { Repl } from './repl'
 import { getDocumentExprs } from './Utils'
 
@@ -54,59 +54,18 @@ function exprToHelp(desc: string, descExpr: Expr, args: Expr[], pos: Position): 
 
 function buildSigInfo(desc: string, descParts: Expr[], args: Expr[], pos: Position): SignatureInformation {
     const sigInfo = new SignatureInformation(desc)
-    let foundOptional: boolean = false
-    let restNdx: number | undefined = undefined
     let argsNdx: number = 0
 
     descParts.forEach((part, descNdx) => {
-        const curArg = argsNdx < args.length ? args[argsNdx] : undefined
-        const nxtArg = argsNdx + 1 < args.length ? args[argsNdx + 1] : undefined
         const range: [number, number] = [part.start.character, part.end.character]
-        const str = exprToString(part)
 
         sigInfo.parameters.push(new ParameterInformation(range))
-
-        if (sigInfo.activeParameter !== undefined) {
-            return
-        }
-
-        if (str !== undefined && str.startsWith('&')) {
-            if (str.toLowerCase() === '&rest') {
-                sigInfo.activeParameter = descNdx + 1
-            }
-            return
-        }
-
-        if (nxtArg === undefined && curArg !== undefined && posInExpr(curArg, pos)) {
-            sigInfo.activeParameter = descNdx
-        } else if (curArg === undefined) {
-            sigInfo.activeParameter = descNdx
-        }
+        sigInfo.activeParameter = -1
 
         argsNdx += 1
     })
 
-    if (sigInfo.activeParameter === undefined) {
-        if (restNdx !== undefined) {
-            sigInfo.activeParameter = restNdx
-        } else if (foundOptional) {
-            sigInfo.activeParameter = descParts.length - 1
-        } else {
-            sigInfo.activeParameter = descParts.length
-        }
-    }
-
     return sigInfo
-}
-
-function isAmpOption(expr: Expr): boolean {
-    const str = exprToString(expr)
-
-    if (str === undefined) {
-        return false
-    }
-
-    return str.startsWith('&')
 }
 
 function parseFuncDesc(desc: string): Expr[] {
