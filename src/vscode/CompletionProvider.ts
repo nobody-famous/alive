@@ -20,7 +20,7 @@ export class CompletionProvider {
         if (expr !== undefined) {
             const exprStr = exprToString(expr)
 
-            if (exprStr !== undefined) {
+            if (exprStr !== undefined && !exprStr.startsWith('#+') && !exprStr.startsWith('#-')) {
                 str = exprStr
 
                 const ndx = str.indexOf(':')

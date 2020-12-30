@@ -705,7 +705,7 @@ async function getCompletionProvider(): Promise<vscode.CompletionItemProvider> {
                 const textStr = atom !== undefined ? exprToString(atom) : undefined
                 let pkgName = getPkgName(document, pos.line, clRepl)
 
-                if (textStr !== undefined) {
+                if (textStr !== undefined && !textStr.startsWith('#+') && !textStr.startsWith('#-')) {
                     const ndx = textStr.indexOf(':')
 
                     if (ndx > 0) {
