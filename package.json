@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
