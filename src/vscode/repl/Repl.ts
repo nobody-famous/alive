@@ -11,6 +11,7 @@ import { ConnInfo, Restart } from '../../swank/Types'
 import { isReplDoc } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
+import { History, HistoryItem } from './History'
 import { Inspector } from './Inspector'
 import { View } from './View'
 
@@ -24,6 +25,7 @@ export class Repl extends EventEmitter {
     host: string
     port: number
     kwDocs: { [index: string]: string } = {}
+    history: History = new History()
 
     constructor(ctx: vscode.ExtensionContext, host: string, port: number) {
         super()
@@ -84,6 +86,14 @@ export class Repl extends EventEmitter {
 
     documentChanged() {
         this.view?.documentChanged()
+    }
+
+    addHistory(text: string, pkg: string) {
+        this.history.add(text, pkg)
+    }
+
+    historyItems(): HistoryItem[] {
+        return this.history.list
     }
 
     async inspector(text: string, pkg: string) {

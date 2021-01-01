@@ -1,11 +1,18 @@
-import { TextEncoder } from 'util'
+import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { Expr, findAtom, findExpr, findInnerExpr, Lexer, Parser, types } from '../lisp'
+import { PackageMgr } from './PackageMgr'
+import { Repl } from './repl'
+import { ExtensionState } from './Types'
 
 export const COMMON_LISP_ID = 'lisp'
 export const REPL_ID = 'lisp-repl'
 
 const OUTPUT_DIR = '.vscode/alive'
+
+export function strToMarkdown(text: string): string {
+    return text.replace(/ /g, '&nbsp;').replace(/\n/g, '  \n')
+}
 
 export function hasValidLangId(doc: vscode.TextDocument, ids: string[]): boolean {
     return ids.includes(doc.languageId)
@@ -17,6 +24,65 @@ export function toVscodePos(pos: types.Position): vscode.Position {
 
 export function isReplDoc(doc: vscode.TextDocument) {
     return doc.languageId === REPL_ID
+}
+
+export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) => void) {
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined || !hasValidLangId(editor.document, ids)) {
+        return
+    }
+
+    try {
+        fn(editor)
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+export async function useRepl(state: ExtensionState, fn: (repl: Repl) => Promise<void>) {
+    if (state.repl === undefined) {
+        vscode.window.showErrorMessage('REPL Not Connected')
+        return
+    }
+
+    try {
+        await fn(state.repl)
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+export function getPkgName(doc: vscode.TextDocument, line: number, pkgMgr: PackageMgr, repl: Repl): string {
+    const pkg = pkgMgr.getPackageForLine(doc.fileName, line)
+    const pkgName = doc.languageId === REPL_ID ? repl.curPackage : pkg?.name
+
+    return pkgName ?? ':cl-user'
+}
+
+export async function updatePackageNames(state: ExtensionState) {
+    if (state.repl === undefined) {
+        return
+    }
+
+    const pkgs = await state.repl.getPackageNames()
+
+    for (const pkg of pkgs) {
+        state.pkgMgr.addPackage(pkg)
+    }
+
+    useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
+        const exprs = getDocumentExprs(editor.document)
+        updatePkgMgr(state, editor.document, exprs)
+    })
+}
+
+export async function updatePkgMgr(state: ExtensionState, doc: vscode.TextDocument | undefined, exprs: Expr[]) {
+    if (doc?.languageId !== COMMON_LISP_ID) {
+        return
+    }
+
+    await state.pkgMgr.update(state.repl, doc, exprs)
 }
 
 export function getDocumentExprs(doc: vscode.TextDocument) {
