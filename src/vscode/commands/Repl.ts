@@ -1,16 +1,23 @@
-import { format } from 'util'
+import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
+import { exprToString, SExpr } from '../../lisp'
 import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
 import {
     COMMON_LISP_ID,
+    createFolder,
+    getInnerExprText,
     getPkgName,
     getSelectOrExpr,
+    getTempFolder,
+    getTopExpr,
+    jumpToTop,
+    openFile,
     REPL_ID,
     strToMarkdown,
     updatePackageNames,
     useEditor,
-    useRepl
+    useRepl,
 } from '../Utils'
 
 export async function sendToRepl(state: ExtensionState) {
@@ -113,6 +120,132 @@ export async function replHistory(state: ExtensionState) {
         qp.onDidHide(() => qp.dispose())
         qp.show()
     })
+}
+
+export function debugAbort(state: ExtensionState) {
+    if (state.repl !== undefined) {
+        state.repl.abort()
+    }
+}
+
+export async function nthRestart(state: ExtensionState, n: unknown) {
+    useRepl(state, async (repl: Repl) => {
+        if (typeof n !== 'string') {
+            return
+        }
+
+        const num = Number.parseInt(n)
+
+        if (!Number.isNaN(num)) {
+            await repl.nthRestart(num)
+            await updatePackageNames(state)
+        }
+    })
+}
+
+export async function macroExpand(state: ExtensionState) {
+    useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
+        useRepl(state, async (repl: Repl) => {
+            const text = await getInnerExprText(editor.document, editor.selection.start)
+
+            if (text === undefined) {
+                return
+            }
+
+            const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
+            const result = await repl.macroExpand(text, pkgName)
+
+            if (result === undefined) {
+                return
+            }
+
+            state.hoverText = strToMarkdown(result)
+            vscode.commands.executeCommand('editor.action.showHover')
+        })
+    })
+}
+
+export async function macroExpandAll(state: ExtensionState) {
+    useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
+        useRepl(state, async (repl: Repl) => {
+            const text = await getInnerExprText(editor.document, editor.selection.start)
+
+            if (text === undefined) {
+                return
+            }
+
+            const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
+            const result = await repl.macroExpandAll(text, pkgName)
+
+            if (result === undefined) {
+                return
+            }
+
+            state.hoverText = strToMarkdown(result)
+            vscode.commands.executeCommand('editor.action.showHover')
+        })
+    })
+}
+
+export async function disassemble(state: ExtensionState) {
+    useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
+        useRepl(state, async (repl: Repl) => {
+            const expr = getTopExpr(editor.document, editor.selection.start)
+
+            if (!(expr instanceof SExpr) || expr.parts.length < 2) {
+                return
+            }
+
+            const name = exprToString(expr.parts[1])
+
+            if (name === undefined) {
+                return
+            }
+
+            const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
+            const result = await repl.disassemble(`'${name}`, pkgName)
+
+            if (result === undefined) {
+                return
+            }
+
+            const file = await writeDisassemble(result)
+
+            if (file !== undefined) {
+                const editor = await vscode.window.showTextDocument(file, vscode.ViewColumn.Two, true)
+                jumpToTop(editor)
+            }
+        })
+    })
+}
+
+export async function loadFile(state: ExtensionState) {
+    useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
+        useRepl(state, async (repl: Repl) => {
+            await editor.document.save()
+            await repl.loadFile(editor.document.uri.fsPath)
+            await updatePackageNames(state)
+        })
+    })
+}
+
+async function writeDisassemble(text: string) {
+    const folder = await getTempFolder()
+
+    if (folder === undefined) {
+        vscode.window.showErrorMessage('No folder for disassemble output')
+        return
+    }
+
+    await createFolder(folder)
+
+    const filePath = vscode.Uri.joinPath(folder, 'disassemble.lisp')
+    const file = await openFile(filePath)
+    const content = new TextEncoder().encode(text)
+
+    await vscode.workspace.fs.writeFile(file.uri, content)
+
+    return file
 }
 
 async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext) {
