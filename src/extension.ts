@@ -5,9 +5,8 @@ import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colo
 import * as cmds from './vscode/commands'
 import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
-import { getDefinitionProvider } from './vscode/providers'
+import { getDefinitionProvider, getSigHelpProvider } from './vscode/providers'
 import { getCompletionProvider } from './vscode/providers/CompletionProvider'
-import { getHelp } from './vscode/SigHelp'
 import { ExtensionState } from './vscode/Types'
 import { COMMON_LISP_ID, getDocumentExprs, getPkgName, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
 
@@ -35,9 +34,13 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider(state))
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider(state))
 
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: REPL_ID }, getSigHelpProvider(), ' ')
+    vscode.languages.registerSignatureHelpProvider(
+        { scheme: 'untitled', language: COMMON_LISP_ID },
+        getSigHelpProvider(state),
+        ' '
+    )
+    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(state), ' ')
+    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: REPL_ID }, getSigHelpProvider(state), ' ')
 
     vscode.languages.registerRenameProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getRenameProvider())
     vscode.languages.registerRenameProvider({ scheme: 'file', language: COMMON_LISP_ID }, getRenameProvider())
@@ -237,25 +240,6 @@ function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | undefin
     }
 
     return undefined
-}
-
-function getSigHelpProvider(): vscode.SignatureHelpProvider {
-    return {
-        async provideSignatureHelp(
-            document: vscode.TextDocument,
-            pos: vscode.Position,
-            token: vscode.CancellationToken,
-            ctx: vscode.SignatureHelpContext
-        ): Promise<vscode.SignatureHelp> {
-            const pkg = state.pkgMgr.getPackageForLine(document.fileName, pos.line)
-
-            if (pkg === undefined) {
-                return new vscode.SignatureHelp()
-            }
-
-            return await getHelp(state.repl, document, pos, pkg.name)
-        },
-    }
 }
 
 function getDocumentFormatter(): vscode.DocumentFormattingEditProvider {
