@@ -1,14 +1,54 @@
+import { format } from 'util'
+import * as vscode from 'vscode'
 import { CompletionItem, Position } from 'vscode'
-import { exprToString, findAtom, findInnerExpr } from '../lisp'
-import { Expr, SExpr } from '../lisp/Expr'
-import { PackageMgr } from './PackageMgr'
-import { Repl } from './repl'
+import { exprToString, findAtom, findInnerExpr } from '../../lisp'
+import { Expr, SExpr } from '../../lisp/Expr'
+import { Repl } from '../repl'
+import { ExtensionState } from '../Types'
+import { getDocumentExprs, getPkgName, updatePkgMgr } from '../Utils'
 
-export class CompletionProvider {
-    packageMgr: PackageMgr
+export function getCompletionProvider(state: ExtensionState): vscode.CompletionItemProvider {
+    return new Provider(state)
+}
 
-    constructor(pkgMgr: PackageMgr) {
-        this.packageMgr = pkgMgr
+class Provider implements vscode.CompletionItemProvider {
+    state: ExtensionState
+
+    constructor(state: ExtensionState) {
+        this.state = state
+    }
+
+    async provideCompletionItems(document: vscode.TextDocument, pos: vscode.Position) {
+        try {
+            if (this.state.repl === undefined) {
+                return
+            }
+
+            const exprs = getDocumentExprs(document)
+
+            await updatePkgMgr(this.state, document, exprs)
+
+            const atom = findAtom(exprs, pos)
+            const textStr = atom !== undefined ? exprToString(atom) : undefined
+            let pkgName = getPkgName(document, pos.line, this.state.pkgMgr, this.state.repl)
+
+            if (textStr !== undefined && !textStr.startsWith('#+') && !textStr.startsWith('#-')) {
+                const ndx = textStr.indexOf(':')
+
+                if (ndx > 0) {
+                    pkgName = textStr.substr(0, ndx)
+                }
+            }
+
+            if (pkgName === undefined) {
+                return []
+            }
+
+            return await this.getCompletions(this.state.repl, exprs, pos, pkgName)
+        } catch (err) {
+            vscode.window.showErrorMessage(format(err))
+            return []
+        }
     }
 
     async getCompletions(repl: Repl | undefined, exprs: Expr[], pos: Position, pkg: string): Promise<CompletionItem[]> {

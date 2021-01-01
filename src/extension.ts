@@ -1,25 +1,15 @@
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { exprToString, findAtom, getLexTokens, getLocalDef, Lexer, Parser, readLexTokens } from './lisp'
+import { exprToString, findAtom, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
-import { CompletionProvider } from './vscode/CompletionProvider'
-import { DefinitionProvider } from './vscode/DefinitionProvider'
 import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
+import { getDefinitionProvider } from './vscode/providers'
+import { getCompletionProvider } from './vscode/providers/CompletionProvider'
 import { getHelp } from './vscode/SigHelp'
 import { ExtensionState } from './vscode/Types'
-import {
-    COMMON_LISP_ID,
-    getDocumentExprs,
-    getPkgName,
-    getTopExpr,
-    hasValidLangId,
-    REPL_ID,
-    toVscodePos,
-    updatePkgMgr,
-    useEditor,
-} from './vscode/Utils'
+import { COMMON_LISP_ID, getDocumentExprs, getPkgName, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
 
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
 const state: ExtensionState = {
@@ -40,10 +30,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     vscode.languages.registerCompletionItemProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
-        await getCompletionProvider()
+        await getCompletionProvider(state)
     )
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, await getCompletionProvider())
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, await getCompletionProvider())
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider(state))
+    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider(state))
 
     vscode.languages.registerSignatureHelpProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
     vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(), ' ')
@@ -60,9 +50,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     )
     vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDocumentFormatter())
 
-    vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider())
-    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider())
-    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: REPL_ID }, getDefinitionProvider())
+    vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider(state))
+    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider(state))
+    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: REPL_ID }, getDefinitionProvider(state))
 
     vscode.languages.registerDocumentSemanticTokensProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -268,49 +258,6 @@ function getSigHelpProvider(): vscode.SignatureHelpProvider {
     }
 }
 
-async function getCompletionProvider(): Promise<vscode.CompletionItemProvider> {
-    return {
-        async provideCompletionItems(
-            document: vscode.TextDocument,
-            pos: vscode.Position,
-            token: vscode.CancellationToken,
-            ctx: vscode.CompletionContext
-        ) {
-            try {
-                if (state.repl === undefined) {
-                    return
-                }
-
-                const exprs = getDocumentExprs(document)
-
-                await updatePkgMgr(state, document, exprs)
-
-                const atom = findAtom(exprs, pos)
-                const textStr = atom !== undefined ? exprToString(atom) : undefined
-                let pkgName = getPkgName(document, pos.line, state.pkgMgr, state.repl)
-
-                if (textStr !== undefined && !textStr.startsWith('#+') && !textStr.startsWith('#-')) {
-                    const ndx = textStr.indexOf(':')
-
-                    if (ndx > 0) {
-                        pkgName = textStr.substr(0, ndx)
-                    }
-                }
-
-                if (pkgName === undefined) {
-                    return []
-                }
-
-                const provider = new CompletionProvider(state.pkgMgr)
-                return await provider.getCompletions(state.repl, exprs, pos, pkgName)
-            } catch (err) {
-                vscode.window.showErrorMessage(format(err))
-                return []
-            }
-        },
-    }
-}
-
 function getDocumentFormatter(): vscode.DocumentFormattingEditProvider {
     return {
         provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
@@ -320,53 +267,6 @@ function getDocumentFormatter(): vscode.DocumentFormattingEditProvider {
             const edits = formatter.format()
 
             return edits.length > 0 ? edits : undefined
-        },
-    }
-}
-
-function getDefinitionProvider(): vscode.DefinitionProvider {
-    return {
-        async provideDefinition(doc: vscode.TextDocument, pos: vscode.Position, token: vscode.CancellationToken) {
-            try {
-                const provider = new DefinitionProvider()
-                const exprs = getDocumentExprs(doc)
-                const topExpr = await getTopExpr(doc, pos)
-
-                await updatePkgMgr(state, doc, exprs)
-
-                const pkg = state.pkgMgr.getPackageForLine(doc.fileName, pos.line)
-                const atom = findAtom(exprs, pos)
-                const label = atom !== undefined ? exprToString(atom) : undefined
-                let local: vscode.Location | undefined = undefined
-
-                if (!label?.startsWith('#') && topExpr !== undefined) {
-                    const locDef = label !== undefined ? getLocalDef(topExpr, pos, label) : undefined
-
-                    if (locDef !== undefined) {
-                        const start = toVscodePos(locDef.start)
-                        const range = new vscode.Range(start, start)
-
-                        if (start.line !== atom?.start.line || start.character !== atom.start.character) {
-                            local = new vscode.Location(doc.uri, range)
-                        }
-                    }
-                }
-
-                if (state.repl === undefined || pkg === undefined) {
-                    return []
-                }
-
-                const defs = await provider.getDefinitions(state.repl, pkg.name, exprs, pos)
-
-                if (local !== undefined) {
-                    defs?.push(local)
-                }
-
-                return defs ?? []
-            } catch (err) {
-                vscode.window.showErrorMessage(format(err))
-                return []
-            }
         },
     }
 }
