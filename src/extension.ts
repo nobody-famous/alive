@@ -8,6 +8,7 @@ import {
     getDefinitionProvider,
     getDocumentFormatter,
     getHoverProvider,
+    getRenameProvider,
     getSemTokensProvider,
     getSigHelpProvider,
 } from './vscode/providers'
@@ -101,20 +102,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         readLexTokens(editor.document.fileName, editor.document.getText())
         visibleEditorsChanged(vscode.window.visibleTextEditors)
     })
-}
-
-function getRenameProvider(): vscode.RenameProvider {
-    return {
-        async provideRenameEdits(
-            doc: vscode.TextDocument,
-            pos: vscode.Position,
-            newName: string,
-            token: vscode.CancellationToken
-        ): Promise<vscode.WorkspaceEdit> {
-            console.log('Rename', newName)
-            return new vscode.WorkspaceEdit()
-        },
-    }
 }
 
 function visibleEditorsChanged(editors: vscode.TextEditor[]) {
