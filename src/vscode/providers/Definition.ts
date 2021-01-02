@@ -58,20 +58,15 @@ class Provider implements vscode.DefinitionProvider {
         }
     }
 
-    async getDefinitions(pkgName: string, exprs: Expr[], pos: vscode.Position): Promise<vscode.Location[] | undefined> {
+    private async getDefinitions(pkgName: string, exprs: Expr[], pos: vscode.Position): Promise<vscode.Location[] | undefined> {
         if (this.state.repl === undefined) {
             return undefined
         }
 
         const atom = findAtom(exprs, pos)
+        const label = atom !== undefined ? exprToString(atom) : undefined
 
-        if (atom === undefined) {
-            return undefined
-        }
-
-        const label = exprToString(atom)
-
-        if (label === undefined) {
+        if (atom === undefined || label === undefined) {
             return undefined
         }
 

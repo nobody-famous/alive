@@ -196,6 +196,24 @@ export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
     return undefined
 }
 
+export function findAllAtoms(topExpr: SExpr): Atom[] {
+    const atoms: Atom[] = []
+
+    for (const expr of topExpr.parts) {
+        if (expr instanceof Atom) {
+            atoms.push(expr)
+        } else if (expr instanceof SExpr) {
+            const kidAtoms = findAllAtoms(expr)
+
+            for (const kid of kidAtoms) {
+                atoms.push(kid)
+            }
+        }
+    }
+
+    return atoms
+}
+
 export function findString(exprs: Expr[], pos: Position): string | undefined {
     const atom = findAtom(exprs, pos)
 

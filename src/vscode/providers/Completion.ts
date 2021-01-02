@@ -32,7 +32,7 @@ class Provider implements vscode.CompletionItemProvider {
             const textStr = atom !== undefined ? exprToString(atom) : undefined
             let pkgName = getPkgName(document, pos.line, this.state.pkgMgr, this.state.repl)
 
-            if (textStr !== undefined && !textStr.startsWith('#+') && !textStr.startsWith('#-')) {
+            if (textStr !== undefined && !textStr.startsWith('#')) {
                 const ndx = textStr.indexOf(':')
 
                 if (ndx > 0) {
@@ -60,7 +60,7 @@ class Provider implements vscode.CompletionItemProvider {
         if (expr !== undefined) {
             const exprStr = exprToString(expr)
 
-            if (exprStr !== undefined && !exprStr.startsWith('#+') && !exprStr.startsWith('#-')) {
+            if (exprStr !== undefined && !exprStr.startsWith('#')) {
                 str = exprStr
 
                 const ndx = str.indexOf(':')

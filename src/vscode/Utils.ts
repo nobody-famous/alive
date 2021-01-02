@@ -22,6 +22,10 @@ export function toVscodePos(pos: types.Position): vscode.Position {
     return new vscode.Position(pos.line, pos.character)
 }
 
+export function samePosition(pos1: types.Position, pos2: types.Position): boolean {
+    return pos1.line === pos2.line && pos1.character === pos2.character
+}
+
 export function isReplDoc(doc: vscode.TextDocument) {
     return doc.languageId === REPL_ID
 }
