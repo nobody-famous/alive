@@ -1,14 +1,18 @@
-import { format } from 'util'
 import * as vscode from 'vscode'
-import { exprToString, findAtom, getLexTokens, Parser, readLexTokens } from './lisp'
-import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
+import { getLexTokens, Parser, readLexTokens } from './lisp'
+import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
-import { getDefinitionProvider, getSigHelpProvider } from './vscode/providers'
-import { getCompletionProvider } from './vscode/providers/CompletionProvider'
-import { getDocumentFormatter } from './vscode/providers/FormatProvider'
+import {
+    getCompletionProvider,
+    getDefinitionProvider,
+    getDocumentFormatter,
+    getHoverProvider,
+    getSemTokensProvider,
+    getSigHelpProvider,
+} from './vscode/providers'
 import { ExtensionState } from './vscode/Types'
-import { COMMON_LISP_ID, getDocumentExprs, getPkgName, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
+import { COMMON_LISP_ID, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
 
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
 const state: ExtensionState = {
@@ -45,7 +49,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerRenameProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getRenameProvider())
     vscode.languages.registerRenameProvider({ scheme: 'file', language: COMMON_LISP_ID }, getRenameProvider())
 
-    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider())
+    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
 
     vscode.languages.registerDocumentFormattingEditProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -59,15 +63,19 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     vscode.languages.registerDocumentSemanticTokensProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
-        semTokensProvider(),
+        getSemTokensProvider(state),
         legend
     )
     vscode.languages.registerDocumentSemanticTokensProvider(
         { scheme: 'file', language: COMMON_LISP_ID },
-        semTokensProvider(),
+        getSemTokensProvider(state),
         legend
     )
-    vscode.languages.registerDocumentSemanticTokensProvider({ scheme: 'file', language: REPL_ID }, semTokensProvider(), legend)
+    vscode.languages.registerDocumentSemanticTokensProvider(
+        { scheme: 'file', language: REPL_ID },
+        getSemTokensProvider(state),
+        legend
+    )
 
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr()))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))
@@ -117,72 +125,6 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
     }
 }
 
-function getHoverProvider(): vscode.HoverProvider {
-    return {
-        async provideHover(
-            doc: vscode.TextDocument,
-            pos: vscode.Position,
-            token: vscode.CancellationToken
-        ): Promise<vscode.Hover> {
-            if (state.hoverText !== '') {
-                return new vscode.Hover(state.hoverText)
-            }
-
-            let text = ''
-
-            if (state.repl === undefined) {
-                return new vscode.Hover('')
-            }
-
-            const exprs = getDocumentExprs(doc)
-            const atom = findAtom(exprs, pos)
-            const textStr = atom !== undefined ? exprToString(atom) : undefined
-            let pkgName = getPkgName(doc, pos.line, state.pkgMgr, state.repl)
-
-            if (textStr === undefined) {
-                return new vscode.Hover('')
-            }
-
-            text = await state.repl.getDoc(textStr, pkgName)
-
-            if (text.startsWith('No such symbol')) {
-                text = ''
-            }
-
-            return new vscode.Hover(text)
-        },
-    }
-}
-
-function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
-    return {
-        async provideDocumentSemanticTokens(
-            doc: vscode.TextDocument,
-            token: vscode.CancellationToken
-        ): Promise<vscode.SemanticTokens> {
-            const colorizer = new Colorizer(state.repl)
-            const tokens = getLexTokens(doc.fileName)
-            const emptyTokens = new vscode.SemanticTokens(new Uint32Array(0))
-
-            if (tokens === undefined || tokens.length === 0) {
-                return emptyTokens
-            }
-
-            try {
-                const exprs = getDocumentExprs(doc)
-
-                await updatePkgMgr(state, doc, exprs)
-
-                return await colorizer.run(tokens)
-            } catch (err) {
-                vscode.window.showErrorMessage(format(err))
-            }
-
-            return emptyTokens
-        },
-    }
-}
-
 async function editorChanged(editor?: vscode.TextEditor) {
     if (editor === undefined || !hasValidLangId(editor.document, [COMMON_LISP_ID, REPL_ID])) {
         return
@@ -217,11 +159,7 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
 
     const editor = findEditorForDoc(event.document)
 
-    if (editor === undefined) {
-        return
-    }
-
-    if (editor.document.languageId !== REPL_ID) {
+    if (editor?.document.languageId !== REPL_ID) {
         return
     }
 

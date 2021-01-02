@@ -1,3 +1,6 @@
 export * from './CompletionProvider'
 export * from './DefinitionProvider'
+export * from './FormatProvider'
+export * from './HoverProvider'
+export * from './SemTokensProvider'
 export * from './SigHelpProvider'
