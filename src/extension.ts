@@ -1,12 +1,12 @@
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { exprToString, findAtom, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
+import { exprToString, findAtom, getLexTokens, Parser, readLexTokens } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
-import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
 import { getDefinitionProvider, getSigHelpProvider } from './vscode/providers'
 import { getCompletionProvider } from './vscode/providers/CompletionProvider'
+import { getDocumentFormatter } from './vscode/providers/FormatProvider'
 import { ExtensionState } from './vscode/Types'
 import { COMMON_LISP_ID, getDocumentExprs, getPkgName, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
 
@@ -240,44 +240,4 @@ function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | undefin
     }
 
     return undefined
-}
-
-function getDocumentFormatter(): vscode.DocumentFormattingEditProvider {
-    return {
-        provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
-            const lex = new Lexer(doc.getText())
-            const tokens = lex.getTokens()
-            const formatter = new fmt.Formatter(readFormatterOptions(), tokens)
-            const edits = formatter.format()
-
-            return edits.length > 0 ? edits : undefined
-        },
-    }
-}
-
-function readFormatterOptions(): fmt.Options {
-    const cfg = vscode.workspace.getConfiguration('alive')
-    const defaults: fmt.Options = {
-        indentWidth: 2,
-        closeParenOwnLine: 'never',
-        closeParenStacked: 'always',
-        indentCloseParenStack: true,
-    }
-
-    if (cfg?.format === undefined) {
-        return defaults
-    }
-
-    const indentWidth = cfg.format.indentWidth ?? defaults.indentWidth
-
-    const indentCloseParenStack = cfg.format.indentCloseParenStack ?? defaults.indentCloseParenStack
-    const closeParenStacked = cfg.format.closeParenStacked ?? defaults.closeParenStacked
-    const closeParenOwnLine = cfg.format.closeParenOwnLine ?? defaults.closeParenOwnLine
-
-    return {
-        indentWidth,
-        indentCloseParenStack,
-        closeParenStacked,
-        closeParenOwnLine,
-    }
 }
