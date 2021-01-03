@@ -31,11 +31,7 @@ class Provider implements vscode.RenameProvider {
         }
 
         const def = getLocalDef(topExpr, pos, label)
-        if (def !== undefined) {
-            return this.renameLocal(doc, def, topExpr, newName)
-        }
-
-        return new vscode.WorkspaceEdit()
+        return def !== undefined ? this.renameLocal(doc, def, topExpr, newName) : new vscode.WorkspaceEdit()
     }
 
     private renameLocal(doc: vscode.TextDocument, def: Expr, topExpr: Expr, text: string): vscode.WorkspaceEdit {

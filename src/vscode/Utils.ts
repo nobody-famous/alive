@@ -188,6 +188,21 @@ export function jumpToTop(editor: vscode.TextEditor) {
     editor.revealRange(new vscode.Range(pos, pos))
 }
 
+export async function getFilePosition(fileName: string, offset: number): Promise<vscode.Position | undefined> {
+    try {
+        const uri = vscode.Uri.file(fileName)
+        const doc = await vscode.workspace.openTextDocument(uri.fsPath)
+
+        return getDocPosition(doc, offset)
+    } catch (err) {
+        return undefined
+    }
+}
+
+export async function getDocPosition(doc: vscode.TextDocument, offset: number): Promise<vscode.Position | undefined> {
+    return doc.positionAt(offset)
+}
+
 export async function getTempFolder() {
     let baseFolder = await getOpenFolder()
 

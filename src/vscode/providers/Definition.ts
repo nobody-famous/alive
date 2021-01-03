@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { Expr, exprToString, findAtom, getLocalDef } from '../../lisp'
 import { FindDefs } from '../../swank/response'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, getTopExpr, toVscodePos, updatePkgMgr } from '../Utils'
+import { getDocumentExprs, getFilePosition, getTopExpr, toVscodePos, updatePkgMgr } from '../Utils'
 
 export function getDefinitionProvider(state: ExtensionState): vscode.DefinitionProvider {
     return new Provider(state)
@@ -79,7 +79,7 @@ class Provider implements vscode.DefinitionProvider {
         const locs: vscode.Location[] = []
 
         for (const loc of defsRes.locs) {
-            const pos = await this.getDocPosition(loc.file, loc.position)
+            const pos = await getFilePosition(loc.file, loc.position)
 
             if (pos !== undefined) {
                 locs.push(new vscode.Location(vscode.Uri.file(loc.file), pos))
@@ -87,16 +87,5 @@ class Provider implements vscode.DefinitionProvider {
         }
 
         return locs
-    }
-
-    private async getDocPosition(fileName: string, offset: number): Promise<vscode.Position | undefined> {
-        try {
-            const uri = vscode.Uri.file(fileName)
-            const doc = await vscode.workspace.openTextDocument(uri.fsPath)
-
-            return doc.positionAt(offset)
-        } catch (err) {
-            return undefined
-        }
     }
 }
