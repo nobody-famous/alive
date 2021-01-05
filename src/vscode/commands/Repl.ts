@@ -96,7 +96,7 @@ export async function replHistory(state: ExtensionState) {
         const items = repl.historyItems()
         const qp = vscode.window.createQuickPick()
 
-        qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
+        qp.items = items.reverse().map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
 
         qp.onDidChangeSelection(async (e) => {
             const item = e[0]
