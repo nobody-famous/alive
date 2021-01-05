@@ -53,19 +53,16 @@ export class Repl extends EventEmitter {
             this.conn.on('debug-return', (event) => this.handleDebugReturn(event))
             this.conn.on('close', () => this.onClose())
 
-            await this.conn.connect()
+            const resp = await this.conn.connect()
             await this.view.open()
             await this.view.show()
 
-            const resp = await this.conn.connectionInfo()
-
-            if (resp instanceof response.ConnectionInfo) {
-                this.handleConnInfo(resp.info)
-            }
+            this.handleConnInfo(resp.info)
 
             await this.getKwDocs()
         } catch (err) {
-            this.displayErrMsg(err)
+            this.conn = undefined
+            throw err
         }
     }
 

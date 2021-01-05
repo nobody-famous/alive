@@ -3,6 +3,7 @@ import * as net from 'net'
 import { format } from 'util'
 import * as event from './event'
 import * as response from './response'
+import { ConnectionInfo } from './response'
 import {
     completionsReq,
     connectionInfoReq,
@@ -84,12 +85,21 @@ export class SwankConn extends EventEmitter {
     }
 
     connect() {
-        return new Promise<void>((resolve, reject) => {
-            this.conn = net.createConnection(this.port, this.host, async () => resolve())
+        return new Promise<ConnectionInfo>(async (resolve, reject) => {
+            this.conn = net.createConnection(this.port, this.host, async () => {
+                this.conn?.on('error', (err) => this.connError(err))
+                this.conn?.on('close', () => this.connClosed())
+                this.conn?.on('data', (data) => this.readData(data))
 
-            this.conn.on('error', (err) => this.connError(err))
-            this.conn.on('close', () => this.connClosed())
-            this.conn.on('data', (data) => this.readData(data))
+                const resp = await this.connectionInfo()
+
+                if (!(resp instanceof ConnectionInfo) || !resp.info.features?.includes('SWANK')) {
+                    this.close()
+                    return reject('Server not Swank, closing connection')
+                }
+
+                resolve(resp)
+            })
         })
     }
 
@@ -157,23 +167,23 @@ export class SwankConn extends EventEmitter {
     async inspectNthPart(index: number, pkg?: string): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectNthPartReq, response.InitInspect, index, pkg)
     }
-    
+
     async inspectorNthAction(index: number, pkg?: string): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectNthActionReq, response.InitInspect, index, pkg)
     }
-    
+
     async inspectorPrev(): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectorPrevReq, response.InitInspect)
     }
-    
+
     async inspectorNext(): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectorNextReq, response.InitInspect)
     }
-    
+
     async inspectorRefresh(): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectorRefreshReq, response.InitInspect)
     }
-    
+
     async inspectorQuit(): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectorQuitReq, response.InitInspect)
     }

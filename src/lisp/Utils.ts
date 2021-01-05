@@ -98,10 +98,6 @@ export function valueToNumber(value: unknown): number | undefined {
     return undefined
 }
 
-export function valueToArray(value: unknown): unknown[] | undefined {
-    return Array.isArray(value) ? value : undefined
-}
-
 export function valueToMap(value: unknown): StringMap | undefined {
     return isObject(value) ? (value as StringMap) : undefined
 }

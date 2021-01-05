@@ -1,7 +1,7 @@
-import { valueToArray, valueToMap, valueToNumber, valueToString, Expr, SExpr, isObject, isString } from '../../lisp'
-import { ConnInfo, Encoding, StringMap, PkgInfo } from '../Types'
-import { plistToObj } from '../SwankUtils'
+import { Expr, exprToNumber, exprToString, exprToStringArray, isString, SExpr } from '../../lisp'
 import { Return } from '../event/Return'
+import { plistToObj } from '../SwankUtils'
+import { ConnInfo, PkgInfo } from '../Types'
 
 export class ConnectionInfo {
     info: ConnInfo
@@ -20,47 +20,60 @@ export class ConnectionInfo {
         if (!(infoExpr instanceof SExpr)) {
             throw new Error('ConnectionInfo Invalid payload')
         }
-
-        const plist = plistToObj(infoExpr.parts)
-
-        if (!isObject(plist)) {
-            return undefined
-        }
-
-        const info = plist as ConnInfo
         const connInfo: ConnInfo = {}
 
-        connInfo.pid = valueToNumber(info.pid)
+        for (let ndx = 0; ndx < infoExpr.parts.length; ndx += 1) {
+            const name = exprToString(infoExpr.parts[ndx])
+            if (name === undefined) {
+                break
+            }
 
-        if (info.encoding !== undefined) {
-            connInfo.encoding = info.encoding as Encoding
+            const valueExpr = infoExpr.parts[ndx + 1]
+
+            if (name === ':PID') {
+                connInfo.pid = exprToNumber(valueExpr)
+            } else if (name === ':FEATURES') {
+                connInfo.features = exprToStringArray(valueExpr)
+            } else if (name === ':PACKAGE') {
+                connInfo.package = this.exprToPkgInfo(valueExpr)
+            } else if (name === ':VERSION') {
+                connInfo.version = exprToString(valueExpr)
+            }
+
+            ndx += 1
         }
-
-        connInfo.impl = valueToMap(info.lisp_implementation)
-        connInfo.machine = valueToMap(info.machine)
-        connInfo.package = this.valueToPkgInfo(info.package)
-
-        connInfo.style = valueToString(info.style)
-        connInfo.features = valueToArray(info.features)
-        connInfo.modules = valueToArray(info.modules)
-        connInfo.version = valueToString(info.version)
 
         return new ConnectionInfo(connInfo)
     }
 
-    static valueToPkgInfo(info: unknown): PkgInfo | undefined {
-        if (!isObject(info)) {
+    private static exprToPkgInfo(expr: Expr): PkgInfo | undefined {
+        if (!(expr instanceof SExpr)) {
             return undefined
         }
 
-        const obj = info as StringMap
-        if (!isString(obj.name) || !isString(obj.prompt)) {
-            throw new Error(`Invalid package info: name ${obj.name}, prompt ${obj.prompt}`)
+        const plist = plistToObj(expr.parts)
+
+        if (plist === undefined || !isString(plist.name) || !isString(plist.prompt)) {
+            return undefined
         }
 
         return {
-            name: obj.name as string,
-            prompt: obj.prompt as string,
+            name: plist.name as string,
+            prompt: plist.prompt as string,
         }
+
+        // if (!isObject(info)) {
+        //     return undefined
+        // }
+
+        // const obj = info as StringMap
+        // if (!isString(obj.name) || !isString(obj.prompt)) {
+        //     throw new Error(`Invalid package info: name ${obj.name}, prompt ${obj.prompt}`)
+        // }
+
+        // return {
+        //     name: obj.name as string,
+        //     prompt: obj.prompt as string,
+        // }
     }
 }

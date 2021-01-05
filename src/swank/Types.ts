@@ -22,8 +22,8 @@ export interface ConnInfo {
     machine?: StringMap
     package?: PkgInfo
     style?: string
-    features?: any[]
-    modules?: any[]
+    features?: string[]
+    modules?: string[]
     version?: string
     lisp_implementation?: StringMap
 }
