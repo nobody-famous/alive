@@ -113,7 +113,9 @@ export async function replHistory(state: ExtensionState) {
                 return
             }
 
+            await vscode.workspace.saveAll()
             await repl.send(editor, text, pkg ?? ':cl-user')
+
             repl.addHistory(text, pkg ?? ':cl-user')
         })
 
@@ -254,6 +256,21 @@ async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionCon
         state.repl.on('close', () => (state.repl = undefined))
     }
 
-    await state.repl.connect()
+    await connectWithQuery(state.repl)
+    // try {
+    //     await state.repl.connect()
+    // } catch (err) {
+    //     console.log('Connect failed')
+    // }
+
     await updatePackageNames(state)
+}
+
+async function connectWithQuery(repl: Repl) {
+    try {
+        await repl.connect()
+    } catch (err) {
+        const input = await vscode.window.showInputBox({ value: 'localhost:4005', prompt: 'Host and port' })
+        console.log('input', input)
+    }
 }

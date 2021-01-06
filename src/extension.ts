@@ -31,6 +31,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         null,
         ctx.subscriptions
     )
+    vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => saveTextDocument(doc))
 
     vscode.languages.registerCompletionItemProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -102,6 +103,18 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         readLexTokens(editor.document.fileName, editor.document.getText())
         visibleEditorsChanged(vscode.window.visibleTextEditors)
     })
+}
+
+async function saveTextDocument(doc: vscode.TextDocument) {
+    if (doc.languageId !== COMMON_LISP_ID || state.repl === undefined) {
+        return
+    }
+
+    const cfg = vscode.workspace.getConfiguration('alive')
+
+    if (cfg.autoLoadOnSave) {
+        await state.repl.loadFile(doc.fileName, false)
+    }
 }
 
 function visibleEditorsChanged(editors: vscode.TextEditor[]) {

@@ -86,11 +86,9 @@ export class SwankConn extends EventEmitter {
 
     connect() {
         return new Promise<ConnectionInfo>(async (resolve, reject) => {
-            this.conn = net.createConnection(this.port, this.host, async () => {
-                this.conn?.on('error', (err) => this.connError(err))
-                this.conn?.on('close', () => this.connClosed())
-                this.conn?.on('data', (data) => this.readData(data))
+            let connected = false
 
+            this.conn = net.createConnection(this.port, this.host, async () => {
                 const resp = await this.connectionInfo()
 
                 if (!(resp instanceof ConnectionInfo) || !resp.info.features?.includes('SWANK')) {
@@ -98,8 +96,16 @@ export class SwankConn extends EventEmitter {
                     return reject('Server not Swank, closing connection')
                 }
 
+                connected = true
                 resolve(resp)
             })
+
+            this.conn?.on('error', (err) => {
+                connected ? this.connError(err) : reject(err)
+            })
+
+            this.conn?.on('close', () => this.connClosed())
+            this.conn?.on('data', (data) => this.readData(data))
         })
     }
 

@@ -155,10 +155,15 @@ export class Repl extends EventEmitter {
         return await this.conn?.findDefs(label, pkg)
     }
 
-    async loadFile(path: string) {
-        await this.view?.addText(`;; Loading ${path}`)
+    async loadFile(path: string, showMsgs: boolean = true) {
+        if (showMsgs) {
+            await this.view?.addText(`;; Loading ${path}`)
+        }
         await this.conn?.loadFile(path)
-        await this.view?.addTextAndPrompt(`;; Done loading ${path}`)
+
+        if (showMsgs) {
+            await this.view?.addTextAndPrompt(`;; Done loading ${path}`)
+        }
     }
 
     async abort() {
