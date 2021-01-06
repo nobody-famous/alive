@@ -23,6 +23,10 @@ class Provider implements vscode.HoverProvider {
 
         const exprs = getDocumentExprs(doc)
         const atom = findAtom(exprs, pos)
+        if (atom?.isComment() || atom?.isError()) {
+            return new vscode.Hover('')
+        }
+
         const textStr = atom !== undefined ? exprToString(atom) : undefined
         let pkgName = getPkgName(doc, pos.line, this.state.pkgMgr, this.state.repl)
         let text = ''

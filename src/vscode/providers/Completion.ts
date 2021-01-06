@@ -29,6 +29,10 @@ class Provider implements vscode.CompletionItemProvider {
             await updatePkgMgr(this.state, document, exprs)
 
             const atom = findAtom(exprs, pos)
+            if (atom?.isComment() || atom?.isError()) {
+                return []
+            }
+
             const textStr = atom !== undefined ? exprToString(atom) : undefined
             let pkgName = getPkgName(document, pos.line, this.state.pkgMgr, this.state.repl)
 
