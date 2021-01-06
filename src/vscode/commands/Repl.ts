@@ -70,9 +70,9 @@ export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionCon
             vscode.window.showInformationMessage('Connecting to REPL')
         }
 
-        await newReplConnection(state, ctx)
+        const connected = await newReplConnection(state, ctx)
 
-        if (showMsgs) {
+        if (showMsgs && connected) {
             vscode.window.showInformationMessage('REPL Connected')
         }
     } catch (err) {
@@ -250,27 +250,53 @@ async function writeDisassemble(text: string) {
     return file
 }
 
-async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext) {
-    if (state.repl === undefined) {
-        state.repl = new Repl(ctx, 'localhost', 4005)
-        state.repl.on('close', () => (state.repl = undefined))
+async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext): Promise<boolean> {
+    const connected = await tryConnect(state, ctx, 'localhost', 4005)
+
+    if (connected) {
+        await updatePackageNames(state)
     }
 
-    await connectWithQuery(state.repl)
-    // try {
-    //     await state.repl.connect()
-    // } catch (err) {
-    //     console.log('Connect failed')
-    // }
-
-    await updatePackageNames(state)
+    return connected
 }
 
-async function connectWithQuery(repl: Repl) {
+async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, host: string, port: number): Promise<boolean> {
     try {
-        await repl.connect()
+        if (state.repl === undefined) {
+            state.repl = new Repl(ctx)
+            state.repl.on('close', () => {
+                state.repl = undefined
+            })
+        }
+
+        await state.repl.connect(host, port)
     } catch (err) {
-        const input = await vscode.window.showInputBox({ value: 'localhost:4005', prompt: 'Host and port' })
-        console.log('input', input)
+        return state.repl === undefined ? false : await retryConnect(state, ctx, host, port)
+    }
+
+    return true
+}
+
+async function retryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, host: string, port: number): Promise<boolean> {
+    const input = await vscode.window.showInputBox({ value: `${host}:${port}`, prompt: 'Host and port' })
+    if (input === undefined) {
+        return false
+    }
+
+    const hostPort = splitHostPort(input)
+
+    return await tryConnect(state, ctx, hostPort.host, hostPort.port)
+}
+
+function splitHostPort(input: string): { host: string; port: number } {
+    const ndx = input.indexOf(':')
+    const hostStr = ndx >= 0 ? input.substring(0, ndx) : input
+    const portStr = ndx >= 0 ? input.substring(ndx + 1) : ''
+    const portInt = Number.parseInt(portStr)
+    const port = Number.isNaN(portInt) ? 4005 : portInt
+
+    return {
+        host: hostStr,
+        port: port,
     }
 }

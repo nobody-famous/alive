@@ -22,28 +22,24 @@ export class Repl extends EventEmitter {
     dbgViews: { [index: number]: DebugView } = {}
     curPackage: string = ':cl-user'
     ctx: vscode.ExtensionContext
-    host: string
-    port: number
     kwDocs: { [index: string]: string } = {}
     history: History = new History()
 
-    constructor(ctx: vscode.ExtensionContext, host: string, port: number) {
+    constructor(ctx: vscode.ExtensionContext) {
         super()
 
         this.ctx = ctx
-        this.host = host
-        this.port = port
     }
 
-    async connect() {
+    async connect(host: string, port: number) {
         try {
             if (this.conn !== undefined && this.view !== undefined) {
                 await this.view.show()
                 return
             }
 
-            this.conn = new SwankConn(this.host, this.port)
-            this.view = new FileView(this.host, this.port)
+            this.conn = new SwankConn(host, port)
+            this.view = new FileView(host, port)
 
             this.conn.on('conn-info', (info) => this.handleConnInfo(info))
             this.conn.on('conn-err', (err) => this.displayErrMsg(err))
