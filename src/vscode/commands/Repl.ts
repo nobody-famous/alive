@@ -251,7 +251,7 @@ async function writeDisassemble(text: string) {
 }
 
 async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext): Promise<boolean> {
-    const connected = await tryConnect(state, ctx, 'localhost', 4005)
+    const connected = await tryConnect(state, ctx)
 
     if (connected) {
         await updatePackageNames(state)
@@ -260,8 +260,24 @@ async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionCon
     return connected
 }
 
-async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, host: string, port: number): Promise<boolean> {
+interface HostPort {
+    host: string
+    port: number
+}
+
+async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort): Promise<boolean> {
+    let hostPort: HostPort | undefined = { host: 'localhost', port: 4005 }
+
     try {
+        const host = hp?.host ?? 'localhost'
+        const port = hp?.port ?? 4005
+
+        hostPort = await promptForHostPort(host, port)
+
+        if (hostPort === undefined) {
+            return false
+        }
+
         if (state.repl === undefined) {
             state.repl = new Repl(ctx)
             state.repl.on('close', () => {
@@ -269,23 +285,22 @@ async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, h
             })
         }
 
-        await state.repl.connect(host, port)
+        await state.repl.connect(hostPort.host, hostPort.port)
     } catch (err) {
-        return state.repl === undefined ? false : await retryConnect(state, ctx, host, port)
+        return state.repl === undefined ? false : await tryConnect(state, ctx, hostPort)
     }
 
     return true
 }
 
-async function retryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, host: string, port: number): Promise<boolean> {
+async function promptForHostPort(host: string, port: number): Promise<{ host: string; port: number } | undefined> {
     const input = await vscode.window.showInputBox({ value: `${host}:${port}`, prompt: 'Host and port' })
+
     if (input === undefined) {
-        return false
+        return undefined
     }
 
-    const hostPort = splitHostPort(input)
-
-    return await tryConnect(state, ctx, hostPort.host, hostPort.port)
+    return splitHostPort(input)
 }
 
 function splitHostPort(input: string): { host: string; port: number } {
