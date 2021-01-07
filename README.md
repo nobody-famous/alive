@@ -85,7 +85,7 @@ Selects the surrounding top level expression for the current cursor position.
 
 ### Attach To REPL
 
-Connect to the swank server running on localhost:4005.
+Connect to a swank server. Will prompt for the a host:port string to connect to.
 
 ### Detach From REPL
 
