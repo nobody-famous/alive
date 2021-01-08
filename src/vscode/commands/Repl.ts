@@ -65,11 +65,6 @@ export async function inlineEval(state: ExtensionState) {
 export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext) {
     try {
         const showMsgs = state.repl === undefined
-
-        if (showMsgs) {
-            vscode.window.showInformationMessage('Connecting to REPL')
-        }
-
         const connected = await newReplConnection(state, ctx)
 
         if (showMsgs && connected) {

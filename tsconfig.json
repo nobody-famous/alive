@@ -2,7 +2,7 @@
     "extends": "./tsconfig.base.json",
     "compilerOptions": {
         "outDir": "out",
-        "sourceMap": true,
+        "sourceMap": false,
     },
     "include": [
         "src/**/*.ts",

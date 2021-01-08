@@ -1,3 +1,4 @@
+import * as path from 'path'
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { Expr, findAtom, findExpr, findInnerExpr, Lexer, Parser, types } from '../lisp'
@@ -9,6 +10,30 @@ export const COMMON_LISP_ID = 'lisp'
 export const REPL_ID = 'lisp-repl'
 
 const OUTPUT_DIR = '.vscode/alive'
+
+export function xlatePath(filePath: string): string {
+    const cfg = vscode.workspace.getConfiguration('alive')
+    const wsFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))
+
+    if (cfg.remoteWorkspace === undefined || wsFolder === undefined || !filePath.startsWith(wsFolder.uri.fsPath)) {
+        return filePath
+    }
+
+    const wsPath = wsFolder.uri.fsPath
+    const remote = cfg.remoteWorkspace
+
+    const ndx = wsPath.endsWith('\\') ? wsPath.length : wsPath.length + 1
+    const sep = remote.startsWith('/') ? '/' : path.sep
+    const relativePath = filePath.slice(ndx)
+    const parts = relativePath.split(path.sep)
+
+    let remotePath = remote
+    for (const part of parts) {
+        remotePath += `${sep}${part}`
+    }
+
+    return remotePath
+}
 
 export function strToMarkdown(text: string): string {
     return text.replace(/ /g, '&nbsp;').replace(/\n/g, '  \n')

@@ -8,7 +8,7 @@ import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
-import { isReplDoc } from '../Utils'
+import { isReplDoc, xlatePath } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { History, HistoryItem } from './History'
@@ -152,13 +152,16 @@ export class Repl extends EventEmitter {
     }
 
     async loadFile(path: string, showMsgs: boolean = true) {
-        if (showMsgs) {
-            await this.view?.addText(`;; Loading ${path}`)
-        }
-        await this.conn?.loadFile(path)
+        const remotePath = xlatePath(path)
 
         if (showMsgs) {
-            await this.view?.addTextAndPrompt(`;; Done loading ${path}`)
+            await this.view?.addText(`;; Loading ${remotePath}`)
+        }
+
+        await this.conn?.loadFile(remotePath)
+
+        if (showMsgs) {
+            await this.view?.addTextAndPrompt(`;; Done loading ${remotePath}`)
         }
     }
 
