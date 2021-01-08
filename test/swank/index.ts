@@ -218,7 +218,7 @@ async function testFrame() {
     try {
         await conn.connect()
 
-        // await testConnInfo(conn)
+        await testConnInfo(conn)
         // await testPackage(conn)
         // await testListPkgs(conn)
         // await testDebug()
@@ -228,7 +228,7 @@ async function testFrame() {
         // await testLoadFile()
         // await testFindDefs()
         // await testMacros()
-        await testInspector()
+        // await testInspector()
     } catch (err) {
         console.log('FAILED', err)
     } finally {

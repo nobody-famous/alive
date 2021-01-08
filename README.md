@@ -18,6 +18,7 @@ The name is partly a self-deprecating take on SLIME's name, but also reflects th
 -   Disassemble
 -   Inspector
 -   Hover Text
+-   Rename function args and let bindings
 
 ## Extension Settings
 
@@ -25,6 +26,8 @@ This extension contributes the following settings:
 
 -   `alive.format.indentWidth`: Default indentation width
 -   `alive.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
+-   `alive.autoLoadOnSave`: If true, load files into the REPL when saved.
+-   `alive.remoteWorkspace`: Path to the workspace files on the REPL. Used when loading files.
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
@@ -83,7 +86,7 @@ Selects the surrounding top level expression for the current cursor position.
 
 ### Attach To REPL
 
-Connect to the swank server running on localhost:4005.
+Connect to a swank server. Will prompt for the a host:port string to connect to.
 
 ### Detach From REPL
 
@@ -104,6 +107,8 @@ Tells the currently visible debugger to send the nth restart. For example, alt+c
 ### Load File (Alt+Shift+L)
 
 Load the current file into the REPL.
+
+If alive.remoteWorkspace is set, the path to the file is translated to be relative to the remote directory. This may or may not work well.
 
 ### Inline Evaluation (Alt+Shift+E)
 

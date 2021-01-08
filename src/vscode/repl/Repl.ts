@@ -8,9 +8,10 @@ import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
-import { isReplDoc } from '../Utils'
+import { isReplDoc, xlatePath } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
+import { History, HistoryItem } from './History'
 import { Inspector } from './Inspector'
 import { View } from './View'
 
@@ -21,27 +22,24 @@ export class Repl extends EventEmitter {
     dbgViews: { [index: number]: DebugView } = {}
     curPackage: string = ':cl-user'
     ctx: vscode.ExtensionContext
-    host: string
-    port: number
     kwDocs: { [index: string]: string } = {}
+    history: History = new History()
 
-    constructor(ctx: vscode.ExtensionContext, host: string, port: number) {
+    constructor(ctx: vscode.ExtensionContext) {
         super()
 
         this.ctx = ctx
-        this.host = host
-        this.port = port
     }
 
-    async connect() {
+    async connect(host: string, port: number) {
         try {
             if (this.conn !== undefined && this.view !== undefined) {
                 await this.view.show()
                 return
             }
 
-            this.conn = new SwankConn(this.host, this.port)
-            this.view = new FileView(this.host, this.port)
+            this.conn = new SwankConn(host, port)
+            this.view = new FileView(host, port)
 
             this.conn.on('conn-info', (info) => this.handleConnInfo(info))
             this.conn.on('conn-err', (err) => this.displayErrMsg(err))
@@ -51,19 +49,16 @@ export class Repl extends EventEmitter {
             this.conn.on('debug-return', (event) => this.handleDebugReturn(event))
             this.conn.on('close', () => this.onClose())
 
-            await this.conn.connect()
+            const resp = await this.conn.connect()
             await this.view.open()
             await this.view.show()
 
-            const resp = await this.conn.connectionInfo()
-
-            if (resp instanceof response.ConnectionInfo) {
-                this.handleConnInfo(resp.info)
-            }
+            this.handleConnInfo(resp.info)
 
             await this.getKwDocs()
         } catch (err) {
-            this.displayErrMsg(err)
+            this.conn = undefined
+            throw err
         }
     }
 
@@ -84,6 +79,14 @@ export class Repl extends EventEmitter {
 
     documentChanged() {
         this.view?.documentChanged()
+    }
+
+    addHistory(text: string, pkg: string) {
+        this.history.add(text, pkg)
+    }
+
+    historyItems(): HistoryItem[] {
+        return this.history.list
     }
 
     async inspector(text: string, pkg: string) {
@@ -148,10 +151,18 @@ export class Repl extends EventEmitter {
         return await this.conn?.findDefs(label, pkg)
     }
 
-    async loadFile(path: string) {
-        await this.view?.addText(`;; Loading ${path}`)
-        await this.conn?.loadFile(path)
-        await this.view?.addTextAndPrompt(`;; Done loading ${path}`)
+    async loadFile(path: string, showMsgs: boolean = true) {
+        const remotePath = xlatePath(path)
+
+        if (showMsgs) {
+            await this.view?.addText(`;; Loading ${remotePath}`)
+        }
+
+        await this.conn?.loadFile(remotePath)
+
+        if (showMsgs) {
+            await this.view?.addTextAndPrompt(`;; Done loading ${remotePath}`)
+        }
     }
 
     async abort() {

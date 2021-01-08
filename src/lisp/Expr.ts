@@ -1,4 +1,14 @@
-import { ExprMap, Position } from './Types'
+import {
+    COMMENT,
+    ERROR,
+    ExprMap,
+    MISMATCHED_BAR,
+    MISMATCHED_CLOSE_PARENS,
+    MISMATCHED_COMMENT,
+    MISMATCHED_DBL_QUOTE,
+    MISMATCHED_OPEN_PARENS,
+    Position,
+} from './Types'
 import { exprToString, exprToStringArray, isLetName } from './Utils'
 
 export class Expr {
@@ -13,11 +23,31 @@ export class Expr {
 
 export class Atom extends Expr {
     value: unknown
+    type: number
 
-    constructor(start: Position, end: Position, value: unknown) {
+    constructor(start: Position, end: Position, value: unknown, type: number) {
         super(start, end)
 
         this.value = value
+        this.type = type
+    }
+
+    isComment(): boolean {
+        return this.type === COMMENT
+    }
+
+    isError(): boolean {
+        switch (this.type) {
+            case ERROR:
+            case MISMATCHED_OPEN_PARENS:
+            case MISMATCHED_CLOSE_PARENS:
+            case MISMATCHED_DBL_QUOTE:
+            case MISMATCHED_COMMENT:
+            case MISMATCHED_BAR:
+                return true
+            default:
+                return false
+        }
     }
 }
 

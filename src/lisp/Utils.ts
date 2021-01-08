@@ -98,10 +98,6 @@ export function valueToNumber(value: unknown): number | undefined {
     return undefined
 }
 
-export function valueToArray(value: unknown): unknown[] | undefined {
-    return Array.isArray(value) ? value : undefined
-}
-
 export function valueToMap(value: unknown): StringMap | undefined {
     return isObject(value) ? (value as StringMap) : undefined
 }
@@ -194,6 +190,24 @@ export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
     }
 
     return undefined
+}
+
+export function findAllAtoms(topExpr: SExpr): Atom[] {
+    const atoms: Atom[] = []
+
+    for (const expr of topExpr.parts) {
+        if (expr instanceof Atom) {
+            atoms.push(expr)
+        } else if (expr instanceof SExpr) {
+            const kidAtoms = findAllAtoms(expr)
+
+            for (const kid of kidAtoms) {
+                atoms.push(kid)
+            }
+        }
+    }
+
+    return atoms
 }
 
 export function findString(exprs: Expr[], pos: Position): string | undefined {

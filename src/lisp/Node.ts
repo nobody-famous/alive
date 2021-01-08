@@ -25,7 +25,7 @@ export class Node {
 
     toAtomExpr() {
         return this.value !== undefined && this.value.type !== types.WHITE_SPACE
-            ? new Atom(this.value.start, this.value.end, this.value.text)
+            ? new Atom(this.value.start, this.value.end, this.value.text, this.value.type)
             : undefined
     }
 

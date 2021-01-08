@@ -1,5 +1,11 @@
 export type StringMap = { [index: string]: unknown }
 
+export interface Location {
+    file: string
+    position: number
+    snippet: string
+}
+
 export interface Encoding {
     coding_systems: StringMap
 }
@@ -16,8 +22,8 @@ export interface ConnInfo {
     machine?: StringMap
     package?: PkgInfo
     style?: string
-    features?: any[]
-    modules?: any[]
+    features?: string[]
+    modules?: string[]
     version?: string
     lisp_implementation?: StringMap
 }

@@ -1,12 +1,7 @@
 import { Expr, exprToString, SExpr } from '../../lisp'
 import { Return } from '../event'
 import { plistToObj } from '../SwankUtils'
-
-interface Location {
-    file: string
-    position: number
-    snippet: string
-}
+import { Location } from '../Types'
 
 export class FindDefs {
     locs: Location[]

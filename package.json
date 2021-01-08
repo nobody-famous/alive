@@ -358,6 +358,15 @@
                     ],
                     "default": "never",
                     "description": "Specify when to put close parens on their own line"
+                },
+                "alive.autoLoadOnSave": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Specify whether to auto load files on save"
+                },
+                "alive.remoteWorkspace": {
+                    "type": "string",
+                    "description": "Path on the REPL server to the workspace"
                 }
             }
         }
