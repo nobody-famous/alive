@@ -91,7 +91,7 @@ export class SwankConn extends EventEmitter {
             this.conn = net.createConnection(this.port, this.host, async () => {
                 const resp = await this.connectionInfo()
 
-                if (!(resp instanceof ConnectionInfo) || !resp.info.features?.includes('SWANK')) {
+                if (!(resp instanceof ConnectionInfo) || !resp.hasFeature('SWANK')) {
                     this.close()
                     return reject('Server not Swank, closing connection')
                 }

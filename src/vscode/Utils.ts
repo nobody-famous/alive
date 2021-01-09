@@ -15,7 +15,12 @@ export function xlatePath(filePath: string): string {
     const cfg = vscode.workspace.getConfiguration('alive')
     const wsFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))
 
-    if (cfg.remoteWorkspace === undefined || wsFolder === undefined || !filePath.startsWith(wsFolder.uri.fsPath)) {
+    if (
+        cfg.remoteWorkspace === undefined ||
+        cfg.remoteWorkspace.trim() === '' ||
+        wsFolder === undefined ||
+        !filePath.startsWith(wsFolder.uri.fsPath)
+    ) {
         return filePath
     }
 

@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -363,6 +363,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Specify whether to auto load files on save"
+                },
+                "alive.debug": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Specify whether to print debug messages to the console"
                 },
                 "alive.remoteWorkspace": {
                     "type": "string",

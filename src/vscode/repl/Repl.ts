@@ -41,6 +41,11 @@ export class Repl extends EventEmitter {
             this.conn = new SwankConn(host, port)
             this.view = new FileView(host, port)
 
+            const cfg = vscode.workspace.getConfiguration('alive')
+            if (cfg.debug) {
+                this.conn.trace = true
+            }
+
             this.conn.on('conn-info', (info) => this.handleConnInfo(info))
             this.conn.on('conn-err', (err) => this.displayErrMsg(err))
             this.conn.on('msg', (msg) => this.displayInfoMsg(msg))
@@ -54,8 +59,6 @@ export class Repl extends EventEmitter {
             await this.view.show()
 
             this.handleConnInfo(resp.info)
-
-            await this.getKwDocs()
         } catch (err) {
             this.conn = undefined
             throw err

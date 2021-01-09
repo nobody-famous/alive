@@ -282,6 +282,7 @@ async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, h
 
         await state.repl.connect(hostPort.host, hostPort.port)
     } catch (err) {
+        vscode.window.showErrorMessage(`Connect failed: ${format(err)}`)
         return state.repl === undefined ? false : await tryConnect(state, ctx, hostPort)
     }
 

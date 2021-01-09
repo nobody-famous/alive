@@ -46,6 +46,20 @@ export class ConnectionInfo {
         return new ConnectionInfo(connInfo)
     }
 
+    hasFeature(feature: string): boolean {
+        if (this.info.features === undefined) {
+            return false
+        }
+
+        for (const entry of this.info.features) {
+            if (entry.toLocaleLowerCase() === feature.toLocaleLowerCase()) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     private static exprToPkgInfo(expr: Expr): PkgInfo | undefined {
         if (!(expr instanceof SExpr)) {
             return undefined
@@ -61,19 +75,5 @@ export class ConnectionInfo {
             name: plist.name as string,
             prompt: plist.prompt as string,
         }
-
-        // if (!isObject(info)) {
-        //     return undefined
-        // }
-
-        // const obj = info as StringMap
-        // if (!isString(obj.name) || !isString(obj.prompt)) {
-        //     throw new Error(`Invalid package info: name ${obj.name}, prompt ${obj.prompt}`)
-        // }
-
-        // return {
-        //     name: obj.name as string,
-        //     prompt: obj.prompt as string,
-        // }
     }
 }
