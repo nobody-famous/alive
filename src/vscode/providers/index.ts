@@ -1,5 +1,6 @@
 export * from './Completion'
 export * from './Definition'
+export * from './Fold'
 export * from './Format'
 export * from './Hover'
 export * from './Rename'

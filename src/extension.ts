@@ -7,6 +7,7 @@ import {
     getCompletionProvider,
     getDefinitionProvider,
     getDocumentFormatter,
+    getFoldProvider,
     getHoverProvider,
     getRenameProvider,
     getSemTokensProvider,
@@ -78,6 +79,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         getSemTokensProvider(state),
         legend
     )
+
+    vscode.languages.registerFoldingRangeProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getFoldProvider(state))
+    vscode.languages.registerFoldingRangeProvider({ scheme: 'file', language: COMMON_LISP_ID }, getFoldProvider(state))
 
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr()))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))

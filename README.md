@@ -19,6 +19,7 @@ The name is partly a self-deprecating take on SLIME's name, but also reflects th
 -   Inspector
 -   Hover Text
 -   Rename function args and let bindings
+-   Code folding
 
 ## Extension Settings
 
