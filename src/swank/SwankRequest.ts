@@ -21,9 +21,7 @@ export class SwankRequest {
 }
 
 export function emacsRex(msgID: number, data: string, pkg: any, threadID: number | boolean) {
-    console.log('pkg', typeof pkg, toWire(pkg))
     const rexData = [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)]
-
     return new SwankRequest(msgID, rexData)
 }
 
