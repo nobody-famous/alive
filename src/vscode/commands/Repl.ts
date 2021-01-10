@@ -108,6 +108,8 @@ export async function replHistory(state: ExtensionState) {
                 return
             }
 
+            qp.hide()
+
             await vscode.workspace.saveAll()
             await repl.send(editor, text, pkg ?? ':cl-user')
 
