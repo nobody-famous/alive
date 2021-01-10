@@ -312,6 +312,11 @@ function getActiveDocFolder() {
     }
 
     const wsFolder = vscode.workspace.getWorkspaceFolder(activeDoc.uri)
+    if (wsFolder !== undefined) {
+        return wsFolder.uri
+    }
 
-    return wsFolder?.uri
+    const docPath = path.parse(activeDoc.uri.path)
+
+    return vscode.Uri.file(docPath.dir)
 }

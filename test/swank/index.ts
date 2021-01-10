@@ -9,6 +9,12 @@ async function testConnInfo(conn: SwankConn) {
     const resp = await conn.connectionInfo()
 
     expect(true, resp instanceof ConnectionInfo && resp.info.pid !== undefined)
+
+    try {
+        await conn.eval(`(remove-if-not #ʄplusp '(1 3 -9 5 -2 -7 6))`)
+    } catch (err) {
+        console.log(err)
+    }
 }
 
 async function testPackage(conn: SwankConn) {
