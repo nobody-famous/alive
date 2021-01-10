@@ -13,7 +13,7 @@ export class SwankRequest {
     encode() {
         this.data.push(toWire(this.msgID))
 
-        const str = `(${this.data.join(' ')})`
+        const str = Buffer.from(`(${this.data.join(' ')})`, 'utf-8')
         const len = str.length.toString(16).padStart(6, '0')
 
         return `${len}${str}`
@@ -21,7 +21,9 @@ export class SwankRequest {
 }
 
 export function emacsRex(msgID: number, data: string, pkg: any, threadID: number | boolean) {
+    console.log('pkg', typeof pkg, toWire(pkg))
     const rexData = [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)]
+
     return new SwankRequest(msgID, rexData)
 }
 
