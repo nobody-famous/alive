@@ -123,9 +123,11 @@ export class Colorizer {
 
         split.push(this.buildRange(range.start.line, range.start.character))
 
-        for (let line = range.start.line + 1; line <= range.end.line; line += 1) {
+        for (let line = range.start.line + 1; line < range.end.line; line += 1) {
             split.push(this.buildRange(line, 0))
         }
+
+        split.push(new vscode.Range(new vscode.Position(range.end.line, 0), range.end))
 
         return split
     }
