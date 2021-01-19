@@ -1,11 +1,11 @@
-import { Atom, exprToString, isString } from '../../lisp'
+import { Atom, exprToString, isString, types } from '../../lisp'
 import { Return } from '../event/Return'
 import { convert } from '../SwankUtils'
 
 export class Eval {
-    result: string[]
+    result?: string[]
 
-    constructor(result: string[]) {
+    constructor(result: string[] | undefined) {
         this.result = result
     }
 
@@ -18,6 +18,10 @@ export class Eval {
 
         if (!(payload instanceof Atom)) {
             return undefined
+        }
+
+        if (payload.type !== types.STRING) {
+            return new Eval(undefined)
         }
 
         const output = exprToString(payload)

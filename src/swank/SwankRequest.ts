@@ -1,18 +1,16 @@
 import { LispID, LispSymbol } from './LispID'
 import { toWire } from './SwankUtils'
 
-export class SwankRequest {
-    msgID: number
+type emacsRexThread = number | boolean | LispSymbol
+
+class SwankMessage {
     data: string[]
 
-    constructor(msgID: number, data: string[]) {
-        this.msgID = msgID
+    constructor(data: string[]) {
         this.data = data
     }
 
     encode() {
-        this.data.push(toWire(this.msgID))
-
         const str = Buffer.from(`(${this.data.join(' ')})`, 'utf-8')
         const len = str.length.toString(16).padStart(6, '0')
 
@@ -20,7 +18,22 @@ export class SwankRequest {
     }
 }
 
-export function emacsRex(msgID: number, data: string, pkg: any, threadID: number | boolean) {
+export class SwankRequest extends SwankMessage {
+    msgID: number
+
+    constructor(msgID: number, data: string[]) {
+        super(data)
+        this.msgID = msgID
+    }
+
+    encode() {
+        this.data.push(toWire(this.msgID))
+
+        return super.encode()
+    }
+}
+
+export function emacsRex(msgID: number, data: string, pkg: any, threadID: emacsRexThread) {
     const rexData = [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)]
     return new SwankRequest(msgID, rexData)
 }
@@ -47,6 +60,11 @@ export function completionsReq(msgID: number, prefix: string, pkg: string) {
 
 export function opArgsReq(msgID: number, name: string, pkg: string) {
     const data = [new LispID('swank:operator-arglist'), name, pkg]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function swankRequireReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank:swank-require (quote (swank-repl))')]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
@@ -135,8 +153,8 @@ export function threadsReq(msgID: number, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export function nthRestartReq(msgID: number, threadID: number, restart: number, pkg?: string) {
-    const data = [new LispID('swank:invoke-nth-restart-for-emacs'), 1, restart]
+export function nthRestartReq(msgID: number, threadID: number, level: number, restart: number, pkg?: string) {
+    const data = [new LispID('swank:invoke-nth-restart-for-emacs'), level, restart]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
 }
 
@@ -173,4 +191,33 @@ export function debuggerAbortReq(msgID: number, threadID: number, pkg?: string) 
 export function debugThreadReq(msgID: number, threadNdx: number, pid: number, pkg?: string) {
     const data = [new LispID('swank:start-swank-server-in-thread'), threadNdx, `/tmp/slime.${pid}`]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+//
+// REPL Commands
+//
+
+export function replEvalReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank-repl:listener-eval'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), new LispSymbol('repl-thread'))
+}
+
+export function replCreateReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank-repl:create-repl'), false, new LispSymbol('coding-system'), 'utf-8-unix']
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function returnStringEvent(text: string, threadID: number, tag: number) {
+    const rexData = [toWire(new LispSymbol('emacs-return-string')), toWire(threadID), toWire(tag), toWire(text)]
+    return new SwankMessage(rexData)
+}
+
+export function abortReadEvent(threadID: number, tag: number) {
+    const rexData = [toWire(new LispSymbol('emacs-abort-read')), toWire(threadID), toWire(tag)]
+    return new SwankMessage(rexData)
+}
+
+export function interruptEvent(threadID: number) {
+    const rexData = [toWire(new LispSymbol('emacs-interrupt')), toWire(threadID)]
+    return new SwankMessage(rexData)
 }

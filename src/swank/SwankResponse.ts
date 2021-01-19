@@ -2,7 +2,6 @@ import { format } from 'util'
 import { Expr, Parser, SExpr } from '../lisp'
 import { Lexer } from '../lisp/Lexer'
 import * as event from './event'
-import { NewFeatures } from './event/NewFeatures'
 import { SwankEvent, SwankRawEvent } from './event/SwankEvent'
 
 export class SwankResponse {
@@ -51,14 +50,24 @@ export class SwankResponse {
             case ':RETURN':
                 return event.Return.from(rawEvent)
             case ':DEBUG':
-            return event.Debug.from(rawEvent)
+                return event.Debug.from(rawEvent)
             case ':DEBUG-ACTIVATE':
                 return event.DebugActivate.from(rawEvent)
             case ':DEBUG-RETURN':
                 return event.DebugReturn.from(rawEvent)
             case ':NEW-FEATURES':
-                return NewFeatures.from(rawEvent)
+                return event.NewFeatures.from(rawEvent)
+            case ':READ-STRING':
+                return event.ReadString.from(rawEvent)
+            case ':WRITE-STRING':
+                return event.WriteString.from(rawEvent)
+            case ':INVALID-RPC':
+                return event.InvalidRpc.from(rawEvent)
+            case ':READ-ABORTED':
+                return event.ReadAborted.from(rawEvent)
             case ':INDENTATION-UPDATE':
+            case ':PRESENTATION-START':
+            case ':PRESENTATION-END':
                 return undefined
         }
 

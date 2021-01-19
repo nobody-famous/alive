@@ -168,7 +168,11 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
     }
 
     for (const change of event.contentChanges) {
-        if (change.range !== undefined) {
+        if (change.range === undefined) {
+            continue
+        }
+
+        if (editor.document.languageId === REPL_ID) {
             state.repl?.documentChanged()
         }
     }

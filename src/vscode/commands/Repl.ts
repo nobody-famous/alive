@@ -56,6 +56,7 @@ export async function inlineEval(state: ExtensionState) {
 
             if (result !== undefined) {
                 state.hoverText = strToMarkdown(result)
+                await vscode.window.showTextDocument(editor.document, editor.viewColumn)
                 vscode.commands.executeCommand('editor.action.showHover')
             }
         })

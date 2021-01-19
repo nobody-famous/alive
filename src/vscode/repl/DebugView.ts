@@ -9,6 +9,7 @@ export class DebugView extends EventEmitter {
     title: string
     panel?: vscode.WebviewPanel
     event: event.Debug
+    activate?: event.DebugActivate
     frameExpanded: { [index: number]: boolean | undefined } = {}
     frameLocals: { [index: number]: FrameVariable[] | undefined } = {}
     frameEval: { [index: number]: string | undefined } = {}
@@ -26,8 +27,7 @@ export class DebugView extends EventEmitter {
 
     run() {
         if (this.panel !== undefined) {
-            vscode.window.showInformationMessage('Debug panel already exists')
-            return
+            this.panel.dispose()
         }
 
         this.panel = vscode.window.createWebviewPanel('cl-debug', this.title, this.viewCol, { enableScripts: true })

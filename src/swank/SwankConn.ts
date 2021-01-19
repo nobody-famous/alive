@@ -33,6 +33,12 @@ import {
     inspectorQuitReq,
     inspectNthActionReq,
     inspectorRefreshReq,
+    replEvalReq,
+    swankRequireReq,
+    replCreateReq,
+    returnStringEvent,
+    abortReadEvent,
+    interruptEvent,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -55,6 +61,12 @@ export interface SwankConn {
 
     emit(event: 'debug-return', swankEvent: event.DebugReturn): boolean
     on(event: 'debug-return', listener: (swankEvent: event.DebugReturn) => void): this
+
+    emit(event: 'read-string', swankEvent: event.ReadString): boolean
+    on(event: 'read-string', listener: (swankEvent: event.ReadString) => void): this
+
+    emit(event: 'write-string', swankEvent: event.WriteString): boolean
+    on(event: 'write-string', listener: (swankEvent: event.WriteString) => void): this
 
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
@@ -194,6 +206,18 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(inspectorQuitReq, response.InitInspect)
     }
 
+    async swankRequire(pkg?: string): Promise<response.ListPackages | response.Abort> {
+        return await this.requestFn(swankRequireReq, response.ListPackages, pkg)
+    }
+
+    async replCreate(pkg?: string): Promise<response.ListPackages | response.Abort> {
+        return await this.requestFn(replCreateReq, response.ListPackages, pkg)
+    }
+
+    async replEval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(replEvalReq, response.Eval, str, pkg)
+    }
+
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
         return await this.requestFn(evalReq, response.Eval, str, pkg)
     }
@@ -206,8 +230,8 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(frameEvalReq, response.Eval, threadID, str, frameNum, pkg)
     }
 
-    async nthRestart(threadID: number, restart: number): Promise<response.DebuggerAbort> {
-        return await this.requestFn(nthRestartReq, response.Restart, threadID, restart)
+    async nthRestart(threadID: number, level: number, restart: number): Promise<response.DebuggerAbort> {
+        return await this.requestFn(nthRestartReq, response.Restart, threadID, level, restart)
     }
 
     async debugAbort(threadID: number): Promise<response.DebuggerAbort> {
@@ -237,26 +261,47 @@ export class SwankConn extends EventEmitter {
         } else if (resp.info.status === ':ABORT') {
             parsed = response.Abort.parse(resp)
         } else {
-            throw new Error(`Inavlid response ${format(resp)}`)
+            throw new Error(`Invalid response, bad status ${format(resp)}`)
         }
 
         if (parsed === undefined) {
-            throw new Error(`Inavlid response ${format(resp)}`)
+            throw new Error(`Invalid response, parse failed ${format(resp)}`)
         }
 
         return parsed
     }
 
-    connError(err: Error) {
+    async returnString(text: string, threadID: number, tag: number) {
+        const event = returnStringEvent(text, threadID, tag)
+        const msg = event.encode()
+
+        await this.writeMessage(msg)
+    }
+
+    async abortRead(threadID: number, tag: number) {
+        const event = abortReadEvent(threadID, tag)
+        const msg = event.encode()
+
+        await this.writeMessage(msg)
+    }
+
+    async interrupt(threadID: number) {
+        const event = interruptEvent(threadID)
+        const msg = event.encode()
+
+        await this.writeMessage(msg)
+    }
+
+    private connError(err: Error) {
         this.emit('conn-err', `REPL Connection error ${err.toString()}`)
     }
 
-    connClosed() {
+    private connClosed() {
         this.conn = undefined
         this.emit('close')
     }
 
-    readData(data: Buffer) {
+    private readData(data: Buffer) {
         try {
             this.addToBuffer(data)
             this.readResponses()
@@ -265,29 +310,41 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    addToBuffer(data: Buffer) {
+    private addToBuffer(data: Buffer) {
         this.buffer = this.buffer === undefined ? data : Buffer.concat([this.buffer, data])
     }
 
-    readResponses() {
+    private readResponses() {
         while (this.buffer !== undefined && this.buffer.length > 0) {
             this.readResponse()
 
-            if (this.curResponse !== undefined && this.curResponse.hasAllData()) {
-                if (this.trace) {
-                    console.log(`<-- ${this.curResponse.buf?.toString()}`)
-                }
-                const event = this.curResponse.parse()
-
-                if (event !== undefined) {
-                    this.processEvent(event)
-                }
-                this.curResponse = undefined
+            if (this.curResponse === undefined || !this.curResponse.hasAllData()) {
+                continue
             }
+
+            if (this.trace) {
+                console.log(`<-- ${this.curResponse.buf?.toString()}`)
+            }
+
+            this.parseResponse(this.curResponse)
         }
     }
 
-    readResponse() {
+    private parseResponse(response: SwankResponse) {
+        try {
+            const event = response.parse()
+
+            if (event !== undefined) {
+                this.processEvent(event)
+            }
+        } catch (err) {
+            this.emit('conn-err', err)
+        } finally {
+            this.curResponse = undefined
+        }
+    }
+
+    private readResponse() {
         if (this.buffer === undefined) {
             return
         }
@@ -300,7 +357,7 @@ export class SwankConn extends EventEmitter {
         this.buffer = this.curResponse.addData(this.buffer)
     }
 
-    processEvent(event: event.SwankEvent) {
+    private processEvent(event: event.SwankEvent) {
         if (event === undefined) {
             return
         }
@@ -313,14 +370,50 @@ export class SwankConn extends EventEmitter {
             this.processDebugActivate(event as event.DebugActivate)
         } else if (event.op === ':DEBUG-RETURN') {
             this.processDebugReturn(event as event.DebugReturn)
+        } else if (event.op === ':READ-STRING') {
+            this.processReadString(event as event.ReadString)
+        } else if (event.op === ':WRITE-STRING') {
+            this.processWriteString(event as event.WriteString)
+        } else if (event.op === ':INVALID-RPC') {
+            this.processInvalidRpc(event as event.InvalidRpc)
         } else if (event.op === ':NEW-FEATURES') {
+            // Ignore
+        } else if (event.op === ':READ-ABORTED') {
             // Ignore
         } else {
             console.log(`processEvent op ${event.op}`)
         }
     }
 
-    processDebugActivate(event: event.DebugActivate) {
+    private processInvalidRpc(event: event.InvalidRpc) {
+        try {
+            const { resolve, reject } = this.handlerForID(event.msgID)
+
+            this.handlerDone(event.msgID)
+
+            reject(event.reason)
+        } catch (err) {
+            this.emit('conn-err', err)
+        }
+    }
+
+    private processReadString(event: event.ReadString) {
+        try {
+            this.emit('read-string', event)
+        } catch (err) {
+            this.emit('msg', err.toString())
+        }
+    }
+
+    private processWriteString(event: event.WriteString) {
+        try {
+            this.emit('write-string', event)
+        } catch (err) {
+            this.emit('msg', err.toString())
+        }
+    }
+
+    private processDebugActivate(event: event.DebugActivate) {
         if (this.ignoreDebug) {
             return
         }
@@ -332,7 +425,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processDebugReturn(event: event.DebugReturn) {
+    private processDebugReturn(event: event.DebugReturn) {
         try {
             this.emit('debug-return', event)
         } catch (err) {
@@ -340,7 +433,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    async processDebug(event: event.Debug) {
+    private async processDebug(event: event.Debug) {
         if (this.ignoreDebug) {
             try {
                 await this.debugAbort(event.threadID)
@@ -354,7 +447,7 @@ export class SwankConn extends EventEmitter {
         this.emit('debug', event)
     }
 
-    handlerDone(id: number) {
+    private handlerDone(id: number) {
         delete this.handlers[id]
 
         if (id in this.timeouts) {
@@ -363,7 +456,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processReturn(event: event.Return) {
+    private processReturn(event: event.Return) {
         try {
             const { resolve, reject } = this.handlerForID(event.id)
             const status = event.info?.status
@@ -380,7 +473,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    handlerForID(id: number) {
+    private handlerForID(id: number) {
         const handler = this.handlers[id]
 
         if (handler === undefined) {
@@ -390,7 +483,7 @@ export class SwankConn extends EventEmitter {
         return handler
     }
 
-    async sendRequest(req: SwankRequest): Promise<event.Return> {
+    private async sendRequest(req: SwankRequest): Promise<event.Return> {
         const msg = req.encode()
 
         await this.writeMessage(msg)
@@ -398,13 +491,13 @@ export class SwankConn extends EventEmitter {
         return this.waitForResponse(req.msgID)
     }
 
-    waitForResponse(id: number): Promise<event.Return> {
+    private waitForResponse(id: number): Promise<event.Return> {
         return new Promise((resolve, reject) => {
             this.handlers[id] = { resolve, reject }
         })
     }
 
-    writeMessage(msg: string) {
+    private writeMessage(msg: string) {
         return new Promise<void>((resolve, reject) => {
             if (this.conn === undefined) {
                 return reject('No connection')
@@ -424,7 +517,7 @@ export class SwankConn extends EventEmitter {
         })
     }
 
-    nextID(): number {
+    private nextID(): number {
         const id = this.msgID
 
         this.msgID += 1

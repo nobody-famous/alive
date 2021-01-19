@@ -4,13 +4,13 @@ import { exprToNumber } from '../../lisp'
 export class DebugActivate implements SwankEvent {
     op: string
     threadID: number
-    frameID: number
+    level: number
     select?: boolean
 
-    constructor(threadID: number, frameID: number, select?: boolean) {
+    constructor(threadID: number, level: number, select?: boolean) {
         this.op = ':DEBUG-ACTIVATE'
         this.threadID = threadID
-        this.frameID = frameID
+        this.level = level
         this.select = select
     }
 
@@ -20,10 +20,10 @@ export class DebugActivate implements SwankEvent {
         }
 
         const threadID = exprToNumber(event.payload[0])
-        const frameID = exprToNumber(event.payload[1])
+        const level = exprToNumber(event.payload[1])
 
-        if (threadID !== undefined && frameID !== undefined) {
-            return new DebugActivate(threadID, frameID)
+        if (threadID !== undefined && level !== undefined) {
+            return new DebugActivate(threadID, level)
         }
 
         return undefined

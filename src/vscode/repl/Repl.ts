@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
+import { EOL } from 'os'
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { Expr, InPackage, Lexer, Parser, unescape } from '../../lisp'
-import { allLabels } from '../../lisp/keywords'
-import { Debug, DebugActivate, DebugReturn } from '../../swank/event'
+import { Expr, InPackage, isString, Lexer, Parser, unescape } from '../../lisp'
+import { Debug, DebugActivate, DebugReturn, ReadString, WriteString } from '../../swank/event'
 import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
@@ -19,7 +19,7 @@ export class Repl extends EventEmitter {
     conn?: SwankConn
     view?: View
     inspectorView?: Inspector
-    dbgViews: { [index: number]: DebugView } = {}
+    dbgView?: DebugView
     curPackage: string = ':cl-user'
     ctx: vscode.ExtensionContext
     kwDocs: { [index: string]: string } = {}
@@ -52,13 +52,17 @@ export class Repl extends EventEmitter {
             this.conn.on('activate', (event) => this.handleDebugActivate(event))
             this.conn.on('debug', (event) => this.handleDebug(event))
             this.conn.on('debug-return', (event) => this.handleDebugReturn(event))
+            this.conn.on('read-string', (event) => this.handleReadString(event))
+            this.conn.on('write-string', (event) => this.handleWriteString(event))
             this.conn.on('close', () => this.onClose())
 
             const resp = await this.conn.connect()
             await this.view.open()
             await this.view.show()
 
-            this.handleConnInfo(resp.info)
+            await this.handleConnInfo(resp.info)
+            await this.conn.swankRequire()
+            await this.conn.replCreate()
         } catch (err) {
             this.conn = undefined
             throw err
@@ -158,42 +162,43 @@ export class Repl extends EventEmitter {
         const remotePath = xlatePath(path)
 
         if (showMsgs) {
-            await this.view?.addText(`;; Loading ${remotePath}`)
+            await this.view?.addText(`;; Loading ${remotePath}${EOL}`)
         }
 
         await this.conn?.loadFile(remotePath)
 
         if (showMsgs) {
-            await this.view?.addTextAndPrompt(`;; Done loading ${remotePath}`)
+            await this.view?.addTextAndPrompt(`;; Done loading ${remotePath}${EOL}`)
         }
     }
 
     async abort() {
-        const threadIDs = this.getVisibleDebugThreads()
-        if (this.conn === undefined || threadIDs.length === 0) {
+        if (this.conn === undefined || this.dbgView === undefined) {
             vscode.window.showInformationMessage('No debug to abort')
             return
         }
 
-        for (const id of threadIDs) {
-            await this.conn.debugAbort(id)
-        }
+        await this.conn.debugAbort(this.dbgView.event.threadID)
     }
 
-    async nthRestart(n: number) {
-        const threadIDs = this.getVisibleDebugThreads()
-        if (this.conn === undefined || threadIDs.length === 0) {
+    async nthRestart(n: number, level?: number, threadID?: number) {
+        let id = threadID
+        let lvl = level
+
+        if (this.dbgView !== undefined) {
+            lvl = this.dbgView.activate?.level
+            id = id ?? this.dbgView.event.threadID
+
+            this.dbgView.stop()
+            this.dbgView = undefined
+        }
+
+        if (this.conn === undefined || id === undefined || lvl === undefined) {
             vscode.window.showInformationMessage('No debug to restart')
             return
         }
 
-        const id = threadIDs[0]
-        if (this.dbgViews[id] !== undefined) {
-            this.dbgViews[id].stop()
-            delete this.dbgViews[id]
-        }
-
-        await this.conn.nthRestart(id, n)
+        await this.conn.nthRestart(id, lvl, n)
     }
 
     async updateConnInfo() {
@@ -300,7 +305,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.disassemble(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -315,7 +320,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.macroExpand(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -330,7 +335,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.macroExpandAll(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -360,7 +365,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.eval(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -384,10 +389,10 @@ export class Repl extends EventEmitter {
             if (isReplDoc(editor.document) && inPkg !== undefined) {
                 await this.changePackage(inPkg, output)
             } else {
-                const resp = await this.conn.eval(text, pkg)
+                const resp = await this.conn.replEval(text, pkg)
 
                 if (output) {
-                    if (resp instanceof response.Eval) {
+                    if (resp instanceof response.Eval && resp.result !== undefined) {
                         const str = unescape(resp.result.join(''))
                         await this.view.addTextAndPrompt(str)
                     } else {
@@ -428,44 +433,23 @@ export class Repl extends EventEmitter {
         this.inspectorView.show(resp.title, resp.content)
     }
 
-    private getVisibleDebugThreads(): number[] {
-        const threadIDs: number[] = []
-
-        for (const [key, value] of Object.entries(this.dbgViews)) {
-            if (!value.panel?.visible) {
-                continue
-            }
-
-            const threadID = parseInt(key)
-
-            if (!Number.isNaN(threadID)) {
-                threadIDs.push(threadID)
-            }
-        }
-
-        return threadIDs
-    }
-
     private handleDebugActivate(event: DebugActivate) {
-        const view = this.dbgViews[event.threadID]
-
-        if (view === undefined) {
+        if (this.dbgView === undefined) {
             vscode.window.showInformationMessage(`Debug could not activate ${event.threadID}`)
             return
         }
 
-        view.run()
+        this.dbgView.on('restart', (ndx: number, restart: Restart) => this.nthRestart(ndx, event.level, event.threadID))
+
+        this.dbgView.activate = event
+
+        this.dbgView.run()
     }
 
     private handleDebug(event: Debug) {
-        const view = new DebugView(
-            this.ctx,
-            `Debug TH-${event.threadID}`,
-            this.view?.getViewColumn() ?? vscode.ViewColumn.Beside,
-            event
-        )
-
-        view.on('restart', (ndx: number, event: Restart) => this.nthRestart(ndx))
+        const view =
+            this.dbgView ??
+            new DebugView(this.ctx, `Debug TH-${event.threadID}`, this.view?.getViewColumn() ?? vscode.ViewColumn.Beside, event)
 
         view.on('frame-restart', async (ndx: number) => this.conn?.frameRestart(event.threadID, ndx))
 
@@ -480,7 +464,7 @@ export class Repl extends EventEmitter {
 
         view.on('frame-locals', async (ndx: number) => this.updateLocals(view, ndx, event.threadID))
 
-        this.dbgViews[event.threadID] = view
+        this.dbgView = view
     }
 
     private async updateLocals(view: DebugView, ndx: number, threadID: number) {
@@ -500,7 +484,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.evalInFrame(threadID, text, ndx, pkg.name)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             return unescape(resp.result.join(''))
         }
     }
@@ -510,14 +494,12 @@ export class Repl extends EventEmitter {
     }
 
     private async handleDebugReturn(event: DebugReturn) {
-        const dbgView = this.dbgViews[event.threadID]
-
-        if (dbgView === undefined) {
+        if (this.dbgView === undefined) {
             return
         }
 
-        dbgView.stop()
-        delete this.dbgViews[event.threadID]
+        this.dbgView.stop()
+        this.dbgView = undefined
     }
 
     private displayErrMsg(msg: unknown) {
@@ -526,20 +508,6 @@ export class Repl extends EventEmitter {
 
     private displayInfoMsg(msg: unknown) {
         vscode.window.showInformationMessage(format(msg))
-    }
-
-    private async getKwDocs() {
-        if (this.conn === undefined) {
-            return
-        }
-
-        for (const label of allLabels) {
-            const resp = await this.conn.docSymbol(label, ':cl-user')
-
-            if (resp instanceof response.DocSymbol) {
-                this.kwDocs[label] = resp.doc
-            }
-        }
     }
 
     private onClose() {
@@ -567,6 +535,25 @@ export class Repl extends EventEmitter {
             this.view.setPrompt(info.package.prompt)
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
+        }
+    }
+
+    private async handleReadString(event: ReadString) {
+        const text = await vscode.window.showInputBox({ placeHolder: 'Enter text' })
+
+        if (text !== undefined) {
+            this.conn?.returnString(`${text}${EOL}`, event.threadID, event.tag)
+        } else {
+            this.conn?.interrupt(event.threadID)
+        }
+    }
+
+    private async handleWriteString(event: WriteString) {
+        const converted = convert(event.text)
+
+        if (isString(converted)) {
+            const str = unescape(converted as string)
+            await this.view?.addText(str)
         }
     }
 

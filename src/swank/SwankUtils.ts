@@ -75,6 +75,8 @@ export function toWire(item: unknown): string {
         str += `"${item.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
     } else if (item === true) {
         str += `t`
+    } else if (item === false) {
+        str += `nil`
     } else {
         str += item
     }
