@@ -39,6 +39,7 @@ import {
     returnStringEvent,
     abortReadEvent,
     interruptEvent,
+    pongEvent,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -67,6 +68,9 @@ export interface SwankConn {
 
     emit(event: 'write-string', swankEvent: event.WriteString): boolean
     on(event: 'write-string', listener: (swankEvent: event.WriteString) => void): this
+
+    emit(event: 'ping', swankEvent: event.Ping): boolean
+    on(event: 'ping', listener: (swankEvent: event.Ping) => void): this
 
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
@@ -271,6 +275,13 @@ export class SwankConn extends EventEmitter {
         return parsed
     }
 
+    async pong(threadID: number, tag: number) {
+        const event = pongEvent(threadID, tag)
+        const msg = event.encode()
+
+        await this.writeMessage(msg)
+    }
+
     async returnString(text: string, threadID: number, tag: number) {
         const event = returnStringEvent(text, threadID, tag)
         const msg = event.encode()
@@ -376,12 +387,22 @@ export class SwankConn extends EventEmitter {
             this.processWriteString(event as event.WriteString)
         } else if (event.op === ':INVALID-RPC') {
             this.processInvalidRpc(event as event.InvalidRpc)
+        } else if (event.op === ':PING') {
+            this.processPing(event as event.Ping)
         } else if (event.op === ':NEW-FEATURES') {
             // Ignore
         } else if (event.op === ':READ-ABORTED') {
             // Ignore
         } else {
             console.log(`processEvent op ${event.op}`)
+        }
+    }
+
+    private processPing(event: event.Ping) {
+        try {
+            this.emit('ping', event)
+        } catch (err) {
+            this.emit('msg', err.toString())
         }
     }
 

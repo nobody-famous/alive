@@ -217,6 +217,11 @@ export function abortReadEvent(threadID: number, tag: number) {
     return new SwankMessage(rexData)
 }
 
+export function pongEvent(threadID: number, tag: number) {
+    const rexData = [toWire(new LispSymbol('emacs-pong')), toWire(threadID), toWire(tag)]
+    return new SwankMessage(rexData)
+}
+
 export function interruptEvent(threadID: number) {
     const rexData = [toWire(new LispSymbol('emacs-interrupt')), toWire(threadID)]
     return new SwankMessage(rexData)
