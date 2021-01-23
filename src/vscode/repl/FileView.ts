@@ -87,7 +87,7 @@ export class FileView implements View {
     }
 
     private async appendLine(toAppend: string) {
-        if (this.replEditor === undefined) {
+        if (this.replEditor === undefined || this.replEditor.document.isClosed) {
             vscode.window.showWarningMessage(`REPL not visible for ${toAppend}`)
             return
         }
