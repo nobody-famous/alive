@@ -32,18 +32,6 @@ export class EvalAndGrab {
             }
         }
 
-        // const output = exprToString(payload)
-        // if (output === undefined) {
-        //     return undefined
-        // }
-
-        // const converted = convert(output)
-        // if (!isString(converted)) {
-        //     return undefined
-        // }
-
-        // return new EvalAndGrab([converted as string])
-
         return new EvalAndGrab(lines)
     }
 }
