@@ -245,6 +245,15 @@ async function testRepl(conn: SwankConn) {
     conn.trace = false
 }
 
+async function testPing(conn: SwankConn) {
+    await conn.swankRequire()
+    await conn.replCreate()
+
+    conn.trace = true
+    await conn.replEval('(loop :for n :below 200 :do (format t "~A~%" n))')
+    conn.trace = false
+}
+
 // Wrap in an IIFE so await works
 ;(async () => {
     const conn = new SwankConn('localhost', 4005)
@@ -267,7 +276,8 @@ async function testRepl(conn: SwankConn) {
         // await testFindDefs()
         // await testMacros()
         // await testInspector()
-        await testRepl(conn)
+        // await testRepl(conn)
+        await testPing(conn)
     } catch (err) {
         console.log('FAILED', err)
     } finally {

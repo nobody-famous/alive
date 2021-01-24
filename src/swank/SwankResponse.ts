@@ -65,6 +65,8 @@ export class SwankResponse {
                 return event.InvalidRpc.from(rawEvent)
             case ':READ-ABORTED':
                 return event.ReadAborted.from(rawEvent)
+            case ':PING':
+                return event.Ping.from(rawEvent)
             case ':INDENTATION-UPDATE':
             case ':PRESENTATION-START':
             case ':PRESENTATION-END':

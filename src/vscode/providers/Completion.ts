@@ -36,10 +36,11 @@ class Provider implements vscode.CompletionItemProvider {
             const textStr = atom !== undefined ? exprToString(atom) : undefined
             let pkgName = getPkgName(document, pos.line, this.state.pkgMgr, this.state.repl)
 
-            if (textStr !== undefined && !textStr.startsWith('#')) {
+            if (atom !== undefined && textStr !== undefined && !textStr.startsWith('#')) {
                 const ndx = textStr.indexOf(':')
+                const sepPos = atom.start.character + ndx
 
-                if (ndx > 0) {
+                if (ndx > 0 && pos.character > sepPos) {
                     pkgName = textStr.substr(0, ndx)
                 }
             }
