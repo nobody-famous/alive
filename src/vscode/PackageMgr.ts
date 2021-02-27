@@ -197,7 +197,11 @@ export class PackageMgr {
         const start = expr.parts[1].start
         const end = expr.parts[expr.parts.length - 1].end
         const range = new vscode.Range(toVscodePos(start), toVscodePos(end))
-        const text = doc?.getText(range)
+        let text = doc?.getText(range)
+
+        if (text.startsWith('#:')) {
+            text = text.substr(1)
+        }
 
         if (text === undefined || !this.parsesOk(text)) {
             return

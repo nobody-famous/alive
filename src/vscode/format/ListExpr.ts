@@ -16,7 +16,11 @@ export class ListExpr extends ExprFormatter {
             return
         }
 
-        this.align = this.state.indent[this.state.indent.length - 1] + 1
+        if (this.isTopLevel) {
+            this.align = this.state.options.indentWidth + this.state.indent[0]
+        } else {
+            this.align = this.state.indent[this.state.indent.length - 1] + 1
+        }
 
         const ss = this.snapshot()
 
@@ -55,7 +59,7 @@ export class ListExpr extends ExprFormatter {
                     setTarget(this.state, curToken, ' ')
                 }
 
-                if (!first && !alignChanged && curToken.token.type !== types.COMMENT) {
+                if (!this.isTopLevel && !first && !alignChanged && curToken.token.type !== types.COMMENT) {
                     this.align = this.state.lineLength
                     alignChanged = true
                 }

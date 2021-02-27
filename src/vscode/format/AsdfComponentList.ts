@@ -1,6 +1,6 @@
 import { types } from '../../lisp'
-import { AsdfComponent } from './AsdfComponent'
 import { ExprFormatter } from './ExprFormatter'
+import { ListExpr } from './ListExpr'
 import { isExprEnd, setTarget, State, withIndent } from './Utils'
 import { WrappedExpr } from './WrappedExpr'
 
@@ -22,7 +22,7 @@ export class AsdfComponentList extends ExprFormatter {
 
             if (curToken?.token.type === types.OPEN_PARENS) {
                 withIndent(this.state, this.state.lineLength, () => {
-                    const expr = new WrappedExpr(this.state, new AsdfComponent(this.state))
+                    const expr = new WrappedExpr(this.state, new ListExpr(this.state))
                     this.formatExpr(expr)
                 })
             } else {

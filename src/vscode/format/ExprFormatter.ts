@@ -16,6 +16,7 @@ export abstract class ExprFormatter {
     state: State
     isMultiline: boolean = false
     isOrigML: boolean = false
+    isTopLevel: boolean = false
 
     constructor(state: State) {
         this.state = state
