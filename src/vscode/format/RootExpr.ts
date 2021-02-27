@@ -14,6 +14,8 @@ export class RootExpr extends ExprFormatter {
 
         while (curToken !== undefined) {
             const expr = new Expr(this.state)
+
+            expr.isTopLevel = true
             expr.format()
 
             curToken = this.peekToken()

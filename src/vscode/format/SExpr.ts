@@ -112,7 +112,14 @@ export class SExpr extends ExprFormatter {
                 this.formatExpr(new DefSystem(this.state))
                 break
             default:
-                this.formatExpr(new ListExpr(this.state))
+                this.formatList()
         }
+    }
+
+    private formatList() {
+        const expr = new ListExpr(this.state)
+
+        expr.isTopLevel = this.isTopLevel
+        this.formatExpr(expr)
     }
 }

@@ -75,6 +75,10 @@ export class Expr extends ExprFormatter {
     formatSExpr() {
         const sexpr = new SExpr(this.state)
 
+        if (this.isTopLevel) {
+            sexpr.isTopLevel = true
+        }
+
         this.doFormat(sexpr)
     }
 
