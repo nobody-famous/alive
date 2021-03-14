@@ -3,7 +3,7 @@ import { EOL } from 'os'
 import { format } from 'util'
 import * as vscode from 'vscode'
 import { Expr, InPackage, isString, Lexer, Parser, unescape } from '../../lisp'
-import { Debug, DebugActivate, DebugReturn, Ping, ReadString, WriteString } from '../../swank/event'
+import { Debug, DebugActivate, DebugReturn, Ping, ReaderError, ReadString, WriteString } from '../../swank/event'
 import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
@@ -53,6 +53,7 @@ export class Repl extends EventEmitter {
             this.conn.on('debug', (event) => this.handleDebug(event))
             this.conn.on('debug-return', (event) => this.handleDebugReturn(event))
             this.conn.on('read-string', (event) => this.handleReadString(event))
+            this.conn.on('reader-error', (event) => this.handleReaderError(event))
             this.conn.on('write-string', (event) => this.handleWriteString(event))
             this.conn.on('ping', (event) => this.handlePing(event))
             this.conn.on('close', () => this.onClose())
@@ -541,6 +542,11 @@ export class Repl extends EventEmitter {
 
     private async handlePing(event: Ping) {
         this.conn?.pong(event.threadID, event.tag)
+    }
+
+    private handleReaderError(event: ReaderError) {
+        const msg = `${event.packet} ${event.cause}`
+        vscode.window.showErrorMessage(msg)
     }
 
     private async handleReadString(event: ReadString) {

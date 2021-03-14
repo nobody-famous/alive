@@ -66,6 +66,9 @@ export interface SwankConn {
     emit(event: 'read-string', swankEvent: event.ReadString): boolean
     on(event: 'read-string', listener: (swankEvent: event.ReadString) => void): this
 
+    emit(event: 'reader-error', swankEvent: event.ReaderError): boolean
+    on(event: 'reader-error', listener: (swankEvent: event.ReaderError) => void): this
+
     emit(event: 'write-string', swankEvent: event.WriteString): boolean
     on(event: 'write-string', listener: (swankEvent: event.WriteString) => void): this
 
@@ -383,6 +386,8 @@ export class SwankConn extends EventEmitter {
             this.processDebugReturn(event as event.DebugReturn)
         } else if (event.op === ':READ-STRING') {
             this.processReadString(event as event.ReadString)
+        } else if (event.op === ':READER-ERROR') {
+            this.processReaderError(event as event.ReaderError)
         } else if (event.op === ':WRITE-STRING') {
             this.processWriteString(event as event.WriteString)
         } else if (event.op === ':INVALID-RPC') {
@@ -415,6 +420,14 @@ export class SwankConn extends EventEmitter {
             reject(event.reason)
         } catch (err) {
             this.emit('conn-err', err)
+        }
+    }
+
+    private processReaderError(event: event.ReaderError) {
+        try {
+            this.emit('reader-error', event)
+        } catch (err) {
+            this.emit('msg', err.toString())
         }
     }
 

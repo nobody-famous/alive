@@ -30,7 +30,12 @@ export class DebugView extends EventEmitter {
             this.panel.dispose()
         }
 
-        this.panel = vscode.window.createWebviewPanel('cl-debug', this.title, this.viewCol, { enableScripts: true })
+        this.panel = vscode.window.createWebviewPanel(
+            'cl-debug',
+            this.title,
+            { preserveFocus: true, viewColumn: this.viewCol },
+            { enableScripts: true }
+        )
 
         this.panel.webview.onDidReceiveMessage(
             (msg: { command: string; number: number; text?: string }) => {
