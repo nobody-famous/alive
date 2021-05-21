@@ -25,7 +25,7 @@ export class RootExpr extends ExprFormatter {
 
             const prev = this.prevToken()
 
-            if (prev?.token.type !== types.COMMENT) {
+            if (curToken.token.type !== types.COMMENT && prev?.token.type !== types.COMMENT) {
                 const count = countNewLines(curToken.before.existing)
 
                 if (count <= 1) {
