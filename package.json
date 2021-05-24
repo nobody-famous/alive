@@ -96,6 +96,10 @@
                 "title": "Alive: Compile File"
             },
             {
+                "command": "alive.startReplAndAttach",
+                "title": "Alive: Start REPL And Attach"
+            },
+            {
                 "command": "alive.attachRepl",
                 "title": "Alive: Attach To REPL"
             },
@@ -158,6 +162,9 @@
         ],
         "menus": {
             "commandPalette": [
+                {
+                    "command": "alive.startReplAndAttach"
+                },
                 {
                     "command": "alive.attachRepl"
                 },
@@ -344,6 +351,11 @@
         "configuration": {
             "title": "Common Lisp",
             "properties": {
+                "alive.swank.startCommand": {
+                    "type": "array",
+                    "default": ["/usr/bin/ros", "run", "--eval", "(ql:quickload :swank) (let ((swank::*loopback-interface* \"0.0.0.0\")) (swank:create-server :port 4005 :style :spawn :dont-close t))"],
+                    "description": "Lisp code that will be evaluated to start a swank server"
+                },
                 "alive.format.indentWidth": {
                     "type": "number",
                     "default": 2,

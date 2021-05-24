@@ -19,6 +19,10 @@ import {
     useEditor,
     useRepl,
 } from '../Utils'
+import * as childProcess from 'child_process';
+
+const outputChannel = vscode.window.createOutputChannel("Alive")
+let child: childProcess.ChildProcessWithoutNullStreams | null
 
 export async function sendToRepl(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
@@ -63,6 +67,35 @@ export async function inlineEval(state: ExtensionState) {
     })
 }
 
+export async function startReplAndAttach(state: ExtensionState, ctx: vscode.ExtensionContext) {
+    const cmd = vscode.workspace.getConfiguration('alive').swank.startCommand;
+    const outputAndAttach = (data: string) => {
+        outputChannel.appendLine(data)
+
+        if (data.includes("Swank started at port")) {
+            attachRepl(state, ctx)
+        }
+    }
+    const spawn = () => {
+        child = childProcess.spawn(cmd[0], cmd.slice(1))
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', data => outputAndAttach(data));
+
+        child.stderr.setEncoding('utf8');
+        child.stderr.on('data', data => outputAndAttach(data));
+    }
+    if (child) {
+        child.kill()
+        vscode.window.showInformationMessage("Waiting for Swank to die...")
+        // For some reason 'exit' event wasn't getting called every time so I'm using timeout.
+        setTimeout(() => {
+            spawn()
+        }, 3000)
+    } else {
+        spawn()
+    }
+}
+
 export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext) {
     try {
         const showMsgs = state.repl === undefined
@@ -77,6 +110,8 @@ export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionCon
 }
 
 export async function detachRepl(state: ExtensionState) {
+    child?.kill()
+
     if (state.repl === undefined) {
         return
     }
