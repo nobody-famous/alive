@@ -11,10 +11,12 @@ export { Options } from './Utils'
 export class Formatter {
     docTokens: Token[]
     state: State
+    range: vscode.Range
 
-    constructor(options: Options, tokens: Token[]) {
+    constructor(options: Options, tokens: Token[], range: vscode.Range) {
         this.docTokens = tokens
         this.state = new State(options, [], new TokenList())
+        this.range = range
     }
 
     format(): vscode.TextEdit[] {

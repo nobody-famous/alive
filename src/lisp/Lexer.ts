@@ -25,6 +25,7 @@ import reader from './keywords/reader'
 import sysconstruct from './keywords/sysconstruct'
 import env from './keywords/env'
 import kwEval from './keywords/eval'
+import { Position } from 'vscode'
 
 type kw = { [index: string]: number }
 const keywords: kw = {}
@@ -78,13 +79,13 @@ export class Lexer {
     curText: string
     start: types.Position
 
-    constructor(text: string) {
+    constructor(text: string, position: types.Position = new Position(0, 0)) {
         this.text = text
-        this.line = 0
-        this.col = 0
+        this.line = position.line
+        this.col = position.character
         this.curPos = 0
         this.curText = ''
-        this.start = new types.Position(0, 0)
+        this.start = position
         this.opens = 0
     }
 

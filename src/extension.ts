@@ -7,6 +7,7 @@ import {
     getCompletionProvider,
     getDefinitionProvider,
     getDocumentFormatter,
+    getDocumentRangeFormatter,
     getFoldProvider,
     getHoverProvider,
     getRenameProvider,
@@ -58,7 +59,18 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         { scheme: 'untitled', language: COMMON_LISP_ID },
         getDocumentFormatter()
     )
-    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDocumentFormatter())
+    vscode.languages.registerDocumentFormattingEditProvider(
+        { scheme: 'file', language: COMMON_LISP_ID },
+        getDocumentFormatter())
+
+
+    vscode.languages.registerDocumentRangeFormattingEditProvider(
+        { scheme: 'untitled', language: COMMON_LISP_ID },
+        getDocumentRangeFormatter()
+    )
+    vscode.languages.registerDocumentRangeFormattingEditProvider(
+        { scheme: 'file', language: COMMON_LISP_ID },
+        getDocumentRangeFormatter())
 
     vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider(state))
     vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider(state))
