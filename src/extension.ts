@@ -13,6 +13,7 @@ import {
     getRenameProvider,
     getSemTokensProvider,
     getSigHelpProvider,
+    GoOnTypingFormatter,
 } from './vscode/providers'
 import { ExtensionState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
@@ -71,6 +72,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerDocumentRangeFormattingEditProvider(
         { scheme: 'file', language: COMMON_LISP_ID },
         getDocumentRangeFormatter())
+
+    vscode.languages.registerOnTypeFormattingEditProvider('lisp', new GoOnTypingFormatter(), '\n')
 
     vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider(state))
     vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider(state))
