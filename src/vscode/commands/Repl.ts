@@ -76,24 +76,20 @@ export async function startReplAndAttach(state: ExtensionState, ctx: vscode.Exte
             attachRepl(state, ctx)
         }
     }
-    const spawn = () => {
-        child = childProcess.spawn(cmd[0], cmd.slice(1))
-        child.stdout.setEncoding('utf8');
-        child.stdout.on('data', data => outputAndAttach(data));
 
-        child.stderr.setEncoding('utf8');
-        child.stderr.on('data', data => outputAndAttach(data));
-    }
-    if (child) {
-        child.kill()
-        vscode.window.showInformationMessage("Waiting for Swank to die...")
-        // For some reason 'exit' event wasn't getting called every time so I'm using timeout.
-        setTimeout(() => {
-            spawn()
-        }, 3000)
-    } else {
-        spawn()
-    }
+    child?.kill()
+    child = null
+
+    child = childProcess.spawn(cmd[0], cmd.slice(1))
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', data => outputAndAttach(data));
+
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', data => outputAndAttach(data));
+
+    child.on('error', (err) => {
+        vscode.window.showErrorMessage(`Couldn't spawn Swank server: ${err.message}`)
+    })
 }
 
 export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext) {
