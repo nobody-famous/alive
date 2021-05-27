@@ -31,7 +31,7 @@ export async function sendToRepl(state: ExtensionState) {
 
             const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
 
-            await repl.send(editor, text, pkgName)
+            await repl.send(editor, text, pkgName, false)
 
             if (editor.document.languageId === REPL_ID) {
                 state.repl?.addHistory(text, pkgName)
@@ -87,7 +87,7 @@ export async function detachRepl(state: ExtensionState) {
     vscode.window.showInformationMessage('Disconnected from REPL')
 }
 
-export async function replHistory(state: ExtensionState) {
+export async function replHistory(state: ExtensionState, doNotEval: boolean) {
     useRepl(state, async (repl: Repl) => {
         const items = [...repl.historyItems()]
         const qp = vscode.window.createQuickPick()
@@ -112,7 +112,7 @@ export async function replHistory(state: ExtensionState) {
             qp.hide()
 
             await vscode.workspace.saveAll()
-            await repl.send(editor, text, pkg ?? ':cl-user')
+            await repl.send(editor, text, pkg ?? ':cl-user', doNotEval)
 
             repl.addHistory(text, pkg ?? ':cl-user')
         })
