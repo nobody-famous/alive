@@ -375,7 +375,7 @@ export class Repl extends EventEmitter {
         return undefined
     }
 
-    async send(editor: vscode.TextEditor, text: string, pkg: string, output: boolean = true) {
+    async send(editor: vscode.TextEditor, text: string, pkg: string, doNotEval: boolean, output: boolean = true) {
         if (this.conn === undefined || this.view === undefined) {
             return
         }
@@ -386,6 +386,10 @@ export class Repl extends EventEmitter {
 
             if (output) {
                 await this.view.addText(text)
+            }
+
+            if (doNotEval) {
+                return
             }
 
             if (isReplDoc(editor.document) && inPkg !== undefined) {
