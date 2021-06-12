@@ -23,6 +23,7 @@ class Provider implements vscode.DocumentFormattingEditProvider {
             closeParenOwnLine: 'never',
             closeParenStacked: 'always',
             indentCloseParenStack: true,
+            maxBlankLines: 1,
         }
 
         if (cfg?.format === undefined) {
@@ -34,12 +35,14 @@ class Provider implements vscode.DocumentFormattingEditProvider {
         const indentCloseParenStack = cfg.format.indentCloseParenStack ?? defaults.indentCloseParenStack
         const closeParenStacked = cfg.format.closeParenStacked ?? defaults.closeParenStacked
         const closeParenOwnLine = cfg.format.closeParenOwnLine ?? defaults.closeParenOwnLine
+        const maxBlankLines = cfg.format.maxBlankLines ?? defaults.maxBlankLines
 
         return {
             indentWidth,
             indentCloseParenStack,
             closeParenStacked,
             closeParenOwnLine,
+            maxBlankLines,
         }
     }
 }

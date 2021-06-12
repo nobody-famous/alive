@@ -27,6 +27,7 @@ This extension contributes the following settings:
 
 -   `alive.format.indentWidth`: Default indentation width
 -   `alive.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
+-   `alive.format.maxBlankLines`: The maximum number of blank lines to put between top level expressions.
 -   `alive.autoLoadOnSave`: If true, load files into the REPL when saved.
 -   `alive.remoteWorkspace`: Path to the workspace files on the REPL. Used when loading files.
 

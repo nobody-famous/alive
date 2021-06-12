@@ -25,13 +25,16 @@ export class RootExpr extends ExprFormatter {
 
             const prev = this.prevToken()
 
-            if (prev?.token.type !== types.COMMENT) {
+            if (curToken.token.type !== types.COMMENT && prev?.token.type !== types.COMMENT) {
                 const count = countNewLines(curToken.before.existing)
 
                 if (count <= 1) {
                     curToken.before.target = `${EOL}`
                 } else {
-                    curToken.before.target = `${EOL}${EOL}`
+                    const cfg = this.state.options.maxBlankLines + 1;
+                    const blanks = Math.min(cfg, count);
+
+                    curToken.before.target = `${EOL}`.repeat(blanks);
                 }
 
                 this.state.lineLength = 0

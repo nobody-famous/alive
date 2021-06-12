@@ -15,10 +15,17 @@
     font-weight: bold;
 }
 
-.list-box {
+body.vscode-dark .list-box {
     margin-left: 0.5rem;
     padding: 0.5rem;
     background: #222;
+    border-radius: 5px;
+}
+
+body.vscode-light .list-box {
+    margin-left: 0.5rem;
+    padding: 0.5rem;
+    background: #eee;
     border-radius: 5px;
 }
 
@@ -48,8 +55,14 @@
     text-align: center;
 }
 
-.locals-box {
+body.vscode-dark .locals-box {
     background: #555;
+    border: 1px solid #999;
+    border-radius: 0 0 5px 5px;
+}
+
+body.vscode-light .locals-box {
+    background: #ccc;
     border: 1px solid #999;
     border-radius: 0 0 5px 5px;
 }
@@ -62,9 +75,14 @@
     padding-left: 1.5rem;
 }
 
-.debug-btn {
+body.vscode-dark .debug-btn {
     background: #999;
     color: black;
+}
+
+body.vscode-light .debug-btn {
+    background: #ddd;
+    color: var(--vscode-editor-foreground);
 }
 
 .restart-btn {
@@ -100,7 +118,7 @@
     display: table-cell;
 }
 
-.eval-input {
+body.vscode-dark .eval-input {
     width: calc(100% - 5.5rem);
     height: 1.25rem;
     line-height: 1.25rem;
@@ -113,11 +131,24 @@
     color: black;
 }
 
+body.vscode-light .eval-input {
+    width: calc(100% - 5.5rem);
+    height: 1.25rem;
+    line-height: 1.25rem;
+    border-radius: 4px;
+    border: unset;
+    margin: unset;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    background: #fff;
+    color: var(--vscode-editor-foreground);
+}
+
 .eval-result-box {
     margin-top: 0.25rem;
 }
 
-.eval-result {
+body.vscode-dark .eval-result {
     width: calc(100% - 5.5rem);
     height: 1.25rem;
     line-height: 1.25rem;
@@ -128,4 +159,17 @@
     padding-right: 0.25rem;
     background: #333;
     color: #ccc;
+}
+
+body.vscode-light .eval-result {
+    width: calc(100% - 5.5rem);
+    height: 1.25rem;
+    line-height: 1.25rem;
+    border-radius: 4px;
+    border: unset;
+    margin: unset;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    background: #eee;
+    color: var(--vscode-editor-foreground);
 }
