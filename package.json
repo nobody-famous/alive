@@ -372,6 +372,11 @@
                     "default": "never",
                     "description": "Specify when to put close parens on their own line"
                 },
+                "alive.format.maxBlankLines": {
+                    "type": "number",
+                    "default": 1,
+                    "description": "Maximum number of blank lines between top level expressions"
+                },
                 "alive.autoLoadOnSave": {
                     "type": "boolean",
                     "default": false,

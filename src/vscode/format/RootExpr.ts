@@ -31,7 +31,10 @@ export class RootExpr extends ExprFormatter {
                 if (count <= 1) {
                     curToken.before.target = `${EOL}`
                 } else {
-                    curToken.before.target = `${EOL}${EOL}`
+                    const cfg = this.state.options.maxBlankLines + 1;
+                    const blanks = Math.min(cfg, count);
+
+                    curToken.before.target = `${EOL}`.repeat(blanks);
                 }
 
                 this.state.lineLength = 0

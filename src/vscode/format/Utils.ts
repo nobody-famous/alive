@@ -7,6 +7,7 @@ export interface Options {
     closeParenOwnLine: string
     closeParenStacked: string
     indentCloseParenStack: boolean
+    maxBlankLines: number
 }
 
 export class State {
