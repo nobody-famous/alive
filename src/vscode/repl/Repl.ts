@@ -57,6 +57,7 @@ export class Repl extends EventEmitter {
             this.conn.on('write-string', (event) => this.handleWriteString(event))
             this.conn.on('ping', (event) => this.handlePing(event))
             this.conn.on('close', () => this.onClose())
+            this.conn.on('log-trace', (msg) => this.emit('swank-trace', msg));
 
             const resp = await this.conn.connect()
             await this.view.open()
