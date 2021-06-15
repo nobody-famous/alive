@@ -14,7 +14,7 @@ import { ListExpr } from './ListExpr'
 import { Loop } from './Loop'
 import { isExprEnd, State } from './Utils'
 
-const LamdaLikeForms = [
+const LambdaLikeForms = [
     'LAMBDA',
     'RESTART-CASE',
     'HANDLER-CASE',
@@ -86,7 +86,7 @@ export class SExpr extends ExprFormatter {
         const ndx = text.lastIndexOf(':')
         const name = ndx >= 0 ? text.substr(ndx + 1) : text
 
-        if (LamdaLikeForms.includes(name)) {
+        if (LambdaLikeForms.includes(name)) {
             this.formatExpr(new LambdaExpr(this.state))
             return
         }
@@ -112,12 +112,12 @@ export class SExpr extends ExprFormatter {
                 this.formatExpr(new DefSystem(this.state))
                 break
             default:
-                this.formatList()
+                this.formatList(name)
         }
     }
 
-    private formatList() {
-        const expr = new ListExpr(this.state)
+    private formatList(name: string) {
+        const expr = this.state.haveBody[name] ? new LambdaExpr(this.state) : new ListExpr(this.state)
 
         expr.isTopLevel = this.isTopLevel
         this.formatExpr(expr)
