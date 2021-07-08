@@ -4,17 +4,17 @@ import { toVscodePos } from '../Utils'
 import { FormatToken, Whitespace } from './FormatToken'
 import { RootExpr } from './RootExpr'
 import { TokenList } from './TokenList'
-import { Options, State, withIndent } from './Utils'
+import { HaveBody, Options, State, withIndent } from './Utils'
 
-export { Options } from './Utils'
+export { HaveBody, Options } from './Utils'
 
 export class Formatter {
     docTokens: Token[]
     state: State
 
-    constructor(options: Options, tokens: Token[]) {
+    constructor(options: Options, tokens: Token[], haveBody: HaveBody) {
         this.docTokens = tokens
-        this.state = new State(options, [], new TokenList())
+        this.state = new State(options, [], new TokenList(), haveBody)
     }
 
     format(): vscode.TextEdit[] {

@@ -1,3 +1,4 @@
+import { EOL } from 'os'
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { exprToString, SExpr } from '../../lisp'
@@ -19,6 +20,8 @@ import {
     useEditor,
     useRepl,
 } from '../Utils'
+
+let swankOutputChannel: vscode.OutputChannel | undefined = undefined;
 
 export async function sendToRepl(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
@@ -280,6 +283,13 @@ async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, h
             state.repl = new Repl(ctx)
             state.repl.on('close', () => {
                 state.repl = undefined
+            })
+            state.repl.on('swank-trace', (msg) => {
+                if (swankOutputChannel === undefined) {
+                    swankOutputChannel = vscode.window.createOutputChannel('Swank Trace');
+                }
+
+                swankOutputChannel.append(`${msg}${EOL}`);
             })
         }
 

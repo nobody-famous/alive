@@ -77,6 +77,9 @@ export interface SwankConn {
 
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
+
+    emit(event: 'log-trace', message: string): boolean
+    on(event: 'log-trace', listener: (message: string) => void): this
 }
 
 export class SwankConn extends EventEmitter {
@@ -337,7 +340,7 @@ export class SwankConn extends EventEmitter {
             }
 
             if (this.trace) {
-                console.log(`<-- ${this.curResponse.buf?.toString()}`)
+                this.emit('log-trace', `<-- ${this.curResponse.buf?.toString()}`)
             }
 
             this.parseResponse(this.curResponse)
@@ -538,7 +541,7 @@ export class SwankConn extends EventEmitter {
             }
 
             if (this.trace) {
-                console.log(`--> ${msg}`)
+                this.emit('log-trace', `--> ${msg}`)
             }
 
             this.conn.write(msg, (err) => {

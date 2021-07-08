@@ -10,17 +10,23 @@ export interface Options {
     maxBlankLines: number
 }
 
+export interface HaveBody {
+    [index: string]: boolean
+}
+
 export class State {
     indent: number[]
     tokenList: TokenList
     lineLength: number = 0
+    haveBody: HaveBody
 
     options: Options
 
-    constructor(opts: Options, indent: number[], tokenList: TokenList) {
+    constructor(opts: Options, indent: number[], tokenList: TokenList, haveBody: HaveBody) {
         this.indent = indent
         this.tokenList = tokenList
         this.options = opts
+        this.haveBody = haveBody
     }
 }
 
