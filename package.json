@@ -387,6 +387,11 @@
                     "default": false,
                     "description": "Specify whether to print debug messages to the console"
                 },
+                "alive.indentMacros": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If connected to the REPL, indent macro bodies instead of aligning"
+                },
                 "alive.remoteWorkspace": {
                     "type": "string",
                     "description": "Path on the REPL server to the workspace"

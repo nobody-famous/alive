@@ -30,6 +30,9 @@ This extension contributes the following settings:
 -   `alive.format.maxBlankLines`: The maximum number of blank lines to put between top level expressions.
 -   `alive.autoLoadOnSave`: If true, load files into the REPL when saved.
 -   `alive.remoteWorkspace`: Path to the workspace files on the REPL. Used when loading files.
+-   `alive.indentMacros`: Defaults to true. When connected to the REPL, indent any form with a &body parameter instead of aligning like a normal list.
+
+The indentMacros setting was added because, while correct to indent macros, it makes fomatting very slow on large files. Setting it to false turns that behavior off.
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
