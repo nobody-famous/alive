@@ -228,7 +228,7 @@ export class SemanticAnalyzer {
                 break
             }
 
-            if (next.text === 'DEFUN') {
+            if (next.text === 'DEFUN' || next.text === 'DEFMACRO') {
                 await this.defun()
             } else if (this.isLambdaName(next.text)) {
                 await this.lambda()
