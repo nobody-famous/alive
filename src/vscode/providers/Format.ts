@@ -16,13 +16,17 @@ class Provider implements vscode.DocumentFormattingEditProvider {
     }
 
     async provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
+        const cfg = vscode.workspace.getConfiguration('alive')
+
         const lex = new Lexer(doc.getText())
         const tokens = lex.getTokens()
 
         const exprs = getDocumentExprs(doc)
         const haveBody: HaveBody = {}
 
-        await this.findHaveBody(doc, exprs, haveBody)
+        if (cfg.indentMacros === undefined || cfg.indentMacros !== false) {
+            await this.findHaveBody(doc, exprs, haveBody)
+        }
 
         const formatter = new Formatter(this.readFormatterOptions(), tokens, haveBody)
         const edits = formatter.format()
