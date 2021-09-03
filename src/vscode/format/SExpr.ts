@@ -98,6 +98,7 @@ export class SExpr extends ExprFormatter {
                 this.formatExpr(new IfExpr(this.state))
                 break
             case 'DESTRUCTURING-BIND':
+            case 'MULTIPLE-VALUE-BIND':
                 this.formatExpr(new BindExpr(this.state))
                 break
             case 'LET':

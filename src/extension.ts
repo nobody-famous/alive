@@ -58,7 +58,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         { scheme: 'untitled', language: COMMON_LISP_ID },
         getDocumentFormatter(state)
     )
-    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDocumentFormatter(state))
+    vscode.languages.registerDocumentFormattingEditProvider(
+        { scheme: 'file', language: COMMON_LISP_ID },
+        getDocumentFormatter(state)
+    )
 
     vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider(state))
     vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider(state))
