@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -386,6 +386,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Specify whether to print debug messages to the console"
+                },
+                "alive.indentMacros": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If connected to the REPL, indent macro bodies instead of aligning"
                 },
                 "alive.remoteWorkspace": {
                     "type": "string",
