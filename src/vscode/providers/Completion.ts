@@ -1,8 +1,8 @@
 import { format } from 'util'
 import * as vscode from 'vscode'
 import { CompletionItem, Position } from 'vscode'
-import { exprToString, findAtom, findInnerExpr } from '../../lisp'
-import { Expr, SExpr } from '../../lisp/Expr'
+import { exprToString, findAtom, findInnerExpr, Lexer, Parser } from '../../lisp'
+import { Atom, Expr, SExpr } from '../../lisp/Expr'
 import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
 import { getDocumentExprs, getPkgName, updatePkgMgr } from '../Utils'
@@ -103,11 +103,76 @@ class Provider implements vscode.CompletionItemProvider {
         const comps = await repl.getCompletions(str, pkg)
         const items = []
 
-        for (const comp of comps) {
-            const item = new CompletionItem(comp.toLowerCase())
-            const doc = await repl.getDoc(item.label, pkg)
+        const fetchCompData = async (label: string, pkg: string) => {
+            let doc = undefined
+            let args = undefined
 
-            item.documentation = doc
+            try {
+                doc = await repl.getDoc(label, pkg)
+                args = await repl.getOpArgs(label, pkg)
+            } catch (err) {
+                doc = ''
+                args = ''
+            }
+
+            return { label, doc, args }
+        }
+
+        const argsToSnippet = (args: string) => {
+            const lex = new Lexer(args)
+            const parser = new Parser(lex.getTokens())
+            const exprs = parser.parse()
+            const sexpr = exprs[0] instanceof SExpr ? (exprs[0] as SExpr) : undefined
+
+            if (sexpr === undefined) {
+                return ''
+            }
+
+            const parts: string[] = []
+            let num = 1
+
+            const addToSnippet = (atom: Atom) => {
+                const str = exprToString(atom)
+
+                if (str !== undefined && str.charAt(0) !== '&') {
+                    parts.push(`\${${num}:${str}}`)
+                    num += 1
+                }
+            }
+
+            for (let ndx = 1; ndx < sexpr.parts.length; ndx += 1) {
+                const expr = sexpr.parts[ndx]
+
+                if (expr instanceof Atom) {
+                    addToSnippet(expr)
+                } else if (expr instanceof SExpr) {
+                    const name = expr.parts[0]
+
+                    if (name instanceof Atom) {
+                        addToSnippet(name)
+                    }
+                }
+            }
+
+            return parts.join(' ')
+        }
+
+        const tasks = []
+
+        for (const comp of comps) {
+            tasks.push(fetchCompData(comp, pkg))
+        }
+
+        const results = await Promise.all(tasks)
+
+        for (const result of results) {
+            const item = new CompletionItem(result.label.toLowerCase())
+
+            item.documentation = result.doc
+
+            if (result.args !== undefined && result.args !== '') {
+                item.insertText = new vscode.SnippetString(`${result.label} ${argsToSnippet(result.args)}`)
+            }
 
             items.push(item)
         }

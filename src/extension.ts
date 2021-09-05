@@ -10,8 +10,7 @@ import {
     getFoldProvider,
     getHoverProvider,
     getRenameProvider,
-    getSemTokensProvider,
-    getSigHelpProvider,
+    getSemTokensProvider
 } from './vscode/providers'
 import { ExtensionState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
@@ -40,14 +39,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     )
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider(state))
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider(state))
-
-    vscode.languages.registerSignatureHelpProvider(
-        { scheme: 'untitled', language: COMMON_LISP_ID },
-        getSigHelpProvider(state),
-        ' '
-    )
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(state), ' ')
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: REPL_ID }, getSigHelpProvider(state), ' ')
 
     vscode.languages.registerRenameProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getRenameProvider(state))
     vscode.languages.registerRenameProvider({ scheme: 'file', language: COMMON_LISP_ID }, getRenameProvider(state))
