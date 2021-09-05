@@ -1,9 +1,10 @@
-import { EOL } from 'os'
+import { EOL, homedir } from 'os'
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { exprToString, SExpr } from '../../lisp'
 import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import {
     COMMON_LISP_ID,
     createFolder,
@@ -20,7 +21,10 @@ import {
     useEditor,
     useRepl,
 } from '../Utils'
+import path = require('path')
 
+const outputChannel = vscode.window.createOutputChannel("Alive Swank REPL")
+let child: ChildProcessWithoutNullStreams | undefined;
 let swankOutputChannel: vscode.OutputChannel | undefined = undefined;
 
 export async function sendToRepl(state: ExtensionState) {
@@ -66,10 +70,39 @@ export async function inlineEval(state: ExtensionState) {
     })
 }
 
-export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext) {
+export async function startReplAndAttach(state: ExtensionState, ctx: vscode.ExtensionContext) {
+    try {
+        const cwd = (await getWorkspaceOrFilePath())
+        const cmd = vscode.workspace.getConfiguration('alive').swank.startupCommand
+        const attachToRunningRepl = (out: string) => {
+            outputChannel.appendLine(out)
+            if (out.includes("Swank started at port: 4005")) {
+                attachRepl(state, ctx, { host: 'localhost', port: 4005 })
+            } else if (out.includes("Swank started at port")) {
+                attachRepl(state, ctx)
+            }
+        }
+
+        child?.kill()
+        child = undefined
+        child = spawn(cmd[0], cmd.slice(1), { cwd })
+        child.stdout.setEncoding('utf-8')
+        child.stderr.setEncoding('utf-8');
+        child.stdout.on('data', (out: string) => attachToRunningRepl(out))
+        child.stderr.on('data', (out: string) => attachToRunningRepl(out))
+
+        child.on('error', (err: Error) => {
+            vscode.window.showErrorMessage(`Couldn't spawn Swank server: ${err.message}`)
+        })
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort) {
     try {
         const showMsgs = state.repl === undefined
-        const connected = await newReplConnection(state, ctx)
+        const connected = await newReplConnection(state, ctx, hp)
 
         if (showMsgs && connected) {
             vscode.window.showInformationMessage('REPL Connected')
@@ -80,12 +113,12 @@ export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionCon
 }
 
 export async function detachRepl(state: ExtensionState) {
-    if (state.repl === undefined) {
-        return
-    }
+    child?.kill()
 
-    await state.repl.disconnect()
-    state.repl = undefined
+    if (state.repl !== undefined) {
+        await state.repl.disconnect()
+        state.repl = undefined
+    }
 
     vscode.window.showInformationMessage('Disconnected from REPL')
 }
@@ -232,6 +265,42 @@ export async function loadFile(state: ExtensionState) {
     })
 }
 
+async function getWorkspaceOrFilePath(): Promise<string> {
+    if (vscode.workspace.workspaceFolders === undefined) {
+        return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
+    }
+
+    const folder = vscode.workspace.workspaceFolders.length > 1
+        ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
+        : vscode.workspace.workspaceFolders[0]
+
+    if (folder === undefined) {
+        throw new Error('Failed to find a workspace folder')
+    }
+
+    return folder.uri.path
+}
+
+async function pickWorkspaceFolder(
+    folders: readonly vscode.WorkspaceFolder[]
+): Promise<vscode.WorkspaceFolder> {
+    const addFolderToFolders = (
+        folders: { [key: string]: vscode.WorkspaceFolder },
+        folder: vscode.WorkspaceFolder
+    ) => {
+        folders[folder.uri.fsPath] = folder
+        return folders
+    }
+    const namedFolders = folders.reduce(addFolderToFolders, {})
+    const folderNames = Object.keys(namedFolders)
+    const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
+    if (chosenFolder === undefined) {
+        throw new Error('Failed to choose a folder name')
+    }
+
+    return namedFolders[chosenFolder]
+}
+
 async function writeDisassemble(text: string) {
     const folder = await getTempFolder()
 
@@ -251,8 +320,8 @@ async function writeDisassemble(text: string) {
     return file
 }
 
-async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext): Promise<boolean> {
-    const connected = await tryConnect(state, ctx)
+async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort): Promise<boolean> {
+    const connected = await tryConnect(state, ctx, hp)
 
     if (connected) {
         await updatePackageNames(state)
@@ -273,7 +342,9 @@ async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, h
         const host = hp?.host ?? 'localhost'
         const port = hp?.port ?? 4005
 
-        hostPort = await promptForHostPort(host, port)
+        if (!hp) {
+            hostPort = await promptForHostPort(host, port)
+        }
 
         if (hostPort === undefined) {
             return false

@@ -96,6 +96,10 @@
                 "title": "Alive: Compile File"
             },
             {
+                "command": "alive.startReplAndAttach",
+                "title": "Alive: Start REPL And Attach"
+            },
+            {
                 "command": "alive.attachRepl",
                 "title": "Alive: Attach To REPL"
             },
@@ -167,6 +171,9 @@
                 },
                 {
                     "command": "alive.detachRepl"
+                },
+                {
+                    "command": "alive.startReplAndAttach"
                 },
                 {
                     "command": "alive.replHistory",
@@ -395,6 +402,19 @@
                 "alive.remoteWorkspace": {
                     "type": "string",
                     "description": "Path on the REPL server to the workspace"
+                },
+                "alive.swank.startupCommand": {
+                    "type": "array",
+                    "default": [
+                        "sbcl",
+                        "--eval",
+                        "(ql:quickload :swank)",
+                        "--eval",
+                        "(asdf:load-system :swank)",
+                        "--eval",
+                        "(swank:create-server)"
+                    ],
+                    "description": "Command to start up a Swank server to which your REPL can connect."
                 }
             }
         }
