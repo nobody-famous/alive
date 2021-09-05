@@ -96,6 +96,10 @@
                 "title": "Alive: Compile File"
             },
             {
+                "command": "alive.startReplAndAttach",
+                "title": "Alive: Start REPL And Attach"
+            },
+            {
                 "command": "alive.attachRepl",
                 "title": "Alive: Attach To REPL"
             },
@@ -167,6 +171,9 @@
                 },
                 {
                     "command": "alive.detachRepl"
+                },
+                {
+                    "command": "alive.startReplAndAttach"
                 },
                 {
                     "command": "alive.replHistory",
@@ -395,6 +402,29 @@
                 "alive.remoteWorkspace": {
                     "type": "string",
                     "description": "Path on the REPL server to the workspace"
+                },
+                "alive.swank.downloadUrl": {
+                    "type": "string",
+                    "description": "Https url from which to download slime/swank release",
+                    "default": "https://api.github.com/repos/slime/slime/releases"
+                },
+                "alive.swank.checkForLatest": {
+                    "type": "boolean",
+                    "description": "Specifies whether VSCode should check for the latest version of slime/swank every time the REPL is started",
+                    "default": false
+                },
+                "alive.swank.startupCommand": {
+                    "type": "array",
+                    "default": [
+                        "sbcl",
+                        "--eval",
+                        "(require :asdf)",
+                        "--eval",
+                        "(asdf:load-system :swank)",
+                        "--eval",
+                        "(swank:create-server)"
+                    ],
+                    "description": "Command to start up a Swank server to which your REPL can connect."
                 }
             }
         }
@@ -404,5 +434,9 @@
         "@types/vscode": "^1.50.0",
         "ts-node": "^9.0.0",
         "typescript": "^4.0.3"
+    },
+    "dependencies": {
+        "axios": "^0.21.4",
+        "node-stream-zip": "^1.15.0"
     }
 }

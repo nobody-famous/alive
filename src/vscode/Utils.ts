@@ -241,7 +241,7 @@ export async function getTempFolder() {
     }
 
     if (baseFolder === undefined) {
-        throw new Error('No folder for REPL file')
+        throw new Error('No folder for REPL file, is file saved to disk?')
     }
 
     return vscode.Uri.joinPath(baseFolder, OUTPUT_DIR)
@@ -317,6 +317,10 @@ function getActiveDocFolder() {
     }
 
     const docPath = path.parse(activeDoc.uri.path)
+
+    if (docPath.dir === '') {
+        return undefined
+    }
 
     return vscode.Uri.file(docPath.dir)
 }
