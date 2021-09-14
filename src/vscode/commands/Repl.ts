@@ -232,6 +232,15 @@ export async function loadFile(state: ExtensionState) {
     })
 }
 
+export async function compileFile(state: ExtensionState) {
+    useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
+        useRepl(state, async (repl: Repl) => {
+            await editor.document.save()
+            await repl.compileFile(editor.document.uri.fsPath)
+        })
+    })
+}
+
 async function writeDisassemble(text: string) {
     const folder = await getTempFolder()
 

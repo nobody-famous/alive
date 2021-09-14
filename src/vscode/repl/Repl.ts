@@ -57,7 +57,7 @@ export class Repl extends EventEmitter {
             this.conn.on('write-string', (event) => this.handleWriteString(event))
             this.conn.on('ping', (event) => this.handlePing(event))
             this.conn.on('close', () => this.onClose())
-            this.conn.on('log-trace', (msg) => this.emit('swank-trace', msg));
+            this.conn.on('log-trace', (msg) => this.emit('swank-trace', msg))
 
             const resp = await this.conn.connect()
             await this.view.open()
@@ -221,10 +221,10 @@ export class Repl extends EventEmitter {
         }
 
         try {
-            const resp = await this.conn.compileFile(fileName)
-            vscode.window.showInformationMessage(format(resp))
+            const remotePath = xlatePath(fileName)
+            await this.conn.compileFile(remotePath)
         } catch (err) {
-            vscode.window.showErrorMessage(err)
+            vscode.window.showErrorMessage(format(err))
         }
     }
 

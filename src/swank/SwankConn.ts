@@ -310,7 +310,7 @@ export class SwankConn extends EventEmitter {
     }
 
     private connError(err: Error) {
-        this.emit('conn-err', `REPL Connection error ${err.toString()}`)
+        this.emit('conn-err', `REPL Connection error ${format(err)}`)
     }
 
     private connClosed() {
@@ -410,7 +410,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('ping', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -430,7 +430,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('reader-error', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -438,7 +438,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('read-string', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -446,7 +446,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('write-string', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -458,7 +458,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('activate', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -466,7 +466,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('debug-return', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
