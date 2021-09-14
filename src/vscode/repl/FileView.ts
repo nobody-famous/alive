@@ -1,4 +1,5 @@
 import { EOL } from 'os'
+import { format } from 'util'
 import * as vscode from 'vscode'
 import { createFolder, getTempFolder, jumpToBottom, openFile, REPL_ID } from '../Utils'
 import { View } from './View'
@@ -38,7 +39,7 @@ export class FileView implements View {
 
             this.replDoc = await openFile(this.replFile)
         } catch (err) {
-            vscode.window.showErrorMessage(err)
+            vscode.window.showErrorMessage(format(err))
         }
     }
 

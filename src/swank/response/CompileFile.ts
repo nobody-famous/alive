@@ -31,6 +31,8 @@ export class CompileFile {
         const loaded = exprToString(payload.parts[4]) ?? false
         const faslFile = exprToString(payload.parts[5]) ?? ''
 
+        console.log(payload)
+
         return new CompileFile(success === 'T', duration ?? 0, loaded === 'T', faslFile)
     }
 }

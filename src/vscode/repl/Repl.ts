@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events'
 import { EOL } from 'os'
+import path = require('path')
 import { format } from 'util'
 import * as vscode from 'vscode'
 import { Expr, InPackage, isString, Lexer, Parser, unescape } from '../../lisp'
@@ -8,7 +9,7 @@ import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
-import { isReplDoc, xlatePath } from '../Utils'
+import { createFolder, getTempFolder, isReplDoc, xlatePath } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { History, HistoryItem } from './History'
@@ -221,8 +222,14 @@ export class Repl extends EventEmitter {
         }
 
         try {
+            const tmp = await getTempFolder()
+            const faslDir = path.join(tmp.fsPath, 'fasl')
+            const dest = xlatePath(faslDir)
             const remotePath = xlatePath(fileName)
-            await this.conn.compileFile(remotePath)
+            const sep = dest.startsWith('/') ? '/' : path.sep
+
+            await createFolder(vscode.Uri.file(faslDir))
+            await this.conn.compileFile(remotePath, `${dest}${sep}`)
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
         }
