@@ -31,6 +31,9 @@ This extension contributes the following settings:
 -   `alive.autoLoadOnSave`: If true, load files into the REPL when saved.
 -   `alive.remoteWorkspace`: Path to the workspace files on the REPL. Used when loading files.
 -   `alive.indentMacros`: Defaults to true. When connected to the REPL, indent any form with a &body parameter instead of aligning like a normal list.
+-   `alive.swank.startupCommand`: Allows configuration of the command used to start up SBCL with the REPL.  It defaults to an SBCL configuration that works with the Swank downloader.
+-   `alive.swank.checkForLatest`: This setting specifies whether VSCode should check for the latest version of Swank every time the REPL is started.  Defaults to false.
+-   `alive.swank.downloadUrl`: Specifies the url from which to download a Slime/Swank release.  Defaults to https://api.github.com/repos/slime/slime/releases.
 
 The indentMacros setting was added because, while correct to indent macros, it makes fomatting very slow on large files. Setting it to false turns that behavior off.
 
@@ -88,6 +91,10 @@ Note that the inline result feature uses a hover to display results, so those re
 ### Select S-Expression (Alt+Shift+Up)
 
 Selects the surrounding top level expression for the current cursor position.
+
+### Start REPL And Attach
+
+Downloads and installs a swank server, runs it in your image, and connects to it.
 
 ### Attach To REPL
 

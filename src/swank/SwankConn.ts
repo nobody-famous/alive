@@ -125,7 +125,10 @@ export class SwankConn extends EventEmitter {
             this.conn?.on('error', (err) => {
                 connected ? this.connError(err) : reject(err)
             })
-
+            this.conn?.on('end', () => {
+                const err = new Error('ALIVEUNEXPECTEDDISCONNECT')
+                connected ? this.connError(err) : reject(err)
+            })
             this.conn?.on('close', () => this.connClosed())
             this.conn?.on('data', (data) => this.readData(data))
         })
