@@ -10,7 +10,7 @@ import {
     getFoldProvider,
     getHoverProvider,
     getRenameProvider,
-    getSemTokensProvider
+    getSemTokensProvider,
 } from './vscode/providers'
 import { ExtensionState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
@@ -81,6 +81,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.startReplAndAttach', () => cmds.startReplAndAttach(state, ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', () => cmds.attachRepl(state, ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', () => cmds.detachRepl(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', () => cmds.replHistory(state, false)))

@@ -2,6 +2,7 @@ import { EOL } from 'os'
 import { format } from 'util'
 import * as vscode from 'vscode'
 import { createFolder, getTempFolder, jumpToBottom, openFile, REPL_ID } from '../Utils'
+import { format } from 'util'
 import { View } from './View'
 
 export class FileView implements View {

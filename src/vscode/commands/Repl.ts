@@ -1,9 +1,11 @@
-import { EOL } from 'os'
+import { EOL, homedir } from 'os'
 import { format, TextEncoder } from 'util'
+import * as fs from 'fs'
 import * as vscode from 'vscode'
 import { exprToString, SExpr } from '../../lisp'
 import { Repl } from '../repl'
-import { ExtensionState } from '../Types'
+import { ExtensionState, SlimeVersion, InstalledSlimeInfo } from '../Types'
+import { spawn } from 'child_process'
 import {
     COMMON_LISP_ID,
     createFolder,
@@ -20,8 +22,13 @@ import {
     useEditor,
     useRepl,
 } from '../Utils'
+import * as net from 'net'
+import * as path from 'path'
 
-let swankOutputChannel: vscode.OutputChannel | undefined = undefined;
+import axios from 'axios'
+import * as StreamZip from 'node-stream-zip'
+
+const swankOutputChannel = vscode.window.createOutputChannel('Swank Trace')
 
 export async function sendToRepl(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
@@ -66,13 +73,64 @@ export async function inlineEval(state: ExtensionState) {
     })
 }
 
-export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext) {
+export async function startReplAndAttach(state: ExtensionState, ctx: vscode.ExtensionContext): Promise<void> {
+    const defaultPort = 4005
     try {
-        const showMsgs = state.repl === undefined
-        const connected = await newReplConnection(state, ctx)
+        if (!(await portIsAvailable(defaultPort))) {
+            vscode.window.showWarningMessage(`Failed to start REPL, port ${defaultPort} is already in use`)
+            return
+        }
+        const installedSlimeInfo = await installAndConfigureSlime(state)
+        const cwd = await getWorkspaceOrFilePath()
+        const cmd = vscode.workspace.getConfiguration('alive').swank.startupCommand
+        const attachToRunningRepl = (out: string) => {
+            swankOutputChannel.appendLine(out)
+            if (out.includes(`Swank started at port: ${defaultPort}`)) {
+                attachRepl(state, ctx, { host: 'localhost', port: defaultPort })
+            } else if (out.includes('Swank started at port')) {
+                attachRepl(state, ctx)
+            }
+        }
+        const handleDisconnect = (state: ExtensionState) => async (_code: number, _signal: string) => {
+            if (state.repl === undefined) {
+                if (state.child) {
+                    await disconnectAndClearChild(state)
+                }
+            } else {
+                await disconnectAndClearChild(state)
+            }
+        }
 
-        if (showMsgs && connected) {
-            vscode.window.showInformationMessage('REPL Connected')
+        if (state.repl === undefined) {
+            if (state.child) {
+                await disconnectAndClearChild(state)
+            }
+            state.child = spawn(cmd[0], cmd.slice(1), { cwd, env: getClSourceRegistryEnv(installedSlimeInfo.path, process.env) })
+            state.child.stdout?.setEncoding('utf-8').on('data', attachToRunningRepl)
+            state.child.stderr?.setEncoding('utf-8').on('data', attachToRunningRepl)
+            state.child
+                .on('exit', handleDisconnect(state))
+                .on('disconnect', handleDisconnect(state))
+                .on('error', (err: Error) => {
+                    vscode.window.showErrorMessage(`Couldn't spawn Swank server: ${err.message}`)
+                })
+        } else {
+            vscode.window.showWarningMessage('REPL already attached')
+        }
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort) {
+    try {
+        if (state.repl === undefined) {
+            const connected = await newReplConnection(state, ctx, hp)
+            if (connected) {
+                vscode.window.showInformationMessage('REPL Attached')
+            }
+        } else {
+            vscode.window.showWarningMessage('REPL already attached')
         }
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
@@ -80,14 +138,14 @@ export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionCon
 }
 
 export async function detachRepl(state: ExtensionState) {
-    if (state.repl === undefined) {
-        return
+    disconnectAndClearChild(state)
+    if (state.repl !== undefined) {
+        await state.repl.disconnect()
+        state.repl = undefined
+        vscode.window.showInformationMessage('REPL Detached')
+    } else {
+        vscode.window.showWarningMessage('No REPL currently attached')
     }
-
-    await state.repl.disconnect()
-    state.repl = undefined
-
-    vscode.window.showInformationMessage('Disconnected from REPL')
 }
 
 export async function replHistory(state: ExtensionState, doNotEval: boolean) {
@@ -241,6 +299,161 @@ export async function compileFile(state: ExtensionState) {
     })
 }
 
+async function disconnectAndClearChild(state: ExtensionState): Promise<void> {
+    if ((state.child?.exitCode !== 0 && state.child?.exitCode !== null) || state.child?.signalCode !== null) {
+        state.child = undefined
+        return
+    }
+    state.child?.kill()
+    let killAttempts = 5
+    while ((!state.child?.killed || state.child?.signalCode !== null) && killAttempts > 0) {
+        await new Promise((r) => setTimeout(r, 1000))
+        killAttempts -= 1
+    }
+    if (!state.child?.killed) {
+        vscode.window.showWarningMessage('Failed to kill child process after 5 seconds')
+    }
+    state.child = undefined
+}
+
+async function installAndConfigureSlime(state: ExtensionState): Promise<InstalledSlimeInfo> {
+    await fs.promises.mkdir(getSlimeBasePath(state), { recursive: true })
+
+    let version: SlimeVersion | undefined
+    if (vscode.workspace.getConfiguration('alive').swank.checkForLatest) {
+        version = await getLatestSlimeVersion()
+    }
+
+    let name = await getInstalledVersionName(state)
+    if (!name) return installSlime(state, version)
+
+    const slimePath = await getSlimePath(state, name)
+    if (!slimePath) return installSlime(state, version)
+
+    return { path: slimePath, latest: undefined }
+}
+
+async function getLatestSlimeVersion(): Promise<SlimeVersion> {
+    // TODO - Handle Github rate limits for > 60 calls/hour
+    const out = await axios(vscode.workspace.getConfiguration('alive').swank.downloadUrl, {
+        headers: { 'User-Agent': 'nobody-famous/alive' },
+        method: 'GET',
+    })
+    const versions: SlimeVersion[] = out.data
+    return versions.sort((f, s) => (f.created_at > s.created_at ? -1 : f.created_at < s.created_at ? 1 : 0))[0]
+}
+
+async function installSlime(state: ExtensionState, version: SlimeVersion | undefined): Promise<InstalledSlimeInfo> {
+    const latest = version === undefined ? await getLatestSlimeVersion() : version
+    const zipPath = path.normalize(path.join(getSlimeBasePath(state), latest.name))
+    const zipFile = path.join(zipPath, `${latest.name}.zip`)
+
+    vscode.window.showInformationMessage('Installing Swank server')
+    const response = await axios(latest.zipball_url, {
+        headers: { 'User-Agent': 'nobody-famous/alive' },
+        method: 'GET',
+        responseType: 'stream',
+    })
+
+    await fs.promises.mkdir(zipPath, { recursive: true })
+    await new Promise((resolve, reject) => {
+        const writer = fs.createWriteStream(zipFile)
+        response.data.pipe(writer).on('finish', resolve).on('close', resolve).on('error', reject)
+    })
+    const streamZip = new StreamZip.async({ file: zipFile })
+    await streamZip.extract(null, zipPath)
+    await streamZip.close()
+
+    const slimePath = await getSlimePath(state, latest.name)
+    if (!slimePath) {
+        throw new Error('Failed to download latest Slime version')
+    }
+
+    return { path: slimePath, latest }
+}
+
+async function getInstalledVersionName(state: ExtensionState): Promise<string | undefined> {
+    const files = await fs.promises.readdir(getSlimeBasePath(state))
+    if (files.length !== 1) {
+        await fs.promises.rm(getSlimeBasePath(state), { recursive: true })
+        return undefined
+    }
+    return files[0]
+}
+
+async function getSlimePath(state: ExtensionState, versionName: string): Promise<string | undefined> {
+    const files = await fs.promises.readdir(path.join(getSlimeBasePath(state), versionName))
+    if (files.length !== 2) {
+        await fs.promises.rm(getSlimeBasePath(state), { recursive: true })
+        return undefined
+    }
+    const zipFileName = `${path.basename(versionName)}.zip`
+    const hashDirectory = files.filter((f) => f !== zipFileName)[0]
+    return path.join(getSlimeBasePath(state), versionName, hashDirectory)
+}
+
+function getClSourceRegistryEnv(
+    slimePath: string,
+    processEnv: { [key: string]: string | undefined }
+): { [key: string]: string | undefined } {
+    const updatedEnv = { ...processEnv }
+    if (!processEnv.CL_SOURCE_REGISTRY) {
+        updatedEnv.CL_SOURCE_REGISTRY = slimePath
+        return updatedEnv
+    }
+    if (processEnv.CL_SOURCE_REGISTRY.startsWith('(')) {
+        const slimePathSExpressionEnding = ` (:directory "${slimePath}")`
+        updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY.replace(/\)$/, slimePathSExpressionEnding)})`
+        return updatedEnv
+    }
+    updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY}${path.delimiter}${slimePath}`
+    return updatedEnv
+}
+
+async function getWorkspaceOrFilePath(): Promise<string> {
+    if (vscode.workspace.workspaceFolders === undefined) {
+        return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
+    }
+
+    const folder =
+        vscode.workspace.workspaceFolders.length > 1
+            ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
+            : vscode.workspace.workspaceFolders[0]
+
+    if (folder === undefined) {
+        throw new Error('Failed to find a workspace folder')
+    }
+
+    return folder.uri.fsPath
+}
+
+async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder> {
+    const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
+        folders[folder.uri.fsPath] = folder
+        return folders
+    }
+    const namedFolders = folders.reduce(addFolderToFolders, {})
+    const folderNames = Object.keys(namedFolders)
+    const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
+    if (chosenFolder === undefined) {
+        throw new Error('Failed to choose a folder name')
+    }
+
+    return namedFolders[chosenFolder]
+}
+
+function getSlimeBasePath(state: ExtensionState): string {
+    if (state.slimeBasePath === undefined) {
+        const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
+        if (!extensionMetadata) throw new Error('Failed to find rheller.alive extension config directory')
+        state.slimeBasePath = path.normalize(path.join(extensionMetadata.extensionPath, 'out', 'slime'))
+    }
+    if (state.slimeBasePath === undefined) {
+        throw new Error('Failed to set Slime base path')
+    }
+    return state.slimeBasePath
+}
+
 async function writeDisassemble(text: string) {
     const folder = await getTempFolder()
 
@@ -260,8 +473,8 @@ async function writeDisassemble(text: string) {
     return file
 }
 
-async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext): Promise<boolean> {
-    const connected = await tryConnect(state, ctx)
+async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort): Promise<boolean> {
+    const connected = await tryConnect(state, ctx, hp)
 
     if (connected) {
         await updatePackageNames(state)
@@ -282,7 +495,9 @@ async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, h
         const host = hp?.host ?? 'localhost'
         const port = hp?.port ?? 4005
 
-        hostPort = await promptForHostPort(host, port)
+        if (!hp) {
+            hostPort = await promptForHostPort(host, port)
+        }
 
         if (hostPort === undefined) {
             return false
@@ -294,11 +509,7 @@ async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, h
                 state.repl = undefined
             })
             state.repl.on('swank-trace', (msg) => {
-                if (swankOutputChannel === undefined) {
-                    swankOutputChannel = vscode.window.createOutputChannel('Swank Trace');
-                }
-
-                swankOutputChannel.append(`${msg}${EOL}`);
+                swankOutputChannel.append(`${msg}${EOL}`)
             })
         }
 
@@ -332,4 +543,32 @@ function splitHostPort(input: string): { host: string; port: number } {
         host: hostStr,
         port: port,
     }
+}
+
+/**
+ * Checks if port is available by trying to connect to it.  This is done
+ * to handle servers that aren't using SO_REUSEADDR.  The side effect of
+ * this check is that if the thing running on the port is a Swank server
+ * started without the `:dont-close t` setting, it will close the Swank
+ * server when it checks it.
+ */
+async function portIsAvailable(port: number): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        const socket = new net.Socket()
+        const timeout = () => {
+            socket.destroy()
+            resolve(false)
+        }
+        setTimeout(timeout, 200)
+        socket
+            .on('timeout', timeout)
+            .on('connect', () => resolve(false))
+            .on('error', (err: { message: string; code?: string }) => {
+                if (err.code === 'ECONNREFUSED') {
+                    return resolve(true)
+                }
+                return reject(err)
+            })
+        socket.connect(port, '0.0.0.0')
+    })
 }
