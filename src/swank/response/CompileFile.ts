@@ -1,9 +1,10 @@
 import { Atom, Expr, exprToNumber, exprToString, SExpr } from '../../lisp'
 import { Return } from '../event'
 import { convert } from '../SwankUtils'
+import { CompileNotes } from './CompileNotes'
 
 export class CompileFile {
-    notes: string[] = []
+    notes: CompileNotes | undefined
     success: boolean
     duration: number
     loaded: boolean
@@ -26,15 +27,13 @@ export class CompileFile {
             return undefined
         }
 
-        console.log(payload)
-        const notes = payload.parts[1]
+        const notes = CompileNotes.from(payload.parts[1])
         const success = exprToString(payload.parts[2]) ?? false
         const duration = exprToNumber(payload.parts[3]) ?? 0
         const loaded = exprToString(payload.parts[4]) ?? false
         const faslFile = exprToString(payload.parts[5]) ?? ''
 
-        this.parseNotes(notes)
-
+        console.log(notes)
         return new CompileFile(success === 'T', duration ?? 0, loaded === 'T', faslFile)
     }
 
