@@ -158,7 +158,7 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
     }
 
     const cfg = vscode.workspace.getConfiguration('alive')
-    if (cfg.autoCompileOnType) {
+    if (state.repl !== undefined && cfg.autoCompileOnType) {
         if (compileTimeoutID !== undefined) {
             clearTimeout(compileTimeoutID)
         }
