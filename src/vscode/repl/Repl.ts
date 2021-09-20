@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events'
 import { EOL } from 'os'
+import path = require('path')
 import { format } from 'util'
 import * as vscode from 'vscode'
 import { Expr, InPackage, isString, Lexer, Parser, unescape } from '../../lisp'
@@ -8,7 +9,7 @@ import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
-import { isReplDoc, xlatePath } from '../Utils'
+import { createFolder, getTempFolder, isReplDoc, xlatePath } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { History, HistoryItem } from './History'
@@ -221,8 +222,22 @@ export class Repl extends EventEmitter {
         }
 
         try {
+            const tmp = await getTempFolder()
+            const faslDir = path.join(tmp.fsPath, 'fasl')
             const remotePath = xlatePath(fileName)
-            await this.conn.compileFile(remotePath)
+
+            // Swank requires a slash on the end
+            let dest = `${xlatePath(faslDir)}/`
+
+            // Swank doesn't like Windows separators when doing the compile file command :-/
+            if (dest.startsWith('/')) {
+                dest = dest.replace(/\\/g, '/')
+            }
+
+            await createFolder(vscode.Uri.file(faslDir))
+
+            const resp = await this.conn.compileFile(remotePath, dest)
+            return resp instanceof response.CompileFile ? resp : undefined
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
         }

@@ -35,7 +35,9 @@ class Provider implements vscode.HoverProvider {
             return new vscode.Hover('')
         }
 
+        this.state.repl.setIgnoreDebug(true)
         text = await this.state.repl.getDoc(textStr, pkgName)
+        this.state.repl.setIgnoreDebug(false)
 
         if (text.startsWith('No such symbol')) {
             text = ''

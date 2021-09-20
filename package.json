@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.1.15",
+    "version": "0.1.16",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -388,6 +388,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Specify whether to auto load files on save"
+                },
+                "alive.autoCompileOnType": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Specify whether to compile files as you type"
                 },
                 "alive.debug": {
                     "type": "boolean",
