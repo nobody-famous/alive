@@ -22,6 +22,8 @@ const state: ExtensionState = {
     hoverText: '',
 }
 
+let compileTimeoutID: NodeJS.Timeout | undefined = undefined
+
 export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
     vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
@@ -153,6 +155,15 @@ function openTextDocument(doc: vscode.TextDocument) {
 function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
     if (!hasValidLangId(event.document, [COMMON_LISP_ID, REPL_ID])) {
         return
+    }
+
+    const cfg = vscode.workspace.getConfiguration('alive')
+    if (cfg.autoCompileOnType) {
+        if (compileTimeoutID !== undefined) {
+            clearTimeout(compileTimeoutID)
+        }
+
+        compileTimeoutID = setTimeout(() => cmds.compileFile(state, true), 500)
     }
 
     cmds.clearInlineResults(state)

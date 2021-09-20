@@ -6,7 +6,7 @@ export interface CompileLocation {
     position: number
 }
 
-export class CompileNotes {
+export class CompileNote {
     message: string
     severity: string
     location: CompileLocation
@@ -17,36 +17,20 @@ export class CompileNotes {
         this.location = location
     }
 
-    static from(expr: Expr): CompileNotes | undefined {
-        if (!(expr instanceof SExpr) || expr.parts.length === 0 || !(expr.parts[0] instanceof SExpr)) {
+    static getNameString(expr: Expr): string | undefined {
+        const nameStr = exprToString(expr)
+
+        if (nameStr === undefined) {
             return undefined
         }
 
-        console.log('notes', expr)
-        const notesExpr = expr.parts[0]
+        const name = convert(nameStr)
 
-        let msg: string | undefined = undefined
-        let sev: string | undefined = undefined
-        let loc: CompileLocation | undefined = undefined
-
-        for (let ndx = 0; ndx < notesExpr.parts.length; ndx += 2) {
-            const name = this.getNameString(notesExpr.parts[ndx])
-
-            if (name === undefined) {
-                continue
-            }
-
-            const value = notesExpr.parts[ndx + 1]
-            if (name === 'message') {
-                msg = exprToString(value)
-            } else if (name === 'severity') {
-                sev = this.getNameString(value)
-            } else if (name === 'location') {
-                loc = this.parseLocation(value)
-            }
+        if (typeof name != 'string') {
+            return undefined
         }
 
-        return msg === undefined || sev === undefined || loc === undefined ? undefined : new CompileNotes(msg, sev, loc)
+        return name.toLowerCase()
     }
 
     static parseLocation(expr: Expr) {
@@ -81,19 +65,52 @@ export class CompileNotes {
         return file === undefined || position === undefined ? undefined : { file, position }
     }
 
-    static getNameString(expr: Expr): string | undefined {
-        const nameStr = exprToString(expr)
+    static from(expr: SExpr): CompileNote | undefined {
+        let msg: string | undefined = undefined
+        let sev: string | undefined = undefined
+        let loc: CompileLocation | undefined = undefined
 
-        if (nameStr === undefined) {
-            return undefined
+        for (let ndx = 0; ndx < expr.parts.length; ndx += 2) {
+            const name = this.getNameString(expr.parts[ndx])
+
+            if (name === undefined) {
+                continue
+            }
+
+            const value = expr.parts[ndx + 1]
+            if (name === 'message') {
+                msg = exprToString(value)
+            } else if (name === 'severity') {
+                sev = this.getNameString(value)
+            } else if (name === 'location') {
+                loc = this.parseLocation(value)
+            }
         }
 
-        const name = convert(nameStr)
+        return msg === undefined || sev === undefined || loc === undefined ? undefined : new CompileNote(msg, sev, loc)
+    }
+}
 
-        if (typeof name != 'string') {
-            return undefined
+export class CompileNotes {
+    static from(expr: Expr): CompileNote[] {
+        if (!(expr instanceof SExpr) || expr.parts.length === 0) {
+            return []
         }
 
-        return name.toLowerCase()
+        const notes: CompileNote[] = []
+
+        for (const part of expr.parts) {
+            if (!(part instanceof SExpr)) {
+                continue
+            }
+
+            const note = CompileNote.from(part as SExpr)
+
+            if (note !== undefined) {
+                notes.push(note)
+            }
+        }
+
+        return notes
     }
 }

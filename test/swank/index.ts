@@ -34,7 +34,10 @@ async function testCompileFile() {
         await conn.connect()
 
         conn.trace = true
-        const resp = await conn.compileFile('hello.lisp')
+        const resp = await conn.compileFile(
+            'c:\\Users\\rich\\work\\cl\\demo\\math.lisp',
+            'c:\\Users\\rich\\work\\cl\\demo\\.vscode\\alive\\fasl/'
+        )
         console.log(resp)
     } finally {
         conn.close()
@@ -270,14 +273,14 @@ async function testPing(conn: SwankConn) {
         // await testListPkgs(conn)
         // await testDebug()
         // await testRestarts()
-        // await testCompileFile()
+        await testCompileFile()
         // await testFrame()
         // await testLoadFile()
         // await testFindDefs()
         // await testMacros()
         // await testInspector()
         // await testRepl(conn)
-        await testPing(conn)
+        // await testPing(conn)
     } catch (err) {
         console.log('FAILED', err)
     } finally {

@@ -97,6 +97,7 @@ export class SwankConn extends EventEmitter {
     timeouts: { [index: number]: NodeJS.Timeout } = {}
     msgID: number = 1
     ignoreDebug: boolean = false
+    ignoreOutput: boolean = false
     rejectAbort: boolean = false
 
     constructor(host: string, port: number) {
@@ -141,6 +142,10 @@ export class SwankConn extends EventEmitter {
     setIgnoreDebug(ignore: boolean) {
         this.ignoreDebug = ignore
         this.rejectAbort = ignore
+    }
+
+    setIgnoreOutput(ignore: boolean) {
+        this.ignoreOutput = ignore
     }
 
     async connectionInfo(pkg?: string): Promise<response.ConnectionInfo | response.Abort> {
@@ -447,7 +452,9 @@ export class SwankConn extends EventEmitter {
 
     private processWriteString(event: event.WriteString) {
         try {
-            this.emit('write-string', event)
+            if (!this.ignoreOutput) {
+                this.emit('write-string', event)
+            }
         } catch (err) {
             this.emit('msg', format(err))
         }

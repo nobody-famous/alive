@@ -27,8 +27,10 @@ import * as path from 'path'
 
 import axios from 'axios'
 import * as StreamZip from 'node-stream-zip'
+import { CompileNote } from '../../swank/response/CompileNotes'
 
 const swankOutputChannel = vscode.window.createOutputChannel('Swank Trace')
+const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
 export async function sendToRepl(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
@@ -290,13 +292,58 @@ export async function loadFile(state: ExtensionState) {
     })
 }
 
-export async function compileFile(state: ExtensionState) {
+export async function compileFile(state: ExtensionState, ignoreOutput: boolean = false) {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
         useRepl(state, async (repl: Repl) => {
             await editor.document.save()
-            await repl.compileFile(editor.document.uri.fsPath)
+
+            repl.conn?.setIgnoreOutput(ignoreOutput)
+            repl.conn?.setIgnoreDebug(ignoreOutput)
+
+            const resp = await repl.compileFile(editor.document.uri.fsPath)
+
+            if (resp !== undefined) {
+                updateCompilerDiagnostics(editor.document, resp.notes)
+            }
+
+            repl.conn?.setIgnoreOutput(false)
+            repl.conn?.setIgnoreDebug(false)
         })
     })
+}
+
+function convertSeverity(sev: string): vscode.DiagnosticSeverity {
+    switch (sev) {
+        case 'error':
+        case 'read_error':
+            return vscode.DiagnosticSeverity.Error
+        case 'note':
+        case 'warning':
+            return vscode.DiagnosticSeverity.Warning
+        default:
+            return vscode.DiagnosticSeverity.Error
+    }
+}
+
+function updateCompilerDiagnostics(doc: vscode.TextDocument, notes: CompileNote[]) {
+    compilerDiagnostics.clear()
+
+    const diags: { [index: string]: vscode.Diagnostic[] } = {}
+
+    for (const note of notes) {
+        if (diags[note.location.file] === undefined) {
+            diags[note.location.file] = []
+        }
+
+        const pos = doc.positionAt(note.location.position)
+        const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), note.message, convertSeverity(note.severity))
+
+        diags[note.location.file].push(diag)
+    }
+
+    for (const [file, arr] of Object.entries(diags)) {
+        compilerDiagnostics.set(vscode.Uri.file(file), arr)
+    }
 }
 
 async function disconnectAndClearChild(state: ExtensionState): Promise<void> {

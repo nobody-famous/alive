@@ -235,7 +235,9 @@ export class Repl extends EventEmitter {
             }
 
             await createFolder(vscode.Uri.file(faslDir))
-            await this.conn.compileFile(remotePath, dest)
+
+            const resp = await this.conn.compileFile(remotePath, dest)
+            return resp instanceof response.CompileFile ? resp : undefined
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
         }
