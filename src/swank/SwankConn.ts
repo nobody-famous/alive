@@ -97,6 +97,7 @@ export class SwankConn extends EventEmitter {
     timeouts: { [index: number]: NodeJS.Timeout } = {}
     msgID: number = 1
     ignoreDebug: boolean = false
+    ignoreOutput: boolean = false
     rejectAbort: boolean = false
 
     constructor(host: string, port: number) {
@@ -125,7 +126,10 @@ export class SwankConn extends EventEmitter {
             this.conn?.on('error', (err) => {
                 connected ? this.connError(err) : reject(err)
             })
-
+            this.conn?.on('end', () => {
+                const err = new Error('ALIVEUNEXPECTEDDISCONNECT')
+                connected ? this.connError(err) : reject(err)
+            })
             this.conn?.on('close', () => this.connClosed())
             this.conn?.on('data', (data) => this.readData(data))
         })
@@ -138,6 +142,10 @@ export class SwankConn extends EventEmitter {
     setIgnoreDebug(ignore: boolean) {
         this.ignoreDebug = ignore
         this.rejectAbort = ignore
+    }
+
+    setIgnoreOutput(ignore: boolean) {
+        this.ignoreOutput = ignore
     }
 
     async connectionInfo(pkg?: string): Promise<response.ConnectionInfo | response.Abort> {
@@ -164,8 +172,8 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(setPackageReq, response.SetPackage, pkg)
     }
 
-    async compileFile(str: string, pkg?: string): Promise<response.CompileFile | response.Abort> {
-        return await this.requestFn(compileFileReq, response.CompileFile, str, pkg)
+    async compileFile(str: string, path: string, pkg?: string): Promise<response.CompileFile | response.Abort> {
+        return await this.requestFn(compileFileReq, response.CompileFile, str, path, pkg)
     }
 
     async loadFile(path: string, pkg?: string): Promise<response.Eval | response.Abort> {
@@ -310,7 +318,7 @@ export class SwankConn extends EventEmitter {
     }
 
     private connError(err: Error) {
-        this.emit('conn-err', `REPL Connection error ${err.toString()}`)
+        this.emit('conn-err', `REPL Connection error ${format(err)}`)
     }
 
     private connClosed() {
@@ -410,7 +418,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('ping', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -430,7 +438,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('reader-error', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -438,15 +446,17 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('read-string', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
     private processWriteString(event: event.WriteString) {
         try {
-            this.emit('write-string', event)
+            if (!this.ignoreOutput) {
+                this.emit('write-string', event)
+            }
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -458,7 +468,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('activate', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 
@@ -466,7 +476,7 @@ export class SwankConn extends EventEmitter {
         try {
             this.emit('debug-return', event)
         } catch (err) {
-            this.emit('msg', err.toString())
+            this.emit('msg', format(err))
         }
     }
 

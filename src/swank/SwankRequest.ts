@@ -1,4 +1,4 @@
-import { LispID, LispSymbol } from './LispID'
+import { LispID, LispQuote, LispSymbol } from './LispID'
 import { toWire } from './SwankUtils'
 
 type emacsRexThread = number | boolean | LispSymbol
@@ -133,8 +133,8 @@ export function evalAndGrabReq(msgID: number, form: string, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export function compileFileReq(msgID: number, fileName: string, pkg?: string) {
-    const data = [new LispID('swank:compile-file-for-emacs'), fileName, false]
+export function compileFileReq(msgID: number, fileName: string, path: string, pkg?: string) {
+    const data = [new LispID('swank:compile-file-for-emacs'), fileName, false, new LispID(':fasl-directory'), path]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 

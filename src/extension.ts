@@ -11,7 +11,6 @@ import {
     getHoverProvider,
     getRenameProvider,
     getSemTokensProvider,
-    getSigHelpProvider,
 } from './vscode/providers'
 import { ExtensionState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
@@ -22,6 +21,8 @@ const state: ExtensionState = {
     pkgMgr: new PackageMgr(),
     hoverText: '',
 }
+
+let compileTimeoutID: NodeJS.Timeout | undefined = undefined
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
@@ -41,14 +42,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider(state))
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider(state))
 
-    vscode.languages.registerSignatureHelpProvider(
-        { scheme: 'untitled', language: COMMON_LISP_ID },
-        getSigHelpProvider(state),
-        ' '
-    )
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: COMMON_LISP_ID }, getSigHelpProvider(state), ' ')
-    vscode.languages.registerSignatureHelpProvider({ scheme: 'file', language: REPL_ID }, getSigHelpProvider(state), ' ')
-
     vscode.languages.registerRenameProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getRenameProvider(state))
     vscode.languages.registerRenameProvider({ scheme: 'file', language: COMMON_LISP_ID }, getRenameProvider(state))
 
@@ -58,7 +51,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         { scheme: 'untitled', language: COMMON_LISP_ID },
         getDocumentFormatter(state)
     )
-    vscode.languages.registerDocumentFormattingEditProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDocumentFormatter(state))
+    vscode.languages.registerDocumentFormattingEditProvider(
+        { scheme: 'file', language: COMMON_LISP_ID },
+        getDocumentFormatter(state)
+    )
 
     vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider(state))
     vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider(state))
@@ -87,6 +83,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.startReplAndAttach', () => cmds.startReplAndAttach(state, ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', () => cmds.attachRepl(state, ctx)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', () => cmds.detachRepl(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', () => cmds.replHistory(state, false)))
@@ -96,6 +93,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpand', () => cmds.macroExpand(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', () => cmds.macroExpandAll(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', () => cmds.disassemble(state)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector', () => cmds.inspector(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-prev', () => cmds.inspectorPrev(state)))
@@ -157,6 +155,15 @@ function openTextDocument(doc: vscode.TextDocument) {
 function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
     if (!hasValidLangId(event.document, [COMMON_LISP_ID, REPL_ID])) {
         return
+    }
+
+    const cfg = vscode.workspace.getConfiguration('alive')
+    if (state.repl !== undefined && cfg.autoCompileOnType) {
+        if (compileTimeoutID !== undefined) {
+            clearTimeout(compileTimeoutID)
+        }
+
+        compileTimeoutID = setTimeout(() => cmds.compileFile(state, true), 500)
     }
 
     cmds.clearInlineResults(state)
