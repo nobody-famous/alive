@@ -359,15 +359,11 @@ function convertSeverity(sev: string): vscode.DiagnosticSeverity {
 }
 
 function updateCompilerDiagnostics(doc: vscode.TextDocument, notes: CompileNote[]) {
-    compilerDiagnostics.clear()
-
     const diags: { [index: string]: vscode.Diagnostic[] } = {}
 
-    for (const note of notes) {
-        if (diags[doc.fileName] === undefined) {
-            diags[doc.fileName] = []
-        }
+    diags[doc.fileName] = []
 
+    for (const note of notes) {
         const pos = doc.positionAt(note.location.position)
         const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), note.message, convertSeverity(note.severity))
 
