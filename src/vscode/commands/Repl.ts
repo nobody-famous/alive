@@ -351,6 +351,7 @@ function convertSeverity(sev: string): vscode.DiagnosticSeverity {
         case 'read_error':
             return vscode.DiagnosticSeverity.Error
         case 'note':
+        case 'redefinition':
         case 'warning':
             return vscode.DiagnosticSeverity.Warning
         default:
