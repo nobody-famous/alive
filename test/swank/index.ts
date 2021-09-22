@@ -34,10 +34,23 @@ async function testCompileFile() {
         await conn.connect()
 
         conn.trace = true
-        const resp = await conn.compileFile(
-            'c:\\Users\\rich\\work\\cl\\demo\\math.lisp',
-            'c:\\Users\\rich\\work\\cl\\demo\\.vscode\\alive\\fasl/'
-        )
+        const resp = await conn.compileFile('c:\\Users\\rich\\work\\cl\\demo\\math.lisp')
+        console.log(resp)
+    } finally {
+        conn.close()
+    }
+}
+
+async function testCompileSystem() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+        await conn.swankRequire()
+
+        conn.trace = true
+        conn.on('log-trace', (msg) => console.log(msg))
+        const resp = await conn.compileSystem('hgpoker/test')
         console.log(resp)
     } finally {
         conn.close()
@@ -273,7 +286,8 @@ async function testPing(conn: SwankConn) {
         // await testListPkgs(conn)
         // await testDebug()
         // await testRestarts()
-        await testCompileFile()
+        // await testCompileFile()
+        await testCompileSystem()
         // await testFrame()
         // await testLoadFile()
         // await testFindDefs()

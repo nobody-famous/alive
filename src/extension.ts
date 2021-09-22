@@ -20,6 +20,7 @@ const state: ExtensionState = {
     repl: undefined,
     pkgMgr: new PackageMgr(),
     hoverText: '',
+    compileRunning: false,
 }
 
 let compileTimeoutID: NodeJS.Timeout | undefined = undefined
@@ -93,7 +94,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpand', () => cmds.macroExpand(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', () => cmds.macroExpandAll(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', () => cmds.disassemble(state)))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(state)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(state, false)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector', () => cmds.inspector(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-prev', () => cmds.inspectorPrev(state)))
@@ -141,6 +142,8 @@ async function editorChanged(editor?: vscode.TextEditor) {
     const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
     const exprs = parser.parse()
 
+    startCompileTimer()
+
     await updatePkgMgr(state, editor.document, exprs)
 }
 
@@ -157,14 +160,7 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
         return
     }
 
-    const cfg = vscode.workspace.getConfiguration('alive')
-    if (state.repl !== undefined && cfg.autoCompileOnType) {
-        if (compileTimeoutID !== undefined) {
-            clearTimeout(compileTimeoutID)
-        }
-
-        compileTimeoutID = setTimeout(() => cmds.compileFile(state, true), 500)
-    }
+    startCompileTimer()
 
     cmds.clearInlineResults(state)
     readLexTokens(event.document.fileName, event.document.getText())
@@ -184,6 +180,22 @@ function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
             state.repl?.documentChanged()
         }
     }
+}
+
+function startCompileTimer() {
+    const cfg = vscode.workspace.getConfiguration('alive')
+    const autoCompile = cfg.autoCompileOnType
+
+    if (state.repl === undefined || !autoCompile) {
+        return
+    }
+
+    if (compileTimeoutID !== undefined) {
+        clearTimeout(compileTimeoutID)
+        compileTimeoutID = undefined
+    }
+
+    compileTimeoutID = setTimeout(() => cmds.compileFile(state, true, true), 500)
 }
 
 function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | undefined {

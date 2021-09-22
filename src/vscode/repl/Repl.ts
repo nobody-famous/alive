@@ -222,21 +222,9 @@ export class Repl extends EventEmitter {
         }
 
         try {
-            const tmp = await getTempFolder()
-            const faslDir = path.join(tmp.fsPath, 'fasl')
             const remotePath = xlatePath(fileName)
 
-            // Swank requires a slash on the end
-            let dest = `${xlatePath(faslDir)}/`
-
-            // Swank doesn't like Windows separators when doing the compile file command :-/
-            if (dest.startsWith('/')) {
-                dest = dest.replace(/\\/g, '/')
-            }
-
-            await createFolder(vscode.Uri.file(faslDir))
-
-            const resp = await this.conn.compileFile(remotePath, dest)
+            const resp = await this.conn.compileFile(remotePath)
             return resp instanceof response.CompileFile ? resp : undefined
         } catch (err) {
             vscode.window.showErrorMessage(format(err))

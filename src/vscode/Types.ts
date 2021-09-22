@@ -8,6 +8,7 @@ export interface ExtensionState {
     slimeBasePath?: string
     pkgMgr: PackageMgr
     hoverText: string
+    compileRunning: boolean
 }
 
 export interface SlimeVersion {

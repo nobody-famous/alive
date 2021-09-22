@@ -21,6 +21,7 @@ import {
     updatePackageNames,
     useEditor,
     useRepl,
+    xlatePath,
 } from '../Utils'
 import * as net from 'net'
 import * as path from 'path'
@@ -292,24 +293,56 @@ export async function loadFile(state: ExtensionState) {
     })
 }
 
-export async function compileFile(state: ExtensionState, ignoreOutput: boolean = false) {
+export async function compileFile(state: ExtensionState, useTemp: boolean, ignoreOutput: boolean = false) {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
         useRepl(state, async (repl: Repl) => {
-            await editor.document.save()
-
-            repl.conn?.setIgnoreOutput(ignoreOutput)
-            repl.conn?.setIgnoreDebug(ignoreOutput)
-
-            const resp = await repl.compileFile(editor.document.uri.fsPath)
-
-            if (resp !== undefined) {
-                updateCompilerDiagnostics(editor.document, resp.notes)
+            if (state.compileRunning) {
+                return
             }
 
-            repl.conn?.setIgnoreOutput(false)
-            repl.conn?.setIgnoreDebug(false)
+            let setConnFlags = false
+
+            try {
+                state.compileRunning = true
+
+                if (!useTemp) {
+                    await editor.document.save()
+                }
+
+                const toCompile = useTemp ? await createTempFile(editor.document) : editor.document.fileName
+
+                repl.conn?.setIgnoreOutput(ignoreOutput)
+                repl.conn?.setIgnoreDebug(ignoreOutput)
+
+                setConnFlags = true
+
+                const resp = await repl.compileFile(toCompile)
+
+                if (resp !== undefined) {
+                    updateCompilerDiagnostics(editor.document, resp.notes)
+                }
+            } finally {
+                state.compileRunning = false
+
+                if (setConnFlags) {
+                    repl.conn?.setIgnoreOutput(false)
+                    repl.conn?.setIgnoreDebug(false)
+                }
+            }
         })
     })
+}
+
+async function createTempFile(doc: vscode.TextDocument) {
+    const dir = await getTempFolder()
+    const faslDir = path.join(dir.fsPath, 'fasl')
+    const fileName = path.join(faslDir, 'tmp.lisp')
+    const content = new TextEncoder().encode(doc.getText())
+
+    await createFolder(vscode.Uri.file(faslDir))
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), content)
+
+    return fileName
 }
 
 function convertSeverity(sev: string): vscode.DiagnosticSeverity {
@@ -331,14 +364,14 @@ function updateCompilerDiagnostics(doc: vscode.TextDocument, notes: CompileNote[
     const diags: { [index: string]: vscode.Diagnostic[] } = {}
 
     for (const note of notes) {
-        if (diags[note.location.file] === undefined) {
-            diags[note.location.file] = []
+        if (diags[doc.fileName] === undefined) {
+            diags[doc.fileName] = []
         }
 
         const pos = doc.positionAt(note.location.position)
         const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), note.message, convertSeverity(note.severity))
 
-        diags[note.location.file].push(diag)
+        diags[doc.fileName].push(diag)
     }
 
     for (const [file, arr] of Object.entries(diags)) {

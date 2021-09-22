@@ -64,7 +64,7 @@ export function opArgsReq(msgID: number, name: string, pkg: string) {
 }
 
 export function swankRequireReq(msgID: number, pkg?: string) {
-    const data = [new LispID('swank:swank-require (quote (swank-repl))')]
+    const data = [new LispID('swank:swank-require (quote (swank-repl swank-asdf))')]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
@@ -133,8 +133,19 @@ export function evalAndGrabReq(msgID: number, form: string, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export function compileFileReq(msgID: number, fileName: string, path: string, pkg?: string) {
-    const data = [new LispID('swank:compile-file-for-emacs'), fileName, false, new LispID(':fasl-directory'), path]
+export function compileFileReq(msgID: number, fileName: string, pkg?: string) {
+    const data = [new LispID('swank:compile-file-for-emacs'), fileName, false]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function compileSystemReq(msgID: number, systemName: string, pkg?: string) {
+    const data = [
+        new LispID('swank:operate-on-system-for-emacs'),
+        systemName,
+        new LispQuote('compile-op'),
+        new LispSymbol('force'),
+        true,
+    ]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 

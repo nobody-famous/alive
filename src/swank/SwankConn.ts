@@ -40,6 +40,7 @@ import {
     abortReadEvent,
     interruptEvent,
     pongEvent,
+    compileSystemReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -172,8 +173,12 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(setPackageReq, response.SetPackage, pkg)
     }
 
-    async compileFile(str: string, path: string, pkg?: string): Promise<response.CompileFile | response.Abort> {
-        return await this.requestFn(compileFileReq, response.CompileFile, str, path, pkg)
+    async compileFile(str: string, pkg?: string): Promise<response.CompileFile | response.Abort> {
+        return await this.requestFn(compileFileReq, response.CompileFile, str, pkg)
+    }
+
+    async compileSystem(sysName: string): Promise<response.CompileFile | response.Abort> {
+        return await this.requestFn(compileSystemReq, response.CompileFile, sysName)
     }
 
     async loadFile(path: string, pkg?: string): Promise<response.Eval | response.Abort> {
