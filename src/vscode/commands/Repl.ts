@@ -142,6 +142,9 @@ export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionCon
 
 export async function detachRepl(state: ExtensionState) {
     disconnectAndClearChild(state)
+
+    compilerDiagnostics.clear()
+
     if (state.repl !== undefined) {
         await state.repl.disconnect()
         state.repl = undefined
@@ -352,6 +355,7 @@ function convertSeverity(sev: string): vscode.DiagnosticSeverity {
             return vscode.DiagnosticSeverity.Error
         case 'note':
         case 'redefinition':
+        case 'style_warning':
         case 'warning':
             return vscode.DiagnosticSeverity.Warning
         default:
