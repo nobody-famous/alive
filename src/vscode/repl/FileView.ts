@@ -49,15 +49,17 @@ export class FileView implements View {
         return this.replEditor?.viewColumn
     }
 
-    async show() {
+    async show(forceJump: boolean) {
         if (this.replDoc === undefined) {
             throw new Error('No REPL document')
         }
 
-        const column = vscode.ViewColumn.Two
+        if (forceJump || !this.isEditorVisible()) {
+            const column = vscode.ViewColumn.Two
 
-        this.replEditor = await vscode.window.showTextDocument(this.replDoc, { viewColumn: column, preview: false })
-        jumpToBottom(this.replEditor)
+            this.replEditor = await vscode.window.showTextDocument(this.replDoc, { viewColumn: column, preview: false })
+            jumpToBottom(this.replEditor)
+        }
     }
 
     documentChanged() {
@@ -68,12 +70,12 @@ export class FileView implements View {
     }
 
     async addText(text: string) {
-        await this.show()
+        await this.show(false)
         await this.appendLine(`${text}`)
     }
 
     async addTextAndPrompt(text: string) {
-        await this.show()
+        await this.show(false)
         await this.appendLine(`${text}${this.prompt}`)
     }
 

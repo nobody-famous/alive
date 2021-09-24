@@ -35,7 +35,7 @@ export class Repl extends EventEmitter {
     async connect(host: string, port: number) {
         try {
             if (this.conn !== undefined && this.view !== undefined) {
-                await this.view.show()
+                await this.view.show(false)
                 return
             }
 
@@ -62,7 +62,7 @@ export class Repl extends EventEmitter {
 
             const resp = await this.conn.connect()
             await this.view.open()
-            await this.view.show()
+            await this.view.show(false)
 
             await this.handleConnInfo(resp.info)
             await this.conn.swankRequire()
@@ -393,7 +393,7 @@ export class Repl extends EventEmitter {
             }
 
             if (doNotEval) {
-                await this.view.show()
+                await this.view.show(true)
                 return
             }
 
@@ -542,7 +542,7 @@ export class Repl extends EventEmitter {
         this.curPackage = info.package.name
 
         try {
-            await this.view.show()
+            await this.view.show(false)
             this.view.setPrompt(info.package.prompt)
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
