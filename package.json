@@ -282,8 +282,13 @@
             },
             {
                 "command": "alive.sendToRepl",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl",
+                "when": "editorLangId == lisp",
                 "key": "alt+shift+enter"
+            },
+            {
+                "command": "alive.sendToRepl",
+                "when": "editorLangId == lisp-repl",
+                "key": "enter"
             },
             {
                 "command": "alive.replHistory",

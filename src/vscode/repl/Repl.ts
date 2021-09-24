@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events'
 import { EOL } from 'os'
-import path = require('path')
 import { format } from 'util'
 import * as vscode from 'vscode'
 import { Expr, InPackage, isString, Lexer, Parser, unescape } from '../../lisp'
@@ -9,12 +8,13 @@ import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
-import { createFolder, getTempFolder, isReplDoc, xlatePath } from '../Utils'
+import { isReplDoc, xlatePath } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { History, HistoryItem } from './History'
 import { Inspector } from './Inspector'
 import { View } from './View'
+import path = require('path')
 
 export class Repl extends EventEmitter {
     conn?: SwankConn
@@ -393,6 +393,7 @@ export class Repl extends EventEmitter {
             }
 
             if (doNotEval) {
+                await this.view.show()
                 return
             }
 

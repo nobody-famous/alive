@@ -54,11 +54,10 @@ export class FileView implements View {
             throw new Error('No REPL document')
         }
 
-        if (!this.isEditorVisible()) {
-            const column = vscode.ViewColumn.Two
-            this.replEditor = await vscode.window.showTextDocument(this.replDoc, column, true)
-            jumpToBottom(this.replEditor)
-        }
+        const column = vscode.ViewColumn.Two
+
+        this.replEditor = await vscode.window.showTextDocument(this.replDoc, { viewColumn: column, preview: false })
+        jumpToBottom(this.replEditor)
     }
 
     documentChanged() {
