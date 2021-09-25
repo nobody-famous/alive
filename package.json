@@ -136,6 +136,14 @@
                 "title": "Alive: Disassemble"
             },
             {
+                "command": "alive.loadAsdfSystem",
+                "title": "Alive: Load ASDF System"
+            },
+            {
+                "command": "alive.compileAsdfSystem",
+                "title": "Alive: Compile ASDF System"
+            },
+            {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
             },

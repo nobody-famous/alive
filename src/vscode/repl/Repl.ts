@@ -15,6 +15,7 @@ import { History, HistoryItem } from './History'
 import { Inspector } from './Inspector'
 import { View } from './View'
 import path = require('path')
+import { CompileFile, ListPackages } from '../../swank/response'
 
 export class Repl extends EventEmitter {
     conn?: SwankConn
@@ -160,6 +161,24 @@ export class Repl extends EventEmitter {
 
     async findDefs(label: string, pkg: string) {
         return await this.conn?.findDefs(label, pkg)
+    }
+
+    async listAsdfSystems() {
+        const resp = await this.conn?.listAsdfSystems()
+
+        return resp instanceof ListPackages ? resp.names : []
+    }
+
+    async compileAsdfSystem(name: string) {
+        const resp = await this.conn?.compileAsdfSystem(name)
+
+        return resp instanceof CompileFile ? resp : undefined
+    }
+
+    async loadAsdfSystem(name: string) {
+        const resp = await this.conn?.loadAsdfSystem(name)
+
+        return resp instanceof CompileFile ? resp : undefined
     }
 
     async loadFile(path: string, showMsgs: boolean = true) {

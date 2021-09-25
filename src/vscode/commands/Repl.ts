@@ -286,6 +286,54 @@ export async function disassemble(state: ExtensionState) {
     })
 }
 
+export async function compileAsdfSystem(state: ExtensionState) {
+    useRepl(state, async (repl: Repl) => {
+        const names = await repl.listAsdfSystems()
+        const name = await vscode.window.showQuickPick(names)
+
+        if (typeof name !== 'string') {
+            return
+        }
+
+        await vscode.workspace.saveAll()
+        const resp = await repl.compileAsdfSystem(name)
+
+        if (resp === undefined) {
+            return
+        }
+
+        if (resp.notes.length === 0) {
+            await vscode.window.showInformationMessage(`${name} Compiled successfully`)
+        }
+
+        await updateCompilerDiagnostics({}, resp.notes)
+    })
+}
+
+export async function loadAsdfSystem(state: ExtensionState) {
+    useRepl(state, async (repl: Repl) => {
+        const names = await repl.listAsdfSystems()
+        const name = await vscode.window.showQuickPick(names)
+
+        if (typeof name !== 'string') {
+            return
+        }
+
+        await vscode.workspace.saveAll()
+        const resp = await repl.loadAsdfSystem(name)
+
+        if (resp === undefined) {
+            return
+        }
+
+        if (resp.notes.length === 0) {
+            await vscode.window.showInformationMessage(`${name} Loaded successfully`)
+        }
+
+        await updateCompilerDiagnostics({}, resp.notes)
+    })
+}
+
 export async function loadFile(state: ExtensionState) {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
         useRepl(state, async (repl: Repl) => {
@@ -322,7 +370,12 @@ export async function compileFile(state: ExtensionState, useTemp: boolean, ignor
                 const resp = await repl.compileFile(toCompile)
 
                 if (resp !== undefined) {
-                    updateCompilerDiagnostics(editor.document, resp.notes)
+                    const fileMap: { [index: string]: string } = {}
+
+                    fileMap[toCompile] = editor.document.fileName
+                    compilerDiagnostics.set(vscode.Uri.file(editor.document.fileName), [])
+
+                    updateCompilerDiagnostics(fileMap, resp.notes)
                 }
             } finally {
                 state.compileRunning = false
@@ -363,16 +416,23 @@ function convertSeverity(sev: string): vscode.DiagnosticSeverity {
     }
 }
 
-function updateCompilerDiagnostics(doc: vscode.TextDocument, notes: CompileNote[]) {
+async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, notes: CompileNote[]) {
     const diags: { [index: string]: vscode.Diagnostic[] } = {}
 
-    diags[doc.fileName] = []
-
     for (const note of notes) {
-        const pos = doc.positionAt(note.location.position)
-        const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), note.message, convertSeverity(note.severity))
+        const notesFile = note.location.file.replace(/\//g, path.sep)
+        const fileName = fileMap[notesFile] ?? note.location.file
 
-        diags[doc.fileName].push(diag)
+        console.log('fileName', fileName)
+        const doc = await vscode.workspace.openTextDocument(fileName)
+        const pos = doc.positionAt(note.location.position)
+
+        if (diags[fileName] === undefined) {
+            diags[fileName] = []
+        }
+
+        const diag = new vscode.Diagnostic(new vscode.Range(pos, pos), note.message, convertSeverity(note.severity))
+        diags[fileName].push(diag)
     }
 
     for (const [file, arr] of Object.entries(diags)) {

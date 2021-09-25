@@ -73,6 +73,16 @@ export function connectionInfoReq(msgID: number, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
+export function listAsdfSystemsReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank:list-asdf-systems')]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function loadAsdfSystemReq(msgID: number, name: string, pkg?: string) {
+    const data = [new LispID('swank:reload-system'), name]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
 export function macroExpandReq(msgID: number, form: string, pkg?: string) {
     const data = [new LispID('swank:swank-macroexpand-1'), form]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)

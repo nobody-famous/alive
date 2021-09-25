@@ -135,6 +135,18 @@ Clear the inline results.
 
 Expressions that are evaluated from the REPL window are added to the history. This command opens a quick pick selector with the history. The most recently used item is at the top, i.e. similar behavior to the Run Tasks command.
 
+### Compile File
+
+Tell the REPL to compile the current file. A fasl file is generated and any errors or warnings are marked in the editor.
+
+### Compile ASDF System
+
+Tell the REPL to compile an ASDF system. A list of known systems will be given to choose from. Files that have errors as a result of the compile will be marked.
+
+### Load ASDF System
+
+Tell the REPL to load an ASDF system. A list of known systems will be given to choose from. Files that have errors as a result of the load will be marked.
+
 ### System Skeleton
 
 If the current directory is empty, creates an ASDF system skeleton.

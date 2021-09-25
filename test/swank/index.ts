@@ -57,6 +57,38 @@ async function testCompileSystem() {
     }
 }
 
+async function listAsdfSystems() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+        await conn.swankRequire()
+
+        conn.trace = true
+        conn.on('log-trace', (msg) => console.log(msg))
+        const resp = await conn.listAsdfSystems()
+        console.log(resp)
+    } finally {
+        conn.close()
+    }
+}
+
+async function loadAsdfSystem() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+        await conn.swankRequire()
+
+        conn.trace = true
+        conn.on('log-trace', (msg) => console.log(msg))
+        const resp = await conn.loadAsdfSystem('hgpoker/test')
+        console.log(resp)
+    } finally {
+        conn.close()
+    }
+}
+
 async function testLoadFile() {
     const conn = new SwankConn('localhost', 4005)
 
@@ -287,7 +319,9 @@ async function testPing(conn: SwankConn) {
         // await testDebug()
         // await testRestarts()
         // await testCompileFile()
-        await testCompileSystem()
+        // await testCompileSystem()
+        // await listAsdfSystems()
+        await loadAsdfSystem()
         // await testFrame()
         // await testLoadFile()
         // await testFindDefs()

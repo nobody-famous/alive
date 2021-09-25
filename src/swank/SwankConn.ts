@@ -41,6 +41,8 @@ import {
     interruptEvent,
     pongEvent,
     compileSystemReq,
+    listAsdfSystemsReq,
+    loadAsdfSystemReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -151,6 +153,18 @@ export class SwankConn extends EventEmitter {
 
     async connectionInfo(pkg?: string): Promise<response.ConnectionInfo | response.Abort> {
         return await this.requestFn(connectionInfoReq, response.ConnectionInfo, pkg)
+    }
+
+    async listAsdfSystems(pkg?: string): Promise<response.ListPackages | response.Abort> {
+        return await this.requestFn(listAsdfSystemsReq, response.ListPackages, pkg)
+    }
+
+    async compileAsdfSystem(name: string, pkg?: string): Promise<response.CompileFile | response.Abort> {
+        return await this.requestFn(compileSystemReq, response.CompileFile, name, pkg)
+    }
+
+    async loadAsdfSystem(name: string, pkg?: string): Promise<response.CompileFile | response.Abort> {
+        return await this.requestFn(loadAsdfSystemReq, response.CompileFile, name, pkg)
     }
 
     async docSymbol(symbol: string, pkg: string): Promise<response.DocSymbol | response.Abort> {
