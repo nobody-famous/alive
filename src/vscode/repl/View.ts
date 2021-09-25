@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 export interface View {
     open(): void
     close(): void
-    show(): void
+    show(forceJump: boolean): void
     documentChanged(): void
     addText(line: string): void
     addTextAndPrompt(line: string): void
