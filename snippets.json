@@ -1,7 +1,9 @@
 {
     "Format String": {
         "prefix": "format",
-        "body": ["format ${1:T} \"$2\" $0"]
+        "body": [
+            "format ${1:T} \"$2\" $0"
+        ]
     },
     "Comment": {
         "prefix": "comment",
@@ -45,14 +47,34 @@
     "Define Condition": {
         "prefix": "define-condition",
         "body": [
-            "define-condition ${1:name} (${2:#| base type |#})",
+            "define-condition ${1:name} (${2:error})",
             "  (${3:#| slots |#})",
-            "  (:report (lambda (c s) ${4:#| report |#}))"
+            "  (:report (lambda (condition stream) (format stream \"~A\" (${4:slot} condition))))"
+        ]
+    },
+    "Define Struct": {
+        "prefix": "struct",
+        "body": [
+            "defstruct ${1:name}",
+            "  ${3:#| slots |#}"
+        ]
+    },
+    "Define Struct With Print": {
+        "prefix": "struct-with-print",
+        "body": [
+            "defstruct (${1:name} (:print-function (lambda (struct stream depth)",
+            "                                         (if (and *print-level* (<= *print-level* depth))",
+            "                                              (format stream \"#\")",
+            "                                              (format stream \"$2\" $3)))))",
+            "  ${4:#| slots |#}"
         ]
     },
     "Define Function": {
         "prefix": "defun",
-        "body": ["defun ${1:name} ($2)", "  $0"]
+        "body": [
+            "defun ${1:name} ($2)",
+            "  $0"
+        ]
     },
     "Define Method": {
         "prefix": "defmethod",
