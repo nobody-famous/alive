@@ -56,9 +56,6 @@ export class SExpr extends ExprFormatter {
 
     private processToken(curToken: FormatToken) {
         switch (curToken.token.type) {
-            case types.DEFPACKAGE:
-                this.formatExpr(new DefPackage(this.state))
-                break
             case types.DEFUN:
             case types.DEFMACRO:
             case types.DEFMETHOD:
