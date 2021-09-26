@@ -103,6 +103,11 @@ export function inspectorReq(msgID: number, form: string, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
+export function inspectCurCondReq(msgID: number, threadID: number, pkg?: string) {
+    const data = [new LispID('swank:inspect-current-condition')]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
+}
+
 export function inspectNthPartReq(msgID: number, index: number, pkg?: string) {
     const data = [new LispID('swank:inspect-nth-part'), index]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)

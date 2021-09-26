@@ -34,6 +34,10 @@ body.vscode-light .list-box {
     margin-bottom: 0.25rem;
 }
 
+.clickable {
+    cursor: pointer;
+}
+
 .clickable:hover {
     background: green;
     color: yellow;

@@ -50,6 +50,8 @@ export class DebugView extends EventEmitter {
                         return this.frameValueCommand(msg.number, msg.text ?? '')
                     case 'input_changed':
                         return this.inputChangedCommand(msg.number, msg.text ?? '')
+                    case 'inspect_cond':
+                        return this.inspectCondCommand()
                 }
             },
             undefined,
@@ -76,6 +78,10 @@ export class DebugView extends EventEmitter {
     setEvalResponse(ndx: number, text: string) {
         this.frameEval[ndx] = text
         this.renderHtml()
+    }
+
+    private inspectCondCommand() {
+        this.emit('inspect-cond', this.event.threadID)
     }
 
     private frameRestartCommand(num: number) {
@@ -117,7 +123,7 @@ export class DebugView extends EventEmitter {
         let str = ''
 
         for (const cond of this.event.condition) {
-            str += `<div class="list-item">${cond.replace(/ /g, '&nbsp;')}</div>`
+            str += `<div class="list-item clickable" onclick="inspect_cond()">${cond.replace(/ /g, '&nbsp;')}</div>`
         }
 
         return str

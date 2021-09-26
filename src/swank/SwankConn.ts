@@ -43,6 +43,7 @@ import {
     compileSystemReq,
     listAsdfSystemsReq,
     loadAsdfSystemReq,
+    inspectCurCondReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -217,6 +218,10 @@ export class SwankConn extends EventEmitter {
 
     async inspector(str: string, pkg?: string): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectorReq, response.InitInspect, str, pkg)
+    }
+
+    async inspectCurCond(threadID: number, pkg?: string): Promise<response.InitInspect | response.Abort> {
+        return await this.requestFn(inspectCurCondReq, response.InitInspect, threadID, pkg)
     }
 
     async inspectNthPart(index: number, pkg?: string): Promise<response.InitInspect | response.Abort> {

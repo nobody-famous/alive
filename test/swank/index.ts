@@ -3,6 +3,7 @@ import { Debug } from '../../src/swank/event'
 import { DebugActivate } from '../../src/swank/event/DebugActivate'
 import { ConnectionInfo } from '../../src/swank/response'
 import { SwankConn } from '../../src/swank/SwankConn'
+import { inspectCurCondReq } from '../../src/swank/SwankRequest'
 import { expect, expectFail } from '../Utils'
 
 async function testConnInfo(conn: SwankConn) {
@@ -154,6 +155,21 @@ async function testInspector() {
         const resp = await conn.inspectNthPart(1)
 
         console.log('info', resp)
+    } finally {
+        conn.close()
+    }
+}
+
+async function testInspectCond() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+        await conn.connectionInfo()
+
+        conn.trace = true
+        const req = inspectCurCondReq(10, 4)
+        console.log('req', req)
     } finally {
         conn.close()
     }
@@ -321,12 +337,13 @@ async function testPing(conn: SwankConn) {
         // await testCompileFile()
         // await testCompileSystem()
         // await listAsdfSystems()
-        await loadAsdfSystem()
+        // await loadAsdfSystem()
         // await testFrame()
         // await testLoadFile()
         // await testFindDefs()
         // await testMacros()
         // await testInspector()
+        await testInspectCond()
         // await testRepl(conn)
         // await testPing(conn)
     } catch (err) {

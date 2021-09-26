@@ -494,7 +494,20 @@ export class Repl extends EventEmitter {
 
         view.on('frame-locals', async (ndx: number) => this.updateLocals(view, ndx, event.threadID))
 
+        view.on('inspect-cond', async (threadID: number) => this.inspectCond(threadID))
+
         this.dbgView = view
+    }
+
+    private async inspectCond(threadID: number) {
+        if (this.conn === undefined) {
+            return
+        }
+
+        const resp = await this.conn.inspectCurCond(threadID)
+        if (resp instanceof response.InitInspect) {
+            this.showInspector(resp)
+        }
     }
 
     private async updateLocals(view: DebugView, ndx: number, threadID: number) {

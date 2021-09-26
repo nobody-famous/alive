@@ -49,9 +49,7 @@ export class Inspector extends EventEmitter {
             }
         })
 
-        this.panel.onDidChangeViewState(() => {
-            vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
-        })
+        vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
     }
 
     private renderAction(item: InspectContentAction) {

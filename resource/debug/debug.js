@@ -29,3 +29,7 @@ function input_changed(ndx) {
         vscode.postMessage({ command: 'input_changed', number: ndx, text: value })
     }
 }
+
+function inspect_cond() {
+    vscode.postMessage({ command: 'inspect_cond' })
+}
