@@ -423,7 +423,6 @@ async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, n
         const notesFile = note.location.file.replace(/\//g, path.sep)
         const fileName = fileMap[notesFile] ?? note.location.file
 
-        console.log('fileName', fileName)
         const doc = await vscode.workspace.openTextDocument(fileName)
         const pos = doc.positionAt(note.location.position)
 
