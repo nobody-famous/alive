@@ -5,7 +5,7 @@ import { exprToString, findAtom, findInnerExpr, Lexer, Parser } from '../../lisp
 import { Atom, Expr, SExpr } from '../../lisp/Expr'
 import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, getPkgName, updatePkgMgr } from '../Utils'
+import { getDocumentExprs, getPkgName, toVscodePos, updatePkgMgr } from '../Utils'
 
 export function getCompletionProvider(state: ExtensionState): vscode.CompletionItemProvider {
     return new Provider(state)
@@ -81,7 +81,7 @@ class Provider implements vscode.CompletionItemProvider {
         }
 
         const comps = locals.map((i) => new CompletionItem(i.toLowerCase()))
-        const replComps = repl !== undefined ? await this.replCompletions(repl, str, pkg) : []
+        const replComps = repl !== undefined ? await this.replCompletions(repl, expr, str, pkg) : []
 
         return comps.concat(replComps)
     }
@@ -99,7 +99,7 @@ class Provider implements vscode.CompletionItemProvider {
         return items
     }
 
-    private async replCompletions(repl: Repl, str: string, pkg: string): Promise<CompletionItem[]> {
+    private async replCompletions(repl: Repl, expr: Expr | undefined, str: string, pkg: string): Promise<CompletionItem[]> {
         const comps = await repl.getCompletions(str, pkg)
         const items = []
 
@@ -167,6 +167,10 @@ class Provider implements vscode.CompletionItemProvider {
 
         for (const result of results) {
             const item = new CompletionItem(result.label.toLowerCase())
+
+            if (expr !== undefined && str.startsWith(':')) {
+                item.range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+            }
 
             item.documentation = result.doc
 
