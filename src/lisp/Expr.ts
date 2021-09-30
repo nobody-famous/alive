@@ -73,13 +73,22 @@ export class DefPackage extends Expr {
     name: string
     uses: string[]
     exports: string[]
+    nicknames: { [index: string]: string }
 
-    constructor(start: Position, end: Position, name: string, uses: string[], exps: string[]) {
+    constructor(
+        start: Position,
+        end: Position,
+        name: string,
+        uses: string[],
+        exps: string[],
+        nicknames: { [index: string]: string }
+    ) {
         super(start, end)
 
         this.name = name
         this.uses = uses
         this.exports = exps
+        this.nicknames = nicknames
     }
 
     static from(expr: SExpr): DefPackage | undefined {
@@ -92,6 +101,7 @@ export class DefPackage extends Expr {
 
         let uses: string[] = []
         let exports: string[] = []
+        let nicknames: { [index: string]: string } = {}
 
         for (let ndx = 2; ndx < expr.parts.length; ndx += 1) {
             const part = expr.parts[ndx]
@@ -105,10 +115,38 @@ export class DefPackage extends Expr {
                 uses = this.getUsesList(part)
             } else if (child === ':EXPORT') {
                 exports = exprToStringArray(part) ?? []
+            } else if (child === ':LOCAL-NICKNAMES') {
+                nicknames = this.getNicknames(part) ?? []
             }
         }
 
-        return new DefPackage(expr.start, expr.end, pkgName, uses, exports)
+        return new DefPackage(expr.start, expr.end, pkgName, uses, exports, nicknames)
+    }
+
+    static getNicknames(expr: Expr): { [index: string]: string } {
+        if (!(expr instanceof SExpr) || expr.parts.length < 2) {
+            return {}
+        }
+
+        const nicknames: { [index: string]: string } = {}
+
+        for (let ndx = 1; ndx < expr.parts.length; ndx += 1) {
+            const part = expr.parts[ndx]
+            if (!(part instanceof SExpr)) {
+                continue
+            }
+
+            const nicknameStr = exprToString(part.parts[0])
+            const targetStr = exprToString(part.parts[1])
+
+            if (nicknameStr === undefined || targetStr === undefined) {
+                continue
+            }
+
+            nicknames[nicknameStr] = targetStr
+        }
+
+        return nicknames
     }
 
     static getUsesList(expr: Expr): string[] {

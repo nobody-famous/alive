@@ -1,10 +1,9 @@
 import * as vscode from 'vscode'
 import { Lexer, Token, types } from '../lisp'
-import { DefPackage, Defun, Expr, SExpr } from '../lisp/Expr'
+import { Atom, DefPackage, Defun, Expr, SExpr } from '../lisp/Expr'
 import { exprToString, isString } from '../lisp/Utils'
 import { convert } from '../swank/SwankUtils'
 import { Repl } from './repl'
-import { toVscodePos } from './Utils'
 
 const CL_USER_PKG = 'CL-USER'
 
@@ -21,6 +20,7 @@ class Package {
     name: string
     exports: string[] = []
     uses: string[] = []
+    nicknames: { [index: string]: string } = {}
     symbols: { [index: string]: SymbolDict | Expr } = {}
     ranges: { [index: string]: LineRange } = {}
 
@@ -88,6 +88,16 @@ export class PackageMgr {
         return this.pkgs[CL_USER_PKG]
     }
 
+    async resolveNickname(repl: Repl, fileName: string, line: number, nickname: string): Promise<string | undefined> {
+        const pkg = this.getPackageForLine(fileName, line)
+
+        if (pkg === undefined) {
+            return nickname
+        }
+
+        return pkg.nicknames[nickname] ?? nickname
+    }
+
     private purgeFilename(fileName: string) {
         for (const pkg of Object.values(this.pkgs)) {
             if (pkg === undefined) {
@@ -117,11 +127,11 @@ export class PackageMgr {
         const name = exprToString(expr.parts[0])?.toUpperCase()
 
         if (name === 'DEFPACKAGE') {
-            this.processDefPackage(expr)
+            await this.processDefPackage(repl, doc, expr)
         } else if (name === 'DEFUN') {
             this.processDefun(expr)
         } else if (name === 'IN-PACKAGE') {
-            await this.processInPackage(repl, doc, expr)
+            await this.processInPackage(repl, doc?.fileName, expr)
         }
     }
 
@@ -134,28 +144,56 @@ export class PackageMgr {
         this.curPackage.symbols[expr.name] = expr
     }
 
-    private processDefPackage(sexpr: SExpr) {
+    private async processDefPackage(repl: Repl | undefined, doc: vscode.TextDocument | undefined, sexpr: SExpr) {
         const expr = DefPackage.from(sexpr)
 
         if (expr === undefined) {
             return
         }
 
-        const pkg = new Package(expr.name)
+        const name = await this.getNameString(repl, expr.name)
 
-        pkg.exports = expr.exports !== undefined ? expr.exports : []
-        pkg.uses = expr.uses !== undefined ? expr.uses : []
-
-        this.pkgs[expr.name] = pkg
-    }
-
-    private async processInPackage(repl: Repl | undefined, doc: vscode.TextDocument | undefined, expr: SExpr) {
-        if (expr.parts.length < 2) {
+        if (name === undefined) {
             return
         }
 
-        const fileName = doc?.fileName
-        let name = await this.getNameString(repl, doc, expr)
+        const pkg = new Package(name)
+
+        pkg.exports = expr.exports !== undefined ? expr.exports : []
+        pkg.uses = expr.uses !== undefined ? expr.uses : []
+        pkg.nicknames = expr.nicknames !== undefined ? await this.convertNicknames(repl, expr.nicknames) : {}
+
+        this.pkgs[name] = pkg
+    }
+
+    private async convertNicknames(repl: Repl | undefined, nicknames: { [index: string]: string }) {
+        if (repl === undefined) {
+            return nicknames
+        }
+
+        const converted: { [index: string]: string } = {}
+
+        for (const [key, value] of Object.entries(nicknames)) {
+            const newKey = await this.getNameString(repl, key)
+            const newValue = await this.getNameString(repl, value)
+
+            if (newKey === undefined || newValue === undefined) {
+                converted[key] = value
+            } else {
+                converted[newKey] = newValue
+            }
+        }
+
+        return converted
+    }
+
+    private async processInPackage(repl: Repl | undefined, fileName: string | undefined, expr: SExpr) {
+        if (expr.parts.length < 2 || !(expr.parts[1] instanceof Atom)) {
+            return
+        }
+
+        let text = exprToString(expr.parts[1])
+        let name = text !== undefined ? await this.getNameString(repl, text) : undefined
 
         if (name === undefined) {
             return
@@ -185,29 +223,20 @@ export class PackageMgr {
         }
     }
 
-    private async getNameString(
-        repl: Repl | undefined,
-        doc: vscode.TextDocument | undefined,
-        expr: SExpr
-    ): Promise<string | undefined> {
-        if (repl === undefined || doc === undefined) {
+    private async getNameString(repl: Repl | undefined, name: string): Promise<string | undefined> {
+        if (repl === undefined) {
             return undefined
         }
 
-        const start = expr.parts[1].start
-        const end = expr.parts[expr.parts.length - 1].end
-        const range = new vscode.Range(toVscodePos(start), toVscodePos(end))
-        let text = doc?.getText(range)
-
-        if (text.startsWith('#:')) {
-            text = text.substr(1)
+        if (name.startsWith('#:')) {
+            name = name.substr(1)
         }
 
-        if (text === undefined || !this.parsesOk(text)) {
+        if (name === undefined || !this.parsesOk(name)) {
             return
         }
 
-        const resp = await repl?.eval(`(ignore-errors (string ${text}))`)
+        const resp = await repl?.eval(`(ignore-errors (string ${name}))`)
 
         if (resp === undefined) {
             return
