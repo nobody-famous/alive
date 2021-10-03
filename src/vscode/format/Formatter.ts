@@ -30,7 +30,14 @@ export class Formatter {
         for (const fmtToken of this.state.tokenList.tokens) {
             const before = fmtToken.before
 
-            if (before.existing !== before.target) {
+            if (fmtToken.token.type === types.WHITE_SPACE) {
+                const start = toVscodePos(fmtToken.token.start)
+                const end = toVscodePos(fmtToken.token.end)
+                const range = new vscode.Range(start, end)
+
+                edits.push(vscode.TextEdit.delete(range))
+                edits.push(vscode.TextEdit.insert(end, before.target))
+            } else if (before.existing !== before.target) {
                 const start = toVscodePos(before.start)
                 const end = toVscodePos(fmtToken.token.start)
                 const range = new vscode.Range(start, end)
@@ -64,6 +71,10 @@ export class Formatter {
 
             this.state.tokenList.add(formatToken)
             formatToken = undefined
+        }
+
+        if (formatToken !== undefined) {
+            this.state.tokenList.add(formatToken)
         }
     }
 

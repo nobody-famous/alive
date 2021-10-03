@@ -225,27 +225,29 @@ export class PackageMgr {
 
     private async getNameString(repl: Repl | undefined, name: string): Promise<string | undefined> {
         if (repl === undefined) {
-            return undefined
+            return name
         }
 
-        if (name.startsWith('#:')) {
-            name = name.substr(1)
+        if (!name.startsWith('#:') && !name.startsWith(':') && !name.startsWith('"')) {
+            return name.toUpperCase()
         }
 
-        if (name === undefined || !this.parsesOk(name)) {
-            return
+        const newName = name.startsWith('#:') ? name.substr(1) : name
+
+        if (newName === undefined || !this.parsesOk(newName)) {
+            return name
         }
 
-        const resp = await repl?.eval(`(ignore-errors (string ${name}))`)
+        const resp = await repl?.eval(`(ignore-errors (string ${newName}))`)
 
         if (resp === undefined) {
-            return
+            return name
         }
 
         const converted = convert(resp)
 
         if (!isString(converted)) {
-            return
+            return name
         }
 
         return (converted as string).toUpperCase()
