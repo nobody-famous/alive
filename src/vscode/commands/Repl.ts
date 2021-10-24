@@ -76,6 +76,29 @@ export async function inlineEval(state: ExtensionState) {
     })
 }
 
+function setupFailedStartupWarningTimer() {
+    const timeoutInMs = 3000
+    const displayWarning = () => {
+        vscode.window.showWarningMessage(`REPL attach is taking an unexpectedly long time`)
+        swankOutputChannel.show()
+    }
+    let complete = false;
+    let timer = setTimeout(displayWarning, timeoutInMs);
+
+    return {
+        restart(): void {
+            clearTimeout(timer)
+            if (!complete) {
+                timer = setTimeout(displayWarning, timeoutInMs)
+            }
+        },
+        cancel(): void {
+            complete = true
+            clearTimeout(timer)
+        }
+    }
+}
+
 export async function startReplAndAttach(state: ExtensionState, ctx: vscode.ExtensionContext): Promise<void> {
     const defaultPort = 4005
     try {
@@ -86,11 +109,15 @@ export async function startReplAndAttach(state: ExtensionState, ctx: vscode.Exte
         const installedSlimeInfo = await installAndConfigureSlime(state)
         const cwd = await getWorkspaceOrFilePath()
         const cmd = vscode.workspace.getConfiguration('alive').swank.startupCommand
+        const timer = setupFailedStartupWarningTimer()
         const attachToRunningRepl = (out: string) => {
+            timer.restart()
             swankOutputChannel.appendLine(out)
             if (out.includes(`Swank started at port: ${defaultPort}`)) {
+                timer.cancel()
                 attachRepl(state, ctx, { host: 'localhost', port: defaultPort })
             } else if (out.includes('Swank started at port')) {
+                timer.cancel()
                 attachRepl(state, ctx)
             }
         }
@@ -106,17 +133,20 @@ export async function startReplAndAttach(state: ExtensionState, ctx: vscode.Exte
 
         if (state.repl === undefined) {
             if (state.child) {
-                await disconnectAndClearChild(state)
+                timer.cancel()
+                vscode.window.showWarningMessage('Previous attempt to attach to REPL is still running.  Detach to try again')
+            } else {
+                state.child = spawn(cmd[0], cmd.slice(1), { cwd, env: getClSourceRegistryEnv(installedSlimeInfo.path, process.env) })
+                state.child.stdout?.setEncoding('utf-8').on('data', attachToRunningRepl)
+                state.child.stderr?.setEncoding('utf-8').on('data', attachToRunningRepl)
+                state.child
+                    .on('exit', handleDisconnect(state))
+                    .on('disconnect', handleDisconnect(state))
+                    .on('error', (err: Error) => {
+                        timer.cancel()
+                        vscode.window.showErrorMessage(`Couldn't spawn Swank server: ${err.message}`)
+                    })
             }
-            state.child = spawn(cmd[0], cmd.slice(1), { cwd, env: getClSourceRegistryEnv(installedSlimeInfo.path, process.env) })
-            state.child.stdout?.setEncoding('utf-8').on('data', attachToRunningRepl)
-            state.child.stderr?.setEncoding('utf-8').on('data', attachToRunningRepl)
-            state.child
-                .on('exit', handleDisconnect(state))
-                .on('disconnect', handleDisconnect(state))
-                .on('error', (err: Error) => {
-                    vscode.window.showErrorMessage(`Couldn't spawn Swank server: ${err.message}`)
-                })
         } else {
             vscode.window.showWarningMessage('REPL already attached')
         }
@@ -141,7 +171,7 @@ export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionCon
 }
 
 export async function detachRepl(state: ExtensionState) {
-    disconnectAndClearChild(state)
+    const childWasKilled = await disconnectAndClearChild(state)
 
     compilerDiagnostics.clear()
 
@@ -150,7 +180,11 @@ export async function detachRepl(state: ExtensionState) {
         state.repl = undefined
         vscode.window.showInformationMessage('REPL Detached')
     } else {
-        vscode.window.showWarningMessage('No REPL currently attached')
+        if (childWasKilled) {
+            vscode.window.showWarningMessage('Killed hung Swank process')
+        } else {
+            vscode.window.showWarningMessage('No REPL currently attached')
+        }
     }
 }
 
@@ -439,10 +473,10 @@ async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, n
     }
 }
 
-async function disconnectAndClearChild(state: ExtensionState): Promise<void> {
+async function disconnectAndClearChild(state: ExtensionState): Promise<boolean> {
     if ((state.child?.exitCode !== 0 && state.child?.exitCode !== null) || state.child?.signalCode !== null) {
         state.child = undefined
-        return
+        return false
     }
     state.child?.kill()
     let killAttempts = 5
@@ -454,6 +488,7 @@ async function disconnectAndClearChild(state: ExtensionState): Promise<void> {
         vscode.window.showWarningMessage('Failed to kill child process after 5 seconds')
     }
     state.child = undefined
+    return true
 }
 
 async function installAndConfigureSlime(state: ExtensionState): Promise<InstalledSlimeInfo> {
