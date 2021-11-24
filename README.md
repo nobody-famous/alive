@@ -149,7 +149,7 @@ Tell the REPL to load an ASDF system. A list of known systems will be given to c
 
 ### System Skeleton
 
-If the current directory is empty, creates an ASDF system skeleton.
+Creates an ASDF system skeleton in the workspace folder. If the folder is not empty, it will write its files over what is there. It could stomp existing files if they happen to have the same names as the ones it writes.
 
 ### Macro Expand
 
