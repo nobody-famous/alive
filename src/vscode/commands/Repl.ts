@@ -77,7 +77,7 @@ export async function inlineEval(state: ExtensionState) {
 }
 
 function setupFailedStartupWarningTimer() {
-    const timeoutInMs = 3000
+    const timeoutInMs = 10000
     const displayWarning = () => {
         vscode.window.showWarningMessage(`REPL attach is taking an unexpectedly long time`)
         swankOutputChannel.show()
@@ -358,10 +358,6 @@ export async function loadAsdfSystem(state: ExtensionState) {
 
         if (resp === undefined) {
             return
-        }
-
-        if (resp.notes.length === 0) {
-            await vscode.window.showInformationMessage(`${name} Loaded successfully`)
         }
 
         await updateCompilerDiagnostics({}, resp.notes)
