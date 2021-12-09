@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { getLexTokens, Parser, readLexTokens } from './lisp'
+import { Swank } from './vscode/backend/Swank'
 import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
@@ -12,33 +13,33 @@ import {
     getRenameProvider,
     getSemTokensProvider,
 } from './vscode/providers'
-import { ExtensionState } from './vscode/Types'
+import { Backend, ExtensionState, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
 
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
-const state: ExtensionState = {
-    repl: undefined,
-    pkgMgr: new PackageMgr(),
-    hoverText: '',
-    compileRunning: false,
-}
+let state: ExtensionState = { hoverText: '', compileRunning: false }
+let backend: Backend | undefined = undefined
 
 let compileTimeoutID: NodeJS.Timeout | undefined = undefined
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
+    const swankState: SwankBackendState = { repl: undefined, pkgMgr: new PackageMgr(), hoverText: '', compileRunning: false }
+
+    backend = new Swank(swankState)
+
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
     vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
     vscode.workspace.onDidChangeTextDocument(
-        (event: vscode.TextDocumentChangeEvent) => changeTextDocument(event),
+        (event: vscode.TextDocumentChangeEvent) => backend?.changeTextDocument(event),
         null,
         ctx.subscriptions
     )
-    vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => saveTextDocument(doc))
+    vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => backend?.saveTextDocument(doc))
 
     vscode.languages.registerCompletionItemProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
-        await getCompletionProvider(state)
+        getCompletionProvider(state)
     )
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider(state))
     vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider(state))
@@ -111,18 +112,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     })
 }
 
-async function saveTextDocument(doc: vscode.TextDocument) {
-    if (doc.languageId !== COMMON_LISP_ID || state.repl === undefined) {
-        return
-    }
-
-    const cfg = vscode.workspace.getConfiguration('alive')
-
-    if (cfg.autoLoadOnSave) {
-        await state.repl.loadFile(doc.fileName, false)
-    }
-}
-
 function visibleEditorsChanged(editors: vscode.TextEditor[]) {
     for (const editor of editors) {
         if (hasValidLangId(editor.document, [COMMON_LISP_ID, REPL_ID])) {
@@ -157,38 +146,11 @@ function openTextDocument(doc: vscode.TextDocument) {
     readLexTokens(doc.fileName, doc.getText())
 }
 
-function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
-    if (!hasValidLangId(event.document, [COMMON_LISP_ID, REPL_ID])) {
-        return
-    }
-
-    startCompileTimer()
-
-    cmds.clearInlineResults(state)
-    readLexTokens(event.document.fileName, event.document.getText())
-
-    const editor = findEditorForDoc(event.document)
-
-    if (editor?.document.languageId !== REPL_ID) {
-        return
-    }
-
-    for (const change of event.contentChanges) {
-        if (change.range === undefined) {
-            continue
-        }
-
-        if (editor.document.languageId === REPL_ID) {
-            state.repl?.documentChanged()
-        }
-    }
-}
-
 function startCompileTimer() {
     const cfg = vscode.workspace.getConfiguration('alive')
     const autoCompile = cfg.autoCompileOnType
 
-    if (state.repl === undefined || !autoCompile) {
+    if (!backend?.isConnected() || !autoCompile) {
         return
     }
 
@@ -198,14 +160,4 @@ function startCompileTimer() {
     }
 
     compileTimeoutID = setTimeout(() => cmds.compileFile(state, true, true), 500)
-}
-
-function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | undefined {
-    for (const editor of vscode.window.visibleTextEditors) {
-        if (editor.document === doc) {
-            return editor
-        }
-    }
-
-    return undefined
 }

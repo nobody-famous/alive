@@ -11,6 +11,16 @@ export const REPL_ID = 'lisp-repl'
 
 const OUTPUT_DIR = '.vscode/alive'
 
+export function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | undefined {
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (editor.document === doc) {
+            return editor
+        }
+    }
+
+    return undefined
+}
+
 export function xlatePath(filePath: string): string {
     const cfg = vscode.workspace.getConfiguration('alive')
     const wsFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))
