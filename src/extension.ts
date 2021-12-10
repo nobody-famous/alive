@@ -14,28 +14,34 @@ import {
     getSemTokensProvider,
 } from './vscode/providers'
 import { Backend, ExtensionState, SwankBackendState } from './vscode/Types'
-import { COMMON_LISP_ID, hasValidLangId, REPL_ID, updatePkgMgr, useEditor } from './vscode/Utils'
+import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, updatePkgMgr, useEditor } from './vscode/Utils'
+
+const BACKEND_TYPE_SWANK = 'Swank'
 
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
-let state: ExtensionState = { hoverText: '', compileRunning: false }
+let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined }
 let backend: Backend | undefined = undefined
-
-let compileTimeoutID: NodeJS.Timeout | undefined = undefined
+let backendType = BACKEND_TYPE_SWANK
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
-    const swankState: SwankBackendState = { repl: undefined, pkgMgr: new PackageMgr(), hoverText: '', compileRunning: false }
+    const swankState: SwankBackendState = {
+        ctx,
+        extState: state,
+        repl: undefined,
+        pkgMgr: new PackageMgr(),
+    }
 
-    backend = new Swank(swankState)
+    state.backend = new Swank(swankState)
 
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
     vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
     vscode.workspace.onDidChangeTextDocument(
-        (event: vscode.TextDocumentChangeEvent) => backend?.changeTextDocument(event),
+        (event: vscode.TextDocumentChangeEvent) => backend?.textDocumentChanged(event),
         null,
         ctx.subscriptions
     )
-    vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => backend?.saveTextDocument(doc))
+    vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => backend?.textDocumentSaved(doc))
 
     vscode.languages.registerCompletionItemProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -81,13 +87,16 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.languages.registerFoldingRangeProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getFoldProvider(state))
     vscode.languages.registerFoldingRangeProvider({ scheme: 'file', language: COMMON_LISP_ID }, getFoldProvider(state))
 
+    if (backendType === BACKEND_TYPE_SWANK) {
+        ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', () => cmds.attachRepl(state)))
+        ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', () => cmds.detachRepl(state)))
+    }
+
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr()))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.startReplAndAttach', () => cmds.startReplAndAttach(state, ctx)))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', () => cmds.attachRepl(state, ctx)))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', () => cmds.detachRepl(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', () => cmds.replHistory(state, false)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistoryDoNotEval', () => cmds.replHistory(state, true)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', () => cmds.debugAbort(state)))
@@ -133,7 +142,7 @@ async function editorChanged(editor?: vscode.TextEditor) {
     const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
     const exprs = parser.parse()
 
-    startCompileTimer()
+    startCompileTimer(state)
 
     await updatePkgMgr(state, editor.document, exprs)
 }
@@ -144,20 +153,4 @@ function openTextDocument(doc: vscode.TextDocument) {
     }
 
     readLexTokens(doc.fileName, doc.getText())
-}
-
-function startCompileTimer() {
-    const cfg = vscode.workspace.getConfiguration('alive')
-    const autoCompile = cfg.autoCompileOnType
-
-    if (!backend?.isConnected() || !autoCompile) {
-        return
-    }
-
-    if (compileTimeoutID !== undefined) {
-        clearTimeout(compileTimeoutID)
-        compileTimeoutID = undefined
-    }
-
-    compileTimeoutID = setTimeout(() => cmds.compileFile(state, true, true), 500)
 }

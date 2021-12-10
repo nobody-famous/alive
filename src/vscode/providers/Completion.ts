@@ -5,7 +5,7 @@ import { exprToString, findAtom, findInnerExpr, Lexer, Parser } from '../../lisp
 import { Atom, Expr, SExpr } from '../../lisp/Expr'
 import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, getPkgName, toVscodePos, updatePkgMgr } from '../Utils'
+import { getDocumentExprs, toVscodePos, updatePkgMgr } from '../Utils'
 
 export function getCompletionProvider(state: ExtensionState): vscode.CompletionItemProvider {
     return new Provider(state)
@@ -20,7 +20,7 @@ class Provider implements vscode.CompletionItemProvider {
 
     async provideCompletionItems(document: vscode.TextDocument, pos: vscode.Position) {
         try {
-            if (this.state.repl === undefined) {
+            if (!this.state.backend?.isConnected()) {
                 return
             }
 
@@ -34,7 +34,7 @@ class Provider implements vscode.CompletionItemProvider {
             }
 
             const textStr = atom !== undefined ? exprToString(atom) : undefined
-            let pkgName = getPkgName(document, pos.line, this.state.pkgMgr, this.state.repl)
+            let pkgName = this.state.backend?.getPkgName(document, pos.line)
 
             if (atom !== undefined && textStr !== undefined && !textStr.startsWith('#')) {
                 const ndx = textStr.indexOf(':')

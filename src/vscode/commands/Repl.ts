@@ -1,16 +1,20 @@
-import { EOL, homedir } from 'os'
-import { format, TextEncoder } from 'util'
+import axios from 'axios'
+import { spawn } from 'child_process'
 import * as fs from 'fs'
+import * as net from 'net'
+import * as StreamZip from 'node-stream-zip'
+import { homedir } from 'os'
+import * as path from 'path'
+import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { exprToString, SExpr } from '../../lisp'
+import { CompileNote } from '../../swank/response/CompileNotes'
 import { Repl } from '../repl'
-import { ExtensionState, SlimeVersion, InstalledSlimeInfo } from '../Types'
-import { spawn } from 'child_process'
+import { ExtensionState, HostPort, InstalledSlimeInfo, SlimeVersion } from '../Types'
 import {
     COMMON_LISP_ID,
     createFolder,
     getInnerExprText,
-    getPkgName,
     getSelectOrExpr,
     getTempFolder,
     getTopExpr,
@@ -21,16 +25,8 @@ import {
     updatePackageNames,
     useEditor,
     useRepl,
-    xlatePath,
 } from '../Utils'
-import * as net from 'net'
-import * as path from 'path'
 
-import axios from 'axios'
-import * as StreamZip from 'node-stream-zip'
-import { CompileNote } from '../../swank/response/CompileNotes'
-
-const swankOutputChannel = vscode.window.createOutputChannel('Swank Trace')
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
 export async function sendToRepl(state: ExtensionState) {
@@ -42,14 +38,9 @@ export async function sendToRepl(state: ExtensionState) {
                 return
             }
 
-            const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
+            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            await repl.send(editor, text, pkgName, false)
-
-            if (editor.document.languageId === REPL_ID) {
-                state.repl?.addHistory(text, pkgName)
-            }
-
+            await state.backend?.sendToRepl(editor, text, pkgName ?? '', false)
             await updatePackageNames(state)
         })
     })
@@ -59,7 +50,7 @@ export async function inlineEval(state: ExtensionState) {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
         useRepl(state, async (repl: Repl) => {
             let text = getSelectOrExpr(editor, editor.selection.start)
-            const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
+            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
             if (text === undefined) {
                 return
@@ -82,8 +73,8 @@ function setupFailedStartupWarningTimer() {
         vscode.window.showWarningMessage(`REPL attach is taking an unexpectedly long time`)
         swankOutputChannel.show()
     }
-    let complete = false;
-    let timer = setTimeout(displayWarning, timeoutInMs);
+    let complete = false
+    let timer = setTimeout(displayWarning, timeoutInMs)
 
     return {
         restart(): void {
@@ -95,7 +86,7 @@ function setupFailedStartupWarningTimer() {
         cancel(): void {
             complete = true
             clearTimeout(timer)
-        }
+        },
     }
 }
 
@@ -115,28 +106,25 @@ export async function startReplAndAttach(state: ExtensionState, ctx: vscode.Exte
             swankOutputChannel.appendLine(out)
             if (out.includes(`Swank started at port: ${defaultPort}`)) {
                 timer.cancel()
-                attachRepl(state, ctx, { host: 'localhost', port: defaultPort })
+                attachRepl(state, { host: 'localhost', port: defaultPort })
             } else if (out.includes('Swank started at port')) {
                 timer.cancel()
-                attachRepl(state, ctx)
+                attachRepl(state)
             }
         }
         const handleDisconnect = (state: ExtensionState) => async (_code: number, _signal: string) => {
-            if (state.repl === undefined) {
-                if (state.child) {
-                    await disconnectAndClearChild(state)
-                }
-            } else {
-                await disconnectAndClearChild(state)
-            }
+            await disconnectAndClearChild(state)
         }
 
-        if (state.repl === undefined) {
+        if (!state.backend?.isConnected()) {
             if (state.child) {
                 timer.cancel()
                 vscode.window.showWarningMessage('Previous attempt to attach to REPL is still running.  Detach to try again')
             } else {
-                state.child = spawn(cmd[0], cmd.slice(1), { cwd, env: getClSourceRegistryEnv(installedSlimeInfo.path, process.env) })
+                state.child = spawn(cmd[0], cmd.slice(1), {
+                    cwd,
+                    env: getClSourceRegistryEnv(installedSlimeInfo.path, process.env),
+                })
                 state.child.stdout?.setEncoding('utf-8').on('data', attachToRunningRepl)
                 state.child.stderr?.setEncoding('utf-8').on('data', attachToRunningRepl)
                 state.child
@@ -155,10 +143,10 @@ export async function startReplAndAttach(state: ExtensionState, ctx: vscode.Exte
     }
 }
 
-export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort) {
+export async function attachRepl(state: ExtensionState, hp?: HostPort) {
     try {
-        if (state.repl === undefined) {
-            const connected = await newReplConnection(state, ctx, hp)
+        if (!state.backend?.isConnected()) {
+            const connected = await newReplConnection(state, hp)
             if (connected) {
                 vscode.window.showInformationMessage('REPL Attached')
             }
@@ -175,9 +163,8 @@ export async function detachRepl(state: ExtensionState) {
 
     compilerDiagnostics.clear()
 
-    if (state.repl !== undefined) {
-        await state.repl.disconnect()
-        state.repl = undefined
+    if (!state.backend?.isConnected()) {
+        await state.backend?.disconnect()
         vscode.window.showInformationMessage('REPL Detached')
     } else {
         if (childWasKilled) {
@@ -275,7 +262,7 @@ export async function macroExpandAll(state: ExtensionState) {
                 return
             }
 
-            const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
+            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
             const result = await repl.macroExpandAll(text, pkgName)
 
             if (result === undefined) {
@@ -303,7 +290,7 @@ export async function disassemble(state: ExtensionState) {
                 return
             }
 
-            const pkgName = getPkgName(editor.document, editor.selection.start.line, state.pkgMgr, repl)
+            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
             const result = await repl.disassemble(`'${name}`, pkgName)
 
             if (result === undefined) {
@@ -644,56 +631,40 @@ async function writeDisassemble(text: string) {
     return file
 }
 
-async function newReplConnection(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort): Promise<boolean> {
-    const connected = await tryConnect(state, ctx, hp)
+async function newReplConnection(state: ExtensionState, hp?: HostPort): Promise<boolean> {
+    let connected = false
 
-    if (connected) {
-        await updatePackageNames(state)
-    }
-
-    return connected
-}
-
-interface HostPort {
-    host: string
-    port: number
-}
-
-async function tryConnect(state: ExtensionState, ctx: vscode.ExtensionContext, hp?: HostPort): Promise<boolean> {
-    let hostPort: HostPort | undefined = { host: 'localhost', port: 4005 }
-
-    try {
-        const host = hp?.host ?? 'localhost'
-        const port = hp?.port ?? 4005
-
-        if (!hp) {
-            hostPort = await promptForHostPort(host, port)
-        }
+    while (!connected) {
+        const hostPort = await getHostPort(hp)
 
         if (hostPort === undefined) {
             return false
         }
 
-        if (state.repl === undefined) {
-            state.repl = new Repl(ctx)
-            state.repl.on('close', () => {
-                state.repl = undefined
-            })
-            state.repl.on('swank-trace', (msg) => {
-                swankOutputChannel.append(`${msg}${EOL}`)
-            })
-        }
-
-        await state.repl.connect(hostPort.host, hostPort.port)
-    } catch (err) {
-        vscode.window.showErrorMessage(`Connect failed: ${format(err)}`)
-        return state.repl === undefined ? false : await tryConnect(state, ctx, hostPort)
+        connected = await tryConnect(state, hostPort)
     }
+
+    await updatePackageNames(state)
 
     return true
 }
 
-async function promptForHostPort(host: string, port: number): Promise<{ host: string; port: number } | undefined> {
+async function getHostPort(hp?: HostPort): Promise<HostPort | undefined> {
+    return hp ?? (await promptForHostPort('localhost', 4005))
+}
+
+async function tryConnect(state: ExtensionState, hp: HostPort): Promise<boolean> {
+    try {
+        await state.backend?.connect(hp)
+
+        return true
+    } catch (err) {
+        vscode.window.showErrorMessage(`Connect failed: ${format(err)}`)
+        return false
+    }
+}
+
+async function promptForHostPort(host: string, port: number): Promise<HostPort | undefined> {
     const input = await vscode.window.showInputBox({ value: `${host}:${port}`, prompt: 'Host and port' })
 
     if (input === undefined) {

@@ -2,9 +2,9 @@ import * as path from 'path'
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { Expr, findAtom, findExpr, findInnerExpr, Lexer, Parser, types } from '../lisp'
-import { PackageMgr } from './PackageMgr'
 import { Repl } from './repl'
 import { ExtensionState } from './Types'
+import * as cmds from './commands'
 
 export const COMMON_LISP_ID = 'lisp'
 export const REPL_ID = 'lisp-repl'
@@ -95,13 +95,6 @@ export async function useRepl(state: ExtensionState, fn: (repl: Repl) => Promise
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }
-}
-
-export function getPkgName(doc: vscode.TextDocument, line: number, pkgMgr: PackageMgr, repl: Repl): string {
-    const pkg = pkgMgr.getPackageForLine(doc.fileName, line)
-    const pkgName = doc.languageId === REPL_ID ? repl.curPackage : pkg?.name
-
-    return pkgName ?? ':cl-user'
 }
 
 export async function updatePackageNames(state: ExtensionState) {
@@ -284,6 +277,22 @@ export async function openFile(file: vscode.Uri | undefined) {
     } catch (err) {
         return await tryCreate(file)
     }
+}
+
+export function startCompileTimer(state: ExtensionState) {
+    const cfg = vscode.workspace.getConfiguration('alive')
+    const autoCompile = cfg.autoCompileOnType
+
+    if (!state.backend?.isConnected() || !autoCompile) {
+        return
+    }
+
+    if (state.compileTimeoutID !== undefined) {
+        clearTimeout(state.compileTimeoutID)
+        state.compileTimeoutID = undefined
+    }
+
+    state.compileTimeoutID = setTimeout(() => cmds.compileFile(state, true, true), 500)
 }
 
 async function getOpenFolder() {
