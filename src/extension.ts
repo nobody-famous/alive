@@ -14,7 +14,7 @@ import {
     getSemTokensProvider,
 } from './vscode/providers'
 import { Backend, ExtensionState, SwankBackendState } from './vscode/Types'
-import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, updatePkgMgr, useEditor } from './vscode/Utils'
+import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 
 const BACKEND_TYPE_SWANK = 'Swank'
 
@@ -97,8 +97,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.startReplAndAttach', () => cmds.startReplAndAttach(state, ctx)))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', () => cmds.replHistory(state, false)))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistoryDoNotEval', () => cmds.replHistory(state, true)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', () => cmds.sendReplHistoryItem(state)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistoryDoNotEval', () => cmds.grabReplHistoryItem(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', () => cmds.debugAbort(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', (n: unknown) => cmds.nthRestart(state, n)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpand', () => cmds.macroExpand(state)))

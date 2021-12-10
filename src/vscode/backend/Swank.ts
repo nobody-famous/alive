@@ -1,10 +1,19 @@
 import { EOL } from 'os'
 import * as vscode from 'vscode'
-import { readLexTokens } from '../../lisp'
+import { Expr, readLexTokens } from '../../lisp'
 import * as cmds from '../commands'
 import { Repl } from '../repl'
 import { Backend, HostPort, SwankBackendState } from '../Types'
-import { COMMON_LISP_ID, findEditorForDoc, hasValidLangId, REPL_ID, startCompileTimer } from '../Utils'
+import {
+    checkConnected,
+    COMMON_LISP_ID,
+    findEditorForDoc,
+    getDocumentExprs,
+    hasValidLangId,
+    REPL_ID,
+    startCompileTimer,
+    useEditor,
+} from '../Utils'
 
 const swankOutputChannel = vscode.window.createOutputChannel('Swank Trace')
 
@@ -31,6 +40,7 @@ export class Swank implements Backend {
         }
 
         await this.state.repl.connect(hostPort.host, hostPort.port)
+        await this.updatePackageNames()
     }
 
     async disconnect() {
@@ -45,12 +55,56 @@ export class Swank implements Backend {
         return pkgName ?? ':cl-user'
     }
 
+    async inlineEval(text: string, pkgName: string): Promise<string | undefined> {
+        if (!this.isConnected()) {
+            return undefined
+        }
+
+        return await this.state.repl?.inlineEval(text, pkgName)
+    }
+
     async sendToRepl(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean) {
         await this.state.repl?.send(editor, text, pkgName, captureOutput)
 
-        if (editor.document.languageId === REPL_ID) {
-            this.state.repl?.addHistory(text, pkgName)
+        await this.updatePackageNames()
+    }
+
+    async addToReplView(text: string) {
+        await this.state.repl?.addToView(text)
+    }
+
+    async replNthRestart(restart: number) {
+        await this.state.repl?.nthRestart(restart)
+        await this.updatePackageNames()
+    }
+
+    replDebugAbort() {
+        this.state.repl?.abort()
+    }
+
+    async updatePackageNames() {
+        if (!this.isConnected()) {
+            return
         }
+
+        const pkgs = (await this.state.repl?.getPackageNames()) ?? []
+
+        for (const pkg of pkgs) {
+            this.state.pkgMgr.addPackage(pkg)
+        }
+
+        useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
+            const exprs = getDocumentExprs(editor.document)
+            this.updatePkgMgr(editor.document, exprs)
+        })
+    }
+
+    async updatePkgMgr(doc: vscode.TextDocument | undefined, exprs: Expr[]) {
+        if (doc?.languageId !== COMMON_LISP_ID) {
+            return
+        }
+
+        await this.state.pkgMgr.update(this.state.repl, doc, exprs)
     }
 
     async textDocumentSaved(doc: vscode.TextDocument) {

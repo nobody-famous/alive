@@ -2,10 +2,10 @@ import * as vscode from 'vscode'
 import { exprToString, findAtom } from '../../lisp'
 import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, REPL_ID, useRepl } from '../Utils'
+import { getDocumentExprs, REPL_ID, checkConnected } from '../Utils'
 
 export async function inspector(state: ExtensionState) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async (repl: Repl) => {
         const editor = vscode.window.activeTextEditor
         let text = ''
         let pkgName = ':cl-user'
@@ -34,25 +34,25 @@ export async function inspector(state: ExtensionState) {
 }
 
 export async function inspectorPrev(state: ExtensionState) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async (repl: Repl) => {
         await repl.inspectorPrev()
     })
 }
 
 export async function inspectorNext(state: ExtensionState) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async (repl: Repl) => {
         await repl.inspectorNext()
     })
 }
 
 export async function inspectorRefresh(state: ExtensionState) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async (repl: Repl) => {
         await repl.inspectorRefresh()
     })
 }
 
 export async function inspectorQuit(state: ExtensionState) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async (repl: Repl) => {
         await repl.inspectorQuit()
     })
 }

@@ -5,17 +5,15 @@ import * as vscode from 'vscode'
 import { Expr, InPackage, isString, Lexer, Parser, unescape } from '../../lisp'
 import { Debug, DebugActivate, DebugReturn, Ping, ReaderError, ReadString, WriteString } from '../../swank/event'
 import * as response from '../../swank/response'
+import { CompileFile, ListPackages } from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
 import { ConnInfo, Restart } from '../../swank/Types'
 import { isReplDoc, xlatePath } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
-import { History, HistoryItem } from './History'
 import { Inspector } from './Inspector'
 import { View } from './View'
-import path = require('path')
-import { CompileFile, ListPackages } from '../../swank/response'
 
 export class Repl extends EventEmitter {
     conn?: SwankConn
@@ -25,7 +23,6 @@ export class Repl extends EventEmitter {
     curPackage: string = ':cl-user'
     ctx: vscode.ExtensionContext
     kwDocs: { [index: string]: string } = {}
-    history: History = new History()
 
     constructor(ctx: vscode.ExtensionContext) {
         super()
@@ -91,14 +88,6 @@ export class Repl extends EventEmitter {
 
     documentChanged() {
         this.view?.documentChanged()
-    }
-
-    addHistory(text: string, pkg: string) {
-        this.history.add(text, pkg)
-    }
-
-    historyItems(): HistoryItem[] {
-        return this.history.list
     }
 
     async inspector(text: string, pkg: string) {
@@ -398,7 +387,11 @@ export class Repl extends EventEmitter {
         return undefined
     }
 
-    async send(editor: vscode.TextEditor, text: string, pkg: string, doNotEval: boolean, output: boolean = true) {
+    async addToView(text: string) {
+        await this.view?.addText(text)
+    }
+
+    async send(editor: vscode.TextEditor, text: string, pkg: string, output: boolean = true) {
         if (this.conn === undefined || this.view === undefined) {
             return
         }
@@ -408,12 +401,7 @@ export class Repl extends EventEmitter {
             const inPkg = expr !== undefined ? InPackage.from(expr) : undefined
 
             if (output) {
-                await this.view.addText(text)
-            }
-
-            if (doNotEval) {
-                await this.view.show(true)
-                return
+                await this.addToView(text)
             }
 
             if (isReplDoc(editor.document) && inPkg !== undefined) {

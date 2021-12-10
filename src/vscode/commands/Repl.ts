@@ -9,9 +9,10 @@ import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { exprToString, SExpr } from '../../lisp'
 import { CompileNote } from '../../swank/response/CompileNotes'
-import { Repl } from '../repl'
+import { History } from '../repl'
 import { ExtensionState, HostPort, InstalledSlimeInfo, SlimeVersion } from '../Types'
 import {
+    checkConnected,
     COMMON_LISP_ID,
     createFolder,
     getInnerExprText,
@@ -22,16 +23,15 @@ import {
     openFile,
     REPL_ID,
     strToMarkdown,
-    updatePackageNames,
     useEditor,
-    useRepl,
 } from '../Utils'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
+const replHistory: History = new History()
 
 export async function sendToRepl(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        useRepl(state, async (repl: Repl) => {
+        checkConnected(state, async () => {
             let text = getSelectOrExpr(editor, editor.selection.start)
 
             if (text === undefined) {
@@ -41,22 +41,21 @@ export async function sendToRepl(state: ExtensionState) {
             const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
             await state.backend?.sendToRepl(editor, text, pkgName ?? '', false)
-            await updatePackageNames(state)
         })
     })
 }
 
 export async function inlineEval(state: ExtensionState) {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
-        useRepl(state, async (repl: Repl) => {
+        checkConnected(state, async () => {
             let text = getSelectOrExpr(editor, editor.selection.start)
             const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            if (text === undefined) {
+            if (text === undefined || pkgName === undefined) {
                 return
             }
 
-            const result = await repl.inlineEval(text, pkgName)
+            const result = await state.backend?.inlineEval(text, pkgName)
 
             if (result !== undefined) {
                 state.hoverText = strToMarkdown(result)
@@ -175,9 +174,9 @@ export async function detachRepl(state: ExtensionState) {
     }
 }
 
-export async function replHistory(state: ExtensionState, doNotEval: boolean) {
-    useRepl(state, async (repl: Repl) => {
-        const items = [...repl.historyItems()]
+function selectHistoryItem(state: ExtensionState, cb: (text: string, pkg?: string) => void) {
+    checkConnected(state, async () => {
+        const items = [...replHistory.list]
         const qp = vscode.window.createQuickPick()
 
         qp.items = items.reverse().map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
@@ -189,20 +188,9 @@ export async function replHistory(state: ExtensionState, doNotEval: boolean) {
                 return
             }
 
-            const text = item.label
-            const pkg = item.description
-            const editor = vscode.window.activeTextEditor
-
-            if (editor === undefined) {
-                return
-            }
+            cb(item.label, item.description)
 
             qp.hide()
-
-            await vscode.workspace.saveAll()
-            await repl.send(editor, text, pkg ?? ':cl-user', doNotEval)
-
-            repl.addHistory(text, pkg ?? ':cl-user')
         })
 
         qp.onDidHide(() => qp.dispose())
@@ -210,14 +198,37 @@ export async function replHistory(state: ExtensionState, doNotEval: boolean) {
     })
 }
 
+export async function grabReplHistoryItem(state: ExtensionState) {
+    selectHistoryItem(state, (text: string) => {
+        state.backend?.addToReplView(text)
+    })
+}
+
+export async function sendReplHistoryItem(state: ExtensionState) {
+    selectHistoryItem(state, async (text: string, pkg?: string) => {
+        const editor = vscode.window.activeTextEditor
+
+        if (editor === undefined) {
+            return
+        }
+
+        await vscode.workspace.saveAll()
+        await state.backend?.sendToRepl(editor, text, pkg ?? ':cl-user', true)
+
+        if (editor.document.languageId === REPL_ID) {
+            replHistory.add(text, pkg ?? ':cl-user')
+        }
+    })
+}
+
 export function debugAbort(state: ExtensionState) {
-    if (state.repl !== undefined) {
-        state.repl.abort()
+    if (state.backend?.isConnected()) {
+        state.backend?.replDebugAbort()
     }
 }
 
 export async function nthRestart(state: ExtensionState, n: unknown) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         if (typeof n !== 'string') {
             return
         }
@@ -225,15 +236,14 @@ export async function nthRestart(state: ExtensionState, n: unknown) {
         const num = Number.parseInt(n)
 
         if (!Number.isNaN(num)) {
-            await repl.nthRestart(num)
-            await updatePackageNames(state)
+            await state.backend?.replNthRestart(num)
         }
     })
 }
 
 export async function macroExpand(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        useRepl(state, async (repl: Repl) => {
+        checkConnected(state, async () => {
             const text = await getInnerExprText(editor.document, editor.selection.start)
 
             if (text === undefined) {
@@ -255,7 +265,7 @@ export async function macroExpand(state: ExtensionState) {
 
 export async function macroExpandAll(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        useRepl(state, async (repl: Repl) => {
+        checkConnected(state, async () => {
             const text = await getInnerExprText(editor.document, editor.selection.start)
 
             if (text === undefined) {
@@ -277,7 +287,7 @@ export async function macroExpandAll(state: ExtensionState) {
 
 export async function disassemble(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        useRepl(state, async (repl: Repl) => {
+        checkConnected(state, async () => {
             const expr = getTopExpr(editor.document, editor.selection.start)
 
             if (!(expr instanceof SExpr) || expr.parts.length < 2) {
@@ -308,7 +318,7 @@ export async function disassemble(state: ExtensionState) {
 }
 
 export async function compileAsdfSystem(state: ExtensionState) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         const names = await repl.listAsdfSystems()
         const name = await vscode.window.showQuickPick(names)
 
@@ -332,7 +342,7 @@ export async function compileAsdfSystem(state: ExtensionState) {
 }
 
 export async function loadAsdfSystem(state: ExtensionState) {
-    useRepl(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         const names = await repl.listAsdfSystems()
         const name = await vscode.window.showQuickPick(names)
 
@@ -353,7 +363,7 @@ export async function loadAsdfSystem(state: ExtensionState) {
 
 export async function loadFile(state: ExtensionState) {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
-        useRepl(state, async (repl: Repl) => {
+        checkConnected(state, async () => {
             await editor.document.save()
             await repl.loadFile(editor.document.uri.fsPath)
             await updatePackageNames(state)
@@ -363,7 +373,7 @@ export async function loadFile(state: ExtensionState) {
 
 export async function compileFile(state: ExtensionState, useTemp: boolean, ignoreOutput: boolean = false) {
     useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
-        useRepl(state, async (repl: Repl) => {
+        checkConnected(state, async () => {
             if (state.compileRunning) {
                 return
             }
@@ -643,8 +653,6 @@ async function newReplConnection(state: ExtensionState, hp?: HostPort): Promise<
 
         connected = await tryConnect(state, hostPort)
     }
-
-    await updatePackageNames(state)
 
     return true
 }

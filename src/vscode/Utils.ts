@@ -2,9 +2,8 @@ import * as path from 'path'
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { Expr, findAtom, findExpr, findInnerExpr, Lexer, Parser, types } from '../lisp'
-import { Repl } from './repl'
-import { ExtensionState } from './Types'
 import * as cmds from './commands'
+import { ExtensionState } from './Types'
 
 export const COMMON_LISP_ID = 'lisp'
 export const REPL_ID = 'lisp-repl'
@@ -84,42 +83,17 @@ export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) =
     }
 }
 
-export async function useRepl(state: ExtensionState, fn: (repl: Repl) => Promise<void>) {
-    if (state.repl === undefined) {
-        vscode.window.showErrorMessage('REPL Not Connected')
+export async function checkConnected(state: ExtensionState, fn: () => Promise<void>) {
+    if (!state.backend?.isConnected()) {
+        vscode.window.showErrorMessage('Not Connected')
         return
     }
 
     try {
-        await fn(state.repl)
+        await fn()
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }
-}
-
-export async function updatePackageNames(state: ExtensionState) {
-    if (state.repl === undefined) {
-        return
-    }
-
-    const pkgs = await state.repl.getPackageNames()
-
-    for (const pkg of pkgs) {
-        state.pkgMgr.addPackage(pkg)
-    }
-
-    useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
-        const exprs = getDocumentExprs(editor.document)
-        updatePkgMgr(state, editor.document, exprs)
-    })
-}
-
-export async function updatePkgMgr(state: ExtensionState, doc: vscode.TextDocument | undefined, exprs: Expr[]) {
-    if (doc?.languageId !== COMMON_LISP_ID) {
-        return
-    }
-
-    await state.pkgMgr.update(state.repl, doc, exprs)
 }
 
 export function getDocumentExprs(doc: vscode.TextDocument) {

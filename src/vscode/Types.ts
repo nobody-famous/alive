@@ -68,6 +68,30 @@ export interface Backend {
      * @param captureOutput Whether to capture output
      */
     sendToRepl(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean): Promise<void>
+
+    /**
+     * Add the given text to the bottom of the REPL view
+     * @param text Text to add
+     */
+    addToReplView(text: string): Promise<void>
+
+    /**
+     * Evaluate the given text in the given package
+     * @param text Expression to evaluate
+     * @param pkgName Package to evaluate the expression in
+     */
+    inlineEval(text: string, pkgName: string): Promise<string | undefined>
+
+    /**
+     * Abort the current debugger
+     */
+    replDebugAbort(): void
+
+    /**
+     * Tell the REPL to choose the given restart
+     * @param restart The restart number
+     */
+    replNthRestart(restart: number): Promise<void>
 }
 
 export interface SlimeVersion {
