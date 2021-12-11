@@ -80,6 +80,50 @@ export class Swank implements Backend {
         return pkgName ?? ':cl-user'
     }
 
+    async addToReplView(text: string) {
+        await this.state.repl?.addToView(text)
+    }
+
+    async inlineEval(text: string, pkgName: string): Promise<string | undefined> {
+        return await this.state.repl?.inlineEval(text, pkgName)
+    }
+
+    replDebugAbort() {
+        this.state.repl?.abort()
+    }
+
+    async macroExpand(text: string, pkgName: string): Promise<string | undefined> {
+        return this.state.repl?.macroExpand(text, pkgName)
+    }
+
+    async macroExpandAll(text: string, pkgName: string): Promise<string | undefined> {
+        return this.state.repl?.macroExpandAll(text, pkgName)
+    }
+
+    async disassemble(text: string, pkgName: string): Promise<string | undefined> {
+        return this.state.repl?.disassemble(text, pkgName)
+    }
+
+    async listAsdfSystems(): Promise<string[]> {
+        return this.state.repl?.listAsdfSystems() ?? []
+    }
+
+    async compileAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
+        return this.state.repl?.compileAsdfSystem(name)
+    }
+
+    async loadAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
+        return this.state.repl?.loadAsdfSystem(name)
+    }
+
+    async getSymbolDoc(text: string, pkgName: string): Promise<string | undefined> {
+        this.state.repl?.setIgnoreDebug(true)
+        const resp = this.state.repl?.getDoc(text, pkgName)
+        this.state.repl?.setIgnoreDebug(false)
+
+        return resp
+    }
+
     async inspector(text: string, pkgName: string) {
         await this.state.repl?.inspector(text, pkgName)
     }

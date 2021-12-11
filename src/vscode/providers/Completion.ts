@@ -5,7 +5,7 @@ import { exprToString, findAtom, findInnerExpr, Lexer, Parser } from '../../lisp
 import { Atom, Expr, SExpr } from '../../lisp/Expr'
 import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, toVscodePos, updatePkgMgr } from '../Utils'
+import { getDocumentExprs, toVscodePos } from '../Utils'
 
 export function getCompletionProvider(state: ExtensionState): vscode.CompletionItemProvider {
     return new Provider(state)

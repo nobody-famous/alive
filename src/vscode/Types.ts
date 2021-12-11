@@ -2,6 +2,7 @@ import { ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import * as vscode from 'vscode'
 import { PackageMgr } from './PackageMgr'
+import { Repl } from './repl'
 
 export interface ExtensionState {
     child?: ChildProcess
@@ -29,11 +30,6 @@ export interface Backend {
      * The default port to connect to
      */
     defaultPort: number
-
-    /**
-     * The connected REPL
-     */
-    repl?: Repl
 
     editorChanged(editor?: vscode.TextEditor): void
 
@@ -68,6 +64,8 @@ export interface Backend {
     loadFile(path: string, showMsgs?: boolean): Promise<void>
 
     compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined>
+
+    getSymbolDoc(text: string, pkgName: string): Promise<string | undefined>
 
     /**
      * Check if the backend is currently connected
@@ -133,107 +131,6 @@ export interface Backend {
      * The command to use to start the server
      */
     serverStartupCommand(): string[] | undefined
-}
-
-export interface Repl extends EventEmitter {
-    conn?: any
-
-    curPackage: string | undefined
-
-    connect(host: string, port: number): Promise<void>
-
-    disconnect(): Promise<void>
-
-    send(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean): Promise<void>
-
-    inspector(text: string, pkgName: string): Promise<void>
-
-    inspectorPrev(): Promise<void>
-
-    inspectorNext(): Promise<void>
-
-    inspectorRefresh(): Promise<void>
-
-    inspectorQuit(): Promise<void>
-
-    getPackageNames(): Promise<string[]>
-
-    documentChanged(): void
-
-    /**
-     * Add the given text to the bottom of the REPL view
-     * @param text Text to add
-     */
-    addToView(text: string): Promise<void>
-
-    /**
-     * Evaluate the given text in the given package
-     * @param text Expression to evaluate
-     * @param pkgName Package to evaluate the expression in
-     */
-    inlineEval(text: string, pkgName: string): Promise<string | undefined>
-
-    /**
-     * Abort the current debugger
-     */
-    abort(): void
-
-    /**
-     * Expand the given macro in the given package
-     * @param text Text of the macro
-     * @param pkgName Package to use
-     */
-    macroExpand(text: string, pkgName: string): Promise<string | undefined>
-
-    /**
-     * Recursively expand the given macro
-     * @param text Text of the macro
-     * @param pkgName Package to use
-     */
-    macroExpandAll(text: string, pkgName: string): Promise<string | undefined>
-
-    /**
-     * Disassemble the function specified by the given symbol
-     * @param text Symbol to disassemble
-     * @param pkgName Package to use
-     */
-    disassemble(text: string, pkgName: string): Promise<string | undefined>
-
-    /**
-     * Get the list of defined ASDF systems
-     */
-    listAsdfSystems(): Promise<string[]>
-
-    /**
-     * Compile the given ASDF system
-     * @param name Name of the system to compile
-     */
-    compileAsdfSystem(name: string): Promise<CompileFileResp | undefined>
-
-    /**
-     * Load the given ASDF system
-     * @param name Name of the system to load
-     */
-    loadAsdfSystem(name: string): Promise<CompileFileResp | undefined>
-
-    /**
-     * Load the given file into the REPL
-     * @param path Path of the file to load
-     */
-    loadFile(path: string, showMsgs?: boolean): Promise<void>
-
-    /**
-     * Compile the given file
-     * @param path Path of the file to compile
-     * @param ignoreOutput Whether to ignore the output
-     */
-    compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined>
-
-    /**
-     * Choose the given restart
-     * @param restart The restart number
-     */
-    nthRestart(restart: number): Promise<void>
 }
 
 export interface SlimeVersion {

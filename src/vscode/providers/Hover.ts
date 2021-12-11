@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { exprToString, findAtom } from '../../lisp'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, getPkgName } from '../Utils'
+import { getDocumentExprs } from '../Utils'
 
 export function getHoverProvider(state: ExtensionState): vscode.HoverProvider {
     return new Provider(state)
@@ -17,7 +17,7 @@ class Provider implements vscode.HoverProvider {
     async provideHover(doc: vscode.TextDocument, pos: vscode.Position): Promise<vscode.Hover> {
         if (this.state.hoverText !== '') {
             return new vscode.Hover(this.state.hoverText)
-        } else if (this.state.repl === undefined) {
+        } else if (!this.state.backend?.isConnected()) {
             return new vscode.Hover('')
         }
 
@@ -28,16 +28,14 @@ class Provider implements vscode.HoverProvider {
         }
 
         const textStr = atom !== undefined ? exprToString(atom) : undefined
-        let pkgName = getPkgName(doc, pos.line, this.state.pkgMgr, this.state.repl)
+        let pkgName = this.state.backend?.getPkgName(doc, pos.line)
         let text = ''
 
         if (textStr === undefined) {
             return new vscode.Hover('')
         }
 
-        this.state.repl.setIgnoreDebug(true)
-        text = await this.state.repl.getDoc(textStr, pkgName)
-        this.state.repl.setIgnoreDebug(false)
+        text = (await this.state.backend?.getSymbolDoc(textStr, pkgName)) ?? text
 
         if (text.startsWith('No such symbol')) {
             text = ''

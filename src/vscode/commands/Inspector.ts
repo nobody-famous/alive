@@ -21,32 +21,32 @@ export async function inspector(state: ExtensionState) {
         text = input !== undefined ? input : ''
 
         if (text.trim() !== '') {
-            await state.backend?.repl?.inspector(text, pkgName)
+            await state.backend?.inspector(text, pkgName)
         }
     })
 }
 
 export async function inspectorPrev(state: ExtensionState) {
     checkConnected(state, async () => {
-        await state.backend?.repl?.inspectorPrev()
+        await state.backend?.inspectorPrev()
     })
 }
 
 export async function inspectorNext(state: ExtensionState) {
     checkConnected(state, async () => {
-        await state.backend?.repl?.inspectorNext()
+        await state.backend?.inspectorNext()
     })
 }
 
 export async function inspectorRefresh(state: ExtensionState) {
     checkConnected(state, async () => {
-        await state.backend?.repl?.inspectorRefresh()
+        await state.backend?.inspectorRefresh()
     })
 }
 
 export async function inspectorQuit(state: ExtensionState) {
     checkConnected(state, async () => {
-        await state.backend?.repl?.inspectorQuit()
+        await state.backend?.inspectorQuit()
     })
 }
 

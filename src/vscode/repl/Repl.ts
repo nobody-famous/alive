@@ -14,9 +14,8 @@ import { DebugView } from './DebugView'
 import { FileView } from './FileView'
 import { Inspector } from './Inspector'
 import { View } from './View'
-import { Repl as IRepl } from '../Types'
 
-export class Repl extends EventEmitter implements IRepl {
+export class Repl extends EventEmitter {
     conn?: SwankConn
     view?: View
     inspectorView?: Inspector
