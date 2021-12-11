@@ -1,10 +1,6 @@
 import { Expr, exprToNumber, exprToString, SExpr } from '../../lisp'
+import { CompileLocation } from '../../vscode/Types'
 import { convert } from '../SwankUtils'
-
-export interface CompileLocation {
-    file: string
-    position: number
-}
 
 export class CompileNote {
     message: string

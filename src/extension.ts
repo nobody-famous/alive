@@ -34,7 +34,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     state.backend = new Swank(swankState)
 
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
-    vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
+    vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => backend?.editorChanged(editor), null, ctx.subscriptions)
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
     vscode.workspace.onDidChangeTextDocument(
         (event: vscode.TextDocumentChangeEvent) => backend?.textDocumentChanged(event),
@@ -96,7 +96,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.startReplAndAttach', () => cmds.startReplAndAttach(state, ctx)))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.startReplAndAttach', () => cmds.startReplAndAttach(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', () => cmds.sendReplHistoryItem(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistoryDoNotEval', () => cmds.grabReplHistoryItem(state)))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', () => cmds.debugAbort(state)))
@@ -129,23 +129,7 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
     }
 }
 
-async function editorChanged(editor?: vscode.TextEditor) {
-    if (editor === undefined || !hasValidLangId(editor.document, [COMMON_LISP_ID, REPL_ID])) {
-        return
-    }
 
-    let tokens = getLexTokens(editor.document.fileName)
-    if (tokens === undefined) {
-        tokens = readLexTokens(editor.document.fileName, editor.document.getText())
-    }
-
-    const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
-    const exprs = parser.parse()
-
-    startCompileTimer(state)
-
-    await updatePkgMgr(state, editor.document, exprs)
-}
 
 function openTextDocument(doc: vscode.TextDocument) {
     if (!hasValidLangId(doc, [COMMON_LISP_ID, REPL_ID])) {

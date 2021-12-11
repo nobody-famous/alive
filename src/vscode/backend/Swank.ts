@@ -1,11 +1,10 @@
 import { EOL } from 'os'
 import * as vscode from 'vscode'
-import { Expr, readLexTokens } from '../../lisp'
+import { Expr, getLexTokens, Parser, readLexTokens } from '../../lisp'
 import * as cmds from '../commands'
 import { Repl } from '../repl'
-import { Backend, HostPort, SwankBackendState } from '../Types'
+import { Backend, CompileFileResp, HostPort, InstalledSlimeInfo, SwankBackendState } from '../Types'
 import {
-    checkConnected,
     COMMON_LISP_ID,
     findEditorForDoc,
     getDocumentExprs,
@@ -14,11 +13,14 @@ import {
     startCompileTimer,
     useEditor,
 } from '../Utils'
+import { installAndConfigureSlime } from './SlimeInstall'
 
 const swankOutputChannel = vscode.window.createOutputChannel('Swank Trace')
 
 export class Swank implements Backend {
     state: SwankBackendState
+    defaultPort: number = 4005
+    installedSlimeInfo: InstalledSlimeInfo | undefined
 
     constructor(state: SwankBackendState) {
         this.state = state
@@ -46,6 +48,53 @@ export class Swank implements Backend {
     async disconnect() {
         await this.state.repl?.disconnect()
         this.state.repl = undefined
+    }
+
+    async macroExpand(text: string, pkgName: string): Promise<string | undefined> {
+        return await this.state.repl?.macroExpand(text, pkgName)
+    }
+
+    async macroExpandAll(text: string, pkgName: string): Promise<string | undefined> {
+        return await this.state.repl?.macroExpandAll(text, pkgName)
+    }
+
+    async disassemble(text: string, pkgName: string): Promise<string | undefined> {
+        return await this.state.repl?.macroExpandAll(text, pkgName)
+    }
+
+    async listAsdfSystems(): Promise<string[]> {
+        return (await this.state.repl?.listAsdfSystems()) ?? []
+    }
+
+    async compileAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
+        return await this.state.repl?.compileAsdfSystem(name)
+    }
+
+    async loadAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
+        return await this.state.repl?.loadAsdfSystem(name)
+    }
+
+    async loadFile(path: string) {
+        await this.state.repl?.loadFile(path)
+        await this.updatePackageNames()
+    }
+
+    async compileFile(path: string, ignoreOutput: boolean): Promise<CompileFileResp | undefined> {
+        let setConnFlags = false
+
+        try {
+            this.state.repl?.conn?.setIgnoreOutput(ignoreOutput)
+            this.state.repl?.conn?.setIgnoreDebug(ignoreOutput)
+
+            setConnFlags = true
+
+            return this.state.repl?.compileFile(path)
+        } finally {
+            if (setConnFlags) {
+                this.state.repl?.conn?.setIgnoreOutput(false)
+                this.state.repl?.conn?.setIgnoreDebug(false)
+            }
+        }
     }
 
     getPkgName(doc: vscode.TextDocument, line: number): string {
@@ -144,5 +193,37 @@ export class Swank implements Backend {
                 this.state.repl?.documentChanged()
             }
         }
+    }
+
+    async editorChanged(editor?: vscode.TextEditor) {
+        if (editor === undefined || !hasValidLangId(editor.document, [COMMON_LISP_ID, REPL_ID])) {
+            return
+        }
+
+        let tokens = getLexTokens(editor.document.fileName)
+        if (tokens === undefined) {
+            tokens = readLexTokens(editor.document.fileName, editor.document.getText())
+        }
+
+        const parser = new Parser(getLexTokens(editor.document.fileName) ?? [])
+        const exprs = parser.parse()
+
+        startCompileTimer(this.state.extState)
+
+        await this.updatePkgMgr(editor.document, exprs)
+    }
+
+    async installServer() {
+        this.installedSlimeInfo = await installAndConfigureSlime(this.state)
+    }
+
+    serverInstallPath(): string | undefined {
+        return this.installedSlimeInfo?.path
+    }
+
+    serverStartupCommand(): string[] | undefined {
+        const cmd = vscode.workspace.getConfiguration('alive').swank.startupCommand
+
+        return Array.isArray(cmd) ? cmd : undefined
     }
 }

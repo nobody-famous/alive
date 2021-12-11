@@ -1,9 +1,9 @@
-import { Atom, Expr, exprToNumber, exprToString, SExpr } from '../../lisp'
+import { exprToNumber, exprToString, SExpr } from '../../lisp'
+import { CompileFileResp } from '../../vscode/Types'
 import { Return } from '../event'
-import { convert } from '../SwankUtils'
 import { CompileNote, CompileNotes } from './CompileNotes'
 
-export class CompileFile {
+export class CompileFile implements CompileFileResp {
     notes: CompileNote[]
     success: boolean
     duration: number
