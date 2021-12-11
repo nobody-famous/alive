@@ -1,25 +1,24 @@
 import * as vscode from 'vscode'
 import { exprToString, findAtom } from '../../lisp'
-import { Repl } from '../repl'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, REPL_ID, checkConnected } from '../Utils'
+import { checkConnected, getDocumentExprs, REPL_ID } from '../Utils'
 
 export async function inspector(state: ExtensionState) {
-    checkConnected(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         const editor = vscode.window.activeTextEditor
         let text = ''
         let pkgName = ':cl-user'
 
         if (editor !== undefined) {
             const pos = editor.selection.start
-            const pkg = state.pkgMgr.getPackageForLine(editor.document.fileName, pos.line)
+            const pkg = state.backend?.getPkgName(editor.document, pos.line)
 
             text = getInspectText(editor, pos)
 
             if (editor.document.languageId === REPL_ID) {
                 pkgName = repl.curPackage
             } else if (pkg !== undefined) {
-                pkgName = pkg.name
+                pkgName = pkg
             }
         }
 
@@ -34,25 +33,25 @@ export async function inspector(state: ExtensionState) {
 }
 
 export async function inspectorPrev(state: ExtensionState) {
-    checkConnected(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         await repl.inspectorPrev()
     })
 }
 
 export async function inspectorNext(state: ExtensionState) {
-    checkConnected(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         await repl.inspectorNext()
     })
 }
 
 export async function inspectorRefresh(state: ExtensionState) {
-    checkConnected(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         await repl.inspectorRefresh()
     })
 }
 
 export async function inspectorQuit(state: ExtensionState) {
-    checkConnected(state, async (repl: Repl) => {
+    checkConnected(state, async () => {
         await repl.inspectorQuit()
     })
 }

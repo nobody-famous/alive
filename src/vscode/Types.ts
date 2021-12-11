@@ -1,7 +1,7 @@
 import { ChildProcess } from 'child_process'
+import { EventEmitter } from 'events'
 import * as vscode from 'vscode'
 import { PackageMgr } from './PackageMgr'
-import { Repl } from './repl'
 
 export interface ExtensionState {
     child?: ChildProcess
@@ -29,6 +29,11 @@ export interface Backend {
      * The default port to connect to
      */
     defaultPort: number
+
+    /**
+     * The connected REPL
+     */
+    repl?: Repl
 
     /**
      * Check if the backend is currently connected
@@ -77,10 +82,47 @@ export interface Backend {
     sendToRepl(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean): Promise<void>
 
     /**
+     * Tell the REPL to choose the given restart
+     * @param restart The restart number
+     */
+    replNthRestart(restart: number): Promise<void>
+
+    /**
+     * Install needed software to start the server
+     */
+    installServer(): Promise<void>
+
+    /**
+     * Get the install path for the server
+     */
+    serverInstallPath(): string | undefined
+
+    /**
+     * The command to use to start the server
+     */
+    serverStartupCommand(): string[] | undefined
+}
+
+export interface Repl extends EventEmitter {
+    conn?: any
+
+    curPackage: string | undefined
+
+    connect(host: string, port: number): Promise<void>
+
+    disconnect(): Promise<void>
+
+    send(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean): Promise<void>
+
+    getPackageNames(): Promise<string[]>
+
+    documentChanged(): void
+
+    /**
      * Add the given text to the bottom of the REPL view
      * @param text Text to add
      */
-    addToReplView(text: string): Promise<void>
+    addToView(text: string): Promise<void>
 
     /**
      * Evaluate the given text in the given package
@@ -92,13 +134,7 @@ export interface Backend {
     /**
      * Abort the current debugger
      */
-    replDebugAbort(): void
-
-    /**
-     * Tell the REPL to choose the given restart
-     * @param restart The restart number
-     */
-    replNthRestart(restart: number): Promise<void>
+    abort(): void
 
     /**
      * Expand the given macro in the given package
@@ -142,29 +178,20 @@ export interface Backend {
      * Load the given file into the REPL
      * @param path Path of the file to load
      */
-    loadFile(path: string): Promise<void>
+    loadFile(path: string, showMsgs?: boolean): Promise<void>
 
     /**
      * Compile the given file
      * @param path Path of the file to compile
      * @param ignoreOutput Whether to ignore the output
      */
-    compileFile(path: string, ignoreOutput: boolean): Promise<CompileFileResp | undefined>
+    compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined>
 
     /**
-     * Install needed software to start the server
+     * Choose the given restart
+     * @param restart The restart number
      */
-    installServer(): Promise<void>
-
-    /**
-     * Get the install path for the server
-     */
-    serverInstallPath(): string | undefined
-
-    /**
-     * The command to use to start the server
-     */
-    serverStartupCommand(): string[] | undefined
+    nthRestart(restart: number): Promise<void>
 }
 
 export interface SlimeVersion {

@@ -50,30 +50,6 @@ export class Swank implements Backend {
         this.state.repl = undefined
     }
 
-    async macroExpand(text: string, pkgName: string): Promise<string | undefined> {
-        return await this.state.repl?.macroExpand(text, pkgName)
-    }
-
-    async macroExpandAll(text: string, pkgName: string): Promise<string | undefined> {
-        return await this.state.repl?.macroExpandAll(text, pkgName)
-    }
-
-    async disassemble(text: string, pkgName: string): Promise<string | undefined> {
-        return await this.state.repl?.macroExpandAll(text, pkgName)
-    }
-
-    async listAsdfSystems(): Promise<string[]> {
-        return (await this.state.repl?.listAsdfSystems()) ?? []
-    }
-
-    async compileAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
-        return await this.state.repl?.compileAsdfSystem(name)
-    }
-
-    async loadAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
-        return await this.state.repl?.loadAsdfSystem(name)
-    }
-
     async loadFile(path: string) {
         await this.state.repl?.loadFile(path)
         await this.updatePackageNames()
@@ -104,31 +80,15 @@ export class Swank implements Backend {
         return pkgName ?? ':cl-user'
     }
 
-    async inlineEval(text: string, pkgName: string): Promise<string | undefined> {
-        if (!this.isConnected()) {
-            return undefined
-        }
-
-        return await this.state.repl?.inlineEval(text, pkgName)
-    }
-
     async sendToRepl(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean) {
         await this.state.repl?.send(editor, text, pkgName, captureOutput)
 
         await this.updatePackageNames()
     }
 
-    async addToReplView(text: string) {
-        await this.state.repl?.addToView(text)
-    }
-
     async replNthRestart(restart: number) {
         await this.state.repl?.nthRestart(restart)
         await this.updatePackageNames()
-    }
-
-    replDebugAbort() {
-        this.state.repl?.abort()
     }
 
     async updatePackageNames() {
