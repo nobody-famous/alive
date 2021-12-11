@@ -11,15 +11,9 @@ export async function inspector(state: ExtensionState) {
 
         if (editor !== undefined) {
             const pos = editor.selection.start
-            const pkg = state.backend?.getPkgName(editor.document, pos.line)
+            pkgName = state.backend?.getPkgName(editor.document, pos.line) ?? pkgName
 
             text = getInspectText(editor, pos)
-
-            if (editor.document.languageId === REPL_ID) {
-                pkgName = repl.curPackage
-            } else if (pkg !== undefined) {
-                pkgName = pkg
-            }
         }
 
         const input = await vscode.window.showInputBox({ placeHolder: 'Enter form', value: text })
@@ -27,32 +21,32 @@ export async function inspector(state: ExtensionState) {
         text = input !== undefined ? input : ''
 
         if (text.trim() !== '') {
-            await repl.inspector(text, pkgName)
+            await state.backend?.repl?.inspector(text, pkgName)
         }
     })
 }
 
 export async function inspectorPrev(state: ExtensionState) {
     checkConnected(state, async () => {
-        await repl.inspectorPrev()
+        await state.backend?.repl?.inspectorPrev()
     })
 }
 
 export async function inspectorNext(state: ExtensionState) {
     checkConnected(state, async () => {
-        await repl.inspectorNext()
+        await state.backend?.repl?.inspectorNext()
     })
 }
 
 export async function inspectorRefresh(state: ExtensionState) {
     checkConnected(state, async () => {
-        await repl.inspectorRefresh()
+        await state.backend?.repl?.inspectorRefresh()
     })
 }
 
 export async function inspectorQuit(state: ExtensionState) {
     checkConnected(state, async () => {
-        await repl.inspectorQuit()
+        await state.backend?.repl?.inspectorQuit()
     })
 }
 

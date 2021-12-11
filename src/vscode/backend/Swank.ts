@@ -80,6 +80,26 @@ export class Swank implements Backend {
         return pkgName ?? ':cl-user'
     }
 
+    async inspector(text: string, pkgName: string) {
+        await this.state.repl?.inspector(text, pkgName)
+    }
+
+    async inspectorPrev() {
+        await this.state.repl?.inspectorPrev()
+    }
+
+    async inspectorNext() {
+        await this.state.repl?.inspectorNext()
+    }
+
+    async inspectorRefresh() {
+        await this.state.repl?.inspectorRefresh()
+    }
+
+    async inspectorQuit() {
+        await this.state.repl?.inspectorQuit()
+    }
+
     async sendToRepl(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean) {
         await this.state.repl?.send(editor, text, pkgName, captureOutput)
 

@@ -35,6 +35,40 @@ export interface Backend {
      */
     repl?: Repl
 
+    editorChanged(editor?: vscode.TextEditor): void
+
+    inspector(text: string, pkgName: string): Promise<void>
+
+    inspectorPrev(): Promise<void>
+
+    inspectorNext(): Promise<void>
+
+    inspectorRefresh(): Promise<void>
+
+    inspectorQuit(): Promise<void>
+
+    addToReplView(text: string): Promise<void>
+
+    inlineEval(text: string, pkgName: string): Promise<string | undefined>
+
+    replDebugAbort(): void
+
+    macroExpand(text: string, pkgName: string): Promise<string | undefined>
+
+    macroExpandAll(text: string, pkgName: string): Promise<string | undefined>
+
+    disassemble(text: string, pkgName: string): Promise<string | undefined>
+
+    listAsdfSystems(): Promise<string[]>
+
+    compileAsdfSystem(name: string): Promise<CompileFileResp | undefined>
+
+    loadAsdfSystem(name: string): Promise<CompileFileResp | undefined>
+
+    loadFile(path: string, showMsgs?: boolean): Promise<void>
+
+    compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined>
+
     /**
      * Check if the backend is currently connected
      */
@@ -62,8 +96,6 @@ export interface Backend {
      * @param event The change event
      */
     textDocumentChanged(event: vscode.TextDocumentChangeEvent): void
-
-    editorChanged(editor?: vscode.TextEditor): void
 
     /**
      * Get the package name for the given line in the given document
@@ -113,6 +145,16 @@ export interface Repl extends EventEmitter {
     disconnect(): Promise<void>
 
     send(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean): Promise<void>
+
+    inspector(text: string, pkgName: string): Promise<void>
+
+    inspectorPrev(): Promise<void>
+
+    inspectorNext(): Promise<void>
+
+    inspectorRefresh(): Promise<void>
+
+    inspectorQuit(): Promise<void>
 
     getPackageNames(): Promise<string[]>
 
