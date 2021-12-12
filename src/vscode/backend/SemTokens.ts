@@ -2,24 +2,20 @@ import { format } from 'util'
 import * as vscode from 'vscode'
 import { getLexTokens } from '../../lisp'
 import { Colorizer } from '../colorize'
-import { ExtensionState } from '../Types'
-import { getDocumentExprs, updatePkgMgr } from '../Utils'
+import { SwankBackendState } from '../Types'
+import { getDocumentExprs } from '../Utils'
 
-export function getSemTokensProvider(state: ExtensionState): vscode.DocumentSemanticTokensProvider {
-    return new Provider(state)
-}
+export class SemTokensProvider implements vscode.DocumentSemanticTokensProvider {
+    state: SwankBackendState
 
-class Provider implements vscode.DocumentSemanticTokensProvider {
-    state: ExtensionState
-
-    constructor(state: ExtensionState) {
+    constructor(state: SwankBackendState) {
         this.state = state
     }
 
     async provideDocumentSemanticTokens(doc: vscode.TextDocument): Promise<vscode.SemanticTokens> {
-        const colorizer = new Colorizer(this.state.repl)
         const tokens = getLexTokens(doc.fileName)
         const emptyTokens = new vscode.SemanticTokens(new Uint32Array(0))
+        const colorizer = new Colorizer(this.state.repl)
 
         if (tokens === undefined || tokens.length === 0) {
             return emptyTokens
@@ -28,7 +24,7 @@ class Provider implements vscode.DocumentSemanticTokensProvider {
         try {
             const exprs = getDocumentExprs(doc)
 
-            await updatePkgMgr(this.state, doc, exprs)
+            await this.state.pkgMgr.update(this.state.repl, doc, exprs)
 
             return await colorizer.run(tokens)
         } catch (err) {

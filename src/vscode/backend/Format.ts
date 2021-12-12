@@ -1,14 +1,11 @@
 import * as vscode from 'vscode'
 import { Atom, Expr, Lexer, Parser, SExpr } from '../../lisp'
-import { Formatter, HaveBody, Options } from '../format/Formatter'
+import { Formatter } from '../format/Formatter'
+import { HaveBody, Options } from '../format/Utils'
 import { ExtensionState } from '../Types'
 import { getDocumentExprs } from '../Utils'
 
-export function getDocumentFormatter(state: ExtensionState): vscode.DocumentFormattingEditProvider {
-    return new Provider(state)
-}
-
-class Provider implements vscode.DocumentFormattingEditProvider {
+export class FormatProvider implements vscode.DocumentFormattingEditProvider {
     state: ExtensionState
 
     constructor(state: ExtensionState) {
@@ -35,7 +32,7 @@ class Provider implements vscode.DocumentFormattingEditProvider {
     }
 
     private async findHaveBody(doc: vscode.TextDocument, exprs: Expr[], haveBody: HaveBody) {
-        if (this.state.repl === undefined) {
+        if (!this.state.backend?.isConnected()) {
             return
         }
 
@@ -46,13 +43,13 @@ class Provider implements vscode.DocumentFormattingEditProvider {
                     continue
                 }
 
-                const pkg = this.state.pkgMgr.getPackageForLine(doc.fileName, expr.start.line)
+                const pkg = this.state.backend?.getPkgName(doc, expr.start.line)
                 if (pkg === undefined) {
                     continue
                 }
 
-                const args = await this.state.repl.getOpArgs(name, pkg.name)
-                if (this.hasBody(args)) {
+                const args = await this.state.backend?.getOpArgs(name, pkg)
+                if (this.hasBody(args ?? '')) {
                     haveBody[name] = true
                 }
 

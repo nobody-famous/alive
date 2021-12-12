@@ -1,5 +1,4 @@
 import { ChildProcess } from 'child_process'
-import { EventEmitter } from 'events'
 import * as vscode from 'vscode'
 import { PackageMgr } from './PackageMgr'
 import { Repl } from './repl'
@@ -66,6 +65,14 @@ export interface Backend {
     compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined>
 
     getSymbolDoc(text: string, pkgName: string): Promise<string | undefined>
+
+    getFormatProvider(): vscode.DocumentFormattingEditProvider
+
+    getSemTokensProvider(): vscode.DocumentSemanticTokensProvider
+
+    getCompletionProvider(): vscode.CompletionItemProvider
+
+    getOpArgs(name: string, pkgName: string): Promise<string | undefined>
 
     /**
      * Check if the backend is currently connected

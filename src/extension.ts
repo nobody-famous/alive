@@ -1,26 +1,22 @@
 import * as vscode from 'vscode'
-import { getLexTokens, Parser, readLexTokens } from './lisp'
+import { readLexTokens } from './lisp'
 import { Swank } from './vscode/backend/Swank'
 import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
 import {
-    getCompletionProvider,
     getDefinitionProvider,
-    getDocumentFormatter,
     getFoldProvider,
     getHoverProvider,
-    getRenameProvider,
-    getSemTokensProvider,
+    getRenameProvider
 } from './vscode/providers'
-import { Backend, ExtensionState, SwankBackendState } from './vscode/Types'
-import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
+import { ExtensionState, SwankBackendState } from './vscode/Types'
+import { COMMON_LISP_ID, hasValidLangId, REPL_ID, useEditor } from './vscode/Utils'
 
 const BACKEND_TYPE_SWANK = 'Swank'
 
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
 let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined }
-let backend: Backend | undefined = undefined
 let backendType = BACKEND_TYPE_SWANK
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
@@ -34,55 +30,67 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     state.backend = new Swank(swankState)
 
     vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
-    vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => backend?.editorChanged(editor), null, ctx.subscriptions)
-    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
-    vscode.workspace.onDidChangeTextDocument(
-        (event: vscode.TextDocumentChangeEvent) => backend?.textDocumentChanged(event),
+    vscode.window.onDidChangeActiveTextEditor(
+        (editor?: vscode.TextEditor) => state.backend?.editorChanged(editor),
         null,
         ctx.subscriptions
     )
-    vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => backend?.textDocumentSaved(doc))
-
-    vscode.languages.registerCompletionItemProvider(
-        { scheme: 'untitled', language: COMMON_LISP_ID },
-        getCompletionProvider(state)
+    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
+    vscode.workspace.onDidChangeTextDocument(
+        (event: vscode.TextDocumentChangeEvent) => state.backend?.textDocumentChanged(event),
+        null,
+        ctx.subscriptions
     )
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: COMMON_LISP_ID }, getCompletionProvider(state))
-    vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: REPL_ID }, getCompletionProvider(state))
+    vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => state.backend?.textDocumentSaved(doc))
+
+    if (state.backend !== undefined) {
+        vscode.languages.registerCompletionItemProvider(
+            { scheme: 'untitled', language: COMMON_LISP_ID },
+            state.backend.getCompletionProvider()
+        )
+        vscode.languages.registerCompletionItemProvider(
+            { scheme: 'file', language: COMMON_LISP_ID },
+            state.backend.getCompletionProvider()
+        )
+        vscode.languages.registerCompletionItemProvider(
+            { scheme: 'file', language: REPL_ID },
+            state.backend.getCompletionProvider()
+        )
+
+        vscode.languages.registerDocumentFormattingEditProvider(
+            { scheme: 'untitled', language: COMMON_LISP_ID },
+            state.backend.getFormatProvider()
+        )
+        vscode.languages.registerDocumentFormattingEditProvider(
+            { scheme: 'file', language: COMMON_LISP_ID },
+            state.backend.getFormatProvider()
+        )
+
+        vscode.languages.registerDocumentSemanticTokensProvider(
+            { scheme: 'untitled', language: COMMON_LISP_ID },
+            state.backend.getSemTokensProvider(),
+            legend
+        )
+        vscode.languages.registerDocumentSemanticTokensProvider(
+            { scheme: 'file', language: COMMON_LISP_ID },
+            state.backend.getSemTokensProvider(),
+            legend
+        )
+        vscode.languages.registerDocumentSemanticTokensProvider(
+            { scheme: 'file', language: REPL_ID },
+            state.backend.getSemTokensProvider(),
+            legend
+        )
+    }
 
     vscode.languages.registerRenameProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getRenameProvider(state))
     vscode.languages.registerRenameProvider({ scheme: 'file', language: COMMON_LISP_ID }, getRenameProvider(state))
 
     vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
 
-    vscode.languages.registerDocumentFormattingEditProvider(
-        { scheme: 'untitled', language: COMMON_LISP_ID },
-        getDocumentFormatter(state)
-    )
-    vscode.languages.registerDocumentFormattingEditProvider(
-        { scheme: 'file', language: COMMON_LISP_ID },
-        getDocumentFormatter(state)
-    )
-
     vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider(state))
     vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider(state))
     vscode.languages.registerDefinitionProvider({ scheme: 'file', language: REPL_ID }, getDefinitionProvider(state))
-
-    vscode.languages.registerDocumentSemanticTokensProvider(
-        { scheme: 'untitled', language: COMMON_LISP_ID },
-        getSemTokensProvider(state),
-        legend
-    )
-    vscode.languages.registerDocumentSemanticTokensProvider(
-        { scheme: 'file', language: COMMON_LISP_ID },
-        getSemTokensProvider(state),
-        legend
-    )
-    vscode.languages.registerDocumentSemanticTokensProvider(
-        { scheme: 'file', language: REPL_ID },
-        getSemTokensProvider(state),
-        legend
-    )
 
     vscode.languages.registerFoldingRangeProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getFoldProvider(state))
     vscode.languages.registerFoldingRangeProvider({ scheme: 'file', language: COMMON_LISP_ID }, getFoldProvider(state))
@@ -128,8 +136,6 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
         }
     }
 }
-
-
 
 function openTextDocument(doc: vscode.TextDocument) {
     if (!hasValidLangId(doc, [COMMON_LISP_ID, REPL_ID])) {

@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { Expr, exprToString, findAtom, getLocalDef } from '../../lisp'
 import { FindDefs } from '../../swank/response'
 import { ExtensionState } from '../Types'
-import { getDocumentExprs, getFilePosition, getTopExpr, toVscodePos, updatePkgMgr } from '../Utils'
+import { getDocumentExprs, getFilePosition, getTopExpr, toVscodePos } from '../Utils'
 
 export function getDefinitionProvider(state: ExtensionState): vscode.DefinitionProvider {
     return new Provider(state)

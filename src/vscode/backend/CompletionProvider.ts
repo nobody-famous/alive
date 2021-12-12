@@ -1,32 +1,27 @@
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { CompletionItem, Position } from 'vscode'
-import { exprToString, findAtom, findInnerExpr, Lexer, Parser } from '../../lisp'
-import { Atom, Expr, SExpr } from '../../lisp/Expr'
+import { Atom, Expr, exprToString, findAtom, findInnerExpr, Lexer, Parser, SExpr } from '../../lisp'
+import { Position } from '../../lisp/Types'
 import { Repl } from '../repl'
-import { ExtensionState } from '../Types'
+import { SwankBackendState } from '../Types'
 import { getDocumentExprs, toVscodePos } from '../Utils'
 
-export function getCompletionProvider(state: ExtensionState): vscode.CompletionItemProvider {
-    return new Provider(state)
-}
+export class CompletionProvider implements vscode.CompletionItemProvider {
+    state: SwankBackendState
 
-class Provider implements vscode.CompletionItemProvider {
-    state: ExtensionState
-
-    constructor(state: ExtensionState) {
+    constructor(state: SwankBackendState) {
         this.state = state
     }
 
     async provideCompletionItems(document: vscode.TextDocument, pos: vscode.Position) {
         try {
-            if (!this.state.backend?.isConnected()) {
+            if (!this.state.extState.backend?.isConnected()) {
                 return
             }
 
             const exprs = getDocumentExprs(document)
 
-            await updatePkgMgr(this.state, document, exprs)
+            await this.state.pkgMgr.update(this.state.repl, document, exprs)
 
             const atom = findAtom(exprs, pos)
             if (atom?.isComment() || atom?.isError()) {
@@ -34,7 +29,7 @@ class Provider implements vscode.CompletionItemProvider {
             }
 
             const textStr = atom !== undefined ? exprToString(atom) : undefined
-            let pkgName = this.state.backend?.getPkgName(document, pos.line)
+            let pkgName = this.state.extState.backend?.getPkgName(document, pos.line)
 
             if (atom !== undefined && textStr !== undefined && !textStr.startsWith('#')) {
                 const ndx = textStr.indexOf(':')
@@ -42,7 +37,7 @@ class Provider implements vscode.CompletionItemProvider {
 
                 if (ndx > 0 && pos.character > sepPos) {
                     const newName = await this.state.pkgMgr.resolveNickname(
-                        this.state.repl,
+                        this.state.repl!,
                         document.fileName,
                         pos.line,
                         textStr.substr(0, ndx)
@@ -62,7 +57,7 @@ class Provider implements vscode.CompletionItemProvider {
         }
     }
 
-    async getCompletions(repl: Repl | undefined, exprs: Expr[], pos: Position, pkg: string): Promise<CompletionItem[]> {
+    async getCompletions(repl: Repl | undefined, exprs: Expr[], pos: Position, pkg: string): Promise<vscode.CompletionItem[]> {
         const expr = findAtom(exprs, pos)
         const innerExpr = findInnerExpr(exprs, pos)
         let locals: string[] = []
@@ -86,18 +81,18 @@ class Provider implements vscode.CompletionItemProvider {
             return repl !== undefined ? await this.replPkgCompletions(repl) : []
         }
 
-        const comps = locals.map((i) => new CompletionItem(i.toLowerCase()))
+        const comps = locals.map((i) => new vscode.CompletionItem(i.toLowerCase()))
         const replComps = repl !== undefined ? await this.replCompletions(repl, expr, str, pkg) : []
 
         return comps.concat(replComps)
     }
 
-    private async replPkgCompletions(repl: Repl): Promise<CompletionItem[]> {
+    private async replPkgCompletions(repl: Repl): Promise<vscode.CompletionItem[]> {
         const names = await repl.getPackageNames()
         const items = []
 
         for (const name of names) {
-            const item = new CompletionItem(name.toLowerCase())
+            const item = new vscode.CompletionItem(name.toLowerCase())
 
             items.push(item)
         }
@@ -105,7 +100,7 @@ class Provider implements vscode.CompletionItemProvider {
         return items
     }
 
-    private async replCompletions(repl: Repl, expr: Expr | undefined, str: string, pkg: string): Promise<CompletionItem[]> {
+    private async replCompletions(repl: Repl, expr: Expr | undefined, str: string, pkg: string): Promise<vscode.CompletionItem[]> {
         const comps = await repl.getCompletions(str, pkg)
         const items = []
 
@@ -172,7 +167,7 @@ class Provider implements vscode.CompletionItemProvider {
         const results = await Promise.all(tasks)
 
         for (const result of results) {
-            const item = new CompletionItem(result.label.toLowerCase())
+            const item = new vscode.CompletionItem(result.label.toLowerCase())
 
             if (expr !== undefined && str.startsWith(':')) {
                 item.range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))

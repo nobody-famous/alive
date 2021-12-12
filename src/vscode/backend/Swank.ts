@@ -13,6 +13,9 @@ import {
     startCompileTimer,
     useEditor,
 } from '../Utils'
+import { CompletionProvider } from './CompletionProvider'
+import { FormatProvider } from './Format'
+import { SemTokensProvider } from './SemTokens'
 import { installAndConfigureSlime } from './SlimeInstall'
 
 const swankOutputChannel = vscode.window.createOutputChannel('Swank Trace')
@@ -122,6 +125,22 @@ export class Swank implements Backend {
         this.state.repl?.setIgnoreDebug(false)
 
         return resp
+    }
+
+    getFormatProvider(): vscode.DocumentFormattingEditProvider {
+        return new FormatProvider(this.state.extState)
+    }
+
+    getSemTokensProvider(): vscode.DocumentSemanticTokensProvider {
+        return new SemTokensProvider(this.state)
+    }
+
+    getCompletionProvider(): vscode.CompletionItemProvider {
+        return new CompletionProvider(this.state)
+    }
+
+    async getOpArgs(name: string, pkgName: string): Promise<string | undefined> {
+        return this.state.repl?.getOpArgs(name, pkgName)
     }
 
     async inspector(text: string, pkgName: string) {
