@@ -72,6 +72,8 @@ export interface Backend {
 
     getCompletionProvider(): vscode.CompletionItemProvider
 
+    getDefinitionProvider(): vscode.DefinitionProvider
+    
     getOpArgs(name: string, pkgName: string): Promise<string | undefined>
 
     /**

@@ -2,17 +2,13 @@ import { format } from 'util'
 import * as vscode from 'vscode'
 import { Expr, exprToString, findAtom, getLocalDef } from '../../lisp'
 import { FindDefs } from '../../swank/response'
-import { ExtensionState } from '../Types'
+import { SwankBackendState } from '../Types'
 import { getDocumentExprs, getFilePosition, getTopExpr, toVscodePos } from '../Utils'
 
-export function getDefinitionProvider(state: ExtensionState): vscode.DefinitionProvider {
-    return new Provider(state)
-}
+export class DefinitionProvider implements vscode.DefinitionProvider {
+    state: SwankBackendState
 
-class Provider implements vscode.DefinitionProvider {
-    state: ExtensionState
-
-    constructor(state: ExtensionState) {
+    constructor(state: SwankBackendState) {
         this.state = state
     }
 
@@ -21,7 +17,7 @@ class Provider implements vscode.DefinitionProvider {
             const exprs = getDocumentExprs(doc)
             const topExpr = await getTopExpr(doc, pos)
 
-            await updatePkgMgr(this.state, doc, exprs)
+            await this.state.pkgMgr.update(this.state.repl, doc, exprs)
 
             const pkg = this.state.pkgMgr.getPackageForLine(doc.fileName, pos.line)
             const atom = findAtom(exprs, pos)

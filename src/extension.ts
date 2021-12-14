@@ -4,12 +4,7 @@ import { Swank } from './vscode/backend/Swank'
 import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
-import {
-    getDefinitionProvider,
-    getFoldProvider,
-    getHoverProvider,
-    getRenameProvider
-} from './vscode/providers'
+import { getFoldProvider, getHoverProvider, getRenameProvider } from './vscode/providers'
 import { ExtensionState, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, useEditor } from './vscode/Utils'
 
@@ -81,16 +76,22 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             state.backend.getSemTokensProvider(),
             legend
         )
+
+        vscode.languages.registerDefinitionProvider(
+            { scheme: 'untitled', language: COMMON_LISP_ID },
+            state.backend.getDefinitionProvider()
+        )
+        vscode.languages.registerDefinitionProvider(
+            { scheme: 'file', language: COMMON_LISP_ID },
+            state.backend.getDefinitionProvider()
+        )
+        vscode.languages.registerDefinitionProvider({ scheme: 'file', language: REPL_ID }, state.backend.getDefinitionProvider())
     }
 
     vscode.languages.registerRenameProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getRenameProvider(state))
     vscode.languages.registerRenameProvider({ scheme: 'file', language: COMMON_LISP_ID }, getRenameProvider(state))
 
     vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
-
-    vscode.languages.registerDefinitionProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getDefinitionProvider(state))
-    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: COMMON_LISP_ID }, getDefinitionProvider(state))
-    vscode.languages.registerDefinitionProvider({ scheme: 'file', language: REPL_ID }, getDefinitionProvider(state))
 
     vscode.languages.registerFoldingRangeProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getFoldProvider(state))
     vscode.languages.registerFoldingRangeProvider({ scheme: 'file', language: COMMON_LISP_ID }, getFoldProvider(state))

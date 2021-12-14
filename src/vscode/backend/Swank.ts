@@ -14,6 +14,7 @@ import {
     useEditor,
 } from '../Utils'
 import { CompletionProvider } from './CompletionProvider'
+import { DefinitionProvider } from './DefProvider'
 import { FormatProvider } from './Format'
 import { SemTokensProvider } from './SemTokens'
 import { installAndConfigureSlime } from './SlimeInstall'
@@ -137,6 +138,10 @@ export class Swank implements Backend {
 
     getCompletionProvider(): vscode.CompletionItemProvider {
         return new CompletionProvider(this.state)
+    }
+
+    getDefinitionProvider(): vscode.DefinitionProvider {
+        return new DefinitionProvider(this.state)
     }
 
     async getOpArgs(name: string, pkgName: string): Promise<string | undefined> {
