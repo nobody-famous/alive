@@ -68,7 +68,7 @@ export class Swank implements Backend {
 
             setConnFlags = true
 
-            return this.state.repl?.compileFile(path)
+            return await this.state.repl?.compileFile(path)
         } finally {
             if (setConnFlags) {
                 this.state.repl?.conn?.setIgnoreOutput(false)

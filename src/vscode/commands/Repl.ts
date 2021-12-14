@@ -37,7 +37,11 @@ export async function sendToRepl(state: ExtensionState) {
 
             const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            await state.backend?.sendToRepl(editor, text, pkgName ?? '', false)
+            await state.backend?.sendToRepl(editor, text, pkgName ?? '', true)
+
+            if (editor.document.languageId === REPL_ID) {
+                replHistory.add(text, pkgName ?? ':cl-user')
+            }
         })
     })
 }
