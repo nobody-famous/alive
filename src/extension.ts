@@ -1,4 +1,6 @@
 import * as vscode from 'vscode'
+import * as net from 'net'
+import { TransportKind, LanguageClient, StreamInfo } from 'vscode-languageclient/node'
 import { readLexTokens } from './lisp'
 import { Swank } from './vscode/backend/Swank'
 import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
@@ -9,6 +11,8 @@ import { ExtensionState, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, useEditor } from './vscode/Utils'
 
 const BACKEND_TYPE_SWANK = 'Swank'
+const DEFAULT_LSP_PORT = 25483
+const DEFAULT_LSP_HOST = '127.0.0.1'
 
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
 let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined }
@@ -22,9 +26,23 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         pkgMgr: new PackageMgr(),
     }
 
+    const serverOpts: () => Promise<StreamInfo> = () => {
+        return new Promise((resolve, reject) => {
+            const socket: net.Socket = net.connect({ port: DEFAULT_LSP_PORT, host: DEFAULT_LSP_HOST }, () =>
+                resolve({ reader: socket, writer: socket })
+            )
+
+            socket.on('error', (err) => reject(err))
+        })
+    }
+
+    const client = new LanguageClient('Alive Client', serverOpts, {})
+
+    client.start()
+
     state.backend = new Swank(swankState)
 
-    vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
+    // vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
     vscode.window.onDidChangeActiveTextEditor(
         (editor?: vscode.TextEditor) => state.backend?.editorChanged(editor),
         null,
@@ -126,7 +144,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
         readLexTokens(editor.document.fileName, editor.document.getText())
-        visibleEditorsChanged(vscode.window.visibleTextEditors)
+        // visibleEditorsChanged(vscode.window.visibleTextEditors)
     })
 }
 
