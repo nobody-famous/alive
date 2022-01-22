@@ -26,7 +26,7 @@ const state: ExtensionState = {
 let compileTimeoutID: NodeJS.Timeout | undefined = undefined
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
-    vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
+    vscode.window.onDidChangeVisibleTextEditors((editors: readonly vscode.TextEditor[]) => visibleEditorsChanged(editors))
     vscode.window.onDidChangeActiveTextEditor((editor?: vscode.TextEditor) => editorChanged(editor), null, ctx.subscriptions)
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
     vscode.workspace.onDidChangeTextDocument(
@@ -123,7 +123,7 @@ async function saveTextDocument(doc: vscode.TextDocument) {
     }
 }
 
-function visibleEditorsChanged(editors: vscode.TextEditor[]) {
+function visibleEditorsChanged(editors: readonly vscode.TextEditor[]) {
     for (const editor of editors) {
         if (hasValidLangId(editor.document, [COMMON_LISP_ID, REPL_ID])) {
             readLexTokens(editor.document.fileName, editor.document.getText())
