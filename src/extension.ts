@@ -1,14 +1,13 @@
 import * as vscode from 'vscode'
-import * as net from 'net'
-import { TransportKind, LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { readLexTokens } from './lisp'
 import { Swank } from './vscode/backend/Swank'
 import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
 import { getFoldProvider, getHoverProvider, getRenameProvider } from './vscode/providers'
-import { ExtensionState, SwankBackendState } from './vscode/Types'
+import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, useEditor } from './vscode/Utils'
+import { LSP } from './vscode/backend/LSP'
 
 const BACKEND_TYPE_SWANK = 'Swank'
 const BACKEND_TYPE_LSP = 'LSP'
@@ -20,102 +19,88 @@ let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeo
 let backendType = BACKEND_TYPE_SWANK
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
-    const swankState: SwankBackendState = {
-        ctx,
-        extState: state,
-        repl: undefined,
-        pkgMgr: new PackageMgr(),
-    }
-
-    const serverOpts: () => Promise<StreamInfo> = () => {
-        return new Promise((resolve, reject) => {
-            const socket: net.Socket = net.connect({ port: DEFAULT_LSP_PORT, host: DEFAULT_LSP_HOST }, () =>
-                resolve({ reader: socket, writer: socket })
-            )
-
-            socket.on('error', (err) => reject(err))
-        })
-    }
-    const clientOpts: LanguageClientOptions = {
-        documentSelector: [
-            { scheme: 'file', language: COMMON_LISP_ID },
-            { scheme: 'untitled', language: COMMON_LISP_ID },
-        ],
-    }
-
-    const client = new LanguageClient(COMMON_LISP_ID, 'Alive Client', serverOpts, clientOpts)
-
     backendType = BACKEND_TYPE_LSP
-    client.start()
 
-    if (backendType === BACKEND_TYPE_SWANK) {
+    if (backendType === BACKEND_TYPE_LSP) {
+        const backend = new LSP()
+
+        await backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
+
+        state.backend = backend
+    } else if (backendType === BACKEND_TYPE_SWANK) {
+        const swankState: SwankBackendState = {
+            ctx,
+            extState: state,
+            repl: undefined,
+            pkgMgr: new PackageMgr(),
+        }
+
         state.backend = new Swank(swankState)
+
+        const backend = state.backend as LocalBackend
 
         // vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
         vscode.window.onDidChangeActiveTextEditor(
-            (editor?: vscode.TextEditor) => state.backend?.editorChanged(editor),
+            (editor?: vscode.TextEditor) => backend.editorChanged(editor),
             null,
             ctx.subscriptions
         )
         vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
         vscode.workspace.onDidChangeTextDocument(
-            (event: vscode.TextDocumentChangeEvent) => state.backend?.textDocumentChanged(event),
+            (event: vscode.TextDocumentChangeEvent) => backend.textDocumentChanged(event),
             null,
             ctx.subscriptions
         )
-        vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => state.backend?.textDocumentSaved(doc))
+        vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => backend.textDocumentSaved(doc))
 
         if (state.backend !== undefined) {
             vscode.languages.registerCompletionItemProvider(
                 { scheme: 'untitled', language: COMMON_LISP_ID },
-                state.backend.getCompletionProvider()
+                backend.getCompletionProvider()
             )
             vscode.languages.registerCompletionItemProvider(
                 { scheme: 'file', language: COMMON_LISP_ID },
-                state.backend.getCompletionProvider()
+                backend.getCompletionProvider()
             )
             vscode.languages.registerCompletionItemProvider(
                 { scheme: 'file', language: REPL_ID },
-                state.backend.getCompletionProvider()
+                backend.getCompletionProvider()
             )
 
             vscode.languages.registerDocumentFormattingEditProvider(
                 { scheme: 'untitled', language: COMMON_LISP_ID },
-                state.backend.getFormatProvider()
+                backend.getFormatProvider()
             )
             vscode.languages.registerDocumentFormattingEditProvider(
                 { scheme: 'file', language: COMMON_LISP_ID },
-                state.backend.getFormatProvider()
+                backend.getFormatProvider()
             )
 
             vscode.languages.registerDocumentSemanticTokensProvider(
                 { scheme: 'untitled', language: COMMON_LISP_ID },
-                state.backend.getSemTokensProvider(),
+                backend.getSemTokensProvider(),
                 legend
             )
             vscode.languages.registerDocumentSemanticTokensProvider(
                 { scheme: 'file', language: COMMON_LISP_ID },
-                state.backend.getSemTokensProvider(),
+                backend.getSemTokensProvider(),
                 legend
             )
             vscode.languages.registerDocumentSemanticTokensProvider(
                 { scheme: 'file', language: REPL_ID },
-                state.backend.getSemTokensProvider(),
+                backend.getSemTokensProvider(),
                 legend
             )
 
             vscode.languages.registerDefinitionProvider(
                 { scheme: 'untitled', language: COMMON_LISP_ID },
-                state.backend.getDefinitionProvider()
+                backend.getDefinitionProvider()
             )
             vscode.languages.registerDefinitionProvider(
                 { scheme: 'file', language: COMMON_LISP_ID },
-                state.backend.getDefinitionProvider()
+                backend.getDefinitionProvider()
             )
-            vscode.languages.registerDefinitionProvider(
-                { scheme: 'file', language: REPL_ID },
-                state.backend.getDefinitionProvider()
-            )
+            vscode.languages.registerDefinitionProvider({ scheme: 'file', language: REPL_ID }, backend.getDefinitionProvider())
         }
 
         vscode.languages.registerRenameProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getRenameProvider(state))
@@ -146,7 +131,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', () => cmds.macroExpandAll(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', () => cmds.disassemble(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(state, false)))
-        ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.compileAsdfSystem', () => cmds.compileAsdfSystem(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector', () => cmds.inspector(state)))
@@ -161,6 +145,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             // visibleEditorsChanged(vscode.window.visibleTextEditors)
         })
     }
+
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)))
 }
 
 function visibleEditorsChanged(editors: vscode.TextEditor[]) {

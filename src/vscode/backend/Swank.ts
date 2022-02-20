@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { Expr, getLexTokens, Parser, readLexTokens } from '../../lisp'
 import * as cmds from '../commands'
 import { Repl } from '../repl'
-import { Backend, CompileFileResp, HostPort, InstalledSlimeInfo, SwankBackendState } from '../Types'
+import { CompileFileResp, HostPort, InstalledSlimeInfo, LocalBackend, SwankBackendState } from '../Types'
 import {
     COMMON_LISP_ID,
     findEditorForDoc,
@@ -21,7 +21,7 @@ import { installAndConfigureSlime } from './SlimeInstall'
 
 const swankOutputChannel = vscode.window.createOutputChannel('Swank Trace')
 
-export class Swank implements Backend {
+export class Swank implements LocalBackend {
     state: SwankBackendState
     defaultPort: number = 4005
     installedSlimeInfo: InstalledSlimeInfo | undefined

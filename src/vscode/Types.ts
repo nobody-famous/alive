@@ -30,8 +30,6 @@ export interface Backend {
      */
     defaultPort: number
 
-    editorChanged(editor?: vscode.TextEditor): void
-
     inspector(text: string, pkgName: string): Promise<void>
 
     inspectorPrev(): Promise<void>
@@ -66,14 +64,6 @@ export interface Backend {
 
     getSymbolDoc(text: string, pkgName: string): Promise<string | undefined>
 
-    getFormatProvider(): vscode.DocumentFormattingEditProvider
-
-    getSemTokensProvider(): vscode.DocumentSemanticTokensProvider
-
-    getCompletionProvider(): vscode.CompletionItemProvider
-
-    getDefinitionProvider(): vscode.DefinitionProvider
-    
     getOpArgs(name: string, pkgName: string): Promise<string | undefined>
 
     /**
@@ -91,18 +81,6 @@ export interface Backend {
      * Disconnect from the backend
      */
     disconnect(): Promise<void>
-
-    /**
-     * Action to take when a text document is saved
-     * @param doc The text document that was saved
-     */
-    textDocumentSaved(doc: vscode.TextDocument): Promise<void>
-
-    /**
-     * Action to take when a text document is changed
-     * @param event The change event
-     */
-    textDocumentChanged(event: vscode.TextDocumentChangeEvent): void
 
     /**
      * Get the package name for the given line in the given document
@@ -140,6 +118,30 @@ export interface Backend {
      * The command to use to start the server
      */
     serverStartupCommand(): string[] | undefined
+}
+
+export interface LocalBackend extends Backend {
+    /**
+     * Action to take when a text document is saved
+     * @param doc The text document that was saved
+     */
+    textDocumentSaved(doc: vscode.TextDocument): Promise<void>
+
+    /**
+     * Action to take when a text document is changed
+     * @param event The change event
+     */
+    textDocumentChanged(event: vscode.TextDocumentChangeEvent): void
+
+    editorChanged(editor?: vscode.TextEditor): void
+
+    getFormatProvider(): vscode.DocumentFormattingEditProvider
+
+    getSemTokensProvider(): vscode.DocumentSemanticTokensProvider
+
+    getCompletionProvider(): vscode.CompletionItemProvider
+
+    getDefinitionProvider(): vscode.DefinitionProvider
 }
 
 export interface SlimeVersion {
