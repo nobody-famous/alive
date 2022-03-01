@@ -22,7 +22,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     backendType = BACKEND_TYPE_LSP
 
     if (backendType === BACKEND_TYPE_LSP) {
-        const backend = new LSP()
+        const backend = new LSP({ extState: state })
 
         await backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
 
@@ -46,11 +46,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             ctx.subscriptions
         )
         vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
-        vscode.workspace.onDidChangeTextDocument(
-            (event: vscode.TextDocumentChangeEvent) => backend.textDocumentChanged(event),
-            null,
-            ctx.subscriptions
-        )
         vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => backend.textDocumentSaved(doc))
 
         if (state.backend !== undefined) {
@@ -145,6 +140,12 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             // visibleEditorsChanged(vscode.window.visibleTextEditors)
         })
     }
+
+    vscode.workspace.onDidChangeTextDocument(
+        (event: vscode.TextDocumentChangeEvent) => state.backend?.textDocumentChanged(event),
+        null,
+        ctx.subscriptions
+    )
 
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)))
 }

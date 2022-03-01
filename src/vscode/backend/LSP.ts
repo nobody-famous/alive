@@ -1,12 +1,19 @@
 import * as vscode from 'vscode'
 import * as net from 'net'
-import { Backend, CompileFileResp, HostPort } from '../Types'
-import { COMMON_LISP_ID } from '../Utils'
+import { Backend, CompileFileResp, HostPort, LSPBackendState } from '../Types'
+import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 
+const lspOutputChannel = vscode.window.createOutputChannel('Alive Output')
+
 export class LSP implements Backend {
+    private state: LSPBackendState
     public defaultPort: number = 25483
     private client: LanguageClient | undefined
+
+    constructor(state: LSPBackendState) {
+        this.state = state
+    }
 
     async connect(hostPort: HostPort): Promise<void> {
         const serverOpts: () => Promise<StreamInfo> = () => {
@@ -28,6 +35,16 @@ export class LSP implements Backend {
         this.client = new LanguageClient(COMMON_LISP_ID, 'Alive Client', serverOpts, clientOpts)
 
         this.client.start()
+
+        await this.client.onReady()
+        this.client.onNotification('$/alive/stderr', (params) => {
+            lspOutputChannel.appendLine(params.data)
+            lspOutputChannel.show()
+        })
+        this.client.onNotification('$/alive/stdout', (params) => {
+            lspOutputChannel.appendLine(params.data)
+            lspOutputChannel.show()
+        })
     }
 
     async inspector(text: string, pkgName: string): Promise<void> {}
@@ -73,12 +90,51 @@ export class LSP implements Backend {
     }
 
     async loadFile(path: string, showMsgs?: boolean): Promise<void> {
-        console.log(`loadFile ${path}`)
-        const resp = await this.client?.sendRequest('$/alive/loadFile', {})
-        console.log(resp)
+        const resp = await this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
+
+        if (typeof resp !== 'object') {
+            return
+        }
+
+        const respObj = resp as { [index: string]: unknown }
+
+        if (!Array.isArray(respObj.messages)) {
+            return
+        }
+
+        let needShow = false
+        for (const msg of respObj.messages) {
+            if (typeof msg !== 'object') {
+                continue
+            }
+
+            const msgObj = msg as { [index: string]: unknown }
+
+            if (typeof msgObj.severity !== 'string' || typeof msgObj.message !== 'string') {
+                continue
+            }
+
+            needShow = true
+            lspOutputChannel.appendLine(`${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
+        }
+
+        if (needShow) {
+            lspOutputChannel.show()
+        }
+    }
+
+    textDocumentChanged(event: vscode.TextDocumentChangeEvent): void {
+        if (!hasValidLangId(event.document, [COMMON_LISP_ID])) {
+            return
+        }
+
+        startCompileTimer(this.state.extState)
     }
 
     async compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined> {
+        console.log('LSP COMPILE FILE')
+        const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
+        console.log(resp)
         return
     }
 

@@ -11,7 +11,9 @@ export interface ExtensionState {
     compileTimeoutID: NodeJS.Timeout | undefined
 }
 
-export interface LSPBackendState {}
+export interface LSPBackendState {
+    extState: ExtensionState
+}
 
 export interface SwankBackendState {
     extState: ExtensionState
@@ -65,6 +67,12 @@ export interface Backend {
     getSymbolDoc(text: string, pkgName: string): Promise<string | undefined>
 
     getOpArgs(name: string, pkgName: string): Promise<string | undefined>
+
+    /**
+     * Action to take when a text document is changed
+     * @param event The change event
+     */
+    textDocumentChanged(event: vscode.TextDocumentChangeEvent): void
 
     /**
      * Check if the backend is currently connected
@@ -126,12 +134,6 @@ export interface LocalBackend extends Backend {
      * @param doc The text document that was saved
      */
     textDocumentSaved(doc: vscode.TextDocument): Promise<void>
-
-    /**
-     * Action to take when a text document is changed
-     * @param event The change event
-     */
-    textDocumentChanged(event: vscode.TextDocumentChangeEvent): void
 
     editorChanged(editor?: vscode.TextEditor): void
 
