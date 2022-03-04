@@ -35,7 +35,7 @@ export class CompileNote {
         }
 
         let file: string | undefined = undefined
-        let position: number | undefined = undefined
+        let startPosition: number | undefined = undefined
 
         for (const part of expr.parts) {
             if (!(part instanceof SExpr) || part.parts.length !== 2) {
@@ -47,7 +47,7 @@ export class CompileNote {
             if (name === 'file') {
                 file = exprToString(part.parts[1]) ?? ''
             } else if (name === 'position') {
-                position = exprToNumber(part.parts[1]) ?? 0
+                startPosition = exprToNumber(part.parts[1]) ?? 0
             }
         }
 
@@ -58,7 +58,7 @@ export class CompileNote {
             }
         }
 
-        return file === undefined || position === undefined ? undefined : { file, position }
+        return file === undefined || startPosition === undefined ? undefined : { file, startPosition, endPosition: startPosition }
     }
 
     static from(expr: SExpr): CompileNote | undefined {

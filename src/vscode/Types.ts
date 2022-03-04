@@ -68,6 +68,8 @@ export interface Backend {
 
     getOpArgs(name: string, pkgName: string): Promise<string | undefined>
 
+    editorChanged(editor?: vscode.TextEditor): void
+
     /**
      * Action to take when a text document is changed
      * @param event The change event
@@ -135,8 +137,6 @@ export interface LocalBackend extends Backend {
      */
     textDocumentSaved(doc: vscode.TextDocument): Promise<void>
 
-    editorChanged(editor?: vscode.TextEditor): void
-
     getFormatProvider(): vscode.DocumentFormattingEditProvider
 
     getSemTokensProvider(): vscode.DocumentSemanticTokensProvider
@@ -164,7 +164,8 @@ export interface HostPort {
 
 export interface CompileLocation {
     file: string
-    position: number
+    startPosition: number
+    endPosition: number
 }
 
 export interface CompileFileNote {

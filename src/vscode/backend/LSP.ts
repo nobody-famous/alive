@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import * as net from 'net'
-import { Backend, CompileFileResp, HostPort, LSPBackendState } from '../Types'
+import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 
@@ -131,11 +131,90 @@ export class LSP implements Backend {
         startCompileTimer(this.state.extState)
     }
 
+    editorChanged(editor?: vscode.TextEditor): void {
+        if (editor === undefined || !hasValidLangId(editor.document, [COMMON_LISP_ID])) {
+            return
+        }
+
+        startCompileTimer(this.state.extState)
+    }
+
     async compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined> {
-        console.log('LSP COMPILE FILE')
         const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
-        console.log(resp)
-        return
+
+        if (typeof resp !== 'object' || resp === null) {
+            return { notes: [] }
+        }
+
+        const respObj = resp as { [index: string]: unknown }
+
+        if (!Array.isArray(respObj.messages)) {
+            return { notes: [] }
+        }
+
+        const parseToInt = (data: unknown): number | undefined => {
+            if (typeof data !== 'string' && typeof data !== 'number') {
+                return
+            }
+
+            const int = typeof data === 'string' ? parseInt(data) : data
+
+            return Number.isFinite(int) ? int : undefined
+        }
+
+        const parseLocation = (data: unknown): CompileLocation | undefined => {
+            if (!Array.isArray(data) || data.length !== 2) {
+                return
+            }
+
+            const start = parseToInt(data[0])
+            const end = parseToInt(data[1])
+
+            if (start === undefined || end === undefined) {
+                return
+            }
+
+            return {
+                file: path,
+                startPosition: start,
+                endPosition: end,
+            }
+        }
+
+        const parseNote = (data: unknown): CompileFileNote | undefined => {
+            if (typeof data !== 'object' || data === null) {
+                return
+            }
+
+            const dataObj = data as { [index: string]: unknown }
+            const msg = typeof dataObj.message === 'string' ? dataObj.message : ''
+            const sev = typeof dataObj.severity === 'string' ? dataObj.severity : ''
+            const loc = parseLocation(dataObj.location)
+
+            if (loc === undefined) {
+                return
+            }
+
+            return {
+                message: msg,
+                severity: sev,
+                location: loc,
+            }
+        }
+
+        const notes: CompileFileNote[] = []
+        const seen: { [index: string]: true } = {}
+
+        for (const item of respObj.messages) {
+            const note = parseNote(item)
+
+            if (note !== undefined && seen[note.message] === undefined) {
+                seen[note.message] = true
+                notes.push(note)
+            }
+        }
+
+        return { notes }
     }
 
     async getSymbolDoc(text: string, pkgName: string): Promise<string | undefined> {

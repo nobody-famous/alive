@@ -6,7 +6,7 @@ import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
 import { getFoldProvider, getHoverProvider, getRenameProvider } from './vscode/providers'
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
-import { COMMON_LISP_ID, hasValidLangId, REPL_ID, useEditor } from './vscode/Utils'
+import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 
 const BACKEND_TYPE_SWANK = 'Swank'
@@ -27,6 +27,12 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         await backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
 
         state.backend = backend
+
+        const activeDoc = vscode.window.activeTextEditor?.document
+
+        if (activeDoc !== undefined && hasValidLangId(activeDoc, [COMMON_LISP_ID])) {
+            backend.editorChanged(vscode.window.activeTextEditor)
+        }
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
             ctx,
@@ -40,12 +46,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         const backend = state.backend as LocalBackend
 
         // vscode.window.onDidChangeVisibleTextEditors((editors: vscode.TextEditor[]) => visibleEditorsChanged(editors))
-        vscode.window.onDidChangeActiveTextEditor(
-            (editor?: vscode.TextEditor) => backend.editorChanged(editor),
-            null,
-            ctx.subscriptions
-        )
-        vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
         vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => backend.textDocumentSaved(doc))
 
         if (state.backend !== undefined) {
@@ -106,10 +106,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.languages.registerFoldingRangeProvider({ scheme: 'untitled', language: COMMON_LISP_ID }, getFoldProvider(state))
         vscode.languages.registerFoldingRangeProvider({ scheme: 'file', language: COMMON_LISP_ID }, getFoldProvider(state))
 
-        if (backendType === BACKEND_TYPE_SWANK) {
-            ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', () => cmds.attachRepl(state)))
-            ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', () => cmds.detachRepl(state)))
-        }
+        ctx.subscriptions.push(vscode.commands.registerCommand('alive.attachRepl', () => cmds.attachRepl(state)))
+        ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', () => cmds.detachRepl(state)))
 
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr()))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))
@@ -141,8 +139,16 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         })
     }
 
+    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
+
     vscode.workspace.onDidChangeTextDocument(
         (event: vscode.TextDocumentChangeEvent) => state.backend?.textDocumentChanged(event),
+        null,
+        ctx.subscriptions
+    )
+
+    vscode.window.onDidChangeActiveTextEditor(
+        (editor?: vscode.TextEditor) => state.backend?.editorChanged(editor),
         null,
         ctx.subscriptions
     )
@@ -159,9 +165,13 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
 }
 
 function openTextDocument(doc: vscode.TextDocument) {
+    console.log('open text document', doc)
+
     if (!hasValidLangId(doc, [COMMON_LISP_ID, REPL_ID])) {
         return
     }
+
+    startCompileTimer(state)
 
     readLexTokens(doc.fileName, doc.getText())
 }
