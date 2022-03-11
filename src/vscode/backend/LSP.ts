@@ -248,4 +248,40 @@ export class LSP implements Backend {
     serverStartupCommand(): string[] | undefined {
         return
     }
+
+    async selectSexpr(editor: vscode.TextEditor | undefined) {
+        if (editor?.document === undefined) {
+            return
+        }
+
+        const doc = editor.document
+
+        const resp = await this.client?.sendRequest('$/alive/topFormBounds', {
+            textDocument: {
+                uri: doc.uri.toString(),
+            },
+            offset: doc.offsetAt(editor.selection.active),
+        })
+
+        if (typeof resp !== 'object' || resp === null) {
+            return
+        }
+
+        const respObj = resp as { [index: string]: unknown }
+        const startObj = respObj.start
+        const endObj = respObj.end
+
+        if (typeof startObj !== 'number' || typeof endObj !== 'number') {
+            return
+        }
+
+        if (startObj < 0 || endObj < 0) {
+            return
+        }
+
+        const startPos = doc.positionAt(startObj)
+        const endPos = doc.positionAt(endObj)
+
+        editor.selection = new vscode.Selection(startPos, endPos)
+    }
 }

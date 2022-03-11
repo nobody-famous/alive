@@ -33,6 +33,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         if (activeDoc !== undefined && hasValidLangId(activeDoc, [COMMON_LISP_ID])) {
             backend.editorChanged(vscode.window.activeTextEditor)
         }
+
+        ctx.subscriptions.push(
+            vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))
+        )
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
             ctx,
