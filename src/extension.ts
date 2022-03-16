@@ -169,8 +169,6 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
 }
 
 function openTextDocument(doc: vscode.TextDocument) {
-    console.log('open text document', doc)
-
     if (!hasValidLangId(doc, [COMMON_LISP_ID, REPL_ID])) {
         return
     }
