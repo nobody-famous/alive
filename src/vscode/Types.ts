@@ -164,8 +164,8 @@ export interface HostPort {
 
 export interface CompileLocation {
     file: string
-    startPosition: number
-    endPosition: number
+    start: vscode.Position
+    end: vscode.Position
 }
 
 export interface CompileFileNote {

@@ -455,8 +455,8 @@ async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, n
         const fileName = fileMap[notesFile] ?? note.location.file
 
         const doc = await vscode.workspace.openTextDocument(fileName)
-        const startPos = doc.positionAt(note.location.startPosition)
-        const endPos = doc.positionAt(note.location.endPosition)
+        const startPos = note.location.start
+        const endPos = note.location.end
 
         if (diags[fileName] === undefined) {
             diags[fileName] = []

@@ -162,23 +162,36 @@ export class LSP implements Backend {
             return Number.isFinite(int) ? int : undefined
         }
 
-        const parseLocation = (data: unknown): CompileLocation | undefined => {
-            if (!Array.isArray(data) || data.length !== 2) {
+        const parsePos = (data: unknown): vscode.Position | undefined => {
+            if (typeof data !== 'object' || data === null) {
                 return
             }
 
-            const start = parseToInt(data[0])
-            const end = parseToInt(data[1])
+            const dataObj = data as { [index: string]: unknown }
+            const line = parseToInt(dataObj.line)
+            const col = parseToInt(dataObj.col)
+
+            if (line === undefined || col === undefined) {
+                return
+            }
+
+            return new vscode.Position(line, col)
+        }
+
+        const parseLocation = (data: unknown): CompileLocation | undefined => {
+            if (typeof data !== 'object' || data === null) {
+                return
+            }
+
+            const dataObj = data as { [index: string]: unknown }
+            const start = parsePos(dataObj.start)
+            const end = parsePos(dataObj.end)
 
             if (start === undefined || end === undefined) {
                 return
             }
 
-            return {
-                file: path,
-                startPosition: start,
-                endPosition: end,
-            }
+            return { file: path, start, end }
         }
 
         const parseNote = (data: unknown): CompileFileNote | undefined => {
