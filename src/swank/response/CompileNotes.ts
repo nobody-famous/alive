@@ -79,7 +79,7 @@ export class CompileNote {
             } else if (name === 'severity') {
                 sev = this.getNameString(value)
             } else if (name === 'location') {
-                loc = this.parseLocation(value)
+                // loc = this.parseLocation(value)
             }
         }
 

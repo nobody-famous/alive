@@ -6,6 +6,32 @@ import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-langua
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive Output')
 
+const parseToInt = (data: unknown): number | undefined => {
+    if (typeof data !== 'string' && typeof data !== 'number') {
+        return
+    }
+
+    const int = typeof data === 'string' ? parseInt(data) : data
+
+    return Number.isFinite(int) ? int : undefined
+}
+
+const parsePos = (data: unknown): vscode.Position | undefined => {
+    if (typeof data !== 'object' || data === null) {
+        return
+    }
+
+    const dataObj = data as { [index: string]: unknown }
+    const line = parseToInt(dataObj.line)
+    const col = parseToInt(dataObj.col)
+
+    if (line === undefined || col === undefined) {
+        return
+    }
+
+    return new vscode.Position(line, col)
+}
+
 export class LSP implements Backend {
     private state: LSPBackendState
     public defaultPort: number = 25483
@@ -152,32 +178,6 @@ export class LSP implements Backend {
             return { notes: [] }
         }
 
-        const parseToInt = (data: unknown): number | undefined => {
-            if (typeof data !== 'string' && typeof data !== 'number') {
-                return
-            }
-
-            const int = typeof data === 'string' ? parseInt(data) : data
-
-            return Number.isFinite(int) ? int : undefined
-        }
-
-        const parsePos = (data: unknown): vscode.Position | undefined => {
-            if (typeof data !== 'object' || data === null) {
-                return
-            }
-
-            const dataObj = data as { [index: string]: unknown }
-            const line = parseToInt(dataObj.line)
-            const col = parseToInt(dataObj.col)
-
-            if (line === undefined || col === undefined) {
-                return
-            }
-
-            return new vscode.Position(line, col)
-        }
-
         const parseLocation = (data: unknown): CompileLocation | undefined => {
             if (typeof data !== 'object' || data === null) {
                 return
@@ -273,7 +273,7 @@ export class LSP implements Backend {
             textDocument: {
                 uri: doc.uri.toString(),
             },
-            offset: doc.offsetAt(editor.selection.active),
+            position: editor.selection.active,
         })
 
         if (typeof resp !== 'object' || resp === null) {
@@ -281,19 +281,12 @@ export class LSP implements Backend {
         }
 
         const respObj = resp as { [index: string]: unknown }
-        const startObj = respObj.start
-        const endObj = respObj.end
+        const startPos = parsePos(respObj.start)
+        const endPos = parsePos(respObj.end)
 
-        if (typeof startObj !== 'number' || typeof endObj !== 'number') {
+        if (startPos === undefined || endPos === undefined) {
             return
         }
-
-        if (startObj < 0 || endObj < 0) {
-            return
-        }
-
-        const startPos = doc.positionAt(startObj)
-        const endPos = doc.positionAt(endObj)
 
         editor.selection = new vscode.Selection(startPos, endPos)
     }
