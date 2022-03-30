@@ -569,7 +569,7 @@ function getClSourceRegistryEnv(
 ): { [key: string]: string | undefined } {
     const updatedEnv = { ...processEnv }
     if (!processEnv.CL_SOURCE_REGISTRY) {
-        updatedEnv.CL_SOURCE_REGISTRY = slimePath
+        updatedEnv.CL_SOURCE_REGISTRY = slimePath + ":"
         return updatedEnv
     }
     if (processEnv.CL_SOURCE_REGISTRY.startsWith('(')) {
