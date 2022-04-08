@@ -54,6 +54,27 @@
                 "configuration": "./language-configuration.json"
             }
         ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "lisp-explorer",
+                    "title": "Lisp Image",
+                    "icon": "images/lisp-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "lisp-explorer": [
+                {
+                    "id": "lispPackages",
+                    "name": "Packages"
+                },
+                {
+                    "id": "lispThreads",
+                    "name": "Threads"
+                }
+            ]
+        },
         "semanticTokenTypes": [
             {
                 "id": "error",

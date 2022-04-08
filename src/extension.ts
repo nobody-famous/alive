@@ -4,7 +4,7 @@ import { Swank } from './vscode/backend/Swank'
 import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
-import { getFoldProvider, getHoverProvider, getRenameProvider } from './vscode/providers'
+import { getFoldProvider, getHoverProvider, getRenameProvider, LispTreeProvider } from './vscode/providers'
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
@@ -33,6 +33,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         if (activeDoc !== undefined && hasValidLangId(activeDoc, [COMMON_LISP_ID])) {
             backend.editorChanged(vscode.window.activeTextEditor)
         }
+
+        vscode.window.registerTreeDataProvider('lispPackages', new LispTreeProvider())
+        vscode.window.registerTreeDataProvider('lispThreads', new LispTreeProvider())
 
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))
