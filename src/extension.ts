@@ -8,6 +8,7 @@ import { getFoldProvider, getHoverProvider, getRenameProvider, LispTreeProvider 
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
+import { LispRepl } from './vscode/providers/LispRepl'
 
 const BACKEND_TYPE_SWANK = 'Swank'
 const BACKEND_TYPE_LSP = 'LSP'
@@ -36,6 +37,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
         vscode.window.registerTreeDataProvider('lispPackages', new LispTreeProvider())
         vscode.window.registerTreeDataProvider('lispThreads', new LispTreeProvider())
+        vscode.window.registerWebviewViewProvider('lispRepl', new LispRepl(ctx))
 
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))

@@ -61,6 +61,13 @@
                     "title": "Lisp Image",
                     "icon": "images/lisp-icon.svg"
                 }
+            ],
+            "panel": [
+                {
+                    "id": "lisp-repl",
+                    "title": "REPL",
+                    "icon": "images/lisp-icon.svg"
+                }
             ]
         },
         "views": {
@@ -72,6 +79,13 @@
                 {
                     "id": "lispThreads",
                     "name": "Threads"
+                }
+            ],
+            "lisp-repl": [
+                {
+                    "id": "lispRepl",
+                    "type": "webview",
+                    "name": "REPL"
                 }
             ]
         },

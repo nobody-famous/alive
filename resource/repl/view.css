@@ -1,3 +1,15 @@
+html,
+body {
+    height: 100%;
+    color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+}
+
+.repl-text {
+    color: red;
+    height: calc(100% - 5rem);
+}
+
 textarea {
     width: 100%;
     color: var(--vscode-editor-foreground);
