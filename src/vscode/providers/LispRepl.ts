@@ -23,6 +23,25 @@ export class LispRepl implements vscode.WebviewViewProvider {
         webviewView.webview.html = this.getHtmlForView()
     }
 
+    private getTextLines(): string {
+        let lines = ''
+
+        for (let line = 1; line < 20; line += 1) {
+            lines += `<div class="repl-text-item">Line ${line}</div>`
+        }
+
+        return lines
+    }
+
+    private getPackageDropdown(): string {
+        return `
+        <select class="repl-input-pkg" name="package" id="package">
+            <option value="foo">foo</option>
+            <option value="alive/lsp/message/alive/unexport-symbol">alive/lsp/message/alive/unexport-symbol</option>
+        </select>
+        `
+    }
+
     private getHtmlForView(): string {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'view.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'view.css'))
@@ -33,8 +52,14 @@ export class LispRepl implements vscode.WebviewViewProvider {
                 </head>
 
                 <html>
-                    <div class="repl-text">Output goes here</div>
-                    <div>Text box goes here</div>
+                    <div class="repl-text-box">${this.getTextLines()}</div>
+                    <div class="repl-input-box">
+                        <div class="repl-input-pkg-box">in-package: ${this.getPackageDropdown()}</div>
+                        <div class="repl-input-text-box">
+                            <div class="repl-input-label">></div>
+                            <input class="repl-input-text" type="text">
+                        </div>
+                    </div>
                 </html>
         `
     }

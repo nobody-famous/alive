@@ -5,9 +5,56 @@ body {
     background-color: var(--vscode-editor-background);
 }
 
-.repl-text {
-    color: red;
-    height: calc(100% - 5rem);
+.repl-text-box {
+    overflow: auto;
+    height: calc(100% - 3.6rem);
+    border-bottom: 1px solid var(--vscode-editor-foreground);
+}
+
+.repl-text-item {
+    line-height: 1.25rem;
+}
+
+.repl-input-box {
+    height: 3.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.repl-input-pkg-box {
+    flex-shrink: 1;
+    height: 1.5rem;
+}
+
+.repl-input-pkg {
+    color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+    border: none;
+    appearance: none;
+}
+
+.repl-input-text-box {
+    flex-grow: 1;
+}
+
+.repl-input-label {
+    text-align: right;
+    display: inline-block;
+}
+
+.repl-input-text {
+    color: var(--vscode-editor-foreground);
+    caret-color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+    border: none;
+    height: 1.5rem;
+    line-height: 1.5rem;
+    width: calc(100% - 3rem);
+}
+
+input:focus,
+select:focus {
+    outline: none;
 }
 
 textarea {
