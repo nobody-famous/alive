@@ -89,6 +89,18 @@ export class LSP implements Backend {
         return
     }
 
+    async eval(text: string, pkgName: string): Promise<string | undefined> {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName })
+
+            console.log('EVAL', resp)
+        } catch (err) {
+            console.log('EVAL ERROR', err)
+        }
+
+        return
+    }
+
     replDebugAbort(): void {}
 
     async macroExpand(text: string, pkgName: string): Promise<string | undefined> {

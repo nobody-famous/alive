@@ -37,7 +37,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
         vscode.window.registerTreeDataProvider('lispPackages', new LispTreeProvider())
         vscode.window.registerTreeDataProvider('lispThreads', new LispTreeProvider())
-        vscode.window.registerWebviewViewProvider('lispRepl', new LispRepl(ctx))
+        vscode.window.registerWebviewViewProvider('lispRepl', new LispRepl(ctx, backend))
 
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))

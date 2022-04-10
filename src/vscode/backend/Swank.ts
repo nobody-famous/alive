@@ -92,6 +92,10 @@ export class Swank implements LocalBackend {
         return await this.state.repl?.inlineEval(text, pkgName)
     }
 
+    async eval(text: string, pkgName: string): Promise<string | undefined> {
+        return
+    }
+
     replDebugAbort() {
         this.state.repl?.abort()
     }

@@ -46,6 +46,8 @@ export interface Backend {
 
     inlineEval(text: string, pkgName: string): Promise<string | undefined>
 
+    eval(text: string, pkgName: string): Promise<string | undefined>
+
     replDebugAbort(): void
 
     macroExpand(text: string, pkgName: string): Promise<string | undefined>
