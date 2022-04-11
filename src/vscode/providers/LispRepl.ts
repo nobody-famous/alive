@@ -1,15 +1,16 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { Backend } from '../Types'
+import * as os from 'os'
+import EventEmitter = require('events')
 
-export class LispRepl implements vscode.WebviewViewProvider {
+export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView
-    private be: Backend
     private ctx: vscode.ExtensionContext
 
-    constructor(ctx: vscode.ExtensionContext, be: Backend) {
+    constructor(ctx: vscode.ExtensionContext) {
+        super()
+
         this.ctx = ctx
-        this.be = be
     }
 
     resolveWebviewView(
@@ -25,7 +26,6 @@ export class LispRepl implements vscode.WebviewViewProvider {
 
         webviewView.webview.onDidReceiveMessage(
             (msg: { command: string; text?: string; pkg?: string }) => {
-                console.log('MSG', msg)
                 switch (msg.command) {
                     case 'eval':
                         return this.doEval(msg.text ?? '', msg.pkg ?? '')
@@ -38,8 +38,15 @@ export class LispRepl implements vscode.WebviewViewProvider {
         webviewView.webview.html = this.getHtmlForView()
     }
 
+    addText(text: string) {
+        this.view?.webview.postMessage({
+            type: 'addText',
+            text: `${text}${os.EOL}`,
+        })
+    }
+
     private doEval(text: string, pkg: string) {
-        this.be.eval(text, pkg)
+        this.emit('eval', pkg, text)
     }
 
     private getPackageDropdown(): string {

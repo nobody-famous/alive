@@ -23,7 +23,14 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     backendType = BACKEND_TYPE_LSP
 
     if (backendType === BACKEND_TYPE_LSP) {
+        const repl = new LispRepl(ctx)
         const backend = new LSP({ extState: state })
+
+        repl.on('eval', async (pkg: string, text: string) => {
+            await backend.eval(text, pkg)
+        })
+
+        backend.on('output', (str) => repl.addText(str))
 
         await backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
 
@@ -37,7 +44,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
         vscode.window.registerTreeDataProvider('lispPackages', new LispTreeProvider())
         vscode.window.registerTreeDataProvider('lispThreads', new LispTreeProvider())
-        vscode.window.registerWebviewViewProvider('lispRepl', new LispRepl(ctx, backend))
+        vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))

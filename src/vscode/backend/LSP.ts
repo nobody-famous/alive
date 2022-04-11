@@ -3,6 +3,7 @@ import * as net from 'net'
 import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
+import EventEmitter = require('events')
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive Output')
 
@@ -32,12 +33,14 @@ const parsePos = (data: unknown): vscode.Position | undefined => {
     return new vscode.Position(line, col)
 }
 
-export class LSP implements Backend {
+export class LSP extends EventEmitter implements Backend {
     private state: LSPBackendState
     public defaultPort: number = 25483
     private client: LanguageClient | undefined
 
     constructor(state: LSPBackendState) {
+        super()
+
         this.state = state
     }
 
@@ -64,12 +67,14 @@ export class LSP implements Backend {
 
         await this.client.onReady()
         this.client.onNotification('$/alive/stderr', (params) => {
-            lspOutputChannel.appendLine(params.data)
-            lspOutputChannel.show()
+            // lspOutputChannel.appendLine(params.data)
+            // lspOutputChannel.show()
+            this.emit('output', params.data)
         })
         this.client.onNotification('$/alive/stdout', (params) => {
-            lspOutputChannel.appendLine(params.data)
-            lspOutputChannel.show()
+            // lspOutputChannel.appendLine(params.data)
+            // lspOutputChannel.show()
+            this.emit('output', params.data)
         })
     }
 
@@ -93,9 +98,15 @@ export class LSP implements Backend {
         try {
             const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName })
 
-            console.log('EVAL', resp)
+            this.emit('output', JSON.stringify(resp))
         } catch (err) {
-            console.log('EVAL ERROR', err)
+            const errObj = err as { message: string }
+
+            if (errObj.message !== undefined) {
+                this.emit('output', errObj.message)
+            } else {
+                this.emit('output', JSON.stringify(err))
+            }
         }
 
         return

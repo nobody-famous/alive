@@ -1,6 +1,7 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
 import { PackageMgr } from './PackageMgr'
+import { LispRepl } from './providers/LispRepl'
 import { Repl } from './repl'
 
 export interface ExtensionState {
