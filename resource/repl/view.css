@@ -1,8 +1,16 @@
-html,
+html {
+    height: calc(100% - 0.3rem);
+}
+
 body {
-    height: 100%;
+    height: calc(100% - 0.1rem);
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
+}
+
+.repl-text {
+    overflow: auto;
+    height: calc(100% - 3.6rem);
 }
 
 .repl-text-box {
@@ -43,6 +51,10 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: row;
+}
+
+.repl-input-form {
+    width: 100%;
 }
 
 .repl-input-label {

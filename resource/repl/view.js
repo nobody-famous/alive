@@ -11,7 +11,6 @@ document.getElementById('repl-input-form').onsubmit = (event) => {
 
     const pkgSelect = document.getElementById('repl-input-pkg')
     const textInput = document.getElementById('repl-input-text')
-
-    console.log('onTextSubmit', pkgSelect.value, textInput.value)
+    
     vscode.postMessage({ command: 'eval', text: textInput.value, pkg: pkgSelect.value })
 }
