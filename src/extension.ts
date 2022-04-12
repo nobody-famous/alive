@@ -9,6 +9,7 @@ import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
+import { PackagesTreeProvider } from './vscode/providers/PackagesTree'
 
 const BACKEND_TYPE_SWANK = 'Swank'
 const BACKEND_TYPE_LSP = 'LSP'
@@ -42,7 +43,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             backend.editorChanged(vscode.window.activeTextEditor)
         }
 
-        vscode.window.registerTreeDataProvider('lispPackages', new LispTreeProvider())
+        const pkgs = await backend.listPackages()
+
+        vscode.window.registerTreeDataProvider('lispPackages', new PackagesTreeProvider(pkgs))
         vscode.window.registerTreeDataProvider('lispThreads', new LispTreeProvider())
         vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
@@ -50,7 +53,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))
         )
 
-        const pkgs = await backend.listPackages()
         repl.setPackages(pkgs.map((pkg) => pkg.name))
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
