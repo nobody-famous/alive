@@ -49,6 +49,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))
         )
+
+        const pkgs = await backend.listPackages()
+        repl.setPackages(pkgs.map((pkg) => pkg.name))
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
             ctx,

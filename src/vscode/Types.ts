@@ -59,6 +59,8 @@ export interface Backend {
 
     listAsdfSystems(): Promise<string[]>
 
+    listPackages(): Promise<Package[]>
+
     compileAsdfSystem(name: string): Promise<CompileFileResp | undefined>
 
     loadAsdfSystem(name: string): Promise<CompileFileResp | undefined>
@@ -179,4 +181,9 @@ export interface CompileFileNote {
 
 export interface CompileFileResp {
     notes: CompileFileNote[]
+}
+
+export interface Package {
+    name: string
+    exports: Array<string>
 }

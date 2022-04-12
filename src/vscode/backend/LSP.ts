@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import * as net from 'net'
-import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState } from '../Types'
+import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState, Package } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import EventEmitter = require('events')
@@ -128,6 +128,29 @@ export class LSP extends EventEmitter implements Backend {
 
     async listAsdfSystems(): Promise<string[]> {
         return []
+    }
+
+    async listPackages(): Promise<Package[]> {
+        const resp = await this.client?.sendRequest('$/alive/listPackages')
+        const respObj = resp as { packages: Array<{ name: string; exports: Array<string> }> }
+
+        if (respObj.packages === undefined) {
+            return []
+        }
+
+        const pkgs: Package[] = []
+
+        for (const obj of respObj.packages) {
+            const pkgObj = obj as Package
+
+            if (pkgObj.name === undefined || pkgObj.exports === undefined) {
+                continue
+            }
+
+            pkgs.push(pkgObj)
+        }
+
+        return pkgs
     }
 
     async compileAsdfSystem(name: string): Promise<CompileFileResp | undefined> {

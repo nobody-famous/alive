@@ -16,6 +16,9 @@ window.addEventListener('message', (event) => {
         case 'addText':
             addText(data.text)
             break
+        case 'setPackages':
+            setPackages(data.pkgs)
+            break
     }
 })
 
@@ -24,4 +27,21 @@ function addText(text) {
 
     textArea.value += text
     textArea.scrollTop = textArea.scrollHeight
+}
+
+function setPackages(data) {
+    const pkgSelect = document.getElementById('repl-input-pkg')
+
+    pkgSelect.options.length = 0
+
+    for (const pkg of data.sort()) {
+        const name = pkg.toLowerCase()
+        const ndx = pkgSelect.options.length
+
+        pkgSelect.options[ndx] = new Option(name, name)
+
+        if (name === 'common-lisp-user') {
+            pkgSelect.options[ndx].selected = true
+        }
+    }
 }

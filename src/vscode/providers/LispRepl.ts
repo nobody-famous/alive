@@ -38,6 +38,13 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         webviewView.webview.html = this.getHtmlForView()
     }
 
+    setPackages(pkgs: string[]) {
+        this.view?.webview.postMessage({
+            type: 'setPackages',
+            pkgs,
+        })
+    }
+
     addText(text: string) {
         this.view?.webview.postMessage({
             type: 'addText',
