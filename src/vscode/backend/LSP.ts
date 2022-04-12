@@ -98,7 +98,15 @@ export class LSP extends EventEmitter implements Backend {
         try {
             const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName })
 
-            this.emit('output', JSON.stringify(resp))
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const resultObj = resp as { text: string }
+
+            if (resultObj.text !== undefined) {
+                this.emit('output', resultObj.text)
+            }
         } catch (err) {
             const errObj = err as { message: string }
 

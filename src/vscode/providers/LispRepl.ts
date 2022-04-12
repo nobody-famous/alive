@@ -59,8 +59,6 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     private getPackageDropdown(): string {
         return `
         <select class="repl-input-pkg" name="package" id="repl-input-pkg">
-            <option value="foo">foo</option>
-            <option value="alive/lsp/message/alive/unexport-symbol">alive/lsp/message/alive/unexport-symbol</option>
         </select>
         `
     }
