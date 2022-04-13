@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import * as net from 'net'
-import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState, Package } from '../Types'
+import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState, Package, Thread } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import EventEmitter = require('events')
@@ -159,6 +159,29 @@ export class LSP extends EventEmitter implements Backend {
         }
 
         return pkgs
+    }
+
+    async listThreads(): Promise<Thread[]> {
+        const resp = await this.client?.sendRequest('$/alive/listThreads')
+        const respObj = resp as { threads: Array<Thread> }
+
+        if (typeof respObj !== 'object' || respObj.threads === undefined || !Array.isArray(respObj.threads)) {
+            return []
+        }
+
+        const threads: Thread[] = []
+
+        for (const item of respObj.threads) {
+            const itemObj = item as Thread
+
+            if (itemObj.id === undefined || itemObj.name === undefined) {
+                continue
+            }
+
+            threads.push(itemObj)
+        }
+
+        return threads
     }
 
     async compileAsdfSystem(name: string): Promise<CompileFileResp | undefined> {

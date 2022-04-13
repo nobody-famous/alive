@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { Expr, getLexTokens, Parser, readLexTokens } from '../../lisp'
 import * as cmds from '../commands'
 import { Repl } from '../repl'
-import { CompileFileResp, HostPort, InstalledSlimeInfo, LocalBackend, Package, SwankBackendState } from '../Types'
+import { CompileFileResp, HostPort, InstalledSlimeInfo, LocalBackend, Package, SwankBackendState, Thread } from '../Types'
 import {
     COMMON_LISP_ID,
     findEditorForDoc,
@@ -117,6 +117,10 @@ export class Swank implements LocalBackend {
     }
 
     async listPackages(): Promise<Package[]> {
+        return []
+    }
+
+    async listThreads(): Promise<Thread[]> {
         return []
     }
 

@@ -61,6 +61,8 @@ export interface Backend {
 
     listPackages(): Promise<Package[]>
 
+    listThreads(): Promise<Thread[]>
+
     compileAsdfSystem(name: string): Promise<CompileFileResp | undefined>
 
     loadAsdfSystem(name: string): Promise<CompileFileResp | undefined>
@@ -186,4 +188,9 @@ export interface CompileFileResp {
 export interface Package {
     name: string
     exports: Array<string>
+}
+
+export interface Thread {
+    id: number
+    name: string
 }

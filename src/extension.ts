@@ -4,12 +4,17 @@ import { Swank } from './vscode/backend/Swank'
 import { tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import * as cmds from './vscode/commands'
 import { PackageMgr } from './vscode/PackageMgr'
-import { getFoldProvider, getHoverProvider, getRenameProvider, LispTreeProvider } from './vscode/providers'
+import {
+    getFoldProvider,
+    getHoverProvider,
+    getRenameProvider,
+    ThreadsTreeProvider,
+    PackagesTreeProvider,
+} from './vscode/providers'
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
-import { PackagesTreeProvider } from './vscode/providers/PackagesTree'
 
 const BACKEND_TYPE_SWANK = 'Swank'
 const BACKEND_TYPE_LSP = 'LSP'
@@ -44,9 +49,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         }
 
         const pkgs = await backend.listPackages()
+        const threads = await backend.listThreads()
 
         vscode.window.registerTreeDataProvider('lispPackages', new PackagesTreeProvider(pkgs))
-        vscode.window.registerTreeDataProvider('lispThreads', new LispTreeProvider())
+        vscode.window.registerTreeDataProvider('lispThreads', new ThreadsTreeProvider(threads))
         vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
         ctx.subscriptions.push(
