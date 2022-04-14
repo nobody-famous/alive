@@ -5,8 +5,6 @@ import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import EventEmitter = require('events')
 
-const lspOutputChannel = vscode.window.createOutputChannel('Alive Output')
-
 const parseToInt = (data: unknown): number | undefined => {
     if (typeof data !== 'string' && typeof data !== 'number') {
         return
@@ -67,13 +65,9 @@ export class LSP extends EventEmitter implements Backend {
 
         await this.client.onReady()
         this.client.onNotification('$/alive/stderr', (params) => {
-            // lspOutputChannel.appendLine(params.data)
-            // lspOutputChannel.show()
             this.emit('output', params.data)
         })
         this.client.onNotification('$/alive/stdout', (params) => {
-            // lspOutputChannel.appendLine(params.data)
-            // lspOutputChannel.show()
             this.emit('output', params.data)
         })
     }
@@ -205,7 +199,6 @@ export class LSP extends EventEmitter implements Backend {
             return
         }
 
-        let needShow = false
         for (const msg of respObj.messages) {
             if (typeof msg !== 'object') {
                 continue
@@ -217,12 +210,7 @@ export class LSP extends EventEmitter implements Backend {
                 continue
             }
 
-            needShow = true
-            lspOutputChannel.appendLine(`${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
-        }
-
-        if (needShow) {
-            lspOutputChannel.show()
+            this.emit('output', `${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
         }
     }
 

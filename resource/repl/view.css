@@ -10,41 +10,18 @@ body {
 
 .repl-text {
     overflow: auto;
-    height: calc(100% - 3.6rem);
-}
-
-.repl-text-box {
-    overflow: auto;
-    height: calc(100% - 3.6rem);
+    height: calc(100% - 1.8rem);
     border-bottom: 1px solid var(--vscode-editor-foreground);
-    display: flex;
-    justify-content: end;
 }
 
-.repl-text-lines {
-    margin-top: auto;
-}
-
-.repl-text-item {
-    line-height: 1.25rem;
+.repl-text:focus {
+    border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
 .repl-input-box {
-    height: 3.5rem;
+    height: 1.5rem;
     display: flex;
     flex-direction: column;
-}
-
-.repl-input-pkg-box {
-    flex-shrink: 1;
-    height: 1.5rem;
-}
-
-.repl-input-pkg {
-    color: var(--vscode-editor-foreground);
-    background-color: var(--vscode-editor-background);
-    border: none;
-    appearance: none;
 }
 
 .repl-input-text-box {
@@ -54,7 +31,7 @@ body {
 }
 
 .repl-input-form {
-    width: 100%;
+    flex-grow: 1;
 }
 
 .repl-input-label {
@@ -62,6 +39,7 @@ body {
     display: inline-block;
     height: 1.5rem;
     line-height: 1.5rem;
+    cursor: pointer;
 }
 
 .repl-input-text {

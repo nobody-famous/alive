@@ -36,6 +36,16 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             await backend.eval(text, pkg)
         })
 
+        repl.on('requestPackage', async () => {
+            const pkgs = await backend.listPackages()
+            const names = pkgs.map((pkg) => pkg.name.toLowerCase())
+            const pick = await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
+
+            if (pick !== undefined) {
+                repl.setPackage(pick)
+            }
+        })
+
         backend.on('output', (str) => repl.addText(str))
 
         await backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
@@ -58,8 +68,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))
         )
-
-        repl.setPackages(pkgs.map((pkg) => pkg.name))
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
             ctx,

@@ -6,11 +6,13 @@ import EventEmitter = require('events')
 export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView
     private ctx: vscode.ExtensionContext
+    private package: string
 
     constructor(ctx: vscode.ExtensionContext) {
         super()
 
         this.ctx = ctx
+        this.package = 'cl-user'
     }
 
     resolveWebviewView(
@@ -28,7 +30,9 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
             (msg: { command: string; text?: string; pkg?: string }) => {
                 switch (msg.command) {
                     case 'eval':
-                        return this.doEval(msg.text ?? '', msg.pkg ?? '')
+                        return this.doEval(msg.text ?? '')
+                    case 'requestPackage':
+                        return this.emit('requestPackage')
                 }
             },
             undefined,
@@ -38,10 +42,11 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         webviewView.webview.html = this.getHtmlForView()
     }
 
-    setPackages(pkgs: string[]) {
+    setPackage(pkg: string) {
+        this.package = pkg
         this.view?.webview.postMessage({
-            type: 'setPackages',
-            pkgs,
+            type: 'setPackage',
+            name: pkg,
         })
     }
 
@@ -52,15 +57,8 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         })
     }
 
-    private doEval(text: string, pkg: string) {
-        this.emit('eval', pkg, text)
-    }
-
-    private getPackageDropdown(): string {
-        return `
-        <select class="repl-input-pkg" name="package" id="repl-input-pkg">
-        </select>
-        `
+    private doEval(text: string) {
+        this.emit('eval', this.package, text)
     }
 
     private getHtmlForView(): string {
@@ -76,9 +74,11 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
                 <body>
                     <textarea id="repl-text" class="repl-text" readonly></textarea>
                     <div class="repl-input-box">
-                        <div class="repl-input-pkg-box">in-package: ${this.getPackageDropdown()}</div>
                         <div class="repl-input-text-box">
-                            <div class="repl-input-label">></div>
+                            <div class="repl-input-label" onclick="requestPackage()">
+                                <span id="repl-package">${this.package}</span>
+                                >
+                            </div>
                             <form id="repl-input-form" class="repl-input-form" action="">
                                 <input class="repl-input-text" id="repl-input-text" type="text">
                             </form>
