@@ -6,6 +6,7 @@ document.getElementById('repl-input-form').onsubmit = (event) => {
     const textInput = document.getElementById('repl-input-text')
 
     vscode.postMessage({ command: 'eval', text: textInput.value })
+    textInput.value = ''
 }
 
 window.addEventListener('message', (event) => {
@@ -34,6 +35,8 @@ function requestPackage() {
 
 function setPackage(name) {
     const pkg = document.getElementById('repl-package')
+    const textInput = document.getElementById('repl-input-text')
 
     pkg.innerHTML = name
+    textInput.focus()
 }
