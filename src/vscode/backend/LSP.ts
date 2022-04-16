@@ -313,7 +313,45 @@ export class LSP extends EventEmitter implements Backend {
         return ''
     }
 
-    async sendToRepl(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean): Promise<void> {}
+    async sendToRepl(editor: vscode.TextEditor | undefined) {
+        if (editor === undefined) {
+            return
+        }
+
+        const range = editor.selection.isEmpty
+            ? await this.getTopExprRange(editor)
+            : new vscode.Range(editor.selection.start, editor.selection.end)
+
+        if (range === undefined) {
+            return
+        }
+
+        const text = editor.document.getText(range)
+        const pkg = await this.getPackage(editor, range.start)
+
+        if (text !== undefined && pkg !== undefined) {
+            this.eval(text, pkg)
+        }
+    }
+
+    async getPackage(editor: vscode.TextEditor, pos: vscode.Position): Promise<string | undefined> {
+        const doc = editor.document
+        const resp = await this.client?.sendRequest('$/alive/getPackageForPosition', {
+            textDocument: {
+                uri: doc.uri.toString(),
+            },
+            position: pos,
+        })
+
+        if (typeof resp !== 'object' || resp === null) {
+            return
+        }
+
+        const respObj = resp as { package: string }
+
+        console.log('GET PACKAGE', respObj)
+        return respObj.package
+    }
 
     async replNthRestart(restart: number): Promise<void> {}
 
@@ -327,9 +365,9 @@ export class LSP extends EventEmitter implements Backend {
         return
     }
 
-    async selectSexpr(editor: vscode.TextEditor | undefined) {
+    async getTopExprRange(editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> {
         if (editor?.document === undefined) {
-            return
+            return undefined
         }
 
         const doc = editor.document
@@ -353,6 +391,20 @@ export class LSP extends EventEmitter implements Backend {
             return
         }
 
-        editor.selection = new vscode.Selection(startPos, endPos)
+        return new vscode.Range(startPos, endPos)
+    }
+
+    async selectSexpr(editor: vscode.TextEditor | undefined) {
+        if (editor?.document === undefined) {
+            return
+        }
+
+        const range = await this.getTopExprRange(editor)
+
+        if (range === undefined) {
+            return
+        }
+
+        editor.selection = new vscode.Selection(range?.start, range?.end)
     }
 }

@@ -66,7 +66,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
         ctx.subscriptions.push(
-            vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor))
+            vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor)),
+            vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor))
         )
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
@@ -145,7 +146,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.detachRepl', () => cmds.detachRepl(state)))
 
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr()))
-        ctx.subscriptions.push(vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)))
         ctx.subscriptions.push(vscode.commands.registerCommand('alive.startReplAndAttach', () => cmds.startReplAndAttach(state)))

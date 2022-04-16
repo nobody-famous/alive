@@ -29,8 +29,9 @@ const replHistory: History = new History()
 export async function sendToRepl(state: ExtensionState) {
     useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
         checkConnected(state, async () => {
-            let text = getSelectOrExpr(editor, editor.selection.start)
+            const text = getSelectOrExpr(editor, editor.selection.start)
 
+            console.log('SEND TO REPL', text)
             if (text === undefined) {
                 return
             }
