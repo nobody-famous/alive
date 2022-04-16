@@ -39,7 +39,15 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
             this.ctx.subscriptions
         )
 
+        webviewView.onDidChangeVisibility((e) => this.saveState())
+
         webviewView.webview.html = this.getHtmlForView()
+    }
+
+    saveState() {
+        this.view?.webview.postMessage({
+            type: 'restoreState',
+        })
     }
 
     setPackage(pkg: string) {
@@ -48,12 +56,20 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
             type: 'setPackage',
             name: pkg,
         })
+
+        this.view?.webview.postMessage({
+            type: 'saveState',
+        })
     }
 
     addText(text: string) {
         this.view?.webview.postMessage({
             type: 'addText',
             text: `${text}${os.EOL}`,
+        })
+
+        this.view?.webview.postMessage({
+            type: 'saveState',
         })
     }
 

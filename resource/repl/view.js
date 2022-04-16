@@ -19,6 +19,12 @@ window.addEventListener('message', (event) => {
         case 'setPackage':
             setPackage(data.name)
             break
+        case 'saveState':
+            saveState()
+            break
+        case 'restoreState':
+            restoreState()
+            break
     }
 })
 
@@ -39,4 +45,30 @@ function setPackage(name) {
 
     pkg.innerHTML = name
     textInput.focus()
+}
+
+function saveState() {
+    const textArea = document.getElementById('repl-text')
+    const pkg = document.getElementById('repl-package')
+    const state = {
+        replText: textArea.value,
+        pkg: pkg.innerHTML,
+    }
+
+    vscode.setState(state)
+}
+
+function restoreState() {
+    const textArea = document.getElementById('repl-text')
+    const pkg = document.getElementById('repl-package')
+    const state = vscode.getState()
+
+    if (textArea !== undefined && state?.replText !== undefined) {
+        textArea.value = state.replText
+        textArea.scrollTop = textArea.scrollHeight
+    }
+
+    if (pkg !== undefined && state?.pkg !== undefined) {
+        pkg.innerHTML = state.pkg
+    }
 }
