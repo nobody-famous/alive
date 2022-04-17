@@ -129,7 +129,22 @@ export class LSP extends EventEmitter implements Backend {
     }
 
     async listAsdfSystems(): Promise<string[]> {
-        return []
+        const resp = await this.client?.sendRequest('$/alive/listAsdfSystems')
+        const respObj = resp as { systems: Array<string> }
+
+        if (respObj.systems === undefined) {
+            return []
+        }
+
+        const systems: string[] = []
+
+        for (const sys of respObj.systems) {
+            if (typeof sys === 'string') {
+                systems.push(sys)
+            }
+        }
+
+        return systems
     }
 
     async listPackages(): Promise<Package[]> {

@@ -77,6 +77,10 @@
                     "name": "Packages"
                 },
                 {
+                    "id": "asdfSystems",
+                    "name": "ASDF Systems"
+                },
+                {
                     "id": "lispThreads",
                     "name": "Threads"
                 }

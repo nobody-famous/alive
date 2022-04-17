@@ -1,0 +1,20 @@
+import * as vscode from 'vscode'
+import { Package } from '../Types'
+
+export class AsdfSystemsTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+    private systems: Array<string>
+
+    constructor(systems: string[]) {
+        this.systems = systems
+    }
+
+    getTreeItem(element: vscode.TreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
+        return element
+    }
+
+    getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
+        return element === undefined
+            ? this.systems.sort().map((sys) => new vscode.TreeItem(sys, vscode.TreeItemCollapsibleState.None))
+            : []
+    }
+}

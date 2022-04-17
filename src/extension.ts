@@ -15,6 +15,7 @@ import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
+import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
 
 const BACKEND_TYPE_SWANK = 'Swank'
 const BACKEND_TYPE_LSP = 'LSP'
@@ -59,9 +60,11 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         }
 
         const pkgs = await backend.listPackages()
+        const systems = await backend.listAsdfSystems()
         const threads = await backend.listThreads()
 
         vscode.window.registerTreeDataProvider('lispPackages', new PackagesTreeProvider(pkgs))
+        vscode.window.registerTreeDataProvider('asdfSystems', new AsdfSystemsTreeProvider(systems))
         vscode.window.registerTreeDataProvider('lispThreads', new ThreadsTreeProvider(threads))
         vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
