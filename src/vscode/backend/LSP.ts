@@ -349,7 +349,6 @@ export class LSP extends EventEmitter implements Backend {
 
         const respObj = resp as { package: string }
 
-        console.log('GET PACKAGE', respObj)
         return respObj.package
     }
 
