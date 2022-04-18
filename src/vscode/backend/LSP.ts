@@ -198,6 +198,7 @@ export class LSP extends EventEmitter implements Backend {
     }
 
     async loadAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
+        await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
         return
     }
 

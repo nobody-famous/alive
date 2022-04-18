@@ -70,7 +70,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor)),
-            vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor))
+            vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor)),
+            vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state))
         )
 
         vscode.commands.executeCommand('lispPackages.focus')
