@@ -12,7 +12,7 @@ import {
     PackagesTreeProvider,
 } from './vscode/providers'
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
-import { COMMON_LISP_ID, hasValidLangId, refreshTrees, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
+import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
 import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
