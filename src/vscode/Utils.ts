@@ -254,12 +254,6 @@ export async function openFile(file: vscode.Uri | undefined) {
     }
 }
 
-export function refreshTrees(state: ExtensionState) {
-    setInterval(async () => {
-        await refreshPackages(state)
-    }, 500)
-}
-
 export function startCompileTimer(state: ExtensionState) {
     const cfg = vscode.workspace.getConfiguration('alive')
     const autoCompile = cfg.autoCompileOnType

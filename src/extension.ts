@@ -79,8 +79,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
         vscode.commands.executeCommand('lispPackages.focus')
         vscode.commands.executeCommand('lispRepl.focus')
-
-        refreshTrees(state)
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
             ctx,
