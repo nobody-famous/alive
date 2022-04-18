@@ -360,6 +360,16 @@ export async function compileAsdfSystem(state: ExtensionState) {
     })
 }
 
+export async function refreshPackages(state: ExtensionState) {
+    const pkgs = await state.backend?.listPackages()
+
+    if (state.packageTree === undefined || pkgs === undefined) {
+        return
+    }
+
+    state.packageTree.update(pkgs)
+}
+
 export async function loadAsdfSystem(state: ExtensionState) {
     checkConnected(state, async () => {
         const names = await state.backend?.listAsdfSystems()

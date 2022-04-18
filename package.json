@@ -115,6 +115,14 @@
         ],
         "commands": [
             {
+                "command": "alive.refreshPackages",
+                "title": "Alive: Refresh Packages",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
+                }
+            },
+            {
                 "command": "alive.selectSexpr",
                 "title": "Alive: Select S-Expression"
             },
@@ -212,6 +220,13 @@
             }
         ],
         "menus": {
+            "view/title": [
+                {
+                    "command": "alive.refreshPackages",
+                    "when": "view == lispPackages",
+                    "group": "navigation"
+                }
+            ],
             "commandPalette": [
                 {
                     "command": "alive.attachRepl"

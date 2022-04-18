@@ -3,13 +3,27 @@ import { Package } from '../Types'
 
 export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private pkgs: Map<string, Package>
+    private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
+
+    readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
     constructor(pkgs: Package[]) {
-        this.pkgs = new Map()
+        this.pkgs = this.buildMap(pkgs)
+    }
+
+    private buildMap(pkgs: Package[]) {
+        const map = new Map()
 
         for (const pkg of pkgs) {
-            this.pkgs.set(pkg.name.toLowerCase(), pkg)
+            map.set(pkg.name.toLowerCase(), pkg)
         }
+
+        return map
+    }
+
+    update(pkgs: Package[]) {
+        this.pkgs = this.buildMap(pkgs)
+        this.event.fire()
     }
 
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {

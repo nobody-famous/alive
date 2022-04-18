@@ -1,7 +1,7 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
 import { PackageMgr } from './PackageMgr'
-import { LispRepl } from './providers/LispRepl'
+import { PackagesTreeProvider } from './providers'
 import { Repl } from './repl'
 
 export interface ExtensionState {
@@ -10,6 +10,7 @@ export interface ExtensionState {
     hoverText: string
     compileRunning: boolean
     compileTimeoutID: NodeJS.Timeout | undefined
+    packageTree?: PackagesTreeProvider
 }
 
 export interface LSPBackendState {

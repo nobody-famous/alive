@@ -3,6 +3,7 @@ import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { Expr, findAtom, findExpr, findInnerExpr, Lexer, Parser, types } from '../lisp'
 import * as cmds from './commands'
+import { refreshPackages } from './commands'
 import { ExtensionState } from './Types'
 
 export const COMMON_LISP_ID = 'lisp'
@@ -253,6 +254,12 @@ export async function openFile(file: vscode.Uri | undefined) {
     }
 }
 
+export function refreshTrees(state: ExtensionState) {
+    setInterval(async () => {
+        await refreshPackages(state)
+    }, 500)
+}
+
 export function startCompileTimer(state: ExtensionState) {
     const cfg = vscode.workspace.getConfiguration('alive')
     const autoCompile = cfg.autoCompileOnType
@@ -266,7 +273,10 @@ export function startCompileTimer(state: ExtensionState) {
         state.compileTimeoutID = undefined
     }
 
-    state.compileTimeoutID = setTimeout(() => cmds.compileFile(state, true, true), 500)
+    state.compileTimeoutID = setTimeout(async () => {
+        await cmds.compileFile(state, true, true)
+        refreshPackages(state)
+    }, 500)
 }
 
 async function getOpenFolder() {

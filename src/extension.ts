@@ -12,7 +12,7 @@ import {
     PackagesTreeProvider,
 } from './vscode/providers'
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
-import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
+import { COMMON_LISP_ID, hasValidLangId, refreshTrees, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
 import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
@@ -63,7 +63,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         const systems = await backend.listAsdfSystems()
         const threads = await backend.listThreads()
 
-        vscode.window.registerTreeDataProvider('lispPackages', new PackagesTreeProvider(pkgs))
+        state.packageTree = new PackagesTreeProvider(pkgs)
+
+        vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
         vscode.window.registerTreeDataProvider('asdfSystems', new AsdfSystemsTreeProvider(systems))
         vscode.window.registerTreeDataProvider('lispThreads', new ThreadsTreeProvider(threads))
         vscode.window.registerWebviewViewProvider('lispRepl', repl)
@@ -71,11 +73,14 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions.push(
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor)),
             vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor)),
-            vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state))
+            vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state)),
+            vscode.commands.registerCommand('alive.refreshPackages', () => cmds.refreshPackages(state))
         )
 
         vscode.commands.executeCommand('lispPackages.focus')
         vscode.commands.executeCommand('lispRepl.focus')
+
+        refreshTrees(state)
     } else if (backendType === BACKEND_TYPE_SWANK) {
         const swankState: SwankBackendState = {
             ctx,
