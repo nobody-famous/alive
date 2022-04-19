@@ -64,9 +64,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         const threads = await backend.listThreads()
 
         state.packageTree = new PackagesTreeProvider(pkgs)
+        state.asdfTree = new AsdfSystemsTreeProvider(systems)
 
         vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
-        vscode.window.registerTreeDataProvider('asdfSystems', new AsdfSystemsTreeProvider(systems))
+        vscode.window.registerTreeDataProvider('asdfSystems', state.asdfTree)
         vscode.window.registerTreeDataProvider('lispThreads', new ThreadsTreeProvider(threads))
         vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
@@ -74,7 +75,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor)),
             vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor)),
             vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state)),
-            vscode.commands.registerCommand('alive.refreshPackages', () => cmds.refreshPackages(state))
+            vscode.commands.registerCommand('alive.refreshPackages', () => cmds.refreshPackages(state)),
+            vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state))
         )
 
         vscode.commands.executeCommand('lispPackages.focus')

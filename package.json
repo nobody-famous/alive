@@ -123,6 +123,14 @@
                 }
             },
             {
+                "command": "alive.refreshAsdfSystems",
+                "title": "Alive: Refresh ASDF Systems",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
+                }
+            },
+            {
                 "command": "alive.selectSexpr",
                 "title": "Alive: Select S-Expression"
             },
@@ -224,6 +232,11 @@
                 {
                     "command": "alive.refreshPackages",
                     "when": "view == lispPackages",
+                    "group": "navigation"
+                },
+                {
+                    "command": "alive.refreshAsdfSystems",
+                    "when": "view == asdfSystems",
                     "group": "navigation"
                 }
             ],
