@@ -76,6 +76,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor)),
             vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state)),
             vscode.commands.registerCommand('alive.refreshPackages', () => cmds.refreshPackages(state)),
+            vscode.commands.registerCommand('alive.removePackage', (e) => console.log('REMOVE PACKAGE', e.label)),
             vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state))
         )
 

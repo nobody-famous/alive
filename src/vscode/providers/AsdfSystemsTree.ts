@@ -1,5 +1,4 @@
 import * as vscode from 'vscode'
-import { Package } from '../Types'
 
 export class AsdfSystemsTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private systems: Array<string>

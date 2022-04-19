@@ -123,6 +123,14 @@
                 }
             },
             {
+                "command": "alive.removePackage",
+                "title": "Alive: Remove Package",
+                "icon": {
+                    "light": "resource/light/remove.svg",
+                    "dark": "resource/dark/remove.svg"
+                }
+            },
+            {
                 "command": "alive.refreshAsdfSystems",
                 "title": "Alive: Refresh ASDF Systems",
                 "icon": {
@@ -238,6 +246,13 @@
                     "command": "alive.refreshAsdfSystems",
                     "when": "view == asdfSystems",
                     "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "alive.removePackage",
+                    "when": "view == lispPackages",
+                    "group": "inline"
                 }
             ],
             "commandPalette": [
