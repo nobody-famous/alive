@@ -211,6 +211,14 @@
                 "title": "Alive: Load ASDF System"
             },
             {
+                "command": "alive.loadAsdfByName",
+                "title": "Alive: Load ASDF System By Name",
+                "icon": {
+                    "light": "resource/light/add.svg",
+                    "dark": "resource/dark/add.svg"
+                }
+            },
+            {
                 "command": "alive.compileAsdfSystem",
                 "title": "Alive: Compile ASDF System"
             },
@@ -265,6 +273,11 @@
                 {
                     "command": "alive.removeExport",
                     "when": "view == lispPackages && viewItem == export",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.loadAsdfByName",
+                    "when": "view == asdfSystems",
                     "group": "inline"
                 }
             ],

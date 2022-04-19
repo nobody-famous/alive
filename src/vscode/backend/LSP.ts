@@ -247,7 +247,7 @@ export class LSP extends EventEmitter implements Backend {
         startCompileTimer(this.state.extState)
     }
 
-    async compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined> {
+    async compileFile(path: string): Promise<CompileFileResp | undefined> {
         const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
 
         if (typeof resp !== 'object' || resp === null) {

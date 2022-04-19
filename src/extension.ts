@@ -93,6 +93,13 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
                 }
 
                 backend.removeExport(node.pkg, node.label)
+            }),
+            vscode.commands.registerCommand('alive.loadAsdfByName', (node) => {
+                if (typeof node.label !== 'string' || node.label === '') {
+                    return
+                }
+
+                backend.loadAsdfSystem(node.label)
             })
         )
 
