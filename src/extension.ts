@@ -10,6 +10,8 @@ import {
     getRenameProvider,
     ThreadsTreeProvider,
     PackagesTreeProvider,
+    PackageNode,
+    ExportNode,
 } from './vscode/providers'
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
@@ -76,8 +78,22 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor)),
             vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state)),
             vscode.commands.registerCommand('alive.refreshPackages', () => cmds.refreshPackages(state)),
-            vscode.commands.registerCommand('alive.removePackage', (e) => console.log('REMOVE PACKAGE', e.label)),
-            vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state))
+            vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state)),
+
+            vscode.commands.registerCommand('alive.removePackage', (node) => {
+                if (!(node instanceof PackageNode) || typeof node.label !== 'string' || node.label === '') {
+                    return
+                }
+
+                backend.removePackage(node.label)
+            }),
+            vscode.commands.registerCommand('alive.removeExport', (node) => {
+                if (!(node instanceof ExportNode) || typeof node.label !== 'string' || node.label === '') {
+                    return
+                }
+
+                backend.removeExport(node.pkg, node.label)
+            })
         )
 
         vscode.commands.executeCommand('lispPackages.focus')

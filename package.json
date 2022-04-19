@@ -131,6 +131,14 @@
                 }
             },
             {
+                "command": "alive.removeExport",
+                "title": "Alive: Remove Export",
+                "icon": {
+                    "light": "resource/light/remove.svg",
+                    "dark": "resource/dark/remove.svg"
+                }
+            },
+            {
                 "command": "alive.refreshAsdfSystems",
                 "title": "Alive: Refresh ASDF Systems",
                 "icon": {
@@ -251,7 +259,12 @@
             "view/item/context": [
                 {
                     "command": "alive.removePackage",
-                    "when": "view == lispPackages",
+                    "when": "view == lispPackages && viewItem == package",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.removeExport",
+                    "when": "view == lispPackages && viewItem == export",
                     "group": "inline"
                 }
             ],

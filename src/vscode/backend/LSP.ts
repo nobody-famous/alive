@@ -4,6 +4,7 @@ import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, L
 import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import EventEmitter = require('events')
+import { refreshPackages } from '../commands'
 
 const parseToInt = (data: unknown): number | undefined => {
     if (typeof data !== 'string' && typeof data !== 'number') {
@@ -366,6 +367,23 @@ export class LSP extends EventEmitter implements Backend {
         const respObj = resp as { package: string }
 
         return respObj.package
+    }
+
+    async removePackage(name: string): Promise<void> {
+        await this.client?.sendRequest('$/alive/removePackage', {
+            name,
+        })
+
+        await refreshPackages(this.state.extState)
+    }
+
+    async removeExport(pkg: string, name: string): Promise<void> {
+        await this.client?.sendRequest('$/alive/unexportSymbol', {
+            package: pkg,
+            symbol: name,
+        })
+
+        await refreshPackages(this.state.extState)
     }
 
     async replNthRestart(restart: number): Promise<void> {}
