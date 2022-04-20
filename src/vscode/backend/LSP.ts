@@ -4,7 +4,7 @@ import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, L
 import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import EventEmitter = require('events')
-import { refreshPackages } from '../commands'
+import { refreshPackages, refreshThreads } from '../commands'
 
 const parseToInt = (data: unknown): number | undefined => {
     if (typeof data !== 'string' && typeof data !== 'number') {
@@ -91,7 +91,11 @@ export class LSP extends EventEmitter implements Backend {
 
     async eval(text: string, pkgName: string): Promise<string | undefined> {
         try {
-            const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName })
+            const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName })
+
+            refreshThreads(this.state.extState)
+
+            const resp = await promise
 
             if (typeof resp !== 'object') {
                 return
@@ -173,6 +177,7 @@ export class LSP extends EventEmitter implements Backend {
 
     async killThread(thread: Thread): Promise<void> {
         await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
+        await refreshThreads(this.state.extState)
     }
 
     async listThreads(): Promise<Thread[]> {

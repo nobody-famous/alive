@@ -22,7 +22,6 @@ export class ThreadsTreeProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     update(threads: Thread[]) {
-        console.log('UPDATE THREADS', threads)
         this.threads = threads
         this.event.fire()
     }
