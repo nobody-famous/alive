@@ -380,6 +380,16 @@ export async function refreshAsdfSystems(state: ExtensionState) {
     state.asdfTree.update(systems)
 }
 
+export async function refreshThreads(state: ExtensionState) {
+    const threads = await state.backend?.listThreads()
+
+    if (state.threadTree === undefined || threads === undefined) {
+        return
+    }
+
+    state.threadTree.update(threads)
+}
+
 export async function loadAsdfSystem(state: ExtensionState) {
     checkConnected(state, async () => {
         const names = await state.backend?.listAsdfSystems()

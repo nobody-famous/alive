@@ -115,6 +115,14 @@
         ],
         "commands": [
             {
+                "command": "alive.killThread",
+                "title": "Alive: Kill Thread",
+                "icon": {
+                    "light": "resource/light/close.svg",
+                    "dark": "resource/dark/close.svg"
+                }
+            },
+            {
                 "command": "alive.refreshPackages",
                 "title": "Alive: Refresh Packages",
                 "icon": {
@@ -141,6 +149,14 @@
             {
                 "command": "alive.refreshAsdfSystems",
                 "title": "Alive: Refresh ASDF Systems",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
+                }
+            },
+            {
+                "command": "alive.refreshThreads",
+                "title": "Alive: Refresh Threads",
                 "icon": {
                     "light": "resource/light/refresh.svg",
                     "dark": "resource/dark/refresh.svg"
@@ -262,6 +278,11 @@
                     "command": "alive.refreshAsdfSystems",
                     "when": "view == asdfSystems",
                     "group": "navigation"
+                },
+                {
+                    "command": "alive.refreshThreads",
+                    "when": "view == lispThreads",
+                    "group": "navigation"
                 }
             ],
             "view/item/context": [
@@ -278,6 +299,11 @@
                 {
                     "command": "alive.loadAsdfByName",
                     "when": "view == asdfSystems",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.killThread",
+                    "when": "view == lispThreads",
                     "group": "inline"
                 }
             ],

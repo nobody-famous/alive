@@ -171,6 +171,10 @@ export class LSP extends EventEmitter implements Backend {
         return pkgs
     }
 
+    async killThread(thread: Thread): Promise<void> {
+        await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
+    }
+
     async listThreads(): Promise<Thread[]> {
         const resp = await this.client?.sendRequest('$/alive/listThreads')
         const respObj = resp as { threads: Array<Thread> }

@@ -1,7 +1,7 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
 import { PackageMgr } from './PackageMgr'
-import { PackagesTreeProvider } from './providers'
+import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
 import { Repl } from './repl'
 
@@ -13,6 +13,7 @@ export interface ExtensionState {
     compileTimeoutID: NodeJS.Timeout | undefined
     packageTree?: PackagesTreeProvider
     asdfTree?: AsdfSystemsTreeProvider
+    threadTree?: ThreadsTreeProvider
 }
 
 export interface LSPBackendState {

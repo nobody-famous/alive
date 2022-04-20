@@ -12,6 +12,7 @@ import {
     PackagesTreeProvider,
     PackageNode,
     ExportNode,
+    ThreadNode,
 } from './vscode/providers'
 import { ExtensionState, LocalBackend, SwankBackendState } from './vscode/Types'
 import { COMMON_LISP_ID, hasValidLangId, REPL_ID, startCompileTimer, useEditor } from './vscode/Utils'
@@ -67,10 +68,11 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
         state.packageTree = new PackagesTreeProvider(pkgs)
         state.asdfTree = new AsdfSystemsTreeProvider(systems)
+        state.threadTree = new ThreadsTreeProvider(threads)
 
         vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
         vscode.window.registerTreeDataProvider('asdfSystems', state.asdfTree)
-        vscode.window.registerTreeDataProvider('lispThreads', new ThreadsTreeProvider(threads))
+        vscode.window.registerTreeDataProvider('lispThreads', state.threadTree)
         vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
         ctx.subscriptions.push(
@@ -79,6 +81,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(state)),
             vscode.commands.registerCommand('alive.refreshPackages', () => cmds.refreshPackages(state)),
             vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state)),
+            vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(state)),
 
             vscode.commands.registerCommand('alive.removePackage', (node) => {
                 if (!(node instanceof PackageNode) || typeof node.label !== 'string' || node.label === '') {
@@ -100,6 +103,13 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
                 }
 
                 backend.loadAsdfSystem(node.label)
+            }),
+            vscode.commands.registerCommand('alive.killThread', (node) => {
+                if (!(node instanceof ThreadNode) || typeof node.label !== 'string' || node.label === '') {
+                    return
+                }
+
+                backend.killThread(node.thread)
             })
         )
 
