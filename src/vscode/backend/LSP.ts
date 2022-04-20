@@ -114,6 +114,8 @@ export class LSP extends EventEmitter implements Backend {
             } else {
                 this.emit('output', JSON.stringify(err))
             }
+        } finally {
+            refreshThreads(this.state.extState)
         }
 
         return
