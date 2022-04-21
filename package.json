@@ -293,11 +293,6 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "alive.killThread",
-                    "when": "view == lispThreads",
-                    "group": "inline"
-                },
-                {
                     "command": "alive.clearRepl",
                     "when": "view == lispRepl",
                     "group": "navigation"
