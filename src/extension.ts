@@ -42,7 +42,16 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
         repl.on('requestPackage', async () => {
             const pkgs = await backend.listPackages()
-            const names = pkgs.map((pkg) => pkg.name.toLowerCase())
+            const names: string[] = []
+
+            for (const pkg of pkgs) {
+                names.push(pkg.name.toLowerCase())
+
+                for (const nick of pkg.nicknames) {
+                    names.push(nick.toLowerCase())
+                }
+            }
+
             const pick = await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
 
             if (pick !== undefined) {

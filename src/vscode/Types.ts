@@ -192,6 +192,7 @@ export interface CompileFileResp {
 export interface Package {
     name: string
     exports: Array<string>
+    nicknames: Array<string>
 }
 
 export interface Thread {

@@ -167,8 +167,12 @@ export class LSP extends EventEmitter implements Backend {
         for (const obj of respObj.packages) {
             const pkgObj = obj as Package
 
-            if (pkgObj.name === undefined || pkgObj.exports === undefined) {
+            if (pkgObj.name === undefined || pkgObj.exports === undefined || pkgObj.nicknames === undefined) {
                 continue
+            }
+
+            if (pkgObj.nicknames === undefined || pkgObj.nicknames === null) {
+                pkgObj.nicknames = []
             }
 
             pkgs.push(pkgObj)
