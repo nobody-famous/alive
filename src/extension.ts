@@ -82,6 +82,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             vscode.commands.registerCommand('alive.refreshPackages', () => cmds.refreshPackages(state)),
             vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state)),
             vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(state)),
+            vscode.commands.registerCommand('alive.clearRepl', () => repl.clear()),
 
             vscode.commands.registerCommand('alive.removePackage', (node) => {
                 if (!(node instanceof PackageNode) || typeof node.label !== 'string' || node.label === '') {

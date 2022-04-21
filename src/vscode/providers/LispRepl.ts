@@ -44,6 +44,12 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         webviewView.webview.html = this.getHtmlForView()
     }
 
+    clear() {
+        this.view?.webview.postMessage({
+            type: 'clear',
+        })
+    }
+
     saveState() {
         this.view?.webview.postMessage({
             type: 'restoreState',

@@ -123,6 +123,14 @@
                 }
             },
             {
+                "command": "alive.clearRepl",
+                "title": "Alive: Clear REPL",
+                "icon": {
+                    "light": "resource/light/clear-all.svg",
+                    "dark": "resource/dark/clear-all.svg"
+                }
+            },
+            {
                 "command": "alive.refreshPackages",
                 "title": "Alive: Refresh Packages",
                 "icon": {
@@ -282,6 +290,16 @@
                 {
                     "command": "alive.refreshThreads",
                     "when": "view == lispThreads",
+                    "group": "navigation"
+                },
+                {
+                    "command": "alive.killThread",
+                    "when": "view == lispThreads",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.clearRepl",
+                    "when": "view == lispRepl",
                     "group": "navigation"
                 }
             ],

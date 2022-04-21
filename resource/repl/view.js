@@ -25,8 +25,17 @@ window.addEventListener('message', (event) => {
         case 'restoreState':
             restoreState()
             break
+        case 'clear':
+            clear()
+            break
     }
 })
+
+function clear() {
+    const textArea = document.getElementById('repl-text')
+
+    textArea.value = ''
+}
 
 function addText(text) {
     const textArea = document.getElementById('repl-text')
