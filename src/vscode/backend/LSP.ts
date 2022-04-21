@@ -219,30 +219,45 @@ export class LSP extends EventEmitter implements Backend {
     }
 
     async loadFile(path: string, showMsgs?: boolean): Promise<void> {
-        const resp = await this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
+        try {
+            const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-        if (typeof resp !== 'object') {
-            return
-        }
+            refreshThreads(this.state.extState)
 
-        const respObj = resp as { [index: string]: unknown }
-
-        if (!Array.isArray(respObj.messages)) {
-            return
-        }
-
-        for (const msg of respObj.messages) {
-            if (typeof msg !== 'object') {
-                continue
+            const resp = await promise
+            if (typeof resp !== 'object') {
+                return
             }
 
-            const msgObj = msg as { [index: string]: unknown }
+            const respObj = resp as { [index: string]: unknown }
 
-            if (typeof msgObj.severity !== 'string' || typeof msgObj.message !== 'string') {
-                continue
+            if (!Array.isArray(respObj.messages)) {
+                return
             }
 
-            this.emit('output', `${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
+            for (const msg of respObj.messages) {
+                if (typeof msg !== 'object') {
+                    continue
+                }
+
+                const msgObj = msg as { [index: string]: unknown }
+
+                if (typeof msgObj.severity !== 'string' || typeof msgObj.message !== 'string') {
+                    continue
+                }
+
+                this.emit('output', `${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
+            }
+        } catch (err) {
+            const errObj = err as { message: string }
+
+            if (errObj.message !== undefined) {
+                this.emit('output', errObj.message)
+            } else {
+                this.emit('output', JSON.stringify(err))
+            }
+        } finally {
+            refreshThreads(this.state.extState)
         }
     }
 
