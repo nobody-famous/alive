@@ -1,28 +1,29 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as event from '../../swank/event'
-import { Frame, FrameVariable } from '../../swank/Types'
+// import * as event from '../../swank/event'
+// import { Frame, FrameVariable } from '../../swank/Types'
 
 export class DebugView extends EventEmitter {
     ctx: vscode.ExtensionContext
     title: string
     panel?: vscode.WebviewPanel
-    event: event.Debug
-    activate?: event.DebugActivate
+    // event: event.Debug
+    // activate?: event.DebugActivate
     frameExpanded: { [index: number]: boolean | undefined } = {}
-    frameLocals: { [index: number]: FrameVariable[] | undefined } = {}
+    // frameLocals: { [index: number]: FrameVariable[] | undefined } = {}
     frameEval: { [index: number]: string | undefined } = {}
     frameInput: { [index: number]: string | undefined } = {}
     viewCol: vscode.ViewColumn
 
-    constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, event: event.Debug) {
+    // constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, event: event.Debug) {
+    constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn) {
         super()
 
         this.ctx = ctx
         this.title = title
         this.viewCol = viewCol
-        this.event = event
+        // this.event = event
     }
 
     run() {
@@ -70,10 +71,10 @@ export class DebugView extends EventEmitter {
         this.panel = undefined
     }
 
-    setLocals(ndx: number, locals: FrameVariable[]) {
-        this.frameLocals[ndx] = locals
-        this.renderHtml()
-    }
+    // setLocals(ndx: number, locals: FrameVariable[]) {
+    //     this.frameLocals[ndx] = locals
+    //     this.renderHtml()
+    // }
 
     setEvalResponse(ndx: number, text: string) {
         this.frameEval[ndx] = text
@@ -81,7 +82,7 @@ export class DebugView extends EventEmitter {
     }
 
     private inspectCondCommand() {
-        this.emit('inspect-cond', this.event.threadID)
+        // this.emit('inspect-cond', this.event.threadID)
     }
 
     private frameRestartCommand(num: number) {
@@ -107,24 +108,24 @@ export class DebugView extends EventEmitter {
 
         this.frameExpanded[num] = !this.frameExpanded[num]
 
-        if (this.frameLocals[num] === undefined) {
-            this.emit('frame-locals', num)
-        }
+        // if (this.frameLocals[num] === undefined) {
+        //     this.emit('frame-locals', num)
+        // }
 
         this.renderHtml()
     }
 
     private restartCommand(num: number) {
-        const restart = this.event.restarts[num]
-        this.emit('restart', num, restart)
+        // const restart = this.event.restarts[num]
+        // this.emit('restart', num, restart)
     }
 
     private renderCondList() {
         let str = ''
 
-        for (const cond of this.event.condition) {
-            str += `<div class="list-item clickable" onclick="inspect_cond()">${cond.replace(/ /g, '&nbsp;')}</div>`
-        }
+        // for (const cond of this.event.condition) {
+        //     str += `<div class="list-item clickable" onclick="inspect_cond()">${cond.replace(/ /g, '&nbsp;')}</div>`
+        // }
 
         return str
     }
@@ -143,26 +144,26 @@ export class DebugView extends EventEmitter {
     private renderLocals(ndx: number) {
         let str = `<div class="locals-title">Locals:</div>`
 
-        const locals = this.frameLocals[ndx] ?? []
+        // const locals = this.frameLocals[ndx] ?? []
 
-        for (const local of locals) {
-            str += `<div class="locals-var">${local.name} = ${local.value}</div>`
-        }
+        // for (const local of locals) {
+        //     str += `<div class="locals-var">${local.name} = ${local.value}</div>`
+        // }
 
         return str
     }
 
-    private isRestartable(bt: Frame): boolean {
-        const opts = bt.opts ?? []
+    // private isRestartable(bt: Frame): boolean {
+    //     const opts = bt.opts ?? []
 
-        for (const opt of opts) {
-            if (opt.name.toUpperCase() === ':RESTARTABLE' && opt.value) {
-                return true
-            }
-        }
+    //     for (const opt of opts) {
+    //         if (opt.name.toUpperCase() === ':RESTARTABLE' && opt.value) {
+    //             return true
+    //         }
+    //     }
 
-        return false
-    }
+    //     return false
+    // }
 
     private renderRestartBtn(ndx: number) {
         return `<button class="debug-btn restart-btn" onclick="frame_restart(${ndx})")>
@@ -213,32 +214,32 @@ export class DebugView extends EventEmitter {
         return str
     }
 
-    private renderBtTable(bt: Frame) {
-        let str = ''
+    // private renderBtTable(bt: Frame) {
+    //     let str = ''
 
-        str += `<table class="frame-table list-item">
-                  <tbody>
-                    <tr>
-                        <td class="frame-btn-cell">${this.isRestartable(bt) ? this.renderRestartBtn(bt.num) : ''}</td>
-                        <td class="frame-num-cell">${bt.num}:</td>
-                        <td class="frame-data-cell">
-                            <div class="clickable" onclick="bt_locals(${bt.num})">
-                                ${bt.desc}
-                            </div>
-                            ${this.renderExpanded(bt.num)}
-                        </td>
-                    </tr>
-                  </tbody>
-                </table>`
-        return str
-    }
+    //     str += `<table class="frame-table list-item">
+    //               <tbody>
+    //                 <tr>
+    //                     <td class="frame-btn-cell">${this.isRestartable(bt) ? this.renderRestartBtn(bt.num) : ''}</td>
+    //                     <td class="frame-num-cell">${bt.num}:</td>
+    //                     <td class="frame-data-cell">
+    //                         <div class="clickable" onclick="bt_locals(${bt.num})">
+    //                             ${bt.desc}
+    //                         </div>
+    //                         ${this.renderExpanded(bt.num)}
+    //                     </td>
+    //                 </tr>
+    //               </tbody>
+    //             </table>`
+    //     return str
+    // }
 
     private renderBtList() {
         let str = ''
 
-        for (const bt of this.event.frames) {
-            str += this.renderBtTable(bt)
-        }
+        // for (const bt of this.event.frames) {
+        //     str += this.renderBtTable(bt)
+        // }
 
         return str
     }
@@ -266,10 +267,10 @@ export class DebugView extends EventEmitter {
         let str = ''
         let ndx = 0
 
-        for (const restart of this.event.restarts) {
-            str += this.renderRestartItem(ndx, restart.name, restart.desc)
-            ndx += 1
-        }
+        // for (const restart of this.event.restarts) {
+        //     str += this.renderRestartItem(ndx, restart.name, restart.desc)
+        //     ndx += 1
+        // }
 
         return str
     }

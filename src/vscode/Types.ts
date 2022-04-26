@@ -1,9 +1,7 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
-import { PackageMgr } from './PackageMgr'
 import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
-import { Repl } from './repl'
 
 export interface ExtensionState {
     child?: ChildProcess
@@ -18,14 +16,6 @@ export interface ExtensionState {
 
 export interface LSPBackendState {
     extState: ExtensionState
-}
-
-export interface SwankBackendState {
-    extState: ExtensionState
-    ctx: vscode.ExtensionContext
-    repl?: Repl
-    slimeBasePath?: string
-    pkgMgr: PackageMgr
 }
 
 /**

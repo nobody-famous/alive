@@ -4,18 +4,18 @@ import { homedir } from 'os'
 import * as path from 'path'
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { exprToString, SExpr } from '../../lisp'
+// import { exprToString, SExpr } from '../../lisp'
 import { History } from '../repl'
 import { CompileFileNote, ExtensionState, HostPort } from '../Types'
 import {
     checkConnected,
     COMMON_LISP_ID,
     createFolder,
-    getInnerExprText,
-    getSelectOrExpr,
+    // getInnerExprText,
+    // getSelectOrExpr,
     getTempFolder,
-    getTopExpr,
-    jumpToTop,
+    // getTopExpr,
+    // jumpToTop,
     openFile,
     REPL_ID,
     strToMarkdown,
@@ -27,45 +27,45 @@ const backendOutputChannel = vscode.window.createOutputChannel('Alive Backend')
 const replHistory: History = new History()
 
 export async function sendToRepl(state: ExtensionState) {
-    useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        checkConnected(state, async () => {
-            const text = getSelectOrExpr(editor, editor.selection.start)
+    // useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
+    //     checkConnected(state, async () => {
+    //         const text = getSelectOrExpr(editor, editor.selection.start)
 
-            console.log('SEND TO REPL', text)
-            if (text === undefined) {
-                return
-            }
+    //         console.log('SEND TO REPL', text)
+    //         if (text === undefined) {
+    //             return
+    //         }
 
-            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
+    //         const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            await state.backend?.sendToRepl(editor, text, pkgName ?? '', true)
+    //         await state.backend?.sendToRepl(editor, text, pkgName ?? '', true)
 
-            if (editor.document.languageId === REPL_ID) {
-                replHistory.add(text, pkgName ?? ':cl-user')
-            }
-        })
-    })
+    //         if (editor.document.languageId === REPL_ID) {
+    //             replHistory.add(text, pkgName ?? ':cl-user')
+    //         }
+    //     })
+    // })
 }
 
 export async function inlineEval(state: ExtensionState) {
-    useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
-        checkConnected(state, async () => {
-            let text = getSelectOrExpr(editor, editor.selection.start)
-            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
+    // useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
+    //     checkConnected(state, async () => {
+    //         let text = getSelectOrExpr(editor, editor.selection.start)
+    //         const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            if (text === undefined || pkgName === undefined) {
-                return
-            }
+    //         if (text === undefined || pkgName === undefined) {
+    //             return
+    //         }
 
-            const result = await state.backend?.inlineEval(text, pkgName)
+    //         const result = await state.backend?.inlineEval(text, pkgName)
 
-            if (result !== undefined) {
-                state.hoverText = strToMarkdown(result)
-                await vscode.window.showTextDocument(editor.document, editor.viewColumn)
-                vscode.commands.executeCommand('editor.action.showHover')
-            }
-        })
-    })
+    //         if (result !== undefined) {
+    //             state.hoverText = strToMarkdown(result)
+    //             await vscode.window.showTextDocument(editor.document, editor.viewColumn)
+    //             vscode.commands.executeCommand('editor.action.showHover')
+    //         }
+    //     })
+    // })
 }
 
 function setupFailedStartupWarningTimer() {
@@ -261,79 +261,79 @@ export async function nthRestart(state: ExtensionState, n: unknown) {
 }
 
 export async function macroExpand(state: ExtensionState) {
-    useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        checkConnected(state, async () => {
-            const text = await getInnerExprText(editor.document, editor.selection.start)
-            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
+    // useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
+    //     checkConnected(state, async () => {
+    //         const text = await getInnerExprText(editor.document, editor.selection.start)
+    //         const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            if (text === undefined || pkgName === undefined) {
-                return
-            }
+    //         if (text === undefined || pkgName === undefined) {
+    //             return
+    //         }
 
-            const result = await state.backend?.macroExpand(text, pkgName)
+    //         const result = await state.backend?.macroExpand(text, pkgName)
 
-            if (result === undefined) {
-                return
-            }
+    //         if (result === undefined) {
+    //             return
+    //         }
 
-            state.hoverText = strToMarkdown(result)
-            vscode.commands.executeCommand('editor.action.showHover')
-        })
-    })
+    //         state.hoverText = strToMarkdown(result)
+    //         vscode.commands.executeCommand('editor.action.showHover')
+    //     })
+    // })
 }
 
 export async function macroExpandAll(state: ExtensionState) {
-    useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        checkConnected(state, async () => {
-            const text = await getInnerExprText(editor.document, editor.selection.start)
-            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
+    // useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
+    //     checkConnected(state, async () => {
+    //         const text = await getInnerExprText(editor.document, editor.selection.start)
+    //         const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            if (text === undefined || pkgName === undefined) {
-                return
-            }
+    //         if (text === undefined || pkgName === undefined) {
+    //             return
+    //         }
 
-            const result = await state.backend?.macroExpandAll(text, pkgName)
+    //         const result = await state.backend?.macroExpandAll(text, pkgName)
 
-            if (result === undefined) {
-                return
-            }
+    //         if (result === undefined) {
+    //             return
+    //         }
 
-            state.hoverText = strToMarkdown(result)
-            vscode.commands.executeCommand('editor.action.showHover')
-        })
-    })
+    //         state.hoverText = strToMarkdown(result)
+    //         vscode.commands.executeCommand('editor.action.showHover')
+    //     })
+    // })
 }
 
 export async function disassemble(state: ExtensionState) {
-    useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
-        checkConnected(state, async () => {
-            const expr = getTopExpr(editor.document, editor.selection.start)
+    // useEditor([COMMON_LISP_ID, REPL_ID], (editor: vscode.TextEditor) => {
+    //     checkConnected(state, async () => {
+    //         const expr = getTopExpr(editor.document, editor.selection.start)
 
-            if (!(expr instanceof SExpr) || expr.parts.length < 2) {
-                return
-            }
+    //         if (!(expr instanceof SExpr) || expr.parts.length < 2) {
+    //             return
+    //         }
 
-            const name = exprToString(expr.parts[1])
-            const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
+    //         const name = exprToString(expr.parts[1])
+    //         const pkgName = state.backend?.getPkgName(editor.document, editor.selection.start.line)
 
-            if (name === undefined || pkgName === undefined) {
-                return
-            }
+    //         if (name === undefined || pkgName === undefined) {
+    //             return
+    //         }
 
-            const result = await state.backend?.disassemble(`'${name}`, pkgName)
+    //         const result = await state.backend?.disassemble(`'${name}`, pkgName)
 
-            if (result === undefined) {
-                return
-            }
+    //         if (result === undefined) {
+    //             return
+    //         }
 
-            const file = await writeDisassemble(result)
+    //         const file = await writeDisassemble(result)
 
-            if (file !== undefined) {
-                const editor = await vscode.window.showTextDocument(file, vscode.ViewColumn.Two, true)
-                jumpToTop(editor)
-            }
-        })
-    })
+    //         if (file !== undefined) {
+    //             const editor = await vscode.window.showTextDocument(file, vscode.ViewColumn.Two, true)
+    //             jumpToTop(editor)
+    //         }
+    //     })
+    // })
 }
 
 export async function compileAsdfSystem(state: ExtensionState) {

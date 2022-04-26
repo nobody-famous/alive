@@ -1,5 +1,2 @@
-export * from './Fold'
-export * from './Hover'
 export * from './ThreadsTree'
 export * from './PackagesTree'
-export * from './Rename'
