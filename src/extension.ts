@@ -6,6 +6,7 @@ import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from './vscode/Util
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
 import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
+import { startLspServer } from './vscode/backend/ChildProcess'
 
 const DEFAULT_LSP_PORT = 25483
 const DEFAULT_LSP_HOST = '127.0.0.1'
@@ -44,6 +45,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     await backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
 
     state.backend = backend
+
+    await startLspServer(state)
 
     const activeDoc = vscode.window.activeTextEditor?.document
 

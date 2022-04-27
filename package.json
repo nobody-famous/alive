@@ -568,6 +568,22 @@
                     "type": "string",
                     "description": "Path on the REPL server to the workspace"
                 },
+                "alive.lsp.install.path": {
+                    "type": "string",
+                    "default": "/home/rich/work/lisp/alive-lsp"
+                },
+                "alive.lsp.startCommand": {
+                    "type": "array",
+                    "default": [
+                        "sbcl",
+                        "--eval",
+                        "(require :asdf)",
+                        "--eval",
+                        "(asdf:load-system :alive-lsp)",
+                        "--eval",
+                        "(alive/server:start)"
+                    ]
+                },
                 "alive.swank.downloadUrl": {
                     "type": "string",
                     "description": "Https url from which to download slime/swank release",
