@@ -42,8 +42,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     backend.on('output', (str) => repl.addText(str))
 
-    await backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
-
     state.backend = backend
 
     await startLspServer(state)
