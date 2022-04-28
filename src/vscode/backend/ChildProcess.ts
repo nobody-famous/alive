@@ -1,11 +1,12 @@
 import * as vscode from 'vscode'
-import * as net from 'net'
 import * as path from 'path'
 import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { ExtensionState } from '../Types'
 
-export async function startLspServer(state: ExtensionState): Promise<void> {
+const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
+
+export async function startLspServer(state: ExtensionState): Promise<number> {
     return new Promise(async (resolve, reject) => {
         if (state.backend === undefined) {
             return reject('No backend defined')
@@ -29,9 +30,35 @@ export async function startLspServer(state: ExtensionState): Promise<void> {
 
         const timer = setupFailedStartupWarningTimer()
 
+        const appendOutputData = (data: unknown) => {
+            lspOutputChannel.append(`${data}`)
+        }
+
+        let connected = false
+
         state.child = spawn(cmd[0], cmd.slice(1), { cwd, env })
-        state.child.stdout?.setEncoding('utf-8').on('data', (data) => console.log(`STDOUT: ${data}`))
-        state.child.stderr?.setEncoding('utf-8').on('data', (data) => console.log(`STDERR: ${data}`))
+
+        state.child.stdout?.setEncoding('utf-8').on('data', (data) => {
+            appendOutputData(data)
+
+            if (typeof data !== 'string' || connected) {
+                return
+            }
+
+            const match = data.match(/\[(.*?)\]\[(.*?)\] Started on port (\d+)/)
+            const port = parseInt(match?.[3] ?? '')
+
+            if (!Number.isFinite(port) || match === null) {
+                return
+            }
+
+            timer.cancel()
+            connected = true
+            resolve(port)
+        })
+
+        state.child.stderr?.setEncoding('utf-8').on('data', (data) => appendOutputData(data))
+
         state.child
             .on('exit', handleDisconnect(state))
             .on('disconnect', handleDisconnect(state))
@@ -39,23 +66,6 @@ export async function startLspServer(state: ExtensionState): Promise<void> {
                 timer.cancel()
                 reject(`Couldn't spawn server: ${err.message}`)
             })
-
-        const tryConnect = async () => {
-            const socket = new net.Socket()
-
-            socket.connect(25483, '', () => {
-                socket.end()
-                timer.cancel()
-
-                resolve()
-            })
-
-            socket.on('error', (err) => {
-                setTimeout(() => tryConnect(), 500)
-            })
-        }
-
-        tryConnect()
     })
 }
 
@@ -63,6 +73,7 @@ function setupFailedStartupWarningTimer() {
     const timeoutInMs = 10000
     const displayWarning = () => {
         vscode.window.showWarningMessage(`LSP start is taking an unexpectedly long time`)
+        lspOutputChannel.show()
     }
 
     let complete = false
@@ -155,28 +166,4 @@ function getClSourceRegistryEnv(installPath: string, processEnv: NodeJS.ProcessE
 
     updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY}${path.delimiter}${installPath}`
     return updatedEnv
-}
-
-async function portIsAvailable(port: number): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        const socket = new net.Socket()
-        const timeout = () => {
-            socket.destroy()
-            resolve(false)
-        }
-
-        setTimeout(timeout, 200)
-
-        socket
-            .on('timeout', timeout)
-            .on('connect', () => resolve(false))
-            .on('error', (err: { message: string; code?: string }) => {
-                if (err.code === 'ECONNREFUSED') {
-                    return resolve(true)
-                }
-                return reject(err)
-            })
-
-        socket.connect(port, '0.0.0.0')
-    })
 }
