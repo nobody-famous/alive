@@ -45,6 +45,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     state.backend = backend
 
     await startLspServer(state)
+    await state.backend.connect({ host: DEFAULT_LSP_HOST, port: DEFAULT_LSP_PORT })
 
     const activeDoc = vscode.window.activeTextEditor?.document
 

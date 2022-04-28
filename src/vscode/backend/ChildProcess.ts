@@ -40,16 +40,22 @@ export async function startLspServer(state: ExtensionState): Promise<void> {
                 reject(`Couldn't spawn server: ${err.message}`)
             })
 
-        try {
-            await state.backend.connect({ host: '127.0.0.1', port: state.backend.defaultPort })
+        const tryConnect = async () => {
+            const socket = new net.Socket()
 
-            timer.cancel()
-            resolve()
-        } catch (err) {
-            console.log('CONNECT FAILED', err)
-            timer.cancel()
-            reject(err)
+            socket.connect(25483, '', () => {
+                socket.end()
+                timer.cancel()
+
+                resolve()
+            })
+
+            socket.on('error', (err) => {
+                setTimeout(() => tryConnect(), 500)
+            })
         }
+
+        tryConnect()
     })
 }
 
