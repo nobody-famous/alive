@@ -58,7 +58,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         }
 
         state.historyNdx = -1
-        await backend.eval(text, pkg)
+        await backend.eval(text, pkg, true)
     })
 
     repl.on('requestPackage', async () => {

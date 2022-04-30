@@ -89,9 +89,9 @@ export class LSP extends EventEmitter implements Backend {
         return
     }
 
-    async eval(text: string, pkgName: string): Promise<string | undefined> {
+    async eval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
         try {
-            const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName })
+            const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
             refreshThreads(this.state.extState)
 
