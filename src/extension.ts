@@ -4,7 +4,7 @@ import * as path from 'path'
 import { promises as fs } from 'fs'
 import { ThreadsTreeProvider, PackagesTreeProvider, PackageNode, ExportNode, ThreadNode } from './vscode/providers'
 import { ExtensionState, HistoryItem } from './vscode/Types'
-import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
+import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, selectHistoryItem, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
 import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
@@ -136,7 +136,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(state)),
         vscode.commands.registerCommand('alive.clearRepl', () => repl.clear()),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
-        vscode.commands.registerCommand('alive.replHistory', () => cmds.sendReplHistoryItem(state)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)),
 
         // vscode.commands.registerCommand('alive.debugAbort', () => cmds.debugAbort(state)),
@@ -151,6 +150,22 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         // vscode.commands.registerCommand('alive.inspector-refresh', () => cmds.inspectorRefresh(state)),
         // vscode.commands.registerCommand('alive.inspector-quit', () => cmds.inspectorQuit(state)),
         // vscode.commands.registerCommand('alive.systemSkeleton', () => cmds.systemSkeleton()),
+
+        vscode.commands.registerCommand('alive.replHistory', async () => {
+            if (state.historyTree === undefined) {
+                return
+            }
+
+            const item = await selectHistoryItem(state.historyTree?.items)
+
+            state.historyTree.moveItemToTop(item)
+
+            if (replHistoryFile !== undefined && state.historyTree !== undefined) {
+                await saveReplHistory(replHistoryFile, state.historyTree.items)
+            }
+
+            state.backend?.eval(item.text, item.pkgName)
+        }),
 
         vscode.commands.registerCommand('alive.clearReplHistory', () => {
             state.historyTree?.clear()
@@ -203,6 +218,17 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
             repl.setPackage(node.item.pkgName)
             repl.setInput(node.item.text)
+        }),
+        vscode.commands.registerCommand('alive.removeHistory', (node) => {
+            if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
+                return
+            }
+
+            state.historyTree?.removeNode(node)
+
+            if (replHistoryFile !== undefined && state.historyTree !== undefined) {
+                saveReplHistory(replHistoryFile, state.historyTree.items)
+            }
         })
     )
 

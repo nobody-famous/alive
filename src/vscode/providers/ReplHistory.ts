@@ -50,12 +50,30 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     removeItem(ndx: number) {
         this.items.splice(ndx, 1)
+        this.update(this.items)
+    }
+
+    removeNode(node: HistoryNode) {
+        let ndx = 0
+
+        while (ndx < this.items.length && this.items[ndx] !== node.item) {
+            ndx += 1
+        }
+
+        this.removeItem(ndx)
     }
 
     moveToTop(node: HistoryNode) {
         const newItems = this.items.filter((item) => item !== node.item)
 
         newItems.unshift(node.item)
+        this.update(newItems)
+    }
+
+    moveItemToTop(toMove: HistoryItem) {
+        const newItems = this.items.filter((item) => item.text !== toMove.text || item.pkgName !== toMove.pkgName)
+
+        newItems.unshift(toMove)
         this.update(newItems)
     }
 

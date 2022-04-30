@@ -159,6 +159,14 @@
                 }
             },
             {
+                "command": "alive.removeHistory",
+                "title": "Alive: Remove REPL History Item",
+                "icon": {
+                    "light": "resource/light/remove.svg",
+                    "dark": "resource/dark/remove.svg"
+                }
+            },
+            {
                 "command": "alive.refreshPackages",
                 "title": "Alive: Refresh Packages",
                 "icon": {
@@ -343,6 +351,11 @@
                     "group": "inline"
                 },
                 {
+                    "command": "alive.removeHistory",
+                    "when": "view == replHistory && viewItem == evalText",
+                    "group": "inline"
+                },
+                {
                     "command": "alive.editHistory",
                     "when": "view == replHistory && viewItem == evalText",
                     "group": "inline"
@@ -374,8 +387,7 @@
                     "command": "alive.startReplAndAttach"
                 },
                 {
-                    "command": "alive.replHistory",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                    "command": "alive.replHistory"
                 },
                 {
                     "command": "alive.replHistoryDoNotEval",
@@ -490,7 +502,6 @@
             },
             {
                 "command": "alive.replHistory",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl",
                 "key": "alt+shift+r"
             },
             {

@@ -4,7 +4,7 @@ import * as cmds from './commands'
 import { format, TextEncoder } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
-import { ExtensionState } from './Types'
+import { ExtensionState, HistoryItem } from './Types'
 
 export const COMMON_LISP_ID = 'lisp'
 export const REPL_ID = 'lisp-repl'
@@ -62,6 +62,30 @@ async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): 
     }
 
     return namedFolders[chosenFolder]
+}
+
+export function selectHistoryItem(replHistory: HistoryItem[]) {
+    return new Promise<HistoryItem>((resolve, reject) => {
+        const items = [...replHistory]
+        const qp = vscode.window.createQuickPick()
+
+        qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
+
+        qp.onDidChangeSelection(async (e) => {
+            const item = e[0]
+
+            if (item === undefined) {
+                return
+            }
+
+            resolve({ text: item.label, pkgName: item.description ?? '' })
+
+            qp.hide()
+        })
+
+        qp.onDidHide(() => qp.dispose())
+        qp.show()
+    })
 }
 
 export function xlatePath(filePath: string): string {
