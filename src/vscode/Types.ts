@@ -14,7 +14,7 @@ export interface ExtensionState {
     asdfTree?: AsdfSystemsTreeProvider
     threadTree?: ThreadsTreeProvider
     historyTree?: ReplHistoryTreeProvider
-    historyNdx?: number
+    historyNdx: number
 }
 
 export interface LSPBackendState {

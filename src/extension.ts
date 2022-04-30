@@ -1,26 +1,27 @@
 import * as vscode from 'vscode'
 import * as cmds from './vscode/commands'
+import * as path from 'path'
+import { promises as fs } from 'fs'
 import { ThreadsTreeProvider, PackagesTreeProvider, PackageNode, ExportNode, ThreadNode } from './vscode/providers'
-import { ExtensionState } from './vscode/Types'
-import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from './vscode/Utils'
+import { ExtensionState, HistoryItem } from './vscode/Types'
+import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
 import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
 import { startLspServer } from './vscode/backend/ChildProcess'
 import { HistoryNode, ReplHistoryTreeProvider } from './vscode/providers/ReplHistory'
 
-const DEFAULT_LSP_PORT = 25483
-const DEFAULT_LSP_HOST = '127.0.0.1'
-
-let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined }
+let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1 }
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
     const backend = new LSP({ extState: state })
+    const workspacePath = await getWorkspacePath()
+    const replHistoryFile = workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'repl-history.json') : undefined
 
     state.backend = backend
 
     const port = await startLspServer(state)
-    await state.backend.connect({ host: DEFAULT_LSP_HOST, port })
+    await state.backend.connect({ host: '127.0.0.1', port })
 
     const activeDoc = vscode.window.activeTextEditor?.document
 
@@ -31,16 +32,17 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     const pkgs = await backend.listPackages()
     const systems = await backend.listAsdfSystems()
     const threads = await backend.listThreads()
+    const history = replHistoryFile !== undefined ? await readReplHistory(replHistoryFile) : []
 
     state.packageTree = new PackagesTreeProvider(pkgs)
     state.asdfTree = new AsdfSystemsTreeProvider(systems)
     state.threadTree = new ThreadsTreeProvider(threads)
-    state.historyTree = new ReplHistoryTreeProvider([])
+    state.historyTree = new ReplHistoryTreeProvider(history)
 
     const repl = new LispRepl(ctx)
 
     repl.on('eval', async (pkg: string, text: string) => {
-        if (state.historyNdx !== undefined && state.historyNdx >= 0) {
+        if (state.historyNdx >= 0) {
             const item = state.historyTree?.items[state.historyNdx]
 
             if (item !== undefined && item.pkgName === pkg && item.text === text) {
@@ -49,6 +51,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         }
 
         state.historyTree?.addItem(pkg, text)
+
+        if (replHistoryFile !== undefined && state.historyTree !== undefined) {
+            await saveReplHistory(replHistoryFile, state.historyTree.items)
+        }
 
         state.historyNdx = -1
         await backend.eval(text, pkg)
@@ -74,7 +80,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     })
 
     const updateReplInput = () => {
-        if (state.historyNdx === undefined || state.historyTree === undefined) {
+        if (state.historyTree === undefined) {
             return
         }
 
@@ -89,7 +95,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     }
 
     repl.on('historyUp', () => {
-        if (state.historyNdx === undefined || state.historyTree === undefined) {
+        if (state.historyTree === undefined) {
             return
         }
 
@@ -101,7 +107,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     })
 
     repl.on('historyDown', () => {
-        if (state.historyNdx === undefined || state.historyTree === undefined) {
+        if (state.historyTree === undefined) {
             return
         }
 
@@ -128,7 +134,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state)),
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(state)),
         vscode.commands.registerCommand('alive.clearRepl', () => repl.clear()),
-        vscode.commands.registerCommand('alive.clearReplHistory', () => state.historyTree?.clear()),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
         vscode.commands.registerCommand('alive.replHistory', () => cmds.sendReplHistoryItem(state)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)),
@@ -145,6 +150,14 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         // vscode.commands.registerCommand('alive.inspector-refresh', () => cmds.inspectorRefresh(state)),
         // vscode.commands.registerCommand('alive.inspector-quit', () => cmds.inspectorQuit(state)),
         // vscode.commands.registerCommand('alive.systemSkeleton', () => cmds.systemSkeleton()),
+
+        vscode.commands.registerCommand('alive.clearReplHistory', () => {
+            state.historyTree?.clear()
+
+            if (replHistoryFile !== undefined) {
+                saveReplHistory(replHistoryFile, [])
+            }
+        }),
 
         vscode.commands.registerCommand('alive.removePackage', (node) => {
             if (!(node instanceof PackageNode) || typeof node.label !== 'string' || node.label === '') {
@@ -206,11 +219,40 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         ctx.subscriptions
     )
 
-    await vscode.commands.executeCommand('lispPackages.focus')
+    await vscode.commands.executeCommand('replHistory.focus')
     await vscode.commands.executeCommand('lispRepl.focus')
 
     if (activeDoc !== undefined) {
         vscode.window.showTextDocument(activeDoc)
+    }
+}
+
+async function saveReplHistory(fileName: string, items: HistoryItem[]): Promise<void> {
+    await fs.writeFile(fileName, JSON.stringify(items))
+}
+
+async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
+    try {
+        const content = await fs.readFile(fileName)
+        const data = JSON.parse(content.toString())
+
+        if (!Array.isArray(data)) {
+            return []
+        }
+
+        const history: HistoryItem[] = []
+
+        for (const item of data) {
+            if (item.pkgName === undefined || item.text === undefined) {
+                continue
+            }
+
+            history.push(item)
+        }
+
+        return history
+    } catch (err) {
+        return []
     }
 }
 

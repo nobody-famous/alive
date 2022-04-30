@@ -3,6 +3,7 @@ import * as path from 'path'
 import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { ExtensionState } from '../Types'
+import { getWorkspaceOrFilePath } from '../Utils'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
@@ -115,39 +116,6 @@ async function disconnectAndClearChild(state: ExtensionState): Promise<boolean> 
     state.child = undefined
 
     return true
-}
-
-async function getWorkspaceOrFilePath(): Promise<string> {
-    if (vscode.workspace.workspaceFolders === undefined) {
-        return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
-    }
-
-    const folder =
-        vscode.workspace.workspaceFolders.length > 1
-            ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
-            : vscode.workspace.workspaceFolders[0]
-
-    if (folder === undefined) {
-        throw new Error('Failed to find a workspace folder')
-    }
-
-    return folder.uri.fsPath
-}
-
-async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder> {
-    const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
-        folders[folder.uri.fsPath] = folder
-        return folders
-    }
-    const namedFolders = folders.reduce(addFolderToFolders, {})
-    const folderNames = Object.keys(namedFolders)
-    const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
-
-    if (chosenFolder === undefined) {
-        throw new Error('Failed to choose a folder name')
-    }
-
-    return namedFolders[chosenFolder]
 }
 
 function getClSourceRegistryEnv(installPath: string, processEnv: NodeJS.ProcessEnv): { [key: string]: string | undefined } {

@@ -1,7 +1,8 @@
 import * as path from 'path'
-import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import * as cmds from './commands'
+import { format, TextEncoder } from 'util'
+import { homedir } from 'os'
 import { refreshPackages } from './commands'
 import { ExtensionState } from './Types'
 
@@ -18,6 +19,49 @@ export function findEditorForDoc(doc: vscode.TextDocument): vscode.TextEditor | 
     }
 
     return undefined
+}
+
+export async function getWorkspaceOrFilePath(): Promise<string> {
+    if (vscode.workspace.workspaceFolders === undefined) {
+        return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
+    }
+
+    const folder =
+        vscode.workspace.workspaceFolders.length > 1
+            ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
+            : vscode.workspace.workspaceFolders[0]
+
+    return folder.uri.fsPath
+}
+
+export async function getWorkspacePath(): Promise<string | undefined> {
+    if (vscode.workspace.workspaceFolders === undefined) {
+        return undefined
+    }
+
+    const folder =
+        vscode.workspace.workspaceFolders.length > 1
+            ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
+            : vscode.workspace.workspaceFolders[0]
+
+    return folder.uri.fsPath
+}
+
+async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder> {
+    const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
+        folders[folder.uri.fsPath] = folder
+        return folders
+    }
+
+    const namedFolders = folders.reduce(addFolderToFolders, {})
+    const folderNames = Object.keys(namedFolders)
+    const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
+
+    if (chosenFolder === undefined) {
+        throw new Error('Failed to choose a folder name')
+    }
+
+    return namedFolders[chosenFolder]
 }
 
 export function xlatePath(filePath: string): string {
