@@ -16,7 +16,8 @@ let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeo
 export const activate = async (ctx: vscode.ExtensionContext) => {
     const backend = new LSP({ extState: state })
     const workspacePath = await getWorkspacePath()
-    const replHistoryFile = workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'repl-history.json') : undefined
+    const replHistoryFile =
+        workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'alive', 'repl-history.json') : undefined
 
     state.backend = backend
 
