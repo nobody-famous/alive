@@ -151,6 +151,14 @@
                 }
             },
             {
+                "command": "alive.editHistory",
+                "title": "Alive: Edit REPL History Item",
+                "icon": {
+                    "light": "resource/light/edit.svg",
+                    "dark": "resource/dark/edit.svg"
+                }
+            },
+            {
                 "command": "alive.refreshPackages",
                 "title": "Alive: Refresh Packages",
                 "icon": {
@@ -332,6 +340,11 @@
                 {
                     "command": "alive.removeExport",
                     "when": "view == lispPackages && viewItem == export",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.editHistory",
+                    "when": "view == replHistory && viewItem == evalText",
                     "group": "inline"
                 },
                 {

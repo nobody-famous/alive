@@ -40,7 +40,17 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     const repl = new LispRepl(ctx)
 
     repl.on('eval', async (pkg: string, text: string) => {
+        if (state.historyNdx !== undefined && state.historyNdx >= 0) {
+            const item = state.historyTree?.items[state.historyNdx]
+
+            if (item !== undefined && item.pkgName === pkg && item.text === text) {
+                state.historyTree?.removeItem(state.historyNdx)
+            }
+        }
+
         state.historyTree?.addItem(pkg, text)
+
+        state.historyNdx = -1
         await backend.eval(text, pkg)
     })
 
@@ -61,6 +71,45 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         if (pick !== undefined) {
             repl.setPackage(pick)
         }
+    })
+
+    const updateReplInput = () => {
+        if (state.historyNdx === undefined || state.historyTree === undefined) {
+            return
+        }
+
+        if (state.historyNdx >= 0) {
+            const item = state.historyTree.items[state.historyNdx]
+
+            repl.setPackage(item.pkgName)
+            repl.setInput(item.text)
+        } else {
+            repl.clearInput()
+        }
+    }
+
+    repl.on('historyUp', () => {
+        if (state.historyNdx === undefined || state.historyTree === undefined) {
+            return
+        }
+
+        if (state.historyNdx < state.historyTree?.items.length - 1) {
+            state.historyNdx += 1
+        }
+
+        updateReplInput()
+    })
+
+    repl.on('historyDown', () => {
+        if (state.historyNdx === undefined || state.historyTree === undefined) {
+            return
+        }
+
+        if (state.historyNdx >= 0) {
+            state.historyNdx -= 1
+        }
+
+        updateReplInput()
     })
 
     backend.on('output', (str) => repl.addText(str))
@@ -132,6 +181,14 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
             state.historyTree?.moveToTop(node)
             backend.eval(node.item.text, node.item.pkgName)
+        }),
+        vscode.commands.registerCommand('alive.editHistory', (node) => {
+            if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
+                return
+            }
+
+            repl.setPackage(node.item.pkgName)
+            repl.setInput(node.item.text)
         })
     )
 

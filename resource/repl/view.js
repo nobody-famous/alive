@@ -16,6 +16,9 @@ window.addEventListener('message', (event) => {
         case 'addText':
             addText(data.text)
             break
+        case 'setInput':
+            setInput(data.text)
+            break
         case 'setPackage':
             setPackage(data.name)
             break
@@ -28,13 +31,46 @@ window.addEventListener('message', (event) => {
         case 'clear':
             clear()
             break
+        case 'clearInput':
+            clearInput()
+            break
     }
 })
+
+document.getElementById('repl-input-text').onkeyup = (event) => {
+    if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        vscode.postMessage({ command: 'historyUp' })
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        vscode.postMessage({ command: 'historyDown' })
+    }
+}
+
+document.getElementById('repl-input-text').onkeydown = (event) => {
+    if (event.key === 'ArrowUp') {
+        event.preventDefault()
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault()
+    }
+}
 
 function clear() {
     const textArea = document.getElementById('repl-text')
 
     textArea.value = ''
+}
+
+function clearInput() {
+    const input = document.getElementById('repl-input-text')
+
+    input.value = ''
+}
+
+function setInput(text) {
+    const input = document.getElementById('repl-input-text')
+
+    input.value = text
 }
 
 function addText(text) {

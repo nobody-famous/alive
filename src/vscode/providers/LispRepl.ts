@@ -33,6 +33,10 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
                         return this.doEval(msg.text ?? '')
                     case 'requestPackage':
                         return this.emit('requestPackage')
+                    case 'historyUp':
+                        return this.emit('historyUp')
+                    case 'historyDown':
+                        return this.emit('historyDown')
                 }
             },
             undefined,
@@ -61,6 +65,27 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         this.view?.webview.postMessage({
             type: 'setPackage',
             name: pkg,
+        })
+
+        this.view?.webview.postMessage({
+            type: 'saveState',
+        })
+    }
+
+    setInput(text: string) {
+        this.view?.webview.postMessage({
+            type: 'setInput',
+            text: text,
+        })
+
+        this.view?.webview.postMessage({
+            type: 'saveState',
+        })
+    }
+
+    clearInput() {
+        this.view?.webview.postMessage({
+            type: 'clearInput',
         })
 
         this.view?.webview.postMessage({

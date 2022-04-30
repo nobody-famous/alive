@@ -23,7 +23,7 @@ export class HistoryPkgNode extends vscode.TreeItem {
 }
 
 export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-    private items: Array<HistoryItem>
+    public items: Array<HistoryItem>
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
@@ -46,6 +46,10 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
 
         newItems.unshift({ pkgName, text })
         this.update(newItems)
+    }
+
+    removeItem(ndx: number) {
+        this.items.splice(ndx, 1)
     }
 
     moveToTop(node: HistoryNode) {
