@@ -2,6 +2,7 @@ import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
 import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
+import { ReplHistoryTreeProvider } from './providers/ReplHistory'
 
 export interface ExtensionState {
     child?: ChildProcess
@@ -12,6 +13,7 @@ export interface ExtensionState {
     packageTree?: PackagesTreeProvider
     asdfTree?: AsdfSystemsTreeProvider
     threadTree?: ThreadsTreeProvider
+    historyTree?: ReplHistoryTreeProvider
 }
 
 export interface LSPBackendState {
@@ -188,4 +190,9 @@ export interface Package {
 export interface Thread {
     id: number
     name: string
+}
+
+export interface HistoryItem {
+    pkgName: string
+    text: string
 }

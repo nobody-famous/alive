@@ -7,6 +7,7 @@ import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
 import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
 import { startLspServer } from './vscode/backend/ChildProcess'
+import { HistoryNode, ReplHistoryTreeProvider } from './vscode/providers/ReplHistory'
 
 const DEFAULT_LSP_PORT = 25483
 const DEFAULT_LSP_HOST = '127.0.0.1'
@@ -14,10 +15,32 @@ const DEFAULT_LSP_HOST = '127.0.0.1'
 let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined }
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
-    const repl = new LispRepl(ctx)
     const backend = new LSP({ extState: state })
 
+    state.backend = backend
+
+    const port = await startLspServer(state)
+    await state.backend.connect({ host: DEFAULT_LSP_HOST, port })
+
+    const activeDoc = vscode.window.activeTextEditor?.document
+
+    if (activeDoc !== undefined && hasValidLangId(activeDoc, [COMMON_LISP_ID])) {
+        backend.editorChanged(vscode.window.activeTextEditor)
+    }
+
+    const pkgs = await backend.listPackages()
+    const systems = await backend.listAsdfSystems()
+    const threads = await backend.listThreads()
+
+    state.packageTree = new PackagesTreeProvider(pkgs)
+    state.asdfTree = new AsdfSystemsTreeProvider(systems)
+    state.threadTree = new ThreadsTreeProvider(threads)
+    state.historyTree = new ReplHistoryTreeProvider([])
+
+    const repl = new LispRepl(ctx)
+
     repl.on('eval', async (pkg: string, text: string) => {
+        state.historyTree?.addItem(pkg, text)
         await backend.eval(text, pkg)
     })
 
@@ -42,28 +65,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     backend.on('output', (str) => repl.addText(str))
 
-    state.backend = backend
-
-    const port = await startLspServer(state)
-    await state.backend.connect({ host: DEFAULT_LSP_HOST, port })
-
-    const activeDoc = vscode.window.activeTextEditor?.document
-
-    if (activeDoc !== undefined && hasValidLangId(activeDoc, [COMMON_LISP_ID])) {
-        backend.editorChanged(vscode.window.activeTextEditor)
-    }
-
-    const pkgs = await backend.listPackages()
-    const systems = await backend.listAsdfSystems()
-    const threads = await backend.listThreads()
-
-    state.packageTree = new PackagesTreeProvider(pkgs)
-    state.asdfTree = new AsdfSystemsTreeProvider(systems)
-    state.threadTree = new ThreadsTreeProvider(threads)
-
     vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
     vscode.window.registerTreeDataProvider('asdfSystems', state.asdfTree)
     vscode.window.registerTreeDataProvider('lispThreads', state.threadTree)
+    vscode.window.registerTreeDataProvider('replHistory', state.historyTree)
     vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
     ctx.subscriptions.push(
@@ -74,6 +79,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(state)),
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(state)),
         vscode.commands.registerCommand('alive.clearRepl', () => repl.clear()),
+        vscode.commands.registerCommand('alive.clearReplHistory', () => state.historyTree?.clear()),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
         vscode.commands.registerCommand('alive.replHistory', () => cmds.sendReplHistoryItem(state)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)),
@@ -118,6 +124,14 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             }
 
             backend.killThread(node.thread)
+        }),
+        vscode.commands.registerCommand('alive.evalHistory', (node) => {
+            if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
+                return
+            }
+
+            state.historyTree?.moveToTop(node)
+            backend.eval(node.item.text, node.item.pkgName)
         })
     )
 

@@ -73,6 +73,10 @@
         "views": {
             "lisp-explorer": [
                 {
+                    "id": "replHistory",
+                    "name": "REPL History"
+                },
+                {
                     "id": "lispPackages",
                     "name": "Packages"
                 },
@@ -128,6 +132,22 @@
                 "icon": {
                     "light": "resource/light/clear-all.svg",
                     "dark": "resource/dark/clear-all.svg"
+                }
+            },
+            {
+                "command": "alive.clearReplHistory",
+                "title": "Alive: Clear REPL History",
+                "icon": {
+                    "light": "resource/light/clear-all.svg",
+                    "dark": "resource/dark/clear-all.svg"
+                }
+            },
+            {
+                "command": "alive.evalHistory",
+                "title": "Alive: Eval REPL History Item",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
                 }
             },
             {
@@ -296,6 +316,11 @@
                     "command": "alive.clearRepl",
                     "when": "view == lispRepl",
                     "group": "navigation"
+                },
+                {
+                    "command": "alive.clearReplHistory",
+                    "when": "view == replHistory",
+                    "group": "navigation"
                 }
             ],
             "view/item/context": [
@@ -307,6 +332,11 @@
                 {
                     "command": "alive.removeExport",
                     "when": "view == lispPackages && viewItem == export",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.evalHistory",
+                    "when": "view == replHistory && viewItem == evalText",
                     "group": "inline"
                 },
                 {
@@ -570,7 +600,7 @@
                 },
                 "alive.lsp.install.path": {
                     "type": "string",
-                    "default": "/home/rich/work/lisp/alive-lsp"
+                    "default": "/path/to/alive-lsp"
                 },
                 "alive.lsp.startCommand": {
                     "type": "array",
