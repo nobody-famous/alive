@@ -189,12 +189,14 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
             backend.removeExport(node.pkg, node.label)
         }),
-        vscode.commands.registerCommand('alive.loadAsdfByName', (node) => {
+        vscode.commands.registerCommand('alive.loadAsdfByName', async (node) => {
             if (typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
-            backend.loadAsdfSystem(node.label)
+            repl.addText(`Loading ASDF System ${node.label}`)
+            await backend.loadAsdfSystem(node.label)
+            repl.addText(`Done Loading ASDF System ${node.label}`)
         }),
         vscode.commands.registerCommand('alive.killThread', (node) => {
             if (!(node instanceof ThreadNode) || typeof node.label !== 'string' || node.label === '') {
