@@ -377,7 +377,8 @@ export class LSP extends EventEmitter implements Backend {
         const pkg = await this.getPackage(editor, range.start)
 
         if (text !== undefined && pkg !== undefined) {
-            this.eval(text, pkg)
+            await vscode.workspace.saveAll()
+            await this.eval(text, pkg)
         }
     }
 
