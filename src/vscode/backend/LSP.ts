@@ -71,6 +71,12 @@ export class LSP extends EventEmitter implements Backend {
         this.client.onNotification('$/alive/stdout', (params) => {
             this.emit('output', params.data)
         })
+        this.client.onRequest('$/alive/userInput', async () => {
+            const input = await vscode.window.showInputBox()
+            const text = input !== undefined ? `${input}\n` : '\n'
+
+            return { text }
+        })
     }
 
     async inspector(text: string, pkgName: string): Promise<void> {}
