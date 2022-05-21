@@ -3,13 +3,14 @@ import * as cmds from './vscode/commands'
 import * as path from 'path'
 import { promises as fs } from 'fs'
 import { ThreadsTreeProvider, PackagesTreeProvider, PackageNode, ExportNode, ThreadNode } from './vscode/providers'
-import { ExtensionState, HistoryItem } from './vscode/Types'
+import { DebugInfo, ExtensionState, HistoryItem } from './vscode/Types'
 import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, selectHistoryItem, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { LispRepl } from './vscode/providers/LispRepl'
 import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
 import { startLspServer } from './vscode/backend/ChildProcess'
 import { HistoryNode, ReplHistoryTreeProvider } from './vscode/providers/ReplHistory'
+import { DebugView } from './vscode/repl'
 
 let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1 }
 
@@ -119,7 +120,49 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         updateReplInput()
     })
 
-    backend.on('output', (str) => repl.addText(str))
+    backend.on('output', (str: unknown) => {
+        if (typeof str === 'string') {
+            repl.addText(str)
+        }
+    })
+
+    backend.on('debug', (data: unknown) => {
+        if (typeof data !== 'object' || data === null) {
+            throw new Error('Invalid debugger info')
+        }
+
+        const dataObj = data as { [index: string]: unknown }
+
+        if (typeof dataObj.message !== 'string' || !Array.isArray(dataObj.restarts) || !Array.isArray(dataObj.stackTrace)) {
+            throw new Error('Invalid debugger info')
+        }
+
+        for (const item of dataObj.restarts) {
+            if (typeof item !== 'string') {
+                throw new Error('Invalid debugger info')
+            }
+        }
+
+        for (const item of dataObj.stackTrace) {
+            if (typeof item !== 'string') {
+                throw new Error('Invalid debugger info')
+            }
+        }
+
+        const info: DebugInfo = {
+            message: dataObj.message,
+            restarts: dataObj.restarts,
+            stackTrace: dataObj.stackTrace,
+        }
+        const view = new DebugView(ctx, 'Debug', vscode.ViewColumn.Two, info)
+
+        view.on('restart', (num: number) => {
+            console.log('RESTART', num)
+            view.stop()
+        })
+
+        view.run()
+    })
 
     vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
     vscode.window.registerTreeDataProvider('asdfSystems', state.asdfTree)

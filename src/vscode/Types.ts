@@ -197,3 +197,9 @@ export interface HistoryItem {
     pkgName: string
     text: string
 }
+
+export interface DebugInfo {
+    message: string
+    restarts: Array<string>
+    stackTrace: Array<string>
+}

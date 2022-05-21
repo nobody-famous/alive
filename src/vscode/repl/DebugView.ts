@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { DebugInfo } from '../Types'
 // import * as event from '../../swank/event'
 // import { Frame, FrameVariable } from '../../swank/Types'
 
@@ -8,6 +9,7 @@ export class DebugView extends EventEmitter {
     ctx: vscode.ExtensionContext
     title: string
     panel?: vscode.WebviewPanel
+    info: DebugInfo
     // event: event.Debug
     // activate?: event.DebugActivate
     frameExpanded: { [index: number]: boolean | undefined } = {}
@@ -17,12 +19,13 @@ export class DebugView extends EventEmitter {
     viewCol: vscode.ViewColumn
 
     // constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, event: event.Debug) {
-    constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn) {
+    constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, info: DebugInfo) {
         super()
 
         this.ctx = ctx
         this.title = title
         this.viewCol = viewCol
+        this.info = info
         // this.event = event
     }
 
@@ -118,14 +121,22 @@ export class DebugView extends EventEmitter {
     private restartCommand(num: number) {
         // const restart = this.event.restarts[num]
         // this.emit('restart', num, restart)
+        this.emit('restart', num)
+    }
+
+    private strToHtml(str: string): string {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/ /g, '&nbsp;')
+            .replace(/\</g, '&lt;')
+            .replace(/\>/g, '&gt;')
+            .replace(/\n/g, '<br>')
     }
 
     private renderCondList() {
         let str = ''
 
-        // for (const cond of this.event.condition) {
-        //     str += `<div class="list-item clickable" onclick="inspect_cond()">${cond.replace(/ /g, '&nbsp;')}</div>`
-        // }
+        str += `<div class="list-item">${this.strToHtml(this.info.message)}</div>`
 
         return str
     }
@@ -236,6 +247,12 @@ export class DebugView extends EventEmitter {
 
     private renderBtList() {
         let str = ''
+        let ndx = this.info.stackTrace.length
+
+        for (const bt of this.info.stackTrace) {
+            str += `<div class="list-item"">${ndx}: ${this.strToHtml(bt)}</div>`
+            ndx -= 1
+        }
 
         // for (const bt of this.event.frames) {
         //     str += this.renderBtTable(bt)
@@ -255,10 +272,10 @@ export class DebugView extends EventEmitter {
         `
     }
 
-    private renderRestartItem(ndx: number, name: string, desc: string) {
+    private renderRestartItem(ndx: number, desc: string) {
         return `
             <div class="list-item clickable" onclick="restart(${ndx})">
-                ${ndx}: [${name}] ${desc}
+                ${ndx}: ${desc}
             </div>
         `
     }
@@ -267,10 +284,10 @@ export class DebugView extends EventEmitter {
         let str = ''
         let ndx = 0
 
-        // for (const restart of this.event.restarts) {
-        //     str += this.renderRestartItem(ndx, restart.name, restart.desc)
-        //     ndx += 1
-        // }
+        for (const restart of this.info.restarts) {
+            str += this.renderRestartItem(ndx, this.strToHtml(restart))
+            ndx += 1
+        }
 
         return str
     }
