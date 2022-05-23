@@ -1,10 +1,15 @@
 import * as vscode from 'vscode'
 import * as net from 'net'
 import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState, Package, Thread } from '../Types'
-import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
+import { COMMON_LISP_ID, hasValidLangId, startCompileTimer, strToMarkdown } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import EventEmitter = require('events')
 import { refreshPackages, refreshThreads } from '../commands'
+
+interface EvalInfo {
+    text: string
+    package: string
+}
 
 const parseToInt = (data: unknown): number | undefined => {
     if (typeof data !== 'string' && typeof data !== 'number') {
@@ -94,11 +99,7 @@ export class LSP extends EventEmitter implements Backend {
 
     async addToReplView(text: string): Promise<void> {}
 
-    async inlineEval(text: string, pkgName: string): Promise<string | undefined> {
-        return
-    }
-
-    async eval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
+    private async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
         try {
             const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
@@ -113,7 +114,7 @@ export class LSP extends EventEmitter implements Backend {
             const resultObj = resp as { text: string }
 
             if (resultObj.text !== undefined) {
-                this.emit('output', resultObj.text)
+                return resultObj.text
             }
         } catch (err) {
             const errObj = err as { message: string }
@@ -128,6 +129,30 @@ export class LSP extends EventEmitter implements Backend {
         }
 
         return
+    }
+
+    async inlineEval(editor: vscode.TextEditor | undefined): Promise<void> {
+        const info = await this.getEvalInfo(editor)
+
+        if (editor === undefined || info === undefined) {
+            return
+        }
+
+        const result = await this.doEval(info.text, info.package)
+
+        if (result !== undefined) {
+            this.state.extState.hoverText = `=> ${strToMarkdown(result)}`
+            await vscode.window.showTextDocument(editor.document, editor.viewColumn)
+            vscode.commands.executeCommand('editor.action.showHover')
+        }
+    }
+
+    async eval(text: string, pkgName: string, storeResult?: boolean): Promise<void> {
+        const result = await this.doEval(text, pkgName, storeResult)
+
+        if (result !== undefined) {
+            this.emit('output', result)
+        }
     }
 
     replDebugAbort(): void {}
@@ -275,6 +300,8 @@ export class LSP extends EventEmitter implements Backend {
             return
         }
 
+        this.state.extState.hoverText = ''
+
         startCompileTimer(this.state.extState)
     }
 
@@ -369,7 +396,7 @@ export class LSP extends EventEmitter implements Backend {
         return ''
     }
 
-    async sendToRepl(editor: vscode.TextEditor | undefined) {
+    private async getEvalInfo(editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> {
         if (editor === undefined) {
             return
         }
@@ -385,9 +412,15 @@ export class LSP extends EventEmitter implements Backend {
         const text = editor.document.getText(range)
         const pkg = await this.getPackage(editor, range.start)
 
-        if (text !== undefined && pkg !== undefined) {
+        return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
+    }
+
+    async sendToRepl(editor: vscode.TextEditor | undefined) {
+        const info = await this.getEvalInfo(editor)
+
+        if (info !== undefined) {
             await vscode.workspace.saveAll()
-            await this.eval(text, pkg)
+            await this.eval(info.text, info.package)
         }
     }
 

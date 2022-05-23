@@ -11,6 +11,7 @@ import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
 import { startLspServer } from './vscode/backend/ChildProcess'
 import { HistoryNode, ReplHistoryTreeProvider } from './vscode/providers/ReplHistory'
 import { DebugView } from './vscode/repl'
+import { getHoverProvider } from './vscode/providers/Hover'
 
 let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1 }
 
@@ -170,6 +171,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     vscode.window.registerTreeDataProvider('replHistory', state.historyTree)
     vscode.window.registerWebviewViewProvider('lispRepl', repl)
 
+    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
+
     ctx.subscriptions.push(
         vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor)),
         vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor)),
@@ -179,6 +182,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(state)),
         vscode.commands.registerCommand('alive.clearRepl', () => repl.clear()),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
+        vscode.commands.registerCommand('alive.inlineEval', () => backend.inlineEval(vscode.window.activeTextEditor)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)),
 
         // vscode.commands.registerCommand('alive.debugAbort', () => cmds.debugAbort(state)),
