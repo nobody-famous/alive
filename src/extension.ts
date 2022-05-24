@@ -146,19 +146,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.inlineEval', () => backend.inlineEval(vscode.window.activeTextEditor)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(state)),
 
-        // vscode.commands.registerCommand('alive.debugAbort', () => cmds.debugAbort(state)),
-        // vscode.commands.registerCommand('alive.nthRestart', (n: unknown) => cmds.nthRestart(state, n)),
-        // vscode.commands.registerCommand('alive.macroExpand', () => cmds.macroExpand(state)),
-        // vscode.commands.registerCommand('alive.macroExpandAll', () => cmds.macroExpandAll(state)),
-        // vscode.commands.registerCommand('alive.disassemble', () => cmds.disassemble(state)),
-        // vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(state, false)),
-        // vscode.commands.registerCommand('alive.inspector', () => cmds.inspector(state)),
-        // vscode.commands.registerCommand('alive.inspector-prev', () => cmds.inspectorPrev(state)),
-        // vscode.commands.registerCommand('alive.inspector-next', () => cmds.inspectorNext(state)),
-        // vscode.commands.registerCommand('alive.inspector-refresh', () => cmds.inspectorRefresh(state)),
-        // vscode.commands.registerCommand('alive.inspector-quit', () => cmds.inspectorQuit(state)),
-        // vscode.commands.registerCommand('alive.systemSkeleton', () => cmds.systemSkeleton()),
-
         vscode.commands.registerCommand('alive.replHistory', async () => {
             if (state.historyTree === undefined) {
                 return
