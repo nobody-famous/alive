@@ -7,7 +7,6 @@ import { refreshPackages } from './commands'
 import { ExtensionState, HistoryItem } from './Types'
 
 export const COMMON_LISP_ID = 'lisp'
-export const REPL_ID = 'lisp-repl'
 
 const OUTPUT_DIR = '.vscode/alive'
 
@@ -123,10 +122,6 @@ export function strToMarkdown(text: string): string {
 
 export function hasValidLangId(doc: vscode.TextDocument, ids: string[]): boolean {
     return ids.includes(doc.languageId)
-}
-
-export function isReplDoc(doc: vscode.TextDocument) {
-    return doc.languageId === REPL_ID
 }
 
 export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) => void) {
