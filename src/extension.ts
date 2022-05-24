@@ -12,11 +12,8 @@ import { startLspServer } from './vscode/backend/ChildProcess'
 import { HistoryNode, ReplHistoryTreeProvider } from './vscode/providers/ReplHistory'
 import { getHoverProvider } from './vscode/providers/Hover'
 
-let state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1 }
-
 export const activate = async (ctx: vscode.ExtensionContext) => {
-    state.ctx = ctx
-
+    const state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1, ctx }
     const backend = new LSP({ extState: state })
     const workspacePath = await getWorkspacePath()
     const replHistoryFile =
@@ -229,7 +226,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         })
     )
 
-    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(doc))
+    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(state, doc))
 
     vscode.workspace.onDidChangeTextDocument(
         (event: vscode.TextDocumentChangeEvent) => state.backend?.textDocumentChanged(event),
@@ -280,7 +277,7 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
     }
 }
 
-function openTextDocument(doc: vscode.TextDocument) {
+function openTextDocument(state: ExtensionState, doc: vscode.TextDocument) {
     if (!hasValidLangId(doc, [COMMON_LISP_ID])) {
         return
     }
