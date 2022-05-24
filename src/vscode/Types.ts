@@ -5,6 +5,7 @@ import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
 import { ReplHistoryTreeProvider } from './providers/ReplHistory'
 
 export interface ExtensionState {
+    ctx?: vscode.ExtensionContext
     child?: ChildProcess
     backend?: Backend
     hoverText: string

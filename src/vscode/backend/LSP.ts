@@ -1,10 +1,21 @@
 import * as vscode from 'vscode'
 import * as net from 'net'
-import { Backend, CompileFileNote, CompileFileResp, CompileLocation, HostPort, LSPBackendState, Package, Thread } from '../Types'
+import {
+    Backend,
+    CompileFileNote,
+    CompileFileResp,
+    CompileLocation,
+    DebugInfo,
+    HostPort,
+    LSPBackendState,
+    Package,
+    Thread,
+} from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, startCompileTimer } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import EventEmitter = require('events')
+import { EventEmitter } from 'events'
 import { refreshPackages, refreshThreads } from '../commands'
+import { DebugView } from '../repl'
 
 const parseToInt = (data: unknown): number | undefined => {
     if (typeof data !== 'string' && typeof data !== 'number') {
@@ -50,7 +61,7 @@ export class LSP extends EventEmitter implements Backend {
                     resolve({ reader: socket, writer: socket })
                 )
 
-                socket.on('error', (err) => reject(err))
+                socket.on('error', (err: unknown) => reject(err))
             })
         }
         const clientOpts: LanguageClientOptions = {
@@ -65,21 +76,102 @@ export class LSP extends EventEmitter implements Backend {
         this.client.start()
 
         await this.client.onReady()
-        this.client.onNotification('$/alive/stderr', (params) => {
-            this.emit('output', params.data)
+
+        this.client.onNotification('$/alive/stderr', (params: unknown) => {
+            this.sendOutput(params)
         })
-        this.client.onNotification('$/alive/stdout', (params) => {
-            this.emit('output', params.data)
+
+        this.client.onNotification('$/alive/stdout', (params: unknown) => {
+            this.sendOutput(params)
         })
-        this.client.onRequest('$/alive/debugger', (params) => {
-            this.emit('debug', params)
+
+        this.client.onRequest('$/alive/debugger', async (params: unknown) => {
+            const index = await this.getRestartIndex(params)
+
+            return { index }
         })
+
         this.client.onRequest('$/alive/userInput', async () => {
             const input = await vscode.window.showInputBox()
             const text = input !== undefined ? `${input}\n` : '\n'
 
             return { text }
         })
+    }
+
+    private showDebugWindow(info: DebugInfo) {
+        return new Promise<number>((resolve, reject) => {
+            if (this.state.extState.ctx === undefined) {
+                return reject('Debugger: No extension context')
+            }
+
+            const view = new DebugView(this.state.extState.ctx, 'Debug', vscode.ViewColumn.Two, info)
+
+            view.on('restart', (num: number) => {
+                view.stop()
+                resolve(num)
+            })
+
+            view.run()
+        })
+    }
+
+    private parseDebugInfo(params: unknown): DebugInfo | undefined {
+        if (this.state.extState.ctx === undefined) {
+            throw new Error('Debugger: No extension context')
+        }
+
+        if (typeof params !== 'object' || params === null) {
+            return
+        }
+
+        const paramsObj = params as { [index: string]: unknown }
+
+        if (typeof paramsObj.message !== 'string' || !Array.isArray(paramsObj.restarts) || !Array.isArray(paramsObj.stackTrace)) {
+            return
+        }
+
+        for (const item of paramsObj.restarts) {
+            if (typeof item !== 'string') {
+                return
+            }
+        }
+
+        for (const item of paramsObj.stackTrace) {
+            if (typeof item !== 'string') {
+                return
+            }
+        }
+
+        return {
+            message: paramsObj.message,
+            restarts: paramsObj.restarts,
+            stackTrace: paramsObj.stackTrace,
+        }
+    }
+
+    private async getRestartIndex(params: unknown) {
+        const info = this.parseDebugInfo(params)
+
+        if (info === undefined) {
+            throw new Error('Invalid debugger info')
+        }
+
+        return await this.showDebugWindow(info)
+    }
+
+    private sendOutput(params: unknown) {
+        if (typeof params !== 'object' || params === null) {
+            throw new Error('Invalid output message')
+        }
+
+        const paramsObj = params as { [index: string]: unknown }
+
+        if (typeof paramsObj.data !== 'string') {
+            throw new Error('Invalid output message')
+        }
+
+        this.emit('output', paramsObj.data)
     }
 
     async inspector(text: string, pkgName: string): Promise<void> {}
