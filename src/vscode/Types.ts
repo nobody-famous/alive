@@ -43,9 +43,9 @@ export interface Backend {
 
     addToReplView(text: string): Promise<void>
 
-    inlineEval(text: string, pkgName: string): Promise<string | undefined>
+    inlineEval(editor: vscode.TextEditor | undefined): Promise<void>
 
-    eval(text: string, pkgName: string): Promise<string | undefined>
+    eval(text: string, pkgName: string): Promise<void>
 
     replDebugAbort(): void
 
