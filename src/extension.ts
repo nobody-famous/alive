@@ -22,7 +22,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     state.backend = backend
 
     const port = await startLspServer(state)
+
     await state.backend.connect({ host: '127.0.0.1', port })
+    await initTreeViews(state, backend, replHistoryFile)
 
     const activeDoc = vscode.window.activeTextEditor?.document
 
@@ -30,107 +32,43 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         backend.editorChanged(vscode.window.activeTextEditor)
     }
 
-    const pkgs = await backend.listPackages()
-    const systems = await backend.listAsdfSystems()
-    const threads = await backend.listThreads()
-    const history = replHistoryFile !== undefined ? await readReplHistory(replHistoryFile) : []
+    const repl = await initRepl(ctx, state, backend, replHistoryFile)
 
-    state.packageTree = new PackagesTreeProvider(pkgs)
-    state.asdfTree = new AsdfSystemsTreeProvider(systems)
-    state.threadTree = new ThreadsTreeProvider(threads)
-    state.historyTree = new ReplHistoryTreeProvider(history)
+    registerProviders(state, repl)
+    registerCommands(ctx, state, backend, replHistoryFile, repl)
+    setWorkspaceEventHandlers(ctx, state)
 
-    const repl = new LispRepl(ctx)
+    await vscode.commands.executeCommand('replHistory.focus')
+    await vscode.commands.executeCommand('lispRepl.focus')
 
-    repl.on('eval', async (pkg: string, text: string) => {
-        if (state.historyNdx >= 0) {
-            const item = state.historyTree?.items[state.historyNdx]
-
-            if (item !== undefined && item.pkgName === pkg && item.text === text) {
-                state.historyTree?.removeItem(state.historyNdx)
-            }
-        }
-
-        state.historyTree?.addItem(pkg, text)
-
-        if (replHistoryFile !== undefined && state.historyTree !== undefined) {
-            await saveReplHistory(replHistoryFile, state.historyTree.items)
-        }
-
-        state.historyNdx = -1
-        await backend.eval(text, pkg, true)
-    })
-
-    repl.on('requestPackage', async () => {
-        const pkgs = await backend.listPackages()
-        const names: string[] = []
-
-        for (const pkg of pkgs) {
-            names.push(pkg.name.toLowerCase())
-
-            for (const nick of pkg.nicknames) {
-                names.push(nick.toLowerCase())
-            }
-        }
-
-        const pick = await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
-
-        if (pick !== undefined) {
-            repl.setPackage(pick)
-        }
-    })
-
-    const updateReplInput = () => {
-        if (state.historyTree === undefined) {
-            return
-        }
-
-        if (state.historyNdx >= 0) {
-            const item = state.historyTree.items[state.historyNdx]
-
-            repl.setPackage(item.pkgName)
-            repl.setInput(item.text)
-        } else {
-            repl.clearInput()
-        }
+    if (activeDoc !== undefined) {
+        vscode.window.showTextDocument(activeDoc)
     }
+}
 
-    repl.on('historyUp', () => {
-        if (state.historyTree === undefined) {
-            return
-        }
+function setWorkspaceEventHandlers(ctx: vscode.ExtensionContext, state: ExtensionState) {
+    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(state, doc))
 
-        if (state.historyNdx < state.historyTree?.items.length - 1) {
-            state.historyNdx += 1
-        }
+    vscode.workspace.onDidChangeTextDocument(
+        (event: vscode.TextDocumentChangeEvent) => state.backend?.textDocumentChanged(event),
+        null,
+        ctx.subscriptions
+    )
 
-        updateReplInput()
-    })
+    vscode.window.onDidChangeActiveTextEditor(
+        (editor?: vscode.TextEditor) => state.backend?.editorChanged(editor),
+        null,
+        ctx.subscriptions
+    )
+}
 
-    repl.on('historyDown', () => {
-        if (state.historyTree === undefined) {
-            return
-        }
-
-        if (state.historyNdx >= 0) {
-            state.historyNdx -= 1
-        }
-
-        updateReplInput()
-    })
-
-    backend.on('output', (str: string) => {
-        repl.addText(str)
-    })
-
-    vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
-    vscode.window.registerTreeDataProvider('asdfSystems', state.asdfTree)
-    vscode.window.registerTreeDataProvider('lispThreads', state.threadTree)
-    vscode.window.registerTreeDataProvider('replHistory', state.historyTree)
-    vscode.window.registerWebviewViewProvider('lispRepl', repl)
-
-    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
-
+function registerCommands(
+    ctx: vscode.ExtensionContext,
+    state: ExtensionState,
+    backend: LSP,
+    replHistoryFile: string | undefined,
+    repl: LispRepl
+) {
     ctx.subscriptions.push(
         vscode.commands.registerCommand('alive.selectSexpr', () => backend.selectSexpr(vscode.window.activeTextEditor)),
         vscode.commands.registerCommand('alive.sendToRepl', () => backend.sendToRepl(vscode.window.activeTextEditor)),
@@ -225,27 +163,129 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             }
         })
     )
+}
 
-    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(state, doc))
-
-    vscode.workspace.onDidChangeTextDocument(
-        (event: vscode.TextDocumentChangeEvent) => state.backend?.textDocumentChanged(event),
-        null,
-        ctx.subscriptions
-    )
-
-    vscode.window.onDidChangeActiveTextEditor(
-        (editor?: vscode.TextEditor) => state.backend?.editorChanged(editor),
-        null,
-        ctx.subscriptions
-    )
-
-    await vscode.commands.executeCommand('replHistory.focus')
-    await vscode.commands.executeCommand('lispRepl.focus')
-
-    if (activeDoc !== undefined) {
-        vscode.window.showTextDocument(activeDoc)
+function registerProviders(state: ExtensionState, repl: LispRepl) {
+    if (state.packageTree !== undefined) {
+        vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
     }
+
+    if (state.asdfTree !== undefined) {
+        vscode.window.registerTreeDataProvider('asdfSystems', state.asdfTree)
+    }
+
+    if (state.threadTree !== undefined) {
+        vscode.window.registerTreeDataProvider('lispThreads', state.threadTree)
+    }
+
+    if (state.historyTree !== undefined) {
+        vscode.window.registerTreeDataProvider('replHistory', state.historyTree)
+    }
+
+    if (repl !== undefined) {
+        vscode.window.registerWebviewViewProvider('lispRepl', repl)
+    }
+
+    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
+}
+
+async function initRepl(ctx: vscode.ExtensionContext, state: ExtensionState, backend: LSP, replHistoryFile?: string) {
+    const repl = new LispRepl(ctx)
+
+    repl.on('eval', async (pkg: string, text: string) => {
+        if (state.historyNdx >= 0) {
+            const item = state.historyTree?.items[state.historyNdx]
+
+            if (item !== undefined && item.pkgName === pkg && item.text === text) {
+                state.historyTree?.removeItem(state.historyNdx)
+            }
+        }
+
+        state.historyTree?.addItem(pkg, text)
+
+        if (replHistoryFile !== undefined && state.historyTree !== undefined) {
+            await saveReplHistory(replHistoryFile, state.historyTree.items)
+        }
+
+        state.historyNdx = -1
+        await backend.eval(text, pkg, true)
+    })
+
+    repl.on('requestPackage', async () => {
+        const pkgs = await backend.listPackages()
+        const names: string[] = []
+
+        for (const pkg of pkgs) {
+            names.push(pkg.name.toLowerCase())
+
+            for (const nick of pkg.nicknames) {
+                names.push(nick.toLowerCase())
+            }
+        }
+
+        const pick = await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
+
+        if (pick !== undefined) {
+            repl.setPackage(pick)
+        }
+    })
+
+    const updateReplInput = () => {
+        if (state.historyTree === undefined) {
+            return
+        }
+
+        if (state.historyNdx >= 0) {
+            const item = state.historyTree.items[state.historyNdx]
+
+            repl.setPackage(item.pkgName)
+            repl.setInput(item.text)
+        } else {
+            repl.clearInput()
+        }
+    }
+
+    repl.on('historyUp', () => {
+        if (state.historyTree === undefined) {
+            return
+        }
+
+        if (state.historyNdx < state.historyTree?.items.length - 1) {
+            state.historyNdx += 1
+        }
+
+        updateReplInput()
+    })
+
+    repl.on('historyDown', () => {
+        if (state.historyTree === undefined) {
+            return
+        }
+
+        if (state.historyNdx >= 0) {
+            state.historyNdx -= 1
+        }
+
+        updateReplInput()
+    })
+
+    backend.on('output', (str: string) => {
+        repl.addText(str)
+    })
+
+    return repl
+}
+
+async function initTreeViews(state: ExtensionState, backend: LSP, replHistoryFile?: string) {
+    const pkgs = await backend.listPackages()
+    const systems = await backend.listAsdfSystems()
+    const threads = await backend.listThreads()
+    const history = replHistoryFile !== undefined ? await readReplHistory(replHistoryFile) : []
+
+    state.packageTree = new PackagesTreeProvider(pkgs)
+    state.asdfTree = new AsdfSystemsTreeProvider(systems)
+    state.threadTree = new ThreadsTreeProvider(threads)
+    state.historyTree = new ReplHistoryTreeProvider(history)
 }
 
 async function saveReplHistory(fileName: string, items: HistoryItem[]): Promise<void> {
