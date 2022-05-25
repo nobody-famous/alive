@@ -1,9 +1,6 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
 import { LSP } from './backend/LSP'
-import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
-import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
-import { ReplHistoryTreeProvider } from './providers/ReplHistory'
 import { UI } from './UI'
 
 export interface ExtensionDeps {
@@ -17,10 +14,6 @@ export interface ExtensionState {
     hoverText: string
     compileRunning: boolean
     compileTimeoutID: NodeJS.Timeout | undefined
-    packageTree?: PackagesTreeProvider
-    asdfTree?: AsdfSystemsTreeProvider
-    threadTree?: ThreadsTreeProvider
-    historyTree?: ReplHistoryTreeProvider
     replHistoryFile: string
     historyNdx: number
 }

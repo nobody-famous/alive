@@ -29,7 +29,7 @@ export async function inlineEval(deps: ExtensionDeps, state: ExtensionState): Pr
         return
     }
 
-    const result = await deps.lsp.eval(info.text, info.package)
+    const result = await deps.lsp.doEval(info.text, info.package)
 
     if (result === undefined) {
         return
@@ -56,34 +56,22 @@ export async function selectSexpr(deps: ExtensionDeps) {
     editor.selection = new vscode.Selection(range?.start, range?.end)
 }
 
-export async function refreshPackages(deps: ExtensionDeps, state: ExtensionState) {
+export async function refreshPackages(deps: ExtensionDeps) {
     const pkgs = await deps.lsp.listPackages()
 
-    if (state.packageTree === undefined || pkgs === undefined) {
-        return
-    }
-
-    state.packageTree.update(pkgs)
+    deps.ui.updatePackages(pkgs)
 }
 
-export async function refreshAsdfSystems(deps: ExtensionDeps, state: ExtensionState) {
+export async function refreshAsdfSystems(deps: ExtensionDeps) {
     const systems = await deps.lsp.listAsdfSystems()
 
-    if (state.asdfTree === undefined || systems === undefined) {
-        return
-    }
-
-    state.asdfTree.update(systems)
+    deps.ui.updateAsdfSystems(systems)
 }
 
-export async function refreshThreads(deps: ExtensionDeps, state: ExtensionState) {
+export async function refreshThreads(deps: ExtensionDeps) {
     const threads = await deps.lsp.listThreads()
 
-    if (state.threadTree === undefined || threads === undefined) {
-        return
-    }
-
-    state.threadTree.update(threads)
+    deps.ui.updateThreads(threads)
 }
 
 export async function loadAsdfSystem(deps: ExtensionDeps, state: ExtensionState) {
@@ -104,13 +92,13 @@ export async function loadAsdfSystem(deps: ExtensionDeps, state: ExtensionState)
     await updateCompilerDiagnostics({}, resp.notes)
 }
 
-export async function loadFile(deps: ExtensionDeps, state: ExtensionState) {
+export async function loadFile(deps: ExtensionDeps) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         await editor.document.save()
         await deps.lsp.loadFile(editor.document.uri.fsPath)
 
-        refreshPackages(deps, state)
-        refreshAsdfSystems(deps, state)
+        refreshPackages(deps)
+        refreshAsdfSystems(deps)
     })
 }
 

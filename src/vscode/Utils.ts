@@ -63,30 +63,6 @@ async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): 
     return namedFolders[chosenFolder]
 }
 
-export function selectHistoryItem(replHistory: HistoryItem[]) {
-    return new Promise<HistoryItem>((resolve, reject) => {
-        const items = [...replHistory]
-        const qp = vscode.window.createQuickPick()
-
-        qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
-
-        qp.onDidChangeSelection(async (e) => {
-            const item = e[0]
-
-            if (item === undefined) {
-                return
-            }
-
-            resolve({ text: item.label, pkgName: item.description ?? '' })
-
-            qp.hide()
-        })
-
-        qp.onDidHide(() => qp.dispose())
-        qp.show()
-    })
-}
-
 export function xlatePath(filePath: string): string {
     const cfg = vscode.workspace.getConfiguration('alive')
     const wsFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))
@@ -208,11 +184,6 @@ export async function openFile(file: vscode.Uri | undefined) {
 
 export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
     const cfg = vscode.workspace.getConfiguration('alive')
-    const autoCompile = cfg.autoCompileOnType
-
-    if (!autoCompile) {
-        return
-    }
 
     if (state.compileTimeoutID !== undefined) {
         clearTimeout(state.compileTimeoutID)
@@ -221,7 +192,7 @@ export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
 
     state.compileTimeoutID = setTimeout(async () => {
         await cmds.compileFile(deps, state)
-        refreshPackages(deps, state)
+        refreshPackages(deps)
     }, 500)
 }
 

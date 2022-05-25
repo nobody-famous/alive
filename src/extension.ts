@@ -3,10 +3,9 @@ import * as cmds from './vscode/commands'
 import * as path from 'path'
 import { promises as fs } from 'fs'
 import { PackageNode, ExportNode, ThreadNode } from './vscode/providers'
-import { ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
-import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, selectHistoryItem, startCompileTimer } from './vscode/Utils'
+import { DebugInfo, ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
+import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
-import { LispRepl } from './vscode/providers/LispRepl'
 import { startLspServer } from './vscode/backend/ChildProcess'
 import { HistoryNode } from './vscode/providers/ReplHistory'
 import { UI } from './vscode/UI'
@@ -49,37 +48,27 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(deps)),
         vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(deps, state)),
 
-        vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(deps, state)),
+        vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(deps)),
 
-        vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(deps, state)),
-        vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(deps, state)),
+        vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(deps)),
+        vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(deps)),
         vscode.commands.registerCommand('alive.clearRepl', () => cmds.clearRepl(deps)),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
         vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(deps, state)),
-        vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(deps, state)),
+        vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(deps)),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
-            if (state.historyTree === undefined) {
-                return
-            }
+            const item = await deps.ui.selectHistoryItem()
 
-            const item = await selectHistoryItem(state.historyTree?.items)
-
-            state.historyTree.moveItemToTop(item)
-
-            if (state.replHistoryFile !== undefined && state.historyTree !== undefined) {
-                await saveReplHistory(state.replHistoryFile, state.historyTree.items)
-            }
+            await saveReplHistory(state.replHistoryFile, deps.ui.getHistoryItems())
 
             deps.lsp.eval(item.text, item.pkgName)
         }),
 
         vscode.commands.registerCommand('alive.clearReplHistory', () => {
-            state.historyTree?.clear()
+            deps.ui.clearReplHistory()
 
-            if (state.replHistoryFile !== undefined) {
-                saveReplHistory(state.replHistoryFile, [])
-            }
+            saveReplHistory(state.replHistoryFile, [])
         }),
 
         vscode.commands.registerCommand('alive.removePackage', (node) => {
@@ -119,7 +108,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
                 return
             }
 
-            state.historyTree?.moveToTop(node)
+            deps.ui.moveHistoryNodeToTop(node)
             deps.lsp.eval(node.item.text, node.item.pkgName)
         }),
         vscode.commands.registerCommand('alive.editHistory', (node) => {
@@ -135,11 +124,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
                 return
             }
 
-            state.historyTree?.removeNode(node)
+            deps.ui.removeHistoryNode(node)
 
-            if (state.replHistoryFile !== undefined && state.historyTree !== undefined) {
-                saveReplHistory(state.replHistoryFile, state.historyTree.items)
-            }
+            saveReplHistory(state.replHistoryFile, deps.ui.getHistoryItems())
         })
     )
 
@@ -219,11 +206,15 @@ async function initTreeViews(deps: ExtensionDeps, history: HistoryItem[]) {
 
 function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
+    deps.ui.on('listPackages', async (fn) => fn(await deps.lsp.listPackages()))
+    deps.ui.on('eval', (text: string, pkgName: string, storeResult?: boolean) => deps.lsp.eval(text, pkgName, storeResult))
 }
 
 function initLSP(deps: ExtensionDeps, state: ExtensionState) {
-    deps.lsp.on('refreshPackages', () => cmds.refreshPackages(deps, state))
-    deps.lsp.on('refreshThreads', () => cmds.refreshThreads(deps, state))
+    deps.lsp.on('refreshPackages', () => cmds.refreshPackages(deps))
+    deps.lsp.on('refreshThreads', () => cmds.refreshThreads(deps))
     deps.lsp.on('startCompileTimer', () => startCompileTimer(deps, state))
     deps.lsp.on('output', (str: string) => deps.ui.addReplText(str))
+    deps.lsp.on('getRestartIndex', async (info: DebugInfo, fn) => fn(await deps.ui.getRestartIndex(info)))
+    deps.lsp.on('getUserInput', async (fn) => fn(await deps.ui.getUserInput()))
 }

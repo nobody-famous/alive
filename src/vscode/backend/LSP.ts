@@ -20,6 +20,8 @@ export declare interface LSP {
     on(event: 'refreshThreads', listener: () => void): this
     on(event: 'startCompileTimer', listener: () => void): this
     on(event: 'output', listener: (str: string) => void): this
+    on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
+    on(event: 'getUserInput', listener: (fn: (input: string) => void) => void): this
 }
 
 export class LSP extends EventEmitter {
@@ -69,13 +71,25 @@ export class LSP extends EventEmitter {
                 return
             }
 
-            const index = await this.listener?.getRestartIndex(info)
+            const requestIndex = () => {
+                return new Promise<number | undefined>((resolve, reject) => {
+                    this.emit('getRestartIndex', info, (index: number | undefined) => resolve(index))
+                })
+            }
+
+            const index = await requestIndex()
 
             return { index }
         })
 
         this.client.onRequest('$/alive/userInput', async () => {
-            const input = await this.listener?.getUserInput()
+            const requestInput = () => {
+                return new Promise<string>((resolve, reject) => {
+                    this.emit('getUserInput', (input: string) => resolve(input))
+                })
+            }
+
+            const input = await requestInput()
 
             return { text: input }
         })
@@ -122,10 +136,10 @@ export class LSP extends EventEmitter {
             throw new Error('Invalid output message')
         }
 
-        this.listener?.sendOutput(paramsObj.data)
+        this.emit('output', paramsObj.data)
     }
 
-    private async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
+    async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
         try {
             const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
@@ -146,9 +160,9 @@ export class LSP extends EventEmitter {
             const errObj = err as { message: string }
 
             if (errObj.message !== undefined) {
-                this.listener?.sendOutput(errObj.message)
+                this.emit('output', errObj.message)
             } else {
-                this.listener?.sendOutput(JSON.stringify(err))
+                this.emit('output', JSON.stringify(err))
             }
         } finally {
             this.emit('refreshThreads')
@@ -161,7 +175,7 @@ export class LSP extends EventEmitter {
         const result = await this.doEval(text, pkgName, storeResult)
 
         if (result !== undefined) {
-            this.listener?.sendOutput(result)
+            this.emit('output', result)
         }
     }
 
@@ -271,15 +285,15 @@ export class LSP extends EventEmitter {
                     continue
                 }
 
-                this.listener?.sendOutput(`${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
+                this.emit('output', `${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
             }
         } catch (err) {
             const errObj = err as { message: string }
 
             if (errObj.message !== undefined) {
-                this.listener?.sendOutput(errObj.message)
+                this.emit('output', errObj.message)
             } else {
-                this.listener?.sendOutput(JSON.stringify(err))
+                this.emit('output', JSON.stringify(err))
             }
         } finally {
             this.emit('refreshThreads')

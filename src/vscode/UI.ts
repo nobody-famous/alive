@@ -4,13 +4,15 @@ import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
 import { getHoverProvider } from './providers/Hover'
 import { LispRepl } from './providers/LispRepl'
-import { ReplHistoryTreeProvider } from './providers/ReplHistory'
+import { HistoryNode, ReplHistoryTreeProvider } from './providers/ReplHistory'
 import { DebugView } from './repl'
-import { DebugInfo, ExtensionState, HistoryItem, Package, Thread, UIListener } from './Types'
+import { DebugInfo, ExtensionState, HistoryItem, Package, Thread } from './Types'
 import { COMMON_LISP_ID } from './Utils'
 
 export declare interface UI {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
+    on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
+    on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
 }
 
 export class UI extends EventEmitter {
@@ -20,13 +22,14 @@ export class UI extends EventEmitter {
     private asdfTree: AsdfSystemsTreeProvider | undefined
     private threadsTree: ThreadsTreeProvider | undefined
     private replView: LispRepl
-    private listener: UIListener | undefined
 
     constructor(state: ExtensionState) {
         super()
 
         this.state = state
         this.replView = new LispRepl(state.ctx)
+
+        this.initRepl()
 
         vscode.window.registerWebviewViewProvider('lispRepl', this.replView)
         vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
@@ -36,16 +39,16 @@ export class UI extends EventEmitter {
         this.replView.clear()
     }
 
+    clearReplHistory() {
+        this.historyTree?.clear()
+    }
+
     setReplPackage(pkg: string) {
         this.replView.setPackage(pkg)
     }
 
     setReplInput(input: string) {
         this.replView.setInput(input)
-    }
-
-    setListener(listener: UIListener) {
-        this.listener = listener
     }
 
     async getRestartIndex(info: DebugInfo): Promise<number | undefined> {
@@ -69,6 +72,14 @@ export class UI extends EventEmitter {
         const input = await vscode.window.showInputBox()
 
         return input !== undefined ? `${input}\n` : '\n'
+    }
+
+    updateThreads(threads: Thread[]): void {
+        this.threadsTree?.update(threads)
+    }
+
+    updateAsdfSystems(systems: string[]): void {
+        this.asdfTree?.update(systems)
     }
 
     updatePackages(pkgs: Package[]): void {
@@ -95,28 +106,78 @@ export class UI extends EventEmitter {
         vscode.window.registerTreeDataProvider('lispThreads', this.threadsTree)
     }
 
-    async initRepl(replHistoryFile?: string) {
+    getHistoryItems(): HistoryItem[] {
+        return this.historyTree?.items ?? []
+    }
+
+    removeHistoryNode(node: HistoryNode) {
+        this.historyTree?.removeNode(node)
+    }
+
+    moveHistoryNodeToTop(node: HistoryNode) {
+        this.historyTree?.moveToTop(node)
+    }
+
+    selectHistoryItem() {
+        return new Promise<HistoryItem>((resolve, reject) => {
+            const items = [...(this.historyTree?.items ?? [])]
+            const qp = vscode.window.createQuickPick()
+
+            qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
+
+            qp.onDidChangeSelection(async (e) => {
+                const item = e[0]
+
+                if (item === undefined) {
+                    return
+                }
+
+                const historyItem = { text: item.label, pkgName: item.description ?? '' }
+
+                this.historyTree?.moveItemToTop(historyItem)
+
+                resolve(historyItem)
+
+                qp.hide()
+            })
+
+            qp.onDidHide(() => qp.dispose())
+            qp.show()
+        })
+    }
+
+    async initRepl() {
         this.replView.on('eval', async (pkg: string, text: string) => {
-            if (this.state.historyNdx >= 0) {
-                const item = this.historyTree?.items[this.state.historyNdx]
+            const itemsCount = this.historyTree?.items.length ?? 0
+
+            for (let ndx = 0; ndx < itemsCount; ndx += 1) {
+                const item = this.historyTree?.items[ndx]
 
                 if (item !== undefined && item.pkgName === pkg && item.text === text) {
-                    this.historyTree?.removeItem(this.state.historyNdx)
+                    this.historyTree?.removeItem(ndx)
                 }
             }
 
             this.historyTree?.addItem(pkg, text)
 
-            if (replHistoryFile !== undefined && this.historyTree !== undefined) {
+            if (this.historyTree !== undefined) {
                 this.emit('saveReplHistory', this.historyTree.items)
             }
 
             this.state.historyNdx = -1
-            await this.listener?.eval(text, pkg, true)
+            this.emit('eval', text, pkg, true)
         })
 
+        const requestPackages = () => {
+            return new Promise<Package[]>((resolve, reject) => {
+                this.emit('listPackages', (pkgs: Package[]) => {
+                    resolve(pkgs)
+                })
+            })
+        }
+
         this.replView.on('requestPackage', async () => {
-            const pkgs = (await this.listener?.listPackages()) ?? []
+            const pkgs = await requestPackages()
             const names: string[] = []
 
             for (const pkg of pkgs) {
@@ -175,7 +236,6 @@ export class UI extends EventEmitter {
     }
 
     addReplText(str: string): void {
-        console.log('ADD REPL TEXT', str)
         this.replView.addText(str)
     }
 }
