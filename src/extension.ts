@@ -14,7 +14,7 @@ import { getHoverProvider } from './vscode/providers/Hover'
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
     const state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1, ctx }
-    const backend = new LSP({ extState: state })
+    const backend = new LSP(state)
     const workspacePath = await getWorkspacePath()
     const replHistoryFile =
         workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'alive', 'repl-history.json') : undefined

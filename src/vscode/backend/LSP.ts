@@ -6,8 +6,8 @@ import {
     CompileFileResp,
     CompileLocation,
     DebugInfo,
+    ExtensionState,
     HostPort,
-    LSPBackendState,
     Package,
     Thread,
 } from '../Types'
@@ -49,11 +49,10 @@ const parsePos = (data: unknown): vscode.Position | undefined => {
 }
 
 export class LSP extends EventEmitter implements Backend {
-    private state: LSPBackendState
-    public defaultPort: number = 25483
+    private state: ExtensionState
     private client: LanguageClient | undefined
 
-    constructor(state: LSPBackendState) {
+    constructor(state: ExtensionState) {
         super()
 
         this.state = state
@@ -106,11 +105,11 @@ export class LSP extends EventEmitter implements Backend {
 
     private showDebugWindow(info: DebugInfo) {
         return new Promise<number>((resolve, reject) => {
-            if (this.state.extState.ctx === undefined) {
+            if (this.state.ctx === undefined) {
                 return reject('Debugger: No extension context')
             }
 
-            const view = new DebugView(this.state.extState.ctx, 'Debug', vscode.ViewColumn.Two, info)
+            const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
 
             view.on('restart', (num: number) => {
                 view.stop()
@@ -122,7 +121,7 @@ export class LSP extends EventEmitter implements Backend {
     }
 
     private parseDebugInfo(params: unknown): DebugInfo | undefined {
-        if (this.state.extState.ctx === undefined) {
+        if (this.state.ctx === undefined) {
             throw new Error('Debugger: No extension context')
         }
 
@@ -179,23 +178,11 @@ export class LSP extends EventEmitter implements Backend {
         this.emit('output', paramsObj.data)
     }
 
-    async inspector(text: string, pkgName: string): Promise<void> {}
-
-    async inspectorPrev(): Promise<void> {}
-
-    async inspectorNext(): Promise<void> {}
-
-    async inspectorRefresh(): Promise<void> {}
-
-    async inspectorQuit(): Promise<void> {}
-
-    async addToReplView(text: string): Promise<void> {}
-
     private async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
         try {
             const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
-            refreshThreads(this.state.extState)
+            refreshThreads(this.state)
 
             const resp = await promise
 
@@ -217,7 +204,7 @@ export class LSP extends EventEmitter implements Backend {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            refreshThreads(this.state.extState)
+            refreshThreads(this.state)
         }
 
         return
@@ -233,7 +220,7 @@ export class LSP extends EventEmitter implements Backend {
         const result = await this.doEval(info.text, info.package)
 
         if (result !== undefined) {
-            this.state.extState.hoverText = `=> ${strToMarkdown(result)}`
+            this.state.hoverText = `=> ${strToMarkdown(result)}`
             await vscode.window.showTextDocument(editor.document, editor.viewColumn)
             vscode.commands.executeCommand('editor.action.showHover')
         }
@@ -245,20 +232,6 @@ export class LSP extends EventEmitter implements Backend {
         if (result !== undefined) {
             this.emit('output', result)
         }
-    }
-
-    replDebugAbort(): void {}
-
-    async macroExpand(text: string, pkgName: string): Promise<string | undefined> {
-        return
-    }
-
-    async macroExpandAll(text: string, pkgName: string): Promise<string | undefined> {
-        return
-    }
-
-    async disassemble(text: string, pkgName: string): Promise<string | undefined> {
-        return
     }
 
     async listAsdfSystems(): Promise<string[]> {
@@ -309,7 +282,7 @@ export class LSP extends EventEmitter implements Backend {
 
     async killThread(thread: Thread): Promise<void> {
         await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
-        await refreshThreads(this.state.extState)
+        await refreshThreads(this.state)
     }
 
     async listThreads(): Promise<Thread[]> {
@@ -335,20 +308,15 @@ export class LSP extends EventEmitter implements Backend {
         return threads
     }
 
-    async compileAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
-        return
-    }
-
     async loadAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
-        await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
-        return
+        return await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
     }
 
     async loadFile(path: string, showMsgs?: boolean): Promise<void> {
         try {
             const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-            refreshThreads(this.state.extState)
+            refreshThreads(this.state)
 
             const resp = await promise
             if (typeof resp !== 'object') {
@@ -383,7 +351,7 @@ export class LSP extends EventEmitter implements Backend {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            refreshThreads(this.state.extState)
+            refreshThreads(this.state)
         }
     }
 
@@ -392,9 +360,9 @@ export class LSP extends EventEmitter implements Backend {
             return
         }
 
-        this.state.extState.hoverText = ''
+        this.state.hoverText = ''
 
-        startCompileTimer(this.state.extState)
+        startCompileTimer(this.state)
     }
 
     editorChanged(editor?: vscode.TextEditor): void {
@@ -402,7 +370,7 @@ export class LSP extends EventEmitter implements Backend {
             return
         }
 
-        startCompileTimer(this.state.extState)
+        startCompileTimer(this.state)
     }
 
     async compileFile(path: string): Promise<CompileFileResp | undefined> {
@@ -470,22 +438,8 @@ export class LSP extends EventEmitter implements Backend {
         return { notes }
     }
 
-    async getSymbolDoc(text: string, pkgName: string): Promise<string | undefined> {
-        return
-    }
-
-    async getOpArgs(name: string, pkgName: string): Promise<string | undefined> {
-        return
-    }
-
     isConnected(): boolean {
         return this.client !== undefined
-    }
-
-    async disconnect(): Promise<void> {}
-
-    getPkgName(doc: vscode.TextDocument, line: number): string {
-        return ''
     }
 
     private async getEvalInfo(editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> {
@@ -539,7 +493,7 @@ export class LSP extends EventEmitter implements Backend {
             name,
         })
 
-        await refreshPackages(this.state.extState)
+        await refreshPackages(this.state)
     }
 
     async removeExport(pkg: string, name: string): Promise<void> {
@@ -548,19 +502,7 @@ export class LSP extends EventEmitter implements Backend {
             symbol: name,
         })
 
-        await refreshPackages(this.state.extState)
-    }
-
-    async replNthRestart(restart: number): Promise<void> {}
-
-    async installServer(): Promise<void> {}
-
-    serverInstallPath(): string | undefined {
-        return
-    }
-
-    serverStartupCommand(): string[] | undefined {
-        return
+        await refreshPackages(this.state)
     }
 
     async getTopExprRange(editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> {

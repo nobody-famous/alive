@@ -3,9 +3,9 @@ import * as fs from 'fs'
 import * as StreamZip from 'node-stream-zip'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { InstalledSlimeInfo, LSPBackendState, SlimeVersion } from '../Types'
+import { ExtensionState, InstalledSlimeInfo, SlimeVersion } from '../Types'
 
-export async function installAndConfigureSlime(state: LSPBackendState): Promise<InstalledSlimeInfo> {
+export async function installAndConfigureSlime(state: ExtensionState): Promise<InstalledSlimeInfo> {
     await fs.promises.mkdir(getSlimeBasePath(state), { recursive: true })
 
     let version: SlimeVersion | undefined
@@ -22,7 +22,7 @@ export async function installAndConfigureSlime(state: LSPBackendState): Promise<
     return { path: slimePath, latest: undefined }
 }
 
-async function installSlime(state: LSPBackendState, version: SlimeVersion | undefined): Promise<InstalledSlimeInfo> {
+async function installSlime(state: ExtensionState, version: SlimeVersion | undefined): Promise<InstalledSlimeInfo> {
     const latest = version === undefined ? await getLatestSlimeVersion() : version
     const zipPath = path.normalize(path.join(getSlimeBasePath(state), latest.name))
     const zipFile = path.join(zipPath, `${latest.name}.zip`)
@@ -61,7 +61,7 @@ async function getLatestSlimeVersion(): Promise<SlimeVersion> {
     return versions.sort((f, s) => (f.created_at > s.created_at ? -1 : f.created_at < s.created_at ? 1 : 0))[0]
 }
 
-async function getInstalledVersionName(state: LSPBackendState): Promise<string | undefined> {
+async function getInstalledVersionName(state: ExtensionState): Promise<string | undefined> {
     const files = await fs.promises.readdir(getSlimeBasePath(state))
     if (files.length !== 1) {
         await fs.promises.rm(getSlimeBasePath(state), { recursive: true })
@@ -70,7 +70,7 @@ async function getInstalledVersionName(state: LSPBackendState): Promise<string |
     return files[0]
 }
 
-async function getSlimePath(state: LSPBackendState, versionName: string): Promise<string | undefined> {
+async function getSlimePath(state: ExtensionState, versionName: string): Promise<string | undefined> {
     const files = await fs.promises.readdir(path.join(getSlimeBasePath(state), versionName))
     if (files.length !== 2) {
         await fs.promises.rm(getSlimeBasePath(state), { recursive: true })
@@ -81,7 +81,7 @@ async function getSlimePath(state: LSPBackendState, versionName: string): Promis
     return path.join(getSlimeBasePath(state), versionName, hashDirectory)
 }
 
-function getSlimeBasePath(state: LSPBackendState): string {
+function getSlimeBasePath(state: ExtensionState): string {
     // if (state.slimeBasePath === undefined) {
     //     const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
     //     if (!extensionMetadata) throw new Error('Failed to find rheller.alive extension config directory')

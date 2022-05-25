@@ -4,50 +4,50 @@ import { ExtensionState } from '../Types'
 import { checkConnected } from '../Utils'
 
 export async function inspector(state: ExtensionState) {
-    checkConnected(state, async () => {
-        const editor = vscode.window.activeTextEditor
-        let text = ''
-        let pkgName = ':cl-user'
+    // checkConnected(state, async () => {
+    //     const editor = vscode.window.activeTextEditor
+    //     let text = ''
+    //     let pkgName = ':cl-user'
 
-        if (editor !== undefined) {
-            const pos = editor.selection.start
-            pkgName = state.backend?.getPkgName(editor.document, pos.line) ?? pkgName
+    //     if (editor !== undefined) {
+    //         const pos = editor.selection.start
+    //         pkgName = state.backend?.getPkgName(editor.document, pos.line) ?? pkgName
 
-            // text = getInspectText(editor, pos)
-        }
+    //         // text = getInspectText(editor, pos)
+    //     }
 
-        const input = await vscode.window.showInputBox({ placeHolder: 'Enter form', value: text })
+    //     const input = await vscode.window.showInputBox({ placeHolder: 'Enter form', value: text })
 
-        text = input !== undefined ? input : ''
+    //     text = input !== undefined ? input : ''
 
-        if (text.trim() !== '') {
-            await state.backend?.inspector(text, pkgName)
-        }
-    })
+    //     if (text.trim() !== '') {
+    //         await state.backend?.inspector(text, pkgName)
+    //     }
+    // })
 }
 
 export async function inspectorPrev(state: ExtensionState) {
-    checkConnected(state, async () => {
-        await state.backend?.inspectorPrev()
-    })
+    // checkConnected(state, async () => {
+    //     await state.backend?.inspectorPrev()
+    // })
 }
 
 export async function inspectorNext(state: ExtensionState) {
-    checkConnected(state, async () => {
-        await state.backend?.inspectorNext()
-    })
+    // checkConnected(state, async () => {
+    //     await state.backend?.inspectorNext()
+    // })
 }
 
 export async function inspectorRefresh(state: ExtensionState) {
-    checkConnected(state, async () => {
-        await state.backend?.inspectorRefresh()
-    })
+    // checkConnected(state, async () => {
+    //     await state.backend?.inspectorRefresh()
+    // })
 }
 
 export async function inspectorQuit(state: ExtensionState) {
-    checkConnected(state, async () => {
-        await state.backend?.inspectorQuit()
-    })
+    // checkConnected(state, async () => {
+    //     await state.backend?.inspectorQuit()
+    // })
 }
 
 function getInspectText(editor: vscode.TextEditor, pos: vscode.Position) {

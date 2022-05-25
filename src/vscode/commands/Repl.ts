@@ -7,30 +7,6 @@ import { checkConnected, COMMON_LISP_ID, createFolder, getTempFolder, useEditor 
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
-export async function compileAsdfSystem(state: ExtensionState) {
-    checkConnected(state, async () => {
-        const names = await state.backend?.listAsdfSystems()
-        const name = await vscode.window.showQuickPick(names ?? [])
-
-        if (typeof name !== 'string') {
-            return
-        }
-
-        await vscode.workspace.saveAll()
-        const resp = await state.backend?.compileAsdfSystem(name)
-
-        if (resp === undefined) {
-            return
-        }
-
-        if (resp.notes.length === 0) {
-            await vscode.window.showInformationMessage(`${name} Compiled successfully`)
-        }
-
-        await updateCompilerDiagnostics({}, resp.notes)
-    })
-}
-
 export async function refreshPackages(state: ExtensionState) {
     const pkgs = await state.backend?.listPackages()
 
