@@ -1,66 +1,35 @@
 import * as vscode from 'vscode'
 import * as net from 'net'
 import {
-    Backend,
-    BackendListener,
     CompileFileNote,
     CompileFileResp,
     CompileLocation,
     DebugInfo,
+    EvalInfo,
     ExtensionState,
     HostPort,
     Package,
     Thread,
 } from '../Types'
-import { COMMON_LISP_ID, hasValidLangId, startCompileTimer, strToMarkdown } from '../Utils'
+import { COMMON_LISP_ID, hasValidLangId } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { EventEmitter } from 'events'
-import { refreshPackages, refreshThreads } from '../commands'
 
-interface EvalInfo {
-    text: string
-    package: string
+export declare interface LSP {
+    on(event: 'refreshPackages', listener: () => void): this
+    on(event: 'refreshThreads', listener: () => void): this
+    on(event: 'startCompileTimer', listener: () => void): this
+    on(event: 'output', listener: (str: string) => void): this
 }
 
-const parseToInt = (data: unknown): number | undefined => {
-    if (typeof data !== 'string' && typeof data !== 'number') {
-        return
-    }
-
-    const int = typeof data === 'string' ? parseInt(data) : data
-
-    return Number.isFinite(int) ? int : undefined
-}
-
-const parsePos = (data: unknown): vscode.Position | undefined => {
-    if (typeof data !== 'object' || data === null) {
-        return
-    }
-
-    const dataObj = data as { [index: string]: unknown }
-    const line = parseToInt(dataObj.line)
-    const col = parseToInt(dataObj.col)
-
-    if (line === undefined || col === undefined) {
-        return
-    }
-
-    return new vscode.Position(line, col)
-}
-
-export class LSP extends EventEmitter implements Backend {
+export class LSP extends EventEmitter {
     private state: ExtensionState
-    private listener: BackendListener | undefined
     private client: LanguageClient | undefined
 
     constructor(state: ExtensionState) {
         super()
 
         this.state = state
-    }
-
-    setListener(listener: BackendListener) {
-        this.listener = listener
     }
 
     async connect(hostPort: HostPort): Promise<void> {
@@ -160,7 +129,7 @@ export class LSP extends EventEmitter implements Backend {
         try {
             const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
-            refreshThreads(this.state)
+            this.emit('refreshThreads')
 
             const resp = await promise
 
@@ -182,26 +151,10 @@ export class LSP extends EventEmitter implements Backend {
                 this.listener?.sendOutput(JSON.stringify(err))
             }
         } finally {
-            refreshThreads(this.state)
+            this.emit('refreshThreads')
         }
 
         return
-    }
-
-    async inlineEval(editor: vscode.TextEditor | undefined): Promise<void> {
-        const info = await this.getEvalInfo(editor)
-
-        if (editor === undefined || info === undefined) {
-            return
-        }
-
-        const result = await this.doEval(info.text, info.package)
-
-        if (result !== undefined) {
-            this.state.hoverText = `=> ${strToMarkdown(result)}`
-            await vscode.window.showTextDocument(editor.document, editor.viewColumn)
-            vscode.commands.executeCommand('editor.action.showHover')
-        }
     }
 
     async eval(text: string, pkgName: string, storeResult?: boolean): Promise<void> {
@@ -260,7 +213,7 @@ export class LSP extends EventEmitter implements Backend {
 
     async killThread(thread: Thread): Promise<void> {
         await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
-        await refreshThreads(this.state)
+        this.emit('refreshThreads')
     }
 
     async listThreads(): Promise<Thread[]> {
@@ -294,7 +247,7 @@ export class LSP extends EventEmitter implements Backend {
         try {
             const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-            refreshThreads(this.state)
+            this.emit('refreshThreads')
 
             const resp = await promise
             if (typeof resp !== 'object') {
@@ -329,7 +282,7 @@ export class LSP extends EventEmitter implements Backend {
                 this.listener?.sendOutput(JSON.stringify(err))
             }
         } finally {
-            refreshThreads(this.state)
+            this.emit('refreshThreads')
         }
     }
 
@@ -340,7 +293,7 @@ export class LSP extends EventEmitter implements Backend {
 
         this.state.hoverText = ''
 
-        startCompileTimer(this.state)
+        this.emit('startCompileTimer')
     }
 
     editorChanged(editor?: vscode.TextEditor): void {
@@ -348,7 +301,7 @@ export class LSP extends EventEmitter implements Backend {
             return
         }
 
-        startCompileTimer(this.state)
+        this.emit('startCompileTimer')
     }
 
     async compileFile(path: string): Promise<CompileFileResp | undefined> {
@@ -420,7 +373,7 @@ export class LSP extends EventEmitter implements Backend {
         return this.client !== undefined
     }
 
-    private async getEvalInfo(editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> {
+    async getEvalInfo(editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> {
         if (editor === undefined) {
             return
         }
@@ -437,15 +390,6 @@ export class LSP extends EventEmitter implements Backend {
         const pkg = await this.getPackage(editor, range.start)
 
         return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
-    }
-
-    async sendToRepl(editor: vscode.TextEditor | undefined) {
-        const info = await this.getEvalInfo(editor)
-
-        if (info !== undefined) {
-            await vscode.workspace.saveAll()
-            await this.eval(info.text, info.package)
-        }
     }
 
     async getPackage(editor: vscode.TextEditor, pos: vscode.Position): Promise<string | undefined> {
@@ -471,7 +415,7 @@ export class LSP extends EventEmitter implements Backend {
             name,
         })
 
-        await refreshPackages(this.state)
+        this.emit('refreshPackages')
     }
 
     async removeExport(pkg: string, name: string): Promise<void> {
@@ -480,7 +424,7 @@ export class LSP extends EventEmitter implements Backend {
             symbol: name,
         })
 
-        await refreshPackages(this.state)
+        this.emit('refreshPackages')
     }
 
     async getTopExprRange(editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> {
@@ -511,18 +455,30 @@ export class LSP extends EventEmitter implements Backend {
 
         return new vscode.Range(startPos, endPos)
     }
+}
 
-    async selectSexpr(editor: vscode.TextEditor | undefined) {
-        if (editor?.document === undefined) {
-            return
-        }
-
-        const range = await this.getTopExprRange(editor)
-
-        if (range === undefined) {
-            return
-        }
-
-        editor.selection = new vscode.Selection(range?.start, range?.end)
+const parseToInt = (data: unknown): number | undefined => {
+    if (typeof data !== 'string' && typeof data !== 'number') {
+        return
     }
+
+    const int = typeof data === 'string' ? parseInt(data) : data
+
+    return Number.isFinite(int) ? int : undefined
+}
+
+const parsePos = (data: unknown): vscode.Position | undefined => {
+    if (typeof data !== 'object' || data === null) {
+        return
+    }
+
+    const dataObj = data as { [index: string]: unknown }
+    const line = parseToInt(dataObj.line)
+    const col = parseToInt(dataObj.col)
+
+    if (line === undefined || col === undefined) {
+        return
+    }
+
+    return new vscode.Position(line, col)
 }

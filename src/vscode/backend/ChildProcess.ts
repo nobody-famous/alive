@@ -20,7 +20,7 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
         }
 
         const handleDisconnect = (state: ExtensionState) => async (_code: number, _signal: string) => {
-            if (state.backend?.isConnected() || state.child !== undefined) {
+            if (state.child !== undefined) {
                 await disconnectAndClearChild(state)
             }
         }

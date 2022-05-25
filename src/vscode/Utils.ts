@@ -4,7 +4,7 @@ import * as cmds from './commands'
 import { format, TextEncoder } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
-import { ExtensionState, HistoryItem } from './Types'
+import { ExtensionDeps, ExtensionState, HistoryItem } from './Types'
 
 export const COMMON_LISP_ID = 'lisp'
 
@@ -206,11 +206,11 @@ export async function openFile(file: vscode.Uri | undefined) {
     }
 }
 
-export function startCompileTimer(state: ExtensionState) {
+export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
     const cfg = vscode.workspace.getConfiguration('alive')
     const autoCompile = cfg.autoCompileOnType
 
-    if (!state.backend?.isConnected() || !autoCompile) {
+    if (!autoCompile) {
         return
     }
 
@@ -220,8 +220,8 @@ export function startCompileTimer(state: ExtensionState) {
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.compileFile(state, true, true)
-        refreshPackages(state)
+        await cmds.compileFile(deps, state)
+        refreshPackages(deps, state)
     }, 500)
 }
 

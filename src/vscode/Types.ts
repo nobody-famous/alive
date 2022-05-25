@@ -1,36 +1,19 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
+import { LSP } from './backend/LSP'
 import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
 import { ReplHistoryTreeProvider } from './providers/ReplHistory'
+import { UI } from './UI'
 
-export interface BackendListener {
-    getRestartIndex(info: DebugInfo): Promise<number | undefined>
-    getUserInput(): Promise<string>
-    sendOutput(str: string): void
-}
-
-export interface UIListener {
-    saveReplHistory(items: HistoryItem[]): Promise<void>
-    eval(text: string, pkgName: string, storeResult?: boolean): Promise<void>
-    listPackages(): Promise<Package[]>
-}
-
-export interface UI {
-    getRestartIndex(info: DebugInfo): Promise<number | undefined>
-    getUserInput(): Promise<string>
-    addReplText(str: string): void
-
-    initPackagesTree(pkgs: Package[]): void
-    initHistoryTree(history: HistoryItem[]): void
-    initAsdfSystemsTree(systems: string[]): void
-    initThreadsTree(threads: Thread[]): void
+export interface ExtensionDeps {
+    ui: UI
+    lsp: LSP
 }
 
 export interface ExtensionState {
     ctx: vscode.ExtensionContext
     child?: ChildProcess
-    backend?: Backend
     hoverText: string
     compileRunning: boolean
     compileTimeoutID: NodeJS.Timeout | undefined
@@ -38,6 +21,7 @@ export interface ExtensionState {
     asdfTree?: AsdfSystemsTreeProvider
     threadTree?: ThreadsTreeProvider
     historyTree?: ReplHistoryTreeProvider
+    replHistoryFile: string
     historyNdx: number
 }
 
@@ -45,8 +29,6 @@ export interface ExtensionState {
  * Interface used for the backend that the extension is connected to
  */
 export interface Backend {
-    setListener(listener: BackendListener): void
-
     inlineEval(editor: vscode.TextEditor | undefined): Promise<void>
 
     eval(text: string, pkgName: string, storeResult?: boolean): Promise<void>
@@ -144,4 +126,9 @@ export interface DebugInfo {
     message: string
     restarts: Array<string>
     stackTrace: Array<string>
+}
+
+export interface EvalInfo {
+    text: string
+    package: string
 }

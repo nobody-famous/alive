@@ -2,13 +2,62 @@ import { homedir } from 'os'
 import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { CompileFileNote, ExtensionState } from '../Types'
-import { COMMON_LISP_ID, createFolder, getTempFolder, useEditor } from '../Utils'
+import { CompileFileNote, ExtensionDeps, ExtensionState } from '../Types'
+import { COMMON_LISP_ID, createFolder, getTempFolder, strToMarkdown, useEditor } from '../Utils'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
-export async function refreshPackages(state: ExtensionState) {
-    const pkgs = await state.backend?.listPackages()
+export function clearRepl(deps: ExtensionDeps) {
+    deps.ui.clearRepl()
+}
+
+export async function sendToRepl(deps: ExtensionDeps) {
+    const editor = vscode.window.activeTextEditor
+    const info = await deps.lsp.getEvalInfo(editor)
+
+    if (info !== undefined) {
+        await vscode.workspace.saveAll()
+        await deps.lsp.eval(info.text, info.package)
+    }
+}
+
+export async function inlineEval(deps: ExtensionDeps, state: ExtensionState): Promise<void> {
+    const editor = vscode.window.activeTextEditor
+    const info = await deps.lsp.getEvalInfo(editor)
+
+    if (editor === undefined || info === undefined) {
+        return
+    }
+
+    const result = await deps.lsp.eval(info.text, info.package)
+
+    if (result === undefined) {
+        return
+    }
+
+    state.hoverText = `=> ${strToMarkdown(result)}`
+    await vscode.window.showTextDocument(editor.document, editor.viewColumn)
+    vscode.commands.executeCommand('editor.action.showHover')
+}
+
+export async function selectSexpr(deps: ExtensionDeps) {
+    const editor = vscode.window.activeTextEditor
+
+    if (editor?.document === undefined) {
+        return
+    }
+
+    const range = await deps.lsp.getTopExprRange(editor)
+
+    if (range === undefined) {
+        return
+    }
+
+    editor.selection = new vscode.Selection(range?.start, range?.end)
+}
+
+export async function refreshPackages(deps: ExtensionDeps, state: ExtensionState) {
+    const pkgs = await deps.lsp.listPackages()
 
     if (state.packageTree === undefined || pkgs === undefined) {
         return
@@ -17,8 +66,8 @@ export async function refreshPackages(state: ExtensionState) {
     state.packageTree.update(pkgs)
 }
 
-export async function refreshAsdfSystems(state: ExtensionState) {
-    const systems = await state.backend?.listAsdfSystems()
+export async function refreshAsdfSystems(deps: ExtensionDeps, state: ExtensionState) {
+    const systems = await deps.lsp.listAsdfSystems()
 
     if (state.asdfTree === undefined || systems === undefined) {
         return
@@ -27,8 +76,8 @@ export async function refreshAsdfSystems(state: ExtensionState) {
     state.asdfTree.update(systems)
 }
 
-export async function refreshThreads(state: ExtensionState) {
-    const threads = await state.backend?.listThreads()
+export async function refreshThreads(deps: ExtensionDeps, state: ExtensionState) {
+    const threads = await deps.lsp.listThreads()
 
     if (state.threadTree === undefined || threads === undefined) {
         return
@@ -37,8 +86,8 @@ export async function refreshThreads(state: ExtensionState) {
     state.threadTree.update(threads)
 }
 
-export async function loadAsdfSystem(state: ExtensionState) {
-    const names = await state.backend?.listAsdfSystems()
+export async function loadAsdfSystem(deps: ExtensionDeps, state: ExtensionState) {
+    const names = await deps.lsp.listAsdfSystems()
     const name = await vscode.window.showQuickPick(names ?? [])
 
     if (typeof name !== 'string') {
@@ -46,7 +95,7 @@ export async function loadAsdfSystem(state: ExtensionState) {
     }
 
     await vscode.workspace.saveAll()
-    const resp = await state.backend?.loadAsdfSystem(name)
+    const resp = await deps.lsp.loadAsdfSystem(name)
 
     if (resp === undefined) {
         return
@@ -55,17 +104,17 @@ export async function loadAsdfSystem(state: ExtensionState) {
     await updateCompilerDiagnostics({}, resp.notes)
 }
 
-export async function loadFile(state: ExtensionState) {
+export async function loadFile(deps: ExtensionDeps, state: ExtensionState) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         await editor.document.save()
-        await state.backend?.loadFile(editor.document.uri.fsPath)
+        await deps.lsp.loadFile(editor.document.uri.fsPath)
 
-        refreshPackages(state)
-        refreshAsdfSystems(state)
+        refreshPackages(deps, state)
+        refreshAsdfSystems(deps, state)
     })
 }
 
-export async function compileFile(state: ExtensionState, useTemp: boolean, ignoreOutput: boolean = false) {
+export async function compileFile(deps: ExtensionDeps, state: ExtensionState) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         if (state.compileRunning) {
             return
@@ -74,21 +123,19 @@ export async function compileFile(state: ExtensionState, useTemp: boolean, ignor
         try {
             state.compileRunning = true
 
-            if (!useTemp) {
-                await editor.document.save()
+            const toCompile = await createTempFile(editor.document)
+            const resp = await deps.lsp.compileFile(toCompile)
+
+            if (resp === undefined) {
+                return
             }
 
-            const toCompile = useTemp ? await createTempFile(editor.document) : editor.document.fileName
-            const resp = await state.backend?.compileFile(toCompile, ignoreOutput)
+            const fileMap: { [index: string]: string } = {}
 
-            if (resp !== undefined) {
-                const fileMap: { [index: string]: string } = {}
+            fileMap[toCompile] = editor.document.fileName
+            compilerDiagnostics.set(vscode.Uri.file(editor.document.fileName), [])
 
-                fileMap[toCompile] = editor.document.fileName
-                compilerDiagnostics.set(vscode.Uri.file(editor.document.fileName), [])
-
-                updateCompilerDiagnostics(fileMap, resp.notes)
-            }
+            updateCompilerDiagnostics(fileMap, resp.notes)
         } finally {
             state.compileRunning = false
         }

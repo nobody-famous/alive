@@ -1,3 +1,4 @@
+import EventEmitter = require('events')
 import * as vscode from 'vscode'
 import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
@@ -5,10 +6,14 @@ import { getHoverProvider } from './providers/Hover'
 import { LispRepl } from './providers/LispRepl'
 import { ReplHistoryTreeProvider } from './providers/ReplHistory'
 import { DebugView } from './repl'
-import { DebugInfo, ExtensionState, HistoryItem, Package, Thread, UI, UIListener } from './Types'
+import { DebugInfo, ExtensionState, HistoryItem, Package, Thread, UIListener } from './Types'
 import { COMMON_LISP_ID } from './Utils'
 
-export class UserInterface implements UI {
+export declare interface UI {
+    on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
+}
+
+export class UI extends EventEmitter {
     private state: ExtensionState
     private packageTree: PackagesTreeProvider | undefined
     private historyTree: ReplHistoryTreeProvider | undefined
@@ -18,11 +23,25 @@ export class UserInterface implements UI {
     private listener: UIListener | undefined
 
     constructor(state: ExtensionState) {
+        super()
+
         this.state = state
         this.replView = new LispRepl(state.ctx)
 
         vscode.window.registerWebviewViewProvider('lispRepl', this.replView)
         vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
+    }
+
+    clearRepl() {
+        this.replView.clear()
+    }
+
+    setReplPackage(pkg: string) {
+        this.replView.setPackage(pkg)
+    }
+
+    setReplInput(input: string) {
+        this.replView.setInput(input)
     }
 
     setListener(listener: UIListener) {
@@ -50,6 +69,10 @@ export class UserInterface implements UI {
         const input = await vscode.window.showInputBox()
 
         return input !== undefined ? `${input}\n` : '\n'
+    }
+
+    updatePackages(pkgs: Package[]): void {
+        this.packageTree?.update(pkgs)
     }
 
     initPackagesTree(pkgs: Package[]): void {
@@ -85,7 +108,7 @@ export class UserInterface implements UI {
             this.historyTree?.addItem(pkg, text)
 
             if (replHistoryFile !== undefined && this.historyTree !== undefined) {
-                await this.listener?.saveReplHistory(this.historyTree.items)
+                this.emit('saveReplHistory', this.historyTree.items)
             }
 
             this.state.historyNdx = -1
@@ -152,6 +175,7 @@ export class UserInterface implements UI {
     }
 
     addReplText(str: string): void {
+        console.log('ADD REPL TEXT', str)
         this.replView.addText(str)
     }
 }
