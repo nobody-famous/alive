@@ -121,10 +121,6 @@ export class LSP extends EventEmitter implements Backend {
     }
 
     private parseDebugInfo(params: unknown): DebugInfo | undefined {
-        if (this.state.ctx === undefined) {
-            throw new Error('Debugger: No extension context')
-        }
-
         if (typeof params !== 'object' || params === null) {
             return
         }
