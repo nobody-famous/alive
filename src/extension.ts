@@ -11,20 +11,30 @@ import { AsdfSystemsTreeProvider } from './vscode/providers/AsdfSystemsTree'
 import { startLspServer } from './vscode/backend/ChildProcess'
 import { HistoryNode, ReplHistoryTreeProvider } from './vscode/providers/ReplHistory'
 import { getHoverProvider } from './vscode/providers/Hover'
+import { UserInterface } from './vscode/UserInterface'
+import { ExtensionController } from './vscode/ExtensionController'
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
-    const state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1, ctx }
-    const backend = new LSP(state)
     const workspacePath = await getWorkspacePath()
     const replHistoryFile =
         workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'alive', 'repl-history.json') : undefined
 
-    state.backend = backend
+    const state: ExtensionState = { hoverText: '', compileRunning: false, compileTimeoutID: undefined, historyNdx: -1, ctx }
+    const ui: UserInterface = new UserInterface(state)
+    const backend = new LSP(state)
+    const ctrl = new ExtensionController(backend, ui)
+
+    ctrl.on('saveHistory', (items: HistoryItem[]) => {
+        if (replHistoryFile !== undefined) {
+            saveReplHistory(replHistoryFile, items)
+        }
+    })
 
     const port = await startLspServer(state)
+    const history = replHistoryFile !== undefined ? await readReplHistory(replHistoryFile) : []
 
-    await state.backend.connect({ host: '127.0.0.1', port })
-    await initTreeViews(state, backend, replHistoryFile)
+    await backend.connect({ host: '127.0.0.1', port })
+    await ctrl.initTreeViews(history)
 
     const activeDoc = vscode.window.activeTextEditor?.document
 
@@ -34,7 +44,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     const repl = await initRepl(ctx, state, backend, replHistoryFile)
 
-    registerProviders(state, repl)
     registerCommands(ctx, state, backend, replHistoryFile, repl)
     setWorkspaceEventHandlers(ctx, state)
 
@@ -165,30 +174,6 @@ function registerCommands(
     )
 }
 
-function registerProviders(state: ExtensionState, repl: LispRepl) {
-    if (state.packageTree !== undefined) {
-        vscode.window.registerTreeDataProvider('lispPackages', state.packageTree)
-    }
-
-    if (state.asdfTree !== undefined) {
-        vscode.window.registerTreeDataProvider('asdfSystems', state.asdfTree)
-    }
-
-    if (state.threadTree !== undefined) {
-        vscode.window.registerTreeDataProvider('lispThreads', state.threadTree)
-    }
-
-    if (state.historyTree !== undefined) {
-        vscode.window.registerTreeDataProvider('replHistory', state.historyTree)
-    }
-
-    if (repl !== undefined) {
-        vscode.window.registerWebviewViewProvider('lispRepl', repl)
-    }
-
-    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
-}
-
 async function initRepl(ctx: vscode.ExtensionContext, state: ExtensionState, backend: LSP, replHistoryFile?: string) {
     const repl = new LispRepl(ctx)
 
@@ -274,18 +259,6 @@ async function initRepl(ctx: vscode.ExtensionContext, state: ExtensionState, bac
     })
 
     return repl
-}
-
-async function initTreeViews(state: ExtensionState, backend: LSP, replHistoryFile?: string) {
-    const pkgs = await backend.listPackages()
-    const systems = await backend.listAsdfSystems()
-    const threads = await backend.listThreads()
-    const history = replHistoryFile !== undefined ? await readReplHistory(replHistoryFile) : []
-
-    state.packageTree = new PackagesTreeProvider(pkgs)
-    state.asdfTree = new AsdfSystemsTreeProvider(systems)
-    state.threadTree = new ThreadsTreeProvider(threads)
-    state.historyTree = new ReplHistoryTreeProvider(history)
 }
 
 async function saveReplHistory(fileName: string, items: HistoryItem[]): Promise<void> {

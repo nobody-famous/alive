@@ -4,8 +4,31 @@ import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
 import { ReplHistoryTreeProvider } from './providers/ReplHistory'
 
+export interface BackendListener {
+    getRestartIndex(info: DebugInfo): Promise<number | undefined>
+    getUserInput(): Promise<string>
+    sendOutput(str: string): void
+}
+
+export interface UIListener {
+    saveReplHistory(items: HistoryItem[]): Promise<void>
+    eval(text: string, pkgName: string, storeResult?: boolean): Promise<void>
+    listPackages(): Promise<Package[]>
+}
+
+export interface UI {
+    getRestartIndex(info: DebugInfo): Promise<number | undefined>
+    getUserInput(): Promise<string>
+    addReplText(str: string): void
+
+    initPackagesTree(pkgs: Package[]): void
+    initHistoryTree(history: HistoryItem[]): void
+    initAsdfSystemsTree(systems: string[]): void
+    initThreadsTree(threads: Thread[]): void
+}
+
 export interface ExtensionState {
-    ctx?: vscode.ExtensionContext
+    ctx: vscode.ExtensionContext
     child?: ChildProcess
     backend?: Backend
     hoverText: string
@@ -22,9 +45,11 @@ export interface ExtensionState {
  * Interface used for the backend that the extension is connected to
  */
 export interface Backend {
+    setListener(listener: BackendListener): void
+
     inlineEval(editor: vscode.TextEditor | undefined): Promise<void>
 
-    eval(text: string, pkgName: string): Promise<void>
+    eval(text: string, pkgName: string, storeResult?: boolean): Promise<void>
 
     listAsdfSystems(): Promise<string[]>
 

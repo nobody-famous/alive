@@ -9,10 +9,6 @@ const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
 export async function startLspServer(state: ExtensionState): Promise<number> {
     return new Promise(async (resolve, reject) => {
-        if (state.backend === undefined) {
-            return reject('No backend defined')
-        }
-
         const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
         const installPath = lspConfig.get('install.path')
         const cmd = lspConfig.get('startCommand')

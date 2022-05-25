@@ -3,7 +3,7 @@ import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { CompileFileNote, ExtensionState } from '../Types'
-import { checkConnected, COMMON_LISP_ID, createFolder, getTempFolder, useEditor } from '../Utils'
+import { COMMON_LISP_ID, createFolder, getTempFolder, useEditor } from '../Utils'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
@@ -38,66 +38,60 @@ export async function refreshThreads(state: ExtensionState) {
 }
 
 export async function loadAsdfSystem(state: ExtensionState) {
-    checkConnected(state, async () => {
-        const names = await state.backend?.listAsdfSystems()
-        const name = await vscode.window.showQuickPick(names ?? [])
+    const names = await state.backend?.listAsdfSystems()
+    const name = await vscode.window.showQuickPick(names ?? [])
 
-        if (typeof name !== 'string') {
-            return
-        }
+    if (typeof name !== 'string') {
+        return
+    }
 
-        await vscode.workspace.saveAll()
-        const resp = await state.backend?.loadAsdfSystem(name)
+    await vscode.workspace.saveAll()
+    const resp = await state.backend?.loadAsdfSystem(name)
 
-        if (resp === undefined) {
-            return
-        }
+    if (resp === undefined) {
+        return
+    }
 
-        await updateCompilerDiagnostics({}, resp.notes)
-    })
+    await updateCompilerDiagnostics({}, resp.notes)
 }
 
 export async function loadFile(state: ExtensionState) {
-    useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
-        checkConnected(state, async () => {
-            await editor.document.save()
-            await state.backend?.loadFile(editor.document.uri.fsPath)
+    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+        await editor.document.save()
+        await state.backend?.loadFile(editor.document.uri.fsPath)
 
-            refreshPackages(state)
-            refreshAsdfSystems(state)
-        })
+        refreshPackages(state)
+        refreshAsdfSystems(state)
     })
 }
 
 export async function compileFile(state: ExtensionState, useTemp: boolean, ignoreOutput: boolean = false) {
-    useEditor([COMMON_LISP_ID], (editor: vscode.TextEditor) => {
-        checkConnected(state, async () => {
-            if (state.compileRunning) {
-                return
+    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+        if (state.compileRunning) {
+            return
+        }
+
+        try {
+            state.compileRunning = true
+
+            if (!useTemp) {
+                await editor.document.save()
             }
 
-            try {
-                state.compileRunning = true
+            const toCompile = useTemp ? await createTempFile(editor.document) : editor.document.fileName
+            const resp = await state.backend?.compileFile(toCompile, ignoreOutput)
 
-                if (!useTemp) {
-                    await editor.document.save()
-                }
+            if (resp !== undefined) {
+                const fileMap: { [index: string]: string } = {}
 
-                const toCompile = useTemp ? await createTempFile(editor.document) : editor.document.fileName
-                const resp = await state.backend?.compileFile(toCompile, ignoreOutput)
+                fileMap[toCompile] = editor.document.fileName
+                compilerDiagnostics.set(vscode.Uri.file(editor.document.fileName), [])
 
-                if (resp !== undefined) {
-                    const fileMap: { [index: string]: string } = {}
-
-                    fileMap[toCompile] = editor.document.fileName
-                    compilerDiagnostics.set(vscode.Uri.file(editor.document.fileName), [])
-
-                    updateCompilerDiagnostics(fileMap, resp.notes)
-                }
-            } finally {
-                state.compileRunning = false
+                updateCompilerDiagnostics(fileMap, resp.notes)
             }
-        })
+        } finally {
+            state.compileRunning = false
+        }
     })
 }
 

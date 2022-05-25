@@ -138,19 +138,6 @@ export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) =
     }
 }
 
-export async function checkConnected(state: ExtensionState, fn: () => Promise<void>) {
-    if (!state.backend?.isConnected()) {
-        vscode.window.showErrorMessage('Not Connected')
-        return
-    }
-
-    try {
-        await fn()
-    } catch (err) {
-        vscode.window.showErrorMessage(format(err))
-    }
-}
-
 export function getSelectionText(editor: vscode.TextEditor): string | undefined {
     if (editor.selection.isEmpty) {
         return undefined

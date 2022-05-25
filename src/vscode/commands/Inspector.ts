@@ -1,7 +1,6 @@
 import * as vscode from 'vscode'
 // import { exprToString, findAtom } from '../../lisp'
 import { ExtensionState } from '../Types'
-import { checkConnected } from '../Utils'
 
 export async function inspector(state: ExtensionState) {
     // checkConnected(state, async () => {

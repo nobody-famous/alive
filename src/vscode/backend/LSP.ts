@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import * as net from 'net'
 import {
     Backend,
+    BackendListener,
     CompileFileNote,
     CompileFileResp,
     CompileLocation,
@@ -15,7 +16,6 @@ import { COMMON_LISP_ID, hasValidLangId, startCompileTimer, strToMarkdown } from
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { EventEmitter } from 'events'
 import { refreshPackages, refreshThreads } from '../commands'
-import { DebugView } from '../repl'
 
 interface EvalInfo {
     text: string
@@ -50,12 +50,17 @@ const parsePos = (data: unknown): vscode.Position | undefined => {
 
 export class LSP extends EventEmitter implements Backend {
     private state: ExtensionState
+    private listener: BackendListener | undefined
     private client: LanguageClient | undefined
 
     constructor(state: ExtensionState) {
         super()
 
         this.state = state
+    }
+
+    setListener(listener: BackendListener) {
+        this.listener = listener
     }
 
     async connect(hostPort: HostPort): Promise<void> {
@@ -90,33 +95,20 @@ export class LSP extends EventEmitter implements Backend {
         })
 
         this.client.onRequest('$/alive/debugger', async (params: unknown) => {
-            const index = await this.getRestartIndex(params)
+            const info = this.parseDebugInfo(params)
+            if (info === undefined) {
+                return
+            }
+
+            const index = await this.listener?.getRestartIndex(info)
 
             return { index }
         })
 
         this.client.onRequest('$/alive/userInput', async () => {
-            const input = await vscode.window.showInputBox()
-            const text = input !== undefined ? `${input}\n` : '\n'
+            const input = await this.listener?.getUserInput()
 
-            return { text }
-        })
-    }
-
-    private showDebugWindow(info: DebugInfo) {
-        return new Promise<number>((resolve, reject) => {
-            if (this.state.ctx === undefined) {
-                return reject('Debugger: No extension context')
-            }
-
-            const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
-
-            view.on('restart', (num: number) => {
-                view.stop()
-                resolve(num)
-            })
-
-            view.run()
+            return { text: input }
         })
     }
 
@@ -150,16 +142,6 @@ export class LSP extends EventEmitter implements Backend {
         }
     }
 
-    private async getRestartIndex(params: unknown) {
-        const info = this.parseDebugInfo(params)
-
-        if (info === undefined) {
-            throw new Error('Invalid debugger info')
-        }
-
-        return await this.showDebugWindow(info)
-    }
-
     private sendOutput(params: unknown) {
         if (typeof params !== 'object' || params === null) {
             throw new Error('Invalid output message')
@@ -171,7 +153,7 @@ export class LSP extends EventEmitter implements Backend {
             throw new Error('Invalid output message')
         }
 
-        this.emit('output', paramsObj.data)
+        this.listener?.sendOutput(paramsObj.data)
     }
 
     private async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
@@ -195,9 +177,9 @@ export class LSP extends EventEmitter implements Backend {
             const errObj = err as { message: string }
 
             if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
+                this.listener?.sendOutput(errObj.message)
             } else {
-                this.emit('output', JSON.stringify(err))
+                this.listener?.sendOutput(JSON.stringify(err))
             }
         } finally {
             refreshThreads(this.state)
@@ -226,7 +208,7 @@ export class LSP extends EventEmitter implements Backend {
         const result = await this.doEval(text, pkgName, storeResult)
 
         if (result !== undefined) {
-            this.emit('output', result)
+            this.listener?.sendOutput(result)
         }
     }
 
@@ -336,15 +318,15 @@ export class LSP extends EventEmitter implements Backend {
                     continue
                 }
 
-                this.emit('output', `${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
+                this.listener?.sendOutput(`${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
             }
         } catch (err) {
             const errObj = err as { message: string }
 
             if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
+                this.listener?.sendOutput(errObj.message)
             } else {
-                this.emit('output', JSON.stringify(err))
+                this.listener?.sendOutput(JSON.stringify(err))
             }
         } finally {
             refreshThreads(this.state)
