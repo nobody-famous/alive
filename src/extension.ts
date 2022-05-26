@@ -46,7 +46,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(
         vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr(deps)),
         vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(deps)),
-        vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(deps, state)),
+        vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(deps)),
 
         vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(deps)),
 
@@ -207,14 +207,14 @@ async function initTreeViews(deps: ExtensionDeps, history: HistoryItem[]) {
 function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
     deps.ui.on('listPackages', async (fn) => fn(await deps.lsp.listPackages()))
-    deps.ui.on('eval', (text: string, pkgName: string, storeResult?: boolean) => deps.lsp.eval(text, pkgName, storeResult))
+    deps.ui.on('eval', (text, pkgName, storeResult) => deps.lsp.eval(text, pkgName, storeResult))
 }
 
 function initLSP(deps: ExtensionDeps, state: ExtensionState) {
     deps.lsp.on('refreshPackages', () => cmds.refreshPackages(deps))
     deps.lsp.on('refreshThreads', () => cmds.refreshThreads(deps))
     deps.lsp.on('startCompileTimer', () => startCompileTimer(deps, state))
-    deps.lsp.on('output', (str: string) => deps.ui.addReplText(str))
-    deps.lsp.on('getRestartIndex', async (info: DebugInfo, fn) => fn(await deps.ui.getRestartIndex(info)))
+    deps.lsp.on('output', (str) => deps.ui.addReplText(str))
+    deps.lsp.on('getRestartIndex', async (info, fn) => fn(await deps.ui.getRestartIndex(info)))
     deps.lsp.on('getUserInput', async (fn) => fn(await deps.ui.getUserInput()))
 }

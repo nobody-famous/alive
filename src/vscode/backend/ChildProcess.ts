@@ -1,7 +1,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { spawn } from 'child_process'
-import { homedir } from 'os'
 import { ExtensionState } from '../Types'
 import { getWorkspaceOrFilePath } from '../Utils'
 

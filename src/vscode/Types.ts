@@ -18,55 +18,6 @@ export interface ExtensionState {
     historyNdx: number
 }
 
-/**
- * Interface used for the backend that the extension is connected to
- */
-export interface Backend {
-    inlineEval(editor: vscode.TextEditor | undefined): Promise<void>
-
-    eval(text: string, pkgName: string, storeResult?: boolean): Promise<void>
-
-    listAsdfSystems(): Promise<string[]>
-
-    listPackages(): Promise<Package[]>
-
-    listThreads(): Promise<Thread[]>
-
-    loadAsdfSystem(name: string): Promise<CompileFileResp | undefined>
-
-    loadFile(path: string, showMsgs?: boolean): Promise<void>
-
-    compileFile(path: string, ignoreOutput?: boolean): Promise<CompileFileResp | undefined>
-
-    editorChanged(editor?: vscode.TextEditor): void
-
-    /**
-     * Action to take when a text document is changed
-     * @param event The change event
-     */
-    textDocumentChanged(event: vscode.TextDocumentChangeEvent): void
-
-    /**
-     * Check if the backend is currently connected
-     */
-    isConnected(): boolean
-
-    /**
-     * Connect to the given host and port
-     * @param hostPort The HostPort pair to connect to
-     */
-    connect(hostPort: HostPort): Promise<void>
-
-    /**
-     * Send the given text to the REPL for evaluation
-     * @param editor The REPL editor buffer
-     * @param text The text to send
-     * @param pkgName The package name to evaluate the text in
-     * @param captureOutput Whether to capture output
-     */
-    sendToRepl(editor: vscode.TextEditor, text: string, pkgName: string, captureOutput: boolean): Promise<void>
-}
-
 export interface SlimeVersion {
     created_at: string
     name: string

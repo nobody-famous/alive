@@ -74,7 +74,7 @@ export async function refreshThreads(deps: ExtensionDeps) {
     deps.ui.updateThreads(threads)
 }
 
-export async function loadAsdfSystem(deps: ExtensionDeps, state: ExtensionState) {
+export async function loadAsdfSystem(deps: ExtensionDeps) {
     const names = await deps.lsp.listAsdfSystems()
     const name = await vscode.window.showQuickPick(names ?? [])
 
@@ -197,36 +197,4 @@ function getClSourceRegistryEnv(installPath: string, processEnv: NodeJS.ProcessE
 
     updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY}${path.delimiter}${installPath}`
     return updatedEnv
-}
-
-async function getWorkspaceOrFilePath(): Promise<string> {
-    if (vscode.workspace.workspaceFolders === undefined) {
-        return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
-    }
-
-    const folder =
-        vscode.workspace.workspaceFolders.length > 1
-            ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
-            : vscode.workspace.workspaceFolders[0]
-
-    if (folder === undefined) {
-        throw new Error('Failed to find a workspace folder')
-    }
-
-    return folder.uri.fsPath
-}
-
-async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder> {
-    const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
-        folders[folder.uri.fsPath] = folder
-        return folders
-    }
-    const namedFolders = folders.reduce(addFolderToFolders, {})
-    const folderNames = Object.keys(namedFolders)
-    const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
-    if (chosenFolder === undefined) {
-        throw new Error('Failed to choose a folder name')
-    }
-
-    return namedFolders[chosenFolder]
 }
