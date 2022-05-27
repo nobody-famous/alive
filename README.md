@@ -36,6 +36,7 @@ The current idea is to use VSCode as the REPL, leveraging VSCode features to giv
 -   There is a REPL console that mimics the debug console.
 -   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
 -   User input requested by the REPL is prompted with a text box.
+-   History items can be re-run by using the up/down arrow keys in the REPL console, using the re-run action in the history tree view, or using "REPL History" from the command palette.
 
 ## Threads
 
