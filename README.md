@@ -21,8 +21,6 @@ The LSP server that the extension relies on currently only supports SBCL. The ex
 This extension contributes the following settings:
 
 -   `alive.format.indentWidth`: Default indentation width
--   `alive.format.closeParenOwnLine`: ['always', 'never', 'multiline'] Specify if close parens can be on their own line.
--   `alive.autoCompileOnType`: Defaults to true. Have the REPL compile the file as you type, which causes errors/warnings to be indicated.
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
