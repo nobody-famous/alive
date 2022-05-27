@@ -2,9 +2,9 @@
 
 An attempt to create a Common Lisp extension for VSCode. It's still a work in progress, though getting better.
 
-The name is partly a self-deprecating take on SLIME's name, but also reflects the goal of the project which is to reach Minimum Viable Product status. For VSCode language extensions, there is a lot that is expected for the bare minimum, including formatting, code completion, syntax highlighting, etc. Being a Lisp environment, having REPL integration is required. Without that, it's not viable.
+The name is partly a self-deprecating take on SLIME's name, but also reflects the goal of the project which is to reach Minimum Viable Product status. For VSCode language extensions, there is a lot that is expected for the bare minimum, including formatting, code completion, syntax highlighting, etc.
 
-The LSP server that the extension relies on currently only supports SBCL. The extension isn't intended to be compiler-specific, but it is at the moment. There server can be found here, https://github.com/nobody-famous/alive-lsp
+The LSP server that the extension relies on currently only supports SBCL. The extension isn't intended to be compiler-specific, but it is at the moment. The server can be found here, https://github.com/nobody-famous/alive-lsp
 
 ## Features
 
@@ -34,7 +34,12 @@ Syntax highlighting is done using semantic tokens. This is mainly to avoid regex
 The current idea is to use VSCode as the REPL, leveraging VSCode features to give a visual insight into the running image.
 
 -   There is a REPL console that mimics the debug console.
--   A Lisp tree view is added that shows the REPL history, current threads, current packages, and defined ASDF systems.
+-   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
+-   User input requested by the REPL is prompted with a text box.
+
+## Threads
+
+Forms sent for evaluation by the user are run in their own thread. The threads have names like "N - $/alive/eval" where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds. If one of them gets stuck in an infinite loop or something, it should be safe to terminate the thread using the "-" action in the threads tree view.
 
 ## Commands
 
