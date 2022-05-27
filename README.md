@@ -20,6 +20,8 @@ The LSP server that the extension relies on currently only supports SBCL. The ex
 
 This extension contributes the following settings:
 
+-   `alive.lsp.install.path`: Directory where the LSP source code is installed
+-   `alive.lsp.startCommand`: Command used to start the LSP server
 -   `alive.format.indentWidth`: Default indentation width
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
