@@ -24,7 +24,6 @@ This extension contributes the following settings:
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
--   `error`: Mark code that is after a mismatched paren or quote
 -   `parenthesis`: Color to use for parenthesis
 -   `symbol`: Color to use for symbols
 
