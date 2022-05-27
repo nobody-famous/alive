@@ -83,13 +83,7 @@ export async function loadAsdfSystem(deps: ExtensionDeps) {
     }
 
     await vscode.workspace.saveAll()
-    const resp = await deps.lsp.loadAsdfSystem(name)
-
-    if (resp === undefined) {
-        return
-    }
-
-    await updateCompilerDiagnostics({}, resp.notes)
+    await deps.lsp.loadAsdfSystem(name)
 }
 
 export async function loadFile(deps: ExtensionDeps) {
