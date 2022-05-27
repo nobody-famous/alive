@@ -42,6 +42,13 @@
                 "configuration": "./language-configuration.json"
             }
         ],
+        "grammars": [
+            {
+                "language": "lisp",
+                "scopeName": "source.lisp",
+                "path": "./lisp.tmLanguage.json"
+            }
+        ],
         "viewsContainers": {
             "activitybar": [
                 {
