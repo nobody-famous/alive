@@ -107,7 +107,13 @@ export class LSP extends EventEmitter {
         }
 
         for (const item of paramsObj.restarts) {
-            if (typeof item !== 'string') {
+            if (typeof item !== 'object') {
+                return
+            }
+
+            const itemObj = item as { [index: string]: unknown }
+
+            if (typeof itemObj.name !== 'string' || typeof itemObj.description !== 'string') {
                 return
             }
         }

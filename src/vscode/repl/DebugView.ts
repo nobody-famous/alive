@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { DebugInfo } from '../Types'
+import { DebugInfo, RestartInfo } from '../Types'
 // import * as event from '../../swank/event'
 // import { Frame, FrameVariable } from '../../swank/Types'
 
@@ -272,10 +272,10 @@ export class DebugView extends EventEmitter {
         `
     }
 
-    private renderRestartItem(ndx: number, desc: string) {
+    private renderRestartItem(ndx: number, info: RestartInfo) {
         return `
             <div class="list-item clickable" onclick="restart(${ndx})">
-                ${ndx}: ${desc}
+                ${ndx}: [${this.strToHtml(info.name)}] ${this.strToHtml(info.description)}
             </div>
         `
     }
@@ -285,7 +285,7 @@ export class DebugView extends EventEmitter {
         let ndx = 0
 
         for (const restart of this.info.restarts) {
-            str += this.renderRestartItem(ndx, this.strToHtml(restart))
+            str += this.renderRestartItem(ndx, restart)
             ndx += 1
         }
 

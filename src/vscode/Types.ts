@@ -66,9 +66,14 @@ export interface HistoryItem {
     text: string
 }
 
+export interface RestartInfo {
+    name: string
+    description: string
+}
+
 export interface DebugInfo {
     message: string
-    restarts: Array<string>
+    restarts: Array<RestartInfo>
     stackTrace: Array<string>
 }
 
