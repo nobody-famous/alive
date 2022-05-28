@@ -71,7 +71,7 @@ export class UI extends EventEmitter {
     async getUserInput(): Promise<string> {
         const input = await vscode.window.showInputBox()
 
-        return input !== undefined ? `${input}` : ''
+        return input !== undefined ? `${input}\n` : '\n'
     }
 
     updateThreads(threads: Thread[]): void {
