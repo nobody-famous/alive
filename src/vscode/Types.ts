@@ -24,6 +24,12 @@ export interface SlimeVersion {
     zipball_url: string
 }
 
+export interface AliveLspVersion {
+    createdAt: string
+    name: string
+    zipballUrl: string
+}
+
 export interface InstalledSlimeInfo {
     path: string
     latest: SlimeVersion | undefined

@@ -1,17 +1,18 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { spawn } from 'child_process'
-import { ExtensionState } from '../Types'
+import { AliveLspVersion, ExtensionState } from '../Types'
 import { getWorkspaceOrFilePath } from '../Utils'
+import axios from 'axios'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
 export async function startLspServer(state: ExtensionState): Promise<number> {
     return new Promise(async (resolve, reject) => {
         const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
-        const installPath = lspConfig.get('install.path')
+        const installPath = getInstallPath(lspConfig)
         const cmd = lspConfig.get('startCommand')
-        const env = typeof installPath === 'string' ? getClSourceRegistryEnv(installPath, process.env) : process.env
+        const env = getClSourceRegistryEnv(installPath, process.env)
         const cwd = await getWorkspaceOrFilePath()
 
         if (!Array.isArray(cmd)) {
@@ -63,6 +64,85 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
                 reject(`Couldn't spawn server: ${err.message}`)
             })
     })
+}
+
+export async function downloadLspServer() {
+    const config = vscode.workspace.getConfiguration('alive.lsp')
+    const cfgInstallPath = config.get('install.path')
+
+    if (typeof cfgInstallPath === 'string') {
+        return
+    }
+
+    const latestVersion = await getLatestVersion()
+    const basePath = getLspBasePath()
+
+    console.log('LATEST VERSION', latestVersion)
+
+    if (latestVersion === undefined) {
+        return
+    }
+}
+
+async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
+    const config = vscode.workspace.getConfiguration('alive')
+    const url = config.lsp?.downloadUrl
+
+    if (typeof url !== 'string') {
+        return
+    }
+
+    const resp = await axios(url, {
+        headers: { 'User-Agent': 'nobody-famous/alive' },
+        method: 'GET',
+    })
+
+    if (!Array.isArray(resp.data)) {
+        return
+    }
+
+    const versions = resp.data.map((data) => parseVersionData(data))
+
+    return versions[0]
+}
+
+function parseVersionData(data: unknown): AliveLspVersion | undefined {
+    if (typeof data !== 'object' || data === null) {
+        return
+    }
+
+    const dataObj = data as { [index: string]: unknown }
+
+    if (typeof dataObj.created_at !== 'string' || typeof dataObj.name !== 'string' || typeof dataObj.zipball_url !== 'string') {
+        return
+    }
+
+    return {
+        createdAt: dataObj.created_at,
+        name: dataObj.name,
+        zipballUrl: dataObj.zipball_url,
+    }
+}
+
+function getInstallPath(config: vscode.WorkspaceConfiguration): string {
+    const cfgInstallPath = config.get('install.path')
+    const basePath = getLspBasePath()
+
+    return typeof cfgInstallPath === 'string' ? cfgInstallPath : basePath
+}
+
+function getLspBasePath(): string {
+    let basePath = undefined
+
+    const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
+
+    if (!extensionMetadata) {
+        throw new Error('Failed to find rheller.alive extension config directory')
+    }
+
+    basePath = path.normalize(path.join(extensionMetadata.extensionPath, 'out', 'alive-lsp'))
+
+    return basePath
 }
 
 function setupFailedStartupWarningTimer() {

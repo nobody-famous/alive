@@ -3,10 +3,10 @@ import * as cmds from './vscode/commands'
 import * as path from 'path'
 import { promises as fs } from 'fs'
 import { PackageNode, ExportNode, ThreadNode } from './vscode/providers'
-import { DebugInfo, ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
+import { ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
 import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
-import { startLspServer } from './vscode/backend/ChildProcess'
+import { downloadLspServer, startLspServer } from './vscode/backend/LspServer'
 import { HistoryNode } from './vscode/providers/ReplHistory'
 import { UI } from './vscode/UI'
 
@@ -27,6 +27,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         ui: new UI(state),
         lsp: new LSP(state),
     }
+
+    await downloadLspServer()
 
     const port = await startLspServer(state)
     const history = await readReplHistory(state.replHistoryFile)
