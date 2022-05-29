@@ -1,4 +1,3 @@
-import { homedir } from 'os'
 import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
@@ -173,22 +172,4 @@ async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, n
     for (const [file, arr] of Object.entries(diags)) {
         compilerDiagnostics.set(vscode.Uri.file(file), arr)
     }
-}
-
-function getClSourceRegistryEnv(installPath: string, processEnv: NodeJS.ProcessEnv): { [key: string]: string | undefined } {
-    const updatedEnv = { ...processEnv }
-
-    if (!processEnv.CL_SOURCE_REGISTRY) {
-        updatedEnv.CL_SOURCE_REGISTRY = installPath
-        return updatedEnv
-    }
-
-    if (processEnv.CL_SOURCE_REGISTRY.startsWith('(')) {
-        const pathSExpressionEnding = ` (:directory "${installPath}")`
-        updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY.replace(/\)$/, pathSExpressionEnding)})`
-        return updatedEnv
-    }
-
-    updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY}${path.delimiter}${installPath}`
-    return updatedEnv
 }
