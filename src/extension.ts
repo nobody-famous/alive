@@ -6,7 +6,7 @@ import { PackageNode, ExportNode, ThreadNode } from './vscode/providers'
 import { ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
 import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
-import { downloadLspServer, startLspServer } from './vscode/backend/LspServer'
+import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
 import { HistoryNode } from './vscode/providers/ReplHistory'
 import { UI } from './vscode/UI'
 
