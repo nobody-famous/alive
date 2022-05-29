@@ -3,7 +3,7 @@ import * as path from 'path'
 import { spawn } from 'child_process'
 import { AliveLspVersion, ExtensionState } from '../Types'
 import { getWorkspaceOrFilePath } from '../Utils'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
@@ -80,7 +80,7 @@ export async function downloadLspServer() {
     console.log('LATEST VERSION', latestVersion)
 
     if (latestVersion === undefined) {
-        return
+        throw new Error(`Could not find latest LSP server version`)
     }
 }
 
@@ -102,6 +102,8 @@ async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
     }
 
     const versions = resp.data.map((data) => parseVersionData(data))
+
+    console.log('VERSIONS', versions)
 
     return versions[0]
 }

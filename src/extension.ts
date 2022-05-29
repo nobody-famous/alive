@@ -28,7 +28,12 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         lsp: new LSP(state),
     }
 
-    await downloadLspServer()
+    try {
+        await downloadLspServer()
+    } catch (err) {
+        vscode.window.showErrorMessage(`Failed to download LSP server: ${err}`)
+        return
+    }
 
     const port = await startLspServer(state)
     const history = await readReplHistory(state.replHistoryFile)
