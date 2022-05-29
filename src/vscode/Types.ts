@@ -27,6 +27,7 @@ export interface SlimeVersion {
 export interface AliveLspVersion {
     createdAt: string
     name: string
+    tagName: string
     zipballUrl: string
 }
 

@@ -1,9 +1,11 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as fs from 'fs'
 import { spawn } from 'child_process'
 import { AliveLspVersion, ExtensionState } from '../Types'
 import { getWorkspaceOrFilePath } from '../Utils'
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosResponse } from 'axios'
+import StreamZip = require('node-stream-zip')
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
@@ -74,14 +76,51 @@ export async function downloadLspServer() {
         return
     }
 
-    const latestVersion = await getLatestVersion()
     const basePath = getLspBasePath()
+    const latestVersion = await getLatestVersion()
+    const installedVersion = await getInstalledVersion(basePath)
 
     console.log('LATEST VERSION', latestVersion)
 
-    if (latestVersion === undefined) {
+    if (installedVersion === undefined && latestVersion === undefined) {
         throw new Error(`Could not find latest LSP server version`)
+    } else if (latestVersion !== undefined && installedVersion !== latestVersion.tagName) {
+        await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
     }
+
+    throw new Error('NOT DONE YET')
+}
+
+async function pullLatestVersion(basePath: string, version: string, url: string) {
+    vscode.window.showInformationMessage('Installing LSP server')
+
+    const zipPath = path.normalize(path.join(basePath, version))
+    const zipFile = path.join(zipPath, `${version}.zip`)
+
+    const resp = await axios(url, {
+        headers: { 'User-Agent': 'nobody-famous/alive' },
+        method: 'GET',
+        responseType: 'stream',
+    })
+
+    await fs.promises.mkdir(zipPath, { recursive: true })
+    await readZipFile(zipFile, resp)
+    await unzipFile(zipPath, zipFile)
+}
+
+async function unzipFile(basePath: string, file: string) {
+    const zip = new StreamZip.async({ file })
+
+    await zip.extract(null, basePath)
+    await zip.close()
+}
+
+async function readZipFile(file: string, resp: AxiosResponse<any>) {
+    const writer = fs.createWriteStream(file)
+
+    return new Promise((resolve, reject) => {
+        resp.data.pipe(writer).on('finish', resolve).on('close', resolve).on('error', reject)
+    })
 }
 
 async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
@@ -103,9 +142,21 @@ async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
 
     const versions = resp.data.map((data) => parseVersionData(data))
 
-    console.log('VERSIONS', versions)
-
     return versions[0]
+}
+
+async function getInstalledVersion(basePath: string): Promise<string | undefined> {
+    try {
+        await fs.promises.access(basePath)
+    } catch (err) {
+        await fs.promises.mkdir(basePath, { recursive: true })
+    }
+
+    const files = await fs.promises.readdir(basePath)
+
+    console.log('FILES', files)
+
+    return
 }
 
 function parseVersionData(data: unknown): AliveLspVersion | undefined {
@@ -115,13 +166,19 @@ function parseVersionData(data: unknown): AliveLspVersion | undefined {
 
     const dataObj = data as { [index: string]: unknown }
 
-    if (typeof dataObj.created_at !== 'string' || typeof dataObj.name !== 'string' || typeof dataObj.zipball_url !== 'string') {
+    if (
+        typeof dataObj.created_at !== 'string' ||
+        typeof dataObj.name !== 'string' ||
+        typeof dataObj.tag_name !== 'string' ||
+        typeof dataObj.zipball_url !== 'string'
+    ) {
         return
     }
 
     return {
         createdAt: dataObj.created_at,
         name: dataObj.name,
+        tagName: dataObj.tag_name,
         zipballUrl: dataObj.zipball_url,
     }
 }
