@@ -274,7 +274,7 @@ function getClSourceRegistryEnv(installPath: string, processEnv: NodeJS.ProcessE
     const updatedEnv = { ...processEnv }
 
     if (!processEnv.CL_SOURCE_REGISTRY) {
-        updatedEnv.CL_SOURCE_REGISTRY = installPath
+        updatedEnv.CL_SOURCE_REGISTRY = installPath + path.delimiter
         return updatedEnv
     }
 
