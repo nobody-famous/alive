@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.2.7",
+    "version": "0.3.0",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -16,8 +16,7 @@
     "main": "./out/src/extension.js",
     "activationEvents": [
         "onStartupFinished",
-        "onLanguage:lisp",
-        "onLanguage:lisp-repl"
+        "onLanguage:lisp"
     ],
     "scripts": {
         "vscode:prepublish": "npm run compile",
@@ -41,19 +40,58 @@
                     ".asdf"
                 ],
                 "configuration": "./language-configuration.json"
-            },
-            {
-                "id": "lisp-repl",
-                "aliases": [
-                    "Common Lisp REPL",
-                    "common-lisp-repl"
-                ],
-                "extensions": [
-                    ".alive-repl"
-                ],
-                "configuration": "./language-configuration.json"
             }
         ],
+        "grammars": [
+            {
+                "language": "lisp",
+                "scopeName": "source.lisp",
+                "path": "./lisp.tmLanguage.json"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "lisp-explorer",
+                    "title": "Lisp Image",
+                    "icon": "images/lisp-icon.svg"
+                }
+            ],
+            "panel": [
+                {
+                    "id": "lisp-repl",
+                    "title": "REPL",
+                    "icon": "images/lisp-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "lisp-explorer": [
+                {
+                    "id": "replHistory",
+                    "name": "REPL History"
+                },
+                {
+                    "id": "lispPackages",
+                    "name": "Packages"
+                },
+                {
+                    "id": "asdfSystems",
+                    "name": "ASDF Systems"
+                },
+                {
+                    "id": "lispThreads",
+                    "name": "Threads"
+                }
+            ],
+            "lisp-repl": [
+                {
+                    "id": "lispRepl",
+                    "type": "webview",
+                    "name": "REPL"
+                }
+            ]
+        },
         "semanticTokenTypes": [
             {
                 "id": "error",
@@ -76,6 +114,94 @@
         ],
         "commands": [
             {
+                "command": "alive.killThread",
+                "title": "Alive: Kill Thread",
+                "icon": {
+                    "light": "resource/light/close.svg",
+                    "dark": "resource/dark/close.svg"
+                }
+            },
+            {
+                "command": "alive.clearRepl",
+                "title": "Alive: Clear REPL",
+                "icon": {
+                    "light": "resource/light/clear-all.svg",
+                    "dark": "resource/dark/clear-all.svg"
+                }
+            },
+            {
+                "command": "alive.clearReplHistory",
+                "title": "Alive: Clear REPL History",
+                "icon": {
+                    "light": "resource/light/clear-all.svg",
+                    "dark": "resource/dark/clear-all.svg"
+                }
+            },
+            {
+                "command": "alive.evalHistory",
+                "title": "Alive: Eval REPL History Item",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
+                }
+            },
+            {
+                "command": "alive.editHistory",
+                "title": "Alive: Edit REPL History Item",
+                "icon": {
+                    "light": "resource/light/edit.svg",
+                    "dark": "resource/dark/edit.svg"
+                }
+            },
+            {
+                "command": "alive.removeHistory",
+                "title": "Alive: Remove REPL History Item",
+                "icon": {
+                    "light": "resource/light/remove.svg",
+                    "dark": "resource/dark/remove.svg"
+                }
+            },
+            {
+                "command": "alive.refreshPackages",
+                "title": "Alive: Refresh Packages",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
+                }
+            },
+            {
+                "command": "alive.removePackage",
+                "title": "Alive: Remove Package",
+                "icon": {
+                    "light": "resource/light/remove.svg",
+                    "dark": "resource/dark/remove.svg"
+                }
+            },
+            {
+                "command": "alive.removeExport",
+                "title": "Alive: Remove Export",
+                "icon": {
+                    "light": "resource/light/remove.svg",
+                    "dark": "resource/dark/remove.svg"
+                }
+            },
+            {
+                "command": "alive.refreshAsdfSystems",
+                "title": "Alive: Refresh ASDF Systems",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
+                }
+            },
+            {
+                "command": "alive.refreshThreads",
+                "title": "Alive: Refresh Threads",
+                "icon": {
+                    "light": "resource/light/refresh.svg",
+                    "dark": "resource/dark/refresh.svg"
+                }
+            },
+            {
                 "command": "alive.selectSexpr",
                 "title": "Alive: Select S-Expression"
             },
@@ -96,120 +222,102 @@
                 "title": "Alive: Compile File"
             },
             {
-                "command": "alive.startReplAndAttach",
-                "title": "Alive: Start REPL And Attach"
-            },
-            {
-                "command": "alive.attachRepl",
-                "title": "Alive: Attach To REPL"
-            },
-            {
-                "command": "alive.detachRepl",
-                "title": "Alive: Detach From REPL"
-            },
-            {
                 "command": "alive.replHistory",
                 "title": "Alive: REPL History"
-            },
-            {
-                "command": "alive.replHistoryDoNotEval",
-                "title": "Alive: REPL History (Paste To REPL Without Evaluating)"
-            },
-            {
-                "command": "alive.debugAbort",
-                "title": "Alive: Debug Abort"
-            },
-            {
-                "command": "alive.nthRestart",
-                "title": "Alive: Nth Restart"
-            },
-            {
-                "command": "alive.macroExpand",
-                "title": "Alive: Macro Expand"
-            },
-            {
-                "command": "alive.macroExpandAll",
-                "title": "Alive: Macro Expand All"
-            },
-            {
-                "command": "alive.disassemble",
-                "title": "Alive: Disassemble"
             },
             {
                 "command": "alive.loadAsdfSystem",
                 "title": "Alive: Load ASDF System"
             },
             {
-                "command": "alive.compileAsdfSystem",
-                "title": "Alive: Compile ASDF System"
+                "command": "alive.loadAsdfByName",
+                "title": "Alive: Load ASDF System By Name",
+                "icon": {
+                    "light": "resource/light/add.svg",
+                    "dark": "resource/dark/add.svg"
+                }
             },
             {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
-            },
-            {
-                "command": "alive.inspector",
-                "title": "Alive: Inspector"
-            },
-            {
-                "command": "alive.inspector-prev",
-                "title": "Alive: Inspector Prev"
-            },
-            {
-                "command": "alive.inspector-next",
-                "title": "Alive: Inspector Next"
-            },
-            {
-                "command": "alive.inspector-refresh",
-                "title": "Alive: Inspector Refresh"
-            },
-            {
-                "command": "alive.inspector-quit",
-                "title": "Alive: Inspector Quit"
-            },
-            {
-                "command": "alive.systemSkeleton",
-                "title": "Alive: System Skeleton"
             }
         ],
         "menus": {
+            "view/title": [
+                {
+                    "command": "alive.refreshPackages",
+                    "when": "view == lispPackages",
+                    "group": "navigation"
+                },
+                {
+                    "command": "alive.refreshAsdfSystems",
+                    "when": "view == asdfSystems",
+                    "group": "navigation"
+                },
+                {
+                    "command": "alive.refreshThreads",
+                    "when": "view == lispThreads",
+                    "group": "navigation"
+                },
+                {
+                    "command": "alive.clearRepl",
+                    "when": "view == lispRepl",
+                    "group": "navigation"
+                },
+                {
+                    "command": "alive.clearReplHistory",
+                    "when": "view == replHistory",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "alive.removePackage",
+                    "when": "view == lispPackages && viewItem == package",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.removeExport",
+                    "when": "view == lispPackages && viewItem == export",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.removeHistory",
+                    "when": "view == replHistory && viewItem == evalText",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.editHistory",
+                    "when": "view == replHistory && viewItem == evalText",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.evalHistory",
+                    "when": "view == replHistory && viewItem == evalText",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.loadAsdfByName",
+                    "when": "view == asdfSystems",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.killThread",
+                    "when": "view == lispThreads",
+                    "group": "inline"
+                }
+            ],
             "commandPalette": [
                 {
-                    "command": "alive.attachRepl"
-                },
-                {
-                    "command": "alive.detachRepl"
-                },
-                {
-                    "command": "alive.startReplAndAttach"
-                },
-                {
-                    "command": "alive.replHistory",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
-                },
-                {
-                    "command": "alive.replHistoryDoNotEval",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                    "command": "alive.replHistory"
                 },
                 {
                     "command": "alive.loadFile",
                     "when": "editorLangId == lisp"
                 },
                 {
-                    "command": "alive.macroExpand",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
-                },
-                {
-                    "command": "alive.macroExpandAll",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
-                },
-                {
-                    "command": "alive.disassemble",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
-                },
-                {
                     "command": "alive.sendToRepl",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                    "when": "editorLangId == lisp"
                 },
                 {
                     "command": "alive.inlineEval",
@@ -221,53 +329,11 @@
                 },
                 {
                     "command": "alive.selectSexpr",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
-                },
-                {
-                    "command": "alive.debugAbort",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
-                },
-                {
-                    "command": "alive.inspector"
-                },
-                {
-                    "command": "alive.inspector-prev"
-                },
-                {
-                    "command": "alive.inspector-next"
-                },
-                {
-                    "command": "alive.inspector-refresh"
-                },
-                {
-                    "command": "alive.inspector-quit"
-                },
-                {
-                    "command": "alive.systemSkeleton"
+                    "when": "editorLangId == lisp"
                 }
             ]
         },
         "keybindings": [
-            {
-                "command": "alive.inspector-prev",
-                "when": "clInspectorActive",
-                "key": "ctrl+p"
-            },
-            {
-                "command": "alive.inspector-next",
-                "when": "clInspectorActive",
-                "key": "ctrl+n"
-            },
-            {
-                "command": "alive.inspector-refresh",
-                "when": "clInspectorActive",
-                "key": "ctrl+r"
-            },
-            {
-                "command": "alive.inspector-quit",
-                "when": "clInspectorActive",
-                "key": "ctrl+q"
-            },
             {
                 "command": "alive.loadFile",
                 "when": "editorLangId == lisp",
@@ -285,7 +351,7 @@
             },
             {
                 "command": "alive.selectSexpr",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl",
+                "when": "editorLangId == lisp",
                 "key": "alt+shift+up"
             },
             {
@@ -294,84 +360,8 @@
                 "key": "alt+shift+enter"
             },
             {
-                "command": "alive.sendToRepl",
-                "when": "editorLangId == lisp-repl",
-                "key": "enter"
-            },
-            {
                 "command": "alive.replHistory",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl",
                 "key": "alt+shift+r"
-            },
-            {
-                "command": "alive.replHistoryDoNotEval",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl",
-                "key": "alt+shift+t"
-            },
-            {
-                "command": "alive.debugAbort",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+a"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "0",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+0"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "1",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+1"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "2",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+2"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "3",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+3"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "4",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+4"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "5",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+5"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "6",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+6"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "7",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+7"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "8",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+8"
-            },
-            {
-                "command": "alive.nthRestart",
-                "args": "9",
-                "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive",
-                "key": "alt+ctrl+9"
             }
         ],
         "configuration": {
@@ -382,67 +372,26 @@
                     "default": 2,
                     "description": "Indentation Level"
                 },
-                "alive.format.closeParenOwnLine": {
+                "alive.lsp.install.path": {
                     "type": "string",
-                    "enum": [
-                        "always",
-                        "never",
-                        "multiline"
-                    ],
-                    "default": "never",
-                    "description": "Specify when to put close parens on their own line"
+                    "default": "/path/to/alive-lsp"
                 },
-                "alive.format.maxBlankLines": {
-                    "type": "number",
-                    "default": 1,
-                    "description": "Maximum number of blank lines between top level expressions"
-                },
-                "alive.autoLoadOnSave": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Specify whether to auto load files on save"
-                },
-                "alive.autoCompileOnType": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Specify whether to compile files as you type"
-                },
-                "alive.debug": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Specify whether to print debug messages to the console"
-                },
-                "alive.indentMacros": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "If connected to the REPL, indent macro bodies instead of aligning"
-                },
-                "alive.remoteWorkspace": {
+                "alive.lsp.downloadUrl": {
                     "type": "string",
-                    "description": "Path on the REPL server to the workspace"
+                    "description": "Https url from which to download alive-lsp release",
+                    "default": "https://api.github.com/repos/nobody-famous/alive-lsp/releases"
                 },
-                "alive.swank.downloadUrl": {
-                    "type": "string",
-                    "description": "Https url from which to download slime/swank release",
-                    "default": "https://api.github.com/repos/slime/slime/releases"
-                },
-                "alive.swank.checkForLatest": {
-                    "type": "boolean",
-                    "description": "Specifies whether VSCode should check for the latest version of slime/swank every time the REPL is started",
-                    "default": false
-                },
-                "alive.swank.startupCommand": {
+                "alive.lsp.startCommand": {
                     "type": "array",
                     "default": [
                         "sbcl",
                         "--eval",
                         "(require :asdf)",
                         "--eval",
-                        "(asdf:load-system :swank)",
+                        "(asdf:load-system :alive-lsp)",
                         "--eval",
-                        "(swank:create-server)"
-                    ],
-                    "description": "Command to start up a Swank server to which your REPL can connect."
+                        "(alive/server:start)"
+                    ]
                 }
             }
         }
@@ -455,6 +404,7 @@
     },
     "dependencies": {
         "axios": "^0.21.4",
-        "node-stream-zip": "^1.15.0"
+        "node-stream-zip": "^1.15.0",
+        "vscode-languageclient": "^7.0.0"
     }
 }

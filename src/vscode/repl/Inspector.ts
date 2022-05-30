@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { unescape } from '../../lisp'
-import { InspectContent, InspectContentAction } from '../../swank/Types'
+// import { unescape } from '../../lisp'
+// import { InspectContent, InspectContentAction } from '../../swank/Types'
 
 export class Inspector extends EventEmitter {
     ctx: vscode.ExtensionContext
@@ -10,7 +10,7 @@ export class Inspector extends EventEmitter {
     panel?: vscode.WebviewPanel
 
     title?: string
-    content?: InspectContent
+    // content?: InspectContent
 
     constructor(ctx: vscode.ExtensionContext, viewCol: vscode.ViewColumn) {
         super()
@@ -19,9 +19,10 @@ export class Inspector extends EventEmitter {
         this.viewCol = viewCol
     }
 
-    show(title: string, content: InspectContent) {
+    // show(title: string, content: InspectContent) {
+    show(title: string) {
         this.title = title
-        this.content = content
+        // this.content = content
 
         if (this.panel !== undefined) {
             this.stop()
@@ -52,56 +53,49 @@ export class Inspector extends EventEmitter {
         vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
     }
 
-    private renderAction(item: InspectContentAction) {
-        const display = this.escapeHtml(unescape(item.display))
-        const actName = item.action.toUpperCase()
-        let btnClass = ''
-        let btnClick = ''
-        let str = ''
-
-        if (actName === 'ACTION') {
-            btnClass = 'inspect-btn-action'
-            btnClick = `inspect_action(${item.index})`
-        } else if (actName === 'VALUE') {
-            btnClass = 'inspect-btn-value'
-            btnClick = `inspect_value(${item.index})`
-        }
-
-        str += `
-            <div class="inspect-action-box">
-                <button class="${btnClass}" onclick="${btnClick}">${display}</button>
-            </div>
-        `
-
-        return str
+    // private renderAction(item: InspectContentAction) {
+    private renderAction() {
+        // const display = this.escapeHtml(unescape(item.display))
+        // const actName = item.action.toUpperCase()
+        // let btnClass = ''
+        // let btnClick = ''
+        // let str = ''
+        // if (actName === 'ACTION') {
+        //     btnClass = 'inspect-btn-action'
+        //     btnClick = `inspect_action(${item.index})`
+        // } else if (actName === 'VALUE') {
+        //     btnClass = 'inspect-btn-value'
+        //     btnClick = `inspect_value(${item.index})`
+        // }
+        // str += `
+        //     <div class="inspect-action-box">
+        //         <button class="${btnClass}" onclick="${btnClick}">${display}</button>
+        //     </div>
+        // `
+        // return str
     }
 
     private renderContent() {
-        if (this.content === undefined) {
-            return ''
-        }
-
-        const display = this.content.display
-        let str = ''
-        let opened = false
-
-        for (const item of display) {
-            if (typeof item === 'string') {
-                if (opened) {
-                    str += '</div>'
-                    opened = false
-                }
-
-                opened = true
-
-                str += `<div class="inspect-item">`
-                str += item
-            } else if ('display' in item) {
-                str += this.renderAction(item)
-            }
-        }
-
-        return str
+        // if (this.content === undefined) {
+        //     return ''
+        // }
+        // const display = this.content.display
+        // let str = ''
+        // let opened = false
+        // for (const item of display) {
+        //     if (typeof item === 'string') {
+        //         if (opened) {
+        //             str += '</div>'
+        //             opened = false
+        //         }
+        //         opened = true
+        //         str += `<div class="inspect-item">`
+        //         str += item
+        //     } else if ('display' in item) {
+        //         str += this.renderAction(item)
+        //     }
+        // }
+        // return str
     }
 
     private escapeHtml(text: string) {
@@ -109,7 +103,8 @@ export class Inspector extends EventEmitter {
     }
 
     private renderHtml() {
-        if (this.panel === undefined || this.title === undefined || this.content === undefined) {
+        // if (this.panel === undefined || this.title === undefined || this.content === undefined) {
+        if (this.panel === undefined || this.title === undefined) {
             vscode.window.showInformationMessage('Inspector not initialized')
             return
         }

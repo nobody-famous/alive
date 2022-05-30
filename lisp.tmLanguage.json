@@ -1,0 +1,68 @@
+{
+    "name": "Common Lisp",
+    "scopeName": "source.lisp",
+    "patterns": [
+        {
+            "include": "#comment"
+        },
+        {
+            "include": "#block-comment"
+        },
+        {
+            "include": "#string"
+        }
+    ],
+    "repository": {
+        "block-comment": {
+            "begin": "(?<!\\\\)(#\\|)",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.comment.block.start.lisp"
+                }
+            },
+            "end": "(?<!\\\\)\\|#",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.definition.comment.block.end.lisp"
+                }
+            },
+            "name": "comment.block.lisp",
+            "patterns": [
+                {
+                    "include": "$self"
+                }
+            ]
+        },
+        "comment": {
+            "begin": "(?<!\\\\);",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.comment.lisp"
+                }
+            },
+            "end": "$",
+            "name": "comment.line.semicolon.lisp"
+        },
+        "string": {
+            "begin": "(?<!\\\\)(\")",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.definition.string.begin.lisp"
+                }
+            },
+            "end": "(\")",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.string.end.lisp"
+                }
+            },
+            "name": "string.quoted.double.lisp",
+            "patterns": [
+                {
+                    "match": "\\\\.",
+                    "name": "constant.character.escape.lisp"
+                }
+            ]
+        }
+    }
+}
