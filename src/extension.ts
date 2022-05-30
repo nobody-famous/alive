@@ -29,7 +29,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     }
 
     try {
-        await downloadLspServer()
+        state.lspInstallPath = await downloadLspServer()
     } catch (err) {
         vscode.window.showErrorMessage(`Failed to download LSP server: ${err}`)
         return

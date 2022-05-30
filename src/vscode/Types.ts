@@ -10,6 +10,7 @@ export interface ExtensionDeps {
 
 export interface ExtensionState {
     ctx: vscode.ExtensionContext
+    lspInstallPath?: string
     child?: ChildProcess
     hoverText: string
     compileRunning: boolean

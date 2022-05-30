@@ -11,10 +11,13 @@ const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
 export async function startLspServer(state: ExtensionState): Promise<number> {
     return new Promise(async (resolve, reject) => {
+        if (typeof state.lspInstallPath !== 'string') {
+            return reject('No LSP server install path')
+        }
+
         const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
-        const installPath = getInstallPath(lspConfig)
         const cmd = lspConfig.get('startCommand')
-        const env = getClSourceRegistryEnv(installPath, process.env)
+        const env = getClSourceRegistryEnv(state.lspInstallPath, process.env)
         const cwd = await getWorkspaceOrFilePath()
 
         if (!Array.isArray(cmd)) {
@@ -68,44 +71,67 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
     })
 }
 
-export async function downloadLspServer() {
+export async function downloadLspServer(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('alive.lsp')
     const cfgInstallPath = config.get('install.path')
 
     if (typeof cfgInstallPath === 'string') {
-        return
+        return cfgInstallPath
     }
 
     const basePath = getLspBasePath()
     const latestVersion = await getLatestVersion()
     const installedVersion = await getInstalledVersion(basePath)
 
-    console.log('LATEST VERSION', latestVersion)
+    if (installedVersion === undefined) {
+        if (latestVersion === undefined) {
+            throw new Error(`Could not find latest LSP server version`)
+        }
 
-    if (installedVersion === undefined && latestVersion === undefined) {
-        throw new Error(`Could not find latest LSP server version`)
-    } else if (latestVersion !== undefined && installedVersion !== latestVersion.tagName) {
-        await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
+        return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
+    } else if (latestVersion === undefined) {
+        return getUnzippedPath(path.join(basePath, installedVersion))
+    } else if (installedVersion !== latestVersion.tagName) {
+        await nukeInstalledVersion(basePath)
+
+        return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
+    } else {
+        return getUnzippedPath(path.join(basePath, installedVersion))
     }
-
-    throw new Error('NOT DONE YET')
 }
 
-async function pullLatestVersion(basePath: string, version: string, url: string) {
+async function nukeInstalledVersion(basePath: string) {
+    await fs.promises.rm(basePath, { recursive: true })
+}
+
+async function pullLatestVersion(basePath: string, version: string, url: string): Promise<string> {
     vscode.window.showInformationMessage('Installing LSP server')
 
-    const zipPath = path.normalize(path.join(basePath, version))
-    const zipFile = path.join(zipPath, `${version}.zip`)
+    try {
+        const zipPath = path.normalize(path.join(basePath, version))
+        const zipFile = path.join(zipPath, `${version}.zip`)
 
-    const resp = await axios(url, {
-        headers: { 'User-Agent': 'nobody-famous/alive' },
-        method: 'GET',
-        responseType: 'stream',
-    })
+        const resp = await axios(url, {
+            headers: { 'User-Agent': 'nobody-famous/alive' },
+            method: 'GET',
+            responseType: 'stream',
+        })
 
-    await fs.promises.mkdir(zipPath, { recursive: true })
-    await readZipFile(zipFile, resp)
-    await unzipFile(zipPath, zipFile)
+        await fs.promises.mkdir(zipPath, { recursive: true })
+        await readZipFile(zipFile, resp)
+        await unzipFile(zipPath, zipFile)
+
+        return await getUnzippedPath(zipPath)
+    } finally {
+        vscode.window.showInformationMessage('Done installing LSP server')
+    }
+}
+
+async function getUnzippedPath(basePath: string): Promise<string> {
+    const files = await fs.promises.readdir(basePath, { withFileTypes: true })
+    const dirs = files.filter((entry) => entry.isDirectory()).map((entry) => entry.name)
+
+    return dirs.length === 0 ? basePath : path.join(basePath, dirs[0])
 }
 
 async function unzipFile(basePath: string, file: string) {
@@ -154,9 +180,12 @@ async function getInstalledVersion(basePath: string): Promise<string | undefined
 
     const files = await fs.promises.readdir(basePath)
 
-    console.log('FILES', files)
+    if (files.length > 1) {
+        await nukeInstalledVersion(basePath)
+        return
+    }
 
-    return
+    return files[0]
 }
 
 function parseVersionData(data: unknown): AliveLspVersion | undefined {
@@ -183,25 +212,14 @@ function parseVersionData(data: unknown): AliveLspVersion | undefined {
     }
 }
 
-function getInstallPath(config: vscode.WorkspaceConfiguration): string {
-    const cfgInstallPath = config.get('install.path')
-    const basePath = getLspBasePath()
-
-    return typeof cfgInstallPath === 'string' ? cfgInstallPath : basePath
-}
-
 function getLspBasePath(): string {
-    let basePath = undefined
-
     const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
 
     if (!extensionMetadata) {
         throw new Error('Failed to find rheller.alive extension config directory')
     }
 
-    basePath = path.normalize(path.join(extensionMetadata.extensionPath, 'out', 'alive-lsp'))
-
-    return basePath
+    return path.normalize(path.join(extensionMetadata.extensionPath, 'out', 'alive-lsp'))
 }
 
 function setupFailedStartupWarningTimer() {
