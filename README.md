@@ -49,7 +49,7 @@ The current idea is to use VSCode as the REPL, leveraging VSCode features to giv
 
 ## Threads
 
-Forms sent for evaluation by the user are run in their own thread. The threads have names like "N - $/alive/eval" where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds. If one of them gets stuck in an infinite loop or something, it should be safe to terminate the thread using the "-" action in the threads tree view.
+Forms sent for evaluation by the user are run in their own thread. The threads have names like "N - $/alive/eval" where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds. If one of them gets stuck in an infinite loop or something, it should be safe to terminate the thread using the "X" action in the threads tree view.
 
 ## Commands
 
@@ -64,8 +64,6 @@ Sends selected text to the REPL. If nothing is selected, sends the top level for
 ### Load File (Alt+Shift+L)
 
 Load the current file into the REPL.
-
-If alive.remoteWorkspace is set, the path to the file is translated to be relative to the remote directory. This may or may not work well.
 
 ### Inline Evaluation (Alt+Shift+E)
 
