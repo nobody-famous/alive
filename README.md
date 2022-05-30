@@ -6,6 +6,15 @@ The name is partly a self-deprecating take on SLIME's name, but also reflects th
 
 The LSP server that the extension relies on currently only supports SBCL. The extension isn't intended to be compiler-specific, but it is at the moment. The server can be found here, https://github.com/nobody-famous/alive-lsp
 
+## Library Requirements
+
+The LSP server uses the following libraries, which need to be installed for it to work.
+
+-   bordeaux-threads
+-   usocket
+-   cl-json
+-   flexi-streams
+
 ## Features
 
 -   Syntax highlighting
