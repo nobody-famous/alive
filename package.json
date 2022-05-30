@@ -373,7 +373,7 @@
                 },
                 "alive.lsp.install.path": {
                     "type": "string",
-                    "default": "/path/to/alive-lsp"
+                    "default": ""
                 },
                 "alive.lsp.downloadUrl": {
                     "type": "string",
