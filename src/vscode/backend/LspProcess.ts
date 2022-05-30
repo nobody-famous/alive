@@ -75,7 +75,7 @@ export async function downloadLspServer(): Promise<string | undefined> {
     const config = vscode.workspace.getConfiguration('alive.lsp')
     const cfgInstallPath = config.get('install.path')
 
-    if (typeof cfgInstallPath === 'string') {
+    if (typeof cfgInstallPath === 'string' && cfgInstallPath !== '') {
         return cfgInstallPath
     }
 
