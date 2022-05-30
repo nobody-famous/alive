@@ -376,6 +376,11 @@
                     "type": "string",
                     "default": "/path/to/alive-lsp"
                 },
+                "alive.lsp.downloadUrl": {
+                    "type": "string",
+                    "description": "Https url from which to download alive-lsp release",
+                    "default": "https://api.github.com/repos/nobody-famous/alive-lsp/releases"
+                },
                 "alive.lsp.startCommand": {
                     "type": "array",
                     "default": [
