@@ -19,22 +19,11 @@ export interface ExtensionState {
     historyNdx: number
 }
 
-export interface SlimeVersion {
-    created_at: string
-    name: string
-    zipball_url: string
-}
-
 export interface AliveLspVersion {
-    createdAt: string
+    createdAt: number
     name: string
     tagName: string
     zipballUrl: string
-}
-
-export interface InstalledSlimeInfo {
-    path: string
-    latest: SlimeVersion | undefined
 }
 
 export interface HostPort {

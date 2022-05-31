@@ -168,6 +168,33 @@ async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
 
     const versions = resp.data.map((data) => parseVersionData(data))
 
+    versions.sort((a, b) => {
+        if (
+            typeof a?.createdAt === 'number' &&
+            Number.isFinite(a.createdAt) &&
+            typeof b?.createdAt === 'number' &&
+            Number.isFinite(b.createdAt)
+        ) {
+            if (a.createdAt > b.createdAt) {
+                return -1
+            } else if (a.createdAt < b.createdAt) {
+                return 1
+            } else {
+                return 0
+            }
+        }
+
+        if (Number.isFinite(a?.createdAt) && !Number.isFinite(b?.createdAt)) {
+            return -1
+        } else if (!Number.isFinite(a?.createdAt) && Number.isFinite(b?.createdAt)) {
+            return 1
+        } else if (!Number.isFinite(a?.createdAt) && !Number.isFinite(b?.createdAt)) {
+            return 0
+        }
+
+        return 0
+    })
+
     return versions[0]
 }
 
@@ -205,7 +232,7 @@ function parseVersionData(data: unknown): AliveLspVersion | undefined {
     }
 
     return {
-        createdAt: dataObj.created_at,
+        createdAt: Date.parse(dataObj.created_at),
         name: dataObj.name,
         tagName: dataObj.tag_name,
         zipballUrl: dataObj.zipball_url,

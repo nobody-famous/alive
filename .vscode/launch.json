@@ -11,8 +11,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "internalConsoleOptions": "openOnSessionStart",
-            "args": ["--disable-extensions", "--extensionDevelopmentPath=${workspaceFolder}"],
-            "preLaunchTask": "npm: compile"
+            "args": ["--disable-extensions", "--extensionDevelopmentPath=${workspaceFolder}"]
         }
     ]
 }
