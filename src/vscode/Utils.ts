@@ -1,10 +1,10 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as cmds from './commands'
-import { format, TextEncoder } from 'util'
+import { format } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
-import { ExtensionDeps, ExtensionState, HistoryItem } from './Types'
+import { ExtensionDeps, ExtensionState } from './Types'
 
 export const COMMON_LISP_ID = 'lisp'
 

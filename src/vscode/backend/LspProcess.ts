@@ -10,64 +10,68 @@ import StreamZip = require('node-stream-zip')
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
 export async function startLspServer(state: ExtensionState): Promise<number> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise<number>(async (resolve, reject) => {
         if (typeof state.lspInstallPath !== 'string') {
             return reject('No LSP server install path')
         }
 
-        const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
-        const cmd = lspConfig.get('startCommand')
-        const env = getClSourceRegistryEnv(state.lspInstallPath, process.env)
-        const cwd = await getWorkspaceOrFilePath()
+        try {
+            const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
+            const cmd = lspConfig.get('startCommand')
+            const env = getClSourceRegistryEnv(state.lspInstallPath, process.env)
+            const cwd = await getWorkspaceOrFilePath()
 
-        if (!Array.isArray(cmd)) {
-            return reject('No command defined, cannot start LSP server')
-        }
-
-        const handleDisconnect = (state: ExtensionState) => async (_code: number, _signal: string) => {
-            if (state.child !== undefined) {
-                await disconnectAndClearChild(state)
-            }
-        }
-
-        const timer = setupFailedStartupWarningTimer()
-
-        const appendOutputData = (data: unknown) => {
-            lspOutputChannel.append(`${data}`)
-        }
-
-        let connected = false
-
-        state.child = spawn(cmd[0], cmd.slice(1), { cwd, env })
-
-        state.child.stdout?.setEncoding('utf-8').on('data', (data) => {
-            appendOutputData(data)
-
-            if (typeof data !== 'string' || connected) {
-                return
+            if (!Array.isArray(cmd)) {
+                return reject('No command defined, cannot start LSP server')
             }
 
-            const match = data.match(/\[(.*?)\]\[(.*?)\] Started on port (\d+)/)
-            const port = parseInt(match?.[3] ?? '')
-
-            if (!Number.isFinite(port) || match === null) {
-                return
+            const handleDisconnect = (state: ExtensionState) => async (_code: number, _signal: string) => {
+                if (state.child !== undefined) {
+                    await disconnectAndClearChild(state)
+                }
             }
 
-            timer.cancel()
-            connected = true
-            resolve(port)
-        })
+            const timer = setupFailedStartupWarningTimer()
 
-        state.child.stderr?.setEncoding('utf-8').on('data', (data) => appendOutputData(data))
+            const appendOutputData = (data: unknown) => {
+                lspOutputChannel.append(`${data}`)
+            }
 
-        state.child
-            .on('exit', handleDisconnect(state))
-            .on('disconnect', handleDisconnect(state))
-            .on('error', (err: Error) => {
+            let connected = false
+
+            state.child = spawn(cmd[0], cmd.slice(1), { cwd, env })
+
+            state.child.stdout?.setEncoding('utf-8').on('data', (data) => {
+                appendOutputData(data)
+
+                if (typeof data !== 'string' || connected) {
+                    return
+                }
+
+                const match = data.match(/\[(.*?)\]\[(.*?)\] Started on port (\d+)/)
+                const port = parseInt(match?.[3] ?? '')
+
+                if (!Number.isFinite(port) || match === null) {
+                    return
+                }
+
                 timer.cancel()
-                reject(`Couldn't spawn server: ${err.message}`)
+                connected = true
+                resolve(port)
             })
+
+            state.child.stderr?.setEncoding('utf-8').on('data', (data) => appendOutputData(data))
+
+            state.child
+                .on('exit', handleDisconnect(state))
+                .on('disconnect', handleDisconnect(state))
+                .on('error', (err: Error) => {
+                    timer.cancel()
+                    reject(`Couldn't spawn server: ${err.message}`)
+                })
+        } catch (err) {
+            reject(err)
+        }
     })
 }
 

@@ -8,6 +8,8 @@ The LSP server that the extension relies on currently only supports SBCL. The ex
 
 ## Library Requirements
 
+ASDF needs to be version 3.3.3 or later.
+
 The LSP server uses the following libraries, which need to be installed for it to work.
 
 -   bordeaux-threads
