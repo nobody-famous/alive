@@ -9,9 +9,14 @@ import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
 import { HistoryNode } from './vscode/providers/ReplHistory'
 import { UI } from './vscode/UI'
+import { log, toLog } from './vscode/Log'
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
+    log(`Activating extension`)
+
     const workspacePath = await getWorkspacePath()
+
+    log(`Workspace Path: ${toLog(workspacePath)}`)
 
     const state: ExtensionState = {
         hoverText: '',
@@ -30,12 +35,16 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     try {
         state.lspInstallPath = await downloadLspServer()
+        log(`LSP install path: ${toLog(state.lspInstallPath)}`)
     } catch (err) {
         vscode.window.showErrorMessage(`Failed to download LSP server: ${err}`)
         return
     }
 
     const port = await startLspServer(state)
+
+    log(`Server port ${toLog(port)}`)
+
     const history = await readReplHistory(state.replHistoryFile)
 
     initUI(deps, state)
