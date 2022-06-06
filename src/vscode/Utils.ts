@@ -5,6 +5,7 @@ import { format } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
 import { ExtensionDeps, ExtensionState } from './Types'
+import { log, toLog } from '../vscode/Log'
 
 export const COMMON_LISP_ID = 'lisp'
 
@@ -24,7 +25,9 @@ export async function getWorkspaceOrFilePath(): Promise<string> {
 }
 
 export async function getWorkspacePath(): Promise<string | undefined> {
-    if (vscode.workspace.workspaceFolders === undefined) {
+    log(`Get workspace path: ${toLog(vscode.workspace.workspaceFolders)}`)
+
+    if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
         return undefined
     }
 
@@ -32,6 +35,8 @@ export async function getWorkspacePath(): Promise<string | undefined> {
         vscode.workspace.workspaceFolders.length > 1
             ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
             : vscode.workspace.workspaceFolders[0]
+
+    log(`Workspace folder: ${toLog(folder)}`)
 
     return folder.uri.fsPath
 }
