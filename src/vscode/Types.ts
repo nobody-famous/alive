@@ -17,6 +17,7 @@ export interface ExtensionState {
     compileTimeoutID: NodeJS.Timeout | undefined
     replHistoryFile: string
     historyNdx: number
+    workspacePath: string
 }
 
 export interface AliveLspVersion {

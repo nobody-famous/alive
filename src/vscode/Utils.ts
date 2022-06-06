@@ -12,7 +12,7 @@ export const COMMON_LISP_ID = 'lisp'
 const OUTPUT_DIR = '.vscode/alive'
 
 export async function getWorkspaceOrFilePath(): Promise<string> {
-    if (vscode.workspace.workspaceFolders === undefined) {
+    if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
         return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
     }
 
@@ -49,11 +49,18 @@ async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): 
 
     const namedFolders = folders.reduce(addFolderToFolders, {})
     const folderNames = Object.keys(namedFolders)
+
+    log(`Folder names: ${toLog(folderNames)}`)
+
     const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
+
+    log(`Chosen folder: ${toLog(chosenFolder)}`)
 
     if (chosenFolder === undefined) {
         throw new Error('Failed to choose a folder name')
     }
+
+    log(`Chosen workspace folder: ${toLog(namedFolders[chosenFolder])}`)
 
     return namedFolders[chosenFolder]
 }
@@ -80,20 +87,6 @@ export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) =
     }
 }
 
-export async function getTempFolder() {
-    let baseFolder = await getOpenFolder()
-
-    if (baseFolder === undefined) {
-        baseFolder = getActiveDocFolder()
-    }
-
-    if (baseFolder === undefined) {
-        throw new Error('No folder for REPL file, is file saved to disk?')
-    }
-
-    return vscode.Uri.joinPath(baseFolder, OUTPUT_DIR)
-}
-
 export async function createFolder(folder: vscode.Uri | undefined) {
     if (folder === undefined) {
         throw new Error('No folder to create')
@@ -112,53 +105,4 @@ export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
         await cmds.compileFile(deps, state)
         refreshPackages(deps)
     }, 500)
-}
-
-async function getOpenFolder() {
-    const folders = vscode.workspace.workspaceFolders
-
-    if (folders === undefined) {
-        return undefined
-    }
-
-    const uriMap: { [index: string]: vscode.WorkspaceFolder | undefined } = {}
-
-    for (const folder of folders) {
-        uriMap[folder.uri.fsPath] = folder
-    }
-
-    let openFolder: vscode.Uri | undefined = undefined
-
-    if (folders.length > 1) {
-        const pick = await vscode.window.showQuickPick(Object.keys(uriMap), { placeHolder: 'Select folder' })
-
-        if (pick !== undefined) {
-            openFolder = uriMap[pick]?.uri
-        }
-    } else {
-        openFolder = folders[0].uri
-    }
-
-    return openFolder
-}
-
-function getActiveDocFolder() {
-    const activeDoc = vscode.window.activeTextEditor?.document
-
-    if (activeDoc === undefined) {
-        return undefined
-    }
-
-    const wsFolder = vscode.workspace.getWorkspaceFolder(activeDoc.uri)
-    if (wsFolder !== undefined) {
-        return wsFolder.uri
-    }
-
-    const docPath = path.parse(activeDoc.uri.path)
-
-    if (docPath.dir === '') {
-        return undefined
-    }
-
-    return vscode.Uri.file(docPath.dir)
 }

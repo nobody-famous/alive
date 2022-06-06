@@ -32,7 +32,7 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
 
             log(`ENV: ${toLog(env)}`)
 
-            const cwd = await getWorkspaceOrFilePath()
+            const cwd = state.workspacePath
 
             log(`CWD: ${toLog(cwd)}`)
 

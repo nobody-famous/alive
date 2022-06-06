@@ -2,7 +2,7 @@ import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { CompileFileNote, ExtensionDeps, ExtensionState } from '../Types'
-import { COMMON_LISP_ID, createFolder, getTempFolder, strToMarkdown, useEditor } from '../Utils'
+import { COMMON_LISP_ID, createFolder, strToMarkdown, useEditor } from '../Utils'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
@@ -104,7 +104,7 @@ export async function compileFile(deps: ExtensionDeps, state: ExtensionState) {
         try {
             state.compileRunning = true
 
-            const toCompile = await createTempFile(editor.document)
+            const toCompile = await createTempFile(state, editor.document)
             const resp = await deps.lsp.compileFile(toCompile)
 
             if (resp === undefined) {
@@ -123,9 +123,9 @@ export async function compileFile(deps: ExtensionDeps, state: ExtensionState) {
     })
 }
 
-async function createTempFile(doc: vscode.TextDocument) {
-    const dir = await getTempFolder()
-    const faslDir = path.join(dir.fsPath, 'fasl')
+async function createTempFile(state: ExtensionState, doc: vscode.TextDocument) {
+    const dir = state.workspacePath
+    const faslDir = path.join(dir, '.vscode', 'alive', 'fasl')
     const fileName = path.join(faslDir, 'tmp.lisp')
     const content = new TextEncoder().encode(doc.getText())
 
