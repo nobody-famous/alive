@@ -9,26 +9,17 @@ import { log, toLog } from '../vscode/Log'
 
 export const COMMON_LISP_ID = 'lisp'
 
-const OUTPUT_DIR = '.vscode/alive'
-
 export async function getWorkspaceOrFilePath(): Promise<string> {
-    if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
-        return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
-    }
-
-    const folder =
-        vscode.workspace.workspaceFolders.length > 1
-            ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
-            : vscode.workspace.workspaceFolders[0]
-
-    return folder.uri.fsPath
-}
-
-export async function getWorkspacePath(): Promise<string | undefined> {
     log(`Get workspace path: ${toLog(vscode.workspace.workspaceFolders)}`)
 
     if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
-        return undefined
+        log(`No workspace folders`)
+
+        const outPath = path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
+
+        log(`Using ${outPath}`)
+
+        return outPath
     }
 
     const folder =
@@ -42,27 +33,39 @@ export async function getWorkspacePath(): Promise<string | undefined> {
 }
 
 async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder> {
-    const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
-        folders[folder.uri.fsPath] = folder
-        return folders
+    try {
+        log(`Pick workspace folder`)
+
+        const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
+            log(`Add to folders: ${toLog(folder)}`)
+
+            folders[folder.uri.fsPath] = folder
+            return folders
+        }
+
+        const namedFolders = folders.reduce(addFolderToFolders, {})
+
+        log(`Named folders: ${toLog(namedFolders)}`)
+
+        const folderNames = Object.keys(namedFolders)
+
+        log(`Named folders keys: ${toLog(folderNames)}`)
+
+        const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select workspace folder for Alive' })
+
+        log(`Chosen folder: ${toLog(chosenFolder)}`)
+
+        if (chosenFolder === undefined) {
+            throw new Error('Failed to choose a folder name')
+        }
+
+        log(`Chosen workspace folder: ${toLog(namedFolders[chosenFolder])}`)
+
+        return namedFolders[chosenFolder]
+    } catch (err) {
+        log(`Failed to pick folder: ${err}`)
+        throw err
     }
-
-    const namedFolders = folders.reduce(addFolderToFolders, {})
-    const folderNames = Object.keys(namedFolders)
-
-    log(`Folder names: ${toLog(folderNames)}`)
-
-    const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
-
-    log(`Chosen folder: ${toLog(chosenFolder)}`)
-
-    if (chosenFolder === undefined) {
-        throw new Error('Failed to choose a folder name')
-    }
-
-    log(`Chosen workspace folder: ${toLog(namedFolders[chosenFolder])}`)
-
-    return namedFolders[chosenFolder]
 }
 
 export function strToMarkdown(text: string): string {
