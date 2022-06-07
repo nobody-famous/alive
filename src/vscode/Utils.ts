@@ -1,6 +1,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as cmds from './commands'
+import { promises as fs } from 'fs'
 import { format } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
@@ -36,32 +37,59 @@ async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): 
     try {
         log(`Pick workspace folder`)
 
-        const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
-            log(`Add to folders: ${toLog(folder)}`)
+        const dirExists = async (dir: string): Promise<boolean> => {
+            try {
+                await fs.access(dir)
 
-            folders[folder.uri.fsPath] = folder
-            return folders
+                return true
+            } catch (err) {
+                return false
+            }
         }
 
-        const namedFolders = folders.reduce(addFolderToFolders, {})
+        const haveVscodeFolder: vscode.WorkspaceFolder[] = []
 
-        log(`Named folders: ${toLog(namedFolders)}`)
+        for (const folder of folders) {
+            const folderPath = folder.uri.fsPath
+            const vscodePath = path.join(folderPath, '.vscode')
+            const exists = await dirExists(vscodePath)
 
-        const folderNames = Object.keys(namedFolders)
-
-        log(`Named folders keys: ${toLog(folderNames)}`)
-
-        const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select workspace folder for Alive' })
-
-        log(`Chosen folder: ${toLog(chosenFolder)}`)
-
-        if (chosenFolder === undefined) {
-            throw new Error('Failed to choose a folder name')
+            if (exists) {
+                haveVscodeFolder.push(folder)
+            }
         }
 
-        log(`Chosen workspace folder: ${toLog(namedFolders[chosenFolder])}`)
+        log(`Have .vscode folder: ${toLog(haveVscodeFolder)}`)
 
-        return namedFolders[chosenFolder]
+        if (haveVscodeFolder.length === 0) {
+            log(`No .vscode folder found, returning ${toLog(folders[0])}`)
+
+            return folders[0]
+        }
+
+        const haveAliveFolder: vscode.WorkspaceFolder[] = []
+
+        for (const folder of haveVscodeFolder) {
+            const folderPath = folder.uri.fsPath
+            const alivePath = path.join(folderPath, '.vscode', 'alive')
+            const exists = await dirExists(alivePath)
+
+            if (exists) {
+                haveAliveFolder.push(folder)
+            }
+        }
+
+        log(`Have .vscode/alive folder: ${toLog(haveAliveFolder)}`)
+
+        if (haveAliveFolder.length === 0) {
+            log(`No .vscode/alive folder, retuning ${toLog(haveVscodeFolder[0])}`)
+
+            return haveVscodeFolder[0]
+        }
+
+        log(`Found .vscode/alive folder at ${toLog(haveAliveFolder[0])}`)
+
+        return haveAliveFolder[0]
     } catch (err) {
         log(`Failed to pick folder: ${err}`)
         throw err
