@@ -4,7 +4,7 @@ import * as path from 'path'
 import { promises as fs } from 'fs'
 import { PackageNode, ExportNode, ThreadNode } from './vscode/providers'
 import { ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
-import { COMMON_LISP_ID, getWorkspacePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
+import { COMMON_LISP_ID, getWorkspaceOrFilePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
 import { HistoryNode } from './vscode/providers/ReplHistory'
@@ -14,7 +14,7 @@ import { log, toLog } from './vscode/Log'
 export const activate = async (ctx: vscode.ExtensionContext) => {
     log(`Activating extension`)
 
-    const workspacePath = await getWorkspacePath()
+    const workspacePath = await getWorkspaceOrFilePath()
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
 
@@ -24,6 +24,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         compileTimeoutID: undefined,
         historyNdx: -1,
         ctx,
+        workspacePath,
         replHistoryFile:
             workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'alive', 'repl-history.json') : 'repl-history.json',
     }

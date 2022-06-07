@@ -1,18 +1,26 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as cmds from './commands'
+import { promises as fs } from 'fs'
 import { format } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
 import { ExtensionDeps, ExtensionState } from './Types'
+import { log, toLog } from '../vscode/Log'
 
 export const COMMON_LISP_ID = 'lisp'
 
-const OUTPUT_DIR = '.vscode/alive'
-
 export async function getWorkspaceOrFilePath(): Promise<string> {
-    if (vscode.workspace.workspaceFolders === undefined) {
-        return path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
+    log(`Get workspace path: ${toLog(vscode.workspace.workspaceFolders)}`)
+
+    if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
+        log(`No workspace folders`)
+
+        const outPath = path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
+
+        log(`Using ${outPath}`)
+
+        return outPath
     }
 
     const folder =
@@ -20,37 +28,72 @@ export async function getWorkspaceOrFilePath(): Promise<string> {
             ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
             : vscode.workspace.workspaceFolders[0]
 
-    return folder.uri.fsPath
-}
-
-export async function getWorkspacePath(): Promise<string | undefined> {
-    if (vscode.workspace.workspaceFolders === undefined) {
-        return undefined
-    }
-
-    const folder =
-        vscode.workspace.workspaceFolders.length > 1
-            ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
-            : vscode.workspace.workspaceFolders[0]
+    log(`Workspace folder: ${toLog(folder)}`)
 
     return folder.uri.fsPath
 }
 
 async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder> {
-    const addFolderToFolders = (folders: { [key: string]: vscode.WorkspaceFolder }, folder: vscode.WorkspaceFolder) => {
-        folders[folder.uri.fsPath] = folder
-        return folders
+    try {
+        log(`Pick workspace folder`)
+
+        const dirExists = async (dir: string): Promise<boolean> => {
+            try {
+                await fs.access(dir)
+
+                return true
+            } catch (err) {
+                return false
+            }
+        }
+
+        const haveVscodeFolder: vscode.WorkspaceFolder[] = []
+
+        for (const folder of folders) {
+            const folderPath = folder.uri.fsPath
+            const vscodePath = path.join(folderPath, '.vscode')
+            const exists = await dirExists(vscodePath)
+
+            if (exists) {
+                haveVscodeFolder.push(folder)
+            }
+        }
+
+        log(`Have .vscode folder: ${toLog(haveVscodeFolder)}`)
+
+        if (haveVscodeFolder.length === 0) {
+            log(`No .vscode folder found, returning ${toLog(folders[0])}`)
+
+            return folders[0]
+        }
+
+        const haveAliveFolder: vscode.WorkspaceFolder[] = []
+
+        for (const folder of haveVscodeFolder) {
+            const folderPath = folder.uri.fsPath
+            const alivePath = path.join(folderPath, '.vscode', 'alive')
+            const exists = await dirExists(alivePath)
+
+            if (exists) {
+                haveAliveFolder.push(folder)
+            }
+        }
+
+        log(`Have .vscode/alive folder: ${toLog(haveAliveFolder)}`)
+
+        if (haveAliveFolder.length === 0) {
+            log(`No .vscode/alive folder, retuning ${toLog(haveVscodeFolder[0])}`)
+
+            return haveVscodeFolder[0]
+        }
+
+        log(`Found .vscode/alive folder at ${toLog(haveAliveFolder[0])}`)
+
+        return haveAliveFolder[0]
+    } catch (err) {
+        log(`Failed to pick folder: ${err}`)
+        throw err
     }
-
-    const namedFolders = folders.reduce(addFolderToFolders, {})
-    const folderNames = Object.keys(namedFolders)
-    const chosenFolder = await vscode.window.showQuickPick(folderNames, { placeHolder: 'Select folder' })
-
-    if (chosenFolder === undefined) {
-        throw new Error('Failed to choose a folder name')
-    }
-
-    return namedFolders[chosenFolder]
 }
 
 export function strToMarkdown(text: string): string {
@@ -75,20 +118,6 @@ export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) =
     }
 }
 
-export async function getTempFolder() {
-    let baseFolder = await getOpenFolder()
-
-    if (baseFolder === undefined) {
-        baseFolder = getActiveDocFolder()
-    }
-
-    if (baseFolder === undefined) {
-        throw new Error('No folder for REPL file, is file saved to disk?')
-    }
-
-    return vscode.Uri.joinPath(baseFolder, OUTPUT_DIR)
-}
-
 export async function createFolder(folder: vscode.Uri | undefined) {
     if (folder === undefined) {
         throw new Error('No folder to create')
@@ -107,53 +136,4 @@ export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
         await cmds.compileFile(deps, state)
         refreshPackages(deps)
     }, 500)
-}
-
-async function getOpenFolder() {
-    const folders = vscode.workspace.workspaceFolders
-
-    if (folders === undefined) {
-        return undefined
-    }
-
-    const uriMap: { [index: string]: vscode.WorkspaceFolder | undefined } = {}
-
-    for (const folder of folders) {
-        uriMap[folder.uri.fsPath] = folder
-    }
-
-    let openFolder: vscode.Uri | undefined = undefined
-
-    if (folders.length > 1) {
-        const pick = await vscode.window.showQuickPick(Object.keys(uriMap), { placeHolder: 'Select folder' })
-
-        if (pick !== undefined) {
-            openFolder = uriMap[pick]?.uri
-        }
-    } else {
-        openFolder = folders[0].uri
-    }
-
-    return openFolder
-}
-
-function getActiveDocFolder() {
-    const activeDoc = vscode.window.activeTextEditor?.document
-
-    if (activeDoc === undefined) {
-        return undefined
-    }
-
-    const wsFolder = vscode.workspace.getWorkspaceFolder(activeDoc.uri)
-    if (wsFolder !== undefined) {
-        return wsFolder.uri
-    }
-
-    const docPath = path.parse(activeDoc.uri.path)
-
-    if (docPath.dir === '') {
-        return undefined
-    }
-
-    return vscode.Uri.file(docPath.dir)
 }

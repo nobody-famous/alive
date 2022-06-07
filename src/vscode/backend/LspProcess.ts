@@ -32,7 +32,7 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
 
             log(`ENV: ${toLog(env)}`)
 
-            const cwd = await getWorkspaceOrFilePath()
+            const cwd = state.workspacePath
 
             log(`CWD: ${toLog(cwd)}`)
 
@@ -42,7 +42,7 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
             }
 
             const handleDisconnect = (state: ExtensionState) => async (code: number, signal: string) => {
-                log(`Disconnected: CODE ${toLog(code)} SIGNAL ${signal}`)
+                log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
 
                 if (state.child !== undefined) {
                     await disconnectAndClearChild(state)
@@ -64,15 +64,13 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
             log(`Spawned: ${toLog(cmd[0])}`)
 
             state.child.stdout?.setEncoding('utf-8').on('data', (data) => {
-                log(`${toLog(cmd[0])} DATA: ${toLog(data)}`)
-
                 appendOutputData(data)
 
                 if (typeof data !== 'string' || connected) {
                     return
                 }
 
-                log(`Check for port`)
+                log(`Check for port: ${data}`)
 
                 const match = data.match(/\[(.*?)\]\[(.*?)\] Started on port (\d+)/)
 
@@ -89,11 +87,13 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
                 connected = true
 
                 log(`Found port: ${toLog(port)}`)
+
                 resolve(port)
             })
 
             state.child.stderr?.setEncoding('utf-8').on('data', (data) => {
                 log(`${toLog(cmd[0])} ERROR: ${toLog(data)}`)
+
                 appendOutputData(data)
             })
 
@@ -102,10 +102,13 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
                 .on('disconnect', handleDisconnect(state))
                 .on('error', (err: Error) => {
                     log(`Failed to spawn ${toLog(cmd[0])}: ${toLog(err)}`)
+
                     timer.cancel()
                     reject(`Couldn't spawn server: ${err.message}`)
                 })
         } catch (err) {
+            log(`Failed to start LSP server: ${err}`)
+
             reject(err)
         }
     })
