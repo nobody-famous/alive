@@ -107,6 +107,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
                 return
             }
 
+            await vscode.workspace.saveAll()
+
             deps.ui.addReplText(`Loading ASDF System ${node.label}`)
 
             await deps.lsp.loadAsdfSystem(node.label)
