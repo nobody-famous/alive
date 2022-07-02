@@ -475,6 +475,25 @@ export class LSP extends EventEmitter {
 
         return new vscode.Range(startPos, endPos)
     }
+
+    async getHoverText(fileUri: vscode.Uri, pos: vscode.Position): Promise<string> {
+        console.log('getHoverText called', fileUri.toString(), pos)
+
+        try {
+            const resp = await this.client?.sendRequest('textDocument/hover', {
+                textDocument: {
+                    uri: fileUri.toString(),
+                },
+                position: pos,
+            })
+
+            console.log('GET HOVER TEXT', resp)
+        } catch (err) {
+            console.log('HOVER FAILED', err)
+        }
+
+        return ''
+    }
 }
 
 const parseToInt = (data: unknown): number | undefined => {
