@@ -2,12 +2,10 @@ import EventEmitter = require('events')
 import * as vscode from 'vscode'
 import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
 import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
-import { getHoverProvider } from './providers/Hover'
 import { LispRepl } from './providers/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './providers/ReplHistory'
 import { DebugView } from './repl'
 import { DebugInfo, ExtensionState, HistoryItem, Package, Thread } from './Types'
-import { COMMON_LISP_ID } from './Utils'
 
 export declare interface UI {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
@@ -32,7 +30,6 @@ export class UI extends EventEmitter {
         this.initRepl()
 
         vscode.window.registerWebviewViewProvider('lispRepl', this.replView)
-        vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
     }
 
     clearRepl() {

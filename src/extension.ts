@@ -10,6 +10,7 @@ import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
 import { HistoryNode } from './vscode/providers/ReplHistory'
 import { UI } from './vscode/UI'
 import { log, toLog } from './vscode/Log'
+import { getHoverProvider } from './vscode/providers/Hover'
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
     log(`Activating extension`)
@@ -150,6 +151,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     )
 
     setWorkspaceEventHandlers(deps, state)
+
+    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state, deps.lsp))
 
     await vscode.commands.executeCommand('replHistory.focus')
     await vscode.commands.executeCommand('lispRepl.focus')

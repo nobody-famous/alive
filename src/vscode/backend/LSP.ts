@@ -11,7 +11,7 @@ import {
     Package,
     Thread,
 } from '../Types'
-import { COMMON_LISP_ID, hasValidLangId } from '../Utils'
+import { COMMON_LISP_ID, hasValidLangId, strToMarkdown } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { EventEmitter } from 'events'
 
@@ -474,6 +474,33 @@ export class LSP extends EventEmitter {
         }
 
         return new vscode.Range(startPos, endPos)
+    }
+
+    async getHoverText(fileUri: vscode.Uri, pos: vscode.Position): Promise<string> {
+        try {
+            const resp = await this.client?.sendRequest('textDocument/hover', {
+                textDocument: {
+                    uri: fileUri.toString(),
+                },
+                position: pos,
+            })
+
+            if (typeof resp !== 'object' || resp === null) {
+                return ''
+            }
+
+            const respObj = resp as { [index: string]: unknown }
+
+            if (typeof respObj.value !== 'string') {
+                return ''
+            }
+
+            return strToMarkdown(respObj.value)
+        } catch (err) {
+            console.log('HOVER FAILED', err)
+        }
+
+        return ''
     }
 }
 
