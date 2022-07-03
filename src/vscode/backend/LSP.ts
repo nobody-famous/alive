@@ -11,7 +11,7 @@ import {
     Package,
     Thread,
 } from '../Types'
-import { COMMON_LISP_ID, hasValidLangId } from '../Utils'
+import { COMMON_LISP_ID, hasValidLangId, strToMarkdown } from '../Utils'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { EventEmitter } from 'events'
 
@@ -495,7 +495,7 @@ export class LSP extends EventEmitter {
                 return ''
             }
 
-            return respObj.value
+            return strToMarkdown(respObj.value)
         } catch (err) {
             console.log('HOVER FAILED', err)
         }
