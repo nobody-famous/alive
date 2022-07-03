@@ -477,8 +477,6 @@ export class LSP extends EventEmitter {
     }
 
     async getHoverText(fileUri: vscode.Uri, pos: vscode.Position): Promise<string> {
-        console.log('getHoverText called', fileUri.toString(), pos)
-
         try {
             const resp = await this.client?.sendRequest('textDocument/hover', {
                 textDocument: {
@@ -487,7 +485,17 @@ export class LSP extends EventEmitter {
                 position: pos,
             })
 
-            console.log('GET HOVER TEXT', resp)
+            if (typeof resp !== 'object' || resp === null) {
+                return ''
+            }
+
+            const respObj = resp as { [index: string]: unknown }
+
+            if (typeof respObj.value !== 'string') {
+                return ''
+            }
+
+            return respObj.value
         } catch (err) {
             console.log('HOVER FAILED', err)
         }
