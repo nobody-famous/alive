@@ -19,6 +19,11 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
 
+    const editorConfig = vscode.workspace.getConfiguration('editor')
+    await editorConfig.update('formatOnType', true, false, true)
+
+    log(`Format On Type: ${editorConfig.get('formatOnType')}`)
+
     const state: ExtensionState = {
         hoverText: '',
         compileRunning: false,
