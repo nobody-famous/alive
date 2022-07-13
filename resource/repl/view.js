@@ -34,6 +34,9 @@ window.addEventListener('message', (event) => {
         case 'clearInput':
             clearInput()
             break
+        case 'getUserInput':
+            getUserInput()
+            break
     }
 })
 
@@ -90,6 +93,14 @@ function setPackage(name) {
 
     pkg.innerHTML = name
     textInput.focus()
+}
+
+function getUserInput() {
+    const inputElem = document.getElementById('repl-user-input')
+
+    if (inputElem?.style.display !== undefined) {
+        inputElem.style.display = 'block'
+    }
 }
 
 function saveState() {

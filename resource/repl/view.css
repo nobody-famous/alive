@@ -3,6 +3,8 @@ html {
 }
 
 body {
+    display: flex;
+    flex-direction: column;
     height: calc(100% - 0.1rem);
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
@@ -10,7 +12,7 @@ body {
 
 .repl-text {
     overflow: auto;
-    height: calc(100% - 1.8rem);
+    flex-grow: 1;
     border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
@@ -18,8 +20,11 @@ body {
     border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
+#repl-user-input {
+    display: none;
+}
+
 .repl-input-box {
-    height: 1.5rem;
     display: flex;
     flex-direction: column;
 }

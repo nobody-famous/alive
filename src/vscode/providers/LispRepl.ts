@@ -104,6 +104,12 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         })
     }
 
+    getUserInput() {
+        this.view?.webview.postMessage({
+            type: 'getUserInput',
+        })
+    }
+
     private doEval(text: string) {
         this.emit('eval', this.package, text)
     }
@@ -121,6 +127,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
                 <body>
                     <textarea id="repl-text" class="repl-text" readonly></textarea>
                     <div class="repl-input-box">
+                        <input class="repl-input-text" id="repl-user-input" type="text">
                         <div class="repl-input-text-box">
                             <div class="repl-input-label" onclick="requestPackage()">
                                 <span id="repl-package">${this.package}</span>
