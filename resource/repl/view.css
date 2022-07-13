@@ -20,6 +20,10 @@ body {
     border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
+#repl-user-input-box {
+    display: none;
+}
+
 #repl-user-input-form {
     flex-grow: 1;
 }

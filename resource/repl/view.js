@@ -108,18 +108,26 @@ function setPackage(name) {
 
 function showUserInput() {
     const inputElem = document.getElementById('repl-user-input')
+    const boxElem = document.getElementById('repl-user-input-box')
+    const textElem = document.getElementById('repl-text')
 
-    if (inputElem !== undefined) {
+    if (inputElem !== undefined && boxElem !== undefined && textElem !== undefined) {
+        boxElem.style.display = 'flex'
+
         inputElem.disabled = false
         inputElem.focus()
+
+        textElem.scrollTop = textElem.scrollHeight
     }
 }
 
 function hideUserInput() {
     const inputElem = document.getElementById('repl-user-input')
+    const boxElem = document.getElementById('repl-user-input-box')
 
-    if (inputElem !== undefined) {
+    if (inputElem !== undefined && boxElem !== undefined) {
         inputElem.disabled = true
+        boxElem.style.display = 'none'
     }
 }
 
