@@ -9,6 +9,17 @@ document.getElementById('repl-input-form').onsubmit = (event) => {
     textInput.value = ''
 }
 
+document.getElementById('repl-user-input-form').onsubmit = (event) => {
+    event.preventDefault()
+
+    const textInput = document.getElementById('repl-user-input')
+
+    vscode.postMessage({ command: 'userInput', text: textInput.value })
+
+    textInput.value = ''
+    hideUserInput()
+}
+
 window.addEventListener('message', (event) => {
     const data = event.data
 
@@ -35,7 +46,7 @@ window.addEventListener('message', (event) => {
             clearInput()
             break
         case 'getUserInput':
-            getUserInput()
+            showUserInput()
             break
     }
 })
@@ -95,11 +106,20 @@ function setPackage(name) {
     textInput.focus()
 }
 
-function getUserInput() {
+function showUserInput() {
     const inputElem = document.getElementById('repl-user-input')
 
-    if (inputElem?.style.display !== undefined) {
-        inputElem.style.display = 'block'
+    if (inputElem !== undefined) {
+        inputElem.disabled = false
+        inputElem.focus()
+    }
+}
+
+function hideUserInput() {
+    const inputElem = document.getElementById('repl-user-input')
+
+    if (inputElem !== undefined) {
+        inputElem.disabled = true
     }
 }
 

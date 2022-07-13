@@ -66,11 +66,18 @@ export class UI extends EventEmitter {
     }
 
     async getUserInput(): Promise<string> {
-        this.replView?.getUserInput()
+        return new Promise<string>(async (resolve, reject) => {
+            await vscode.commands.executeCommand('lispRepl.focus')
 
-        const input = await vscode.window.showInputBox()
+            this.replView?.getUserInput()
 
-        return input !== undefined ? `${input}\n` : '\n'
+            const recvInput = (text: string) => {
+                this.replView?.off('userInput', recvInput)
+                resolve(`${text}\n`)
+            }
+
+            this.replView?.on('userInput', recvInput)
+        })
     }
 
     updateThreads(threads: Thread[]): void {

@@ -20,8 +20,8 @@ body {
     border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
-#repl-user-input {
-    display: none;
+#repl-user-input-form {
+    flex-grow: 1;
 }
 
 .repl-input-box {
@@ -54,7 +54,7 @@ body {
     border: none;
     height: 1.5rem;
     line-height: 1.5rem;
-    width: calc(100% - 3rem);
+    width: 95%;
 }
 
 input:focus,
