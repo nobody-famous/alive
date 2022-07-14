@@ -92,6 +92,12 @@ export class UI extends EventEmitter {
         this.packageTree?.update(pkgs)
     }
 
+    initInspector(): void {
+        const view = new LispRepl(this.state.ctx)
+
+        vscode.window.registerWebviewViewProvider('lispInspector', view)
+    }
+
     initPackagesTree(pkgs: Package[]): void {
         this.packageTree = new PackagesTreeProvider(pkgs)
         vscode.window.registerTreeDataProvider('lispPackages', this.packageTree)

@@ -72,6 +72,11 @@
                     "name": "REPL History"
                 },
                 {
+                    "id": "lispInspector",
+                    "type": "webview",
+                    "name": "Inspector"
+                },
+                {
                     "id": "lispPackages",
                     "name": "Packages"
                 },

@@ -235,6 +235,8 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
     deps.ui.on('listPackages', async (fn) => fn(await deps.lsp.listPackages()))
     deps.ui.on('eval', (text, pkgName, storeResult) => deps.lsp.eval(text, pkgName, storeResult))
+
+    deps.ui.initInspector()
 }
 
 function initLSP(deps: ExtensionDeps, state: ExtensionState) {
