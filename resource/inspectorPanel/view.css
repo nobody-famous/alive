@@ -1,0 +1,50 @@
+html {
+    height: calc(100% - 0.3rem);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 0.1rem);
+    color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-sideBar-background);
+}
+
+.inspector-panel-input-box {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--vscode-editor-foreground);
+}
+
+.inspector-panel-input-text-box {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+.inspector-panel-input-form {
+    flex-grow: 1;
+}
+
+.inspector-panel-input-label {
+    text-align: right;
+    display: inline-block;
+    height: 1.5rem;
+    line-height: 1.5rem;
+    cursor: pointer;
+}
+
+.inspector-panel-input-text {
+    color: var(--vscode-editor-foreground);
+    caret-color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-sideBar-background);
+    border: none;
+    height: 1.5rem;
+    line-height: 1.5rem;
+    width: 95%;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+}

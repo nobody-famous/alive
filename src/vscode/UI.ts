@@ -7,6 +7,7 @@ import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
 import { DebugInfo, ExtensionState, HistoryItem, Package, Thread } from './Types'
+import { InspectorPanel } from './views/InspectorPanel'
 
 export declare interface UI {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
@@ -94,7 +95,7 @@ export class UI extends EventEmitter {
     }
 
     initInspector(): void {
-        const view = new LispRepl(this.state.ctx)
+        const view = new InspectorPanel(this.state.ctx)
 
         vscode.window.registerWebviewViewProvider('lispInspector', view)
     }
