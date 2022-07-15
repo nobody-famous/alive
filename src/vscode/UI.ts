@@ -1,10 +1,11 @@
 import EventEmitter = require('events')
 import * as vscode from 'vscode'
-import { PackagesTreeProvider, ThreadsTreeProvider } from './providers'
-import { AsdfSystemsTreeProvider } from './providers/AsdfSystemsTree'
-import { LispRepl } from './providers/LispRepl'
-import { HistoryNode, ReplHistoryTreeProvider } from './providers/ReplHistory'
-import { DebugView } from './repl'
+import { PackagesTreeProvider } from './views/PackagesTree'
+import { ThreadsTreeProvider } from './views/ThreadsTree'
+import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
+import { LispRepl } from './views/LispRepl'
+import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
+import { DebugView } from './views/DebugView'
 import { DebugInfo, ExtensionState, HistoryItem, Package, Thread } from './Types'
 
 export declare interface UI {
