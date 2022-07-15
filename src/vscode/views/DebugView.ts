@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { DebugInfo, RestartInfo } from '../Types'
+import { strToHtml } from '../Utils'
 // import * as event from '../../swank/event'
 // import { Frame, FrameVariable } from '../../swank/Types'
 
@@ -124,19 +125,10 @@ export class DebugView extends EventEmitter {
         this.emit('restart', num)
     }
 
-    private strToHtml(str: string): string {
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/ /g, '&nbsp;')
-            .replace(/\</g, '&lt;')
-            .replace(/\>/g, '&gt;')
-            .replace(/\n/g, '<br>')
-    }
-
     private renderCondList() {
         let str = ''
 
-        str += `<div class="list-item">${this.strToHtml(this.info.message)}</div>`
+        str += `<div class="list-item">${strToHtml(this.info.message)}</div>`
 
         return str
     }
@@ -250,7 +242,7 @@ export class DebugView extends EventEmitter {
         let ndx = this.info.stackTrace.length
 
         for (const bt of this.info.stackTrace) {
-            str += `<div class="list-item"">${ndx}: ${this.strToHtml(bt)}</div>`
+            str += `<div class="list-item"">${ndx}: ${strToHtml(bt)}</div>`
             ndx -= 1
         }
 
@@ -275,7 +267,7 @@ export class DebugView extends EventEmitter {
     private renderRestartItem(ndx: number, info: RestartInfo) {
         return `
             <div class="list-item clickable" onclick="restart(${ndx})">
-                ${ndx}: [${this.strToHtml(info.name)}] ${this.strToHtml(info.description)}
+                ${ndx}: [${strToHtml(info.name)}] ${strToHtml(info.description)}
             </div>
         `
     }

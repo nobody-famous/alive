@@ -2,6 +2,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { EventEmitter } from 'events'
 import { InspectInfo } from '../Types'
+import { strToHtml } from '../Utils'
 
 // import { unescape } from '../../lisp'
 // import { InspectContent, InspectContentAction } from '../../swank/Types'
@@ -83,17 +84,21 @@ export class Inspector extends EventEmitter {
         // return str
     }
 
-    private renderArray(value: Array<unknown>) {
-        const entries = value.map((value, index) => {
+    private renderArray(arr: Array<unknown>) {
+        const entries = arr.map((value, index) => {
+            const strValue = strToHtml(typeof value === 'string' ? value : JSON.stringify(value))
+
             return `
-                <div>
-                    <div>${index}</div>
-                    <div>${value}</div>
-                </div>
+                <div class="inspector-array-index">${index}:</div>
+                <div>${strValue}</div>
             `
         })
 
-        return entries.join('')
+        return `
+            <div class="inspector-content">
+                ${entries.join('')}
+            </div>
+        `
     }
 
     private renderObject(value: object | null) {
@@ -103,15 +108,20 @@ export class Inspector extends EventEmitter {
 
         const valueObj = value as { [index: string]: unknown }
         const entries = Object.keys(valueObj).map((key) => {
+            const v = valueObj[key]
+            const valueStr = typeof v === 'string' ? v : JSON.stringify(v)
+
             return `
-                <div>
-                    <span>${key}</span>
-                    <span>${JSON.stringify(valueObj[key])}</span>
-                </div>
+                <div>${strToHtml(key)}</div>
+                <div>${strToHtml(valueStr)}</div>
             `
         })
 
-        return entries.join('')
+        return `
+            <div class="inspector-content">
+                ${entries.join('')}
+            <div>
+        `
     }
 
     private renderValue(value: unknown) {
@@ -119,7 +129,17 @@ export class Inspector extends EventEmitter {
             return this.renderArray(value)
         } else if (typeof value === 'object') {
             return this.renderObject(value)
+        } else {
+            const valueStr = typeof value === 'string' ? value : JSON.stringify(value)
+            return `<div>${strToHtml(valueStr)}</div>`
         }
+    }
+
+    private renderRow(key: string, value: unknown) {
+        return `
+            <div class="inspector-row-key">${key}</div>
+            <div class="inspector-row-value">${value}</div>
+        `
     }
 
     private renderFields() {
@@ -138,30 +158,17 @@ export class Inspector extends EventEmitter {
                 return ''
             }
 
-            return `
-            <div>
-                <span>${key}</span>
-                <span>${JSON.stringify(resultObj[key])}</span>
-            </div>
-            `
+            return this.renderRow(key, JSON.stringify(resultObj[key]))
         })
 
-        divs.push(`
-            <div>
-                <span>value</span>
-                <span>${this.renderValue(resultObj['value'])}</span>
-            </div>
-        `)
+        divs.push(this.renderRow('value', this.renderValue(resultObj['value'])))
 
         return divs.join('')
     }
 
     private renderContent() {
-        return `
-            <div>
-                ${this.renderFields()}
-            </div>
-        `
+        return this.renderFields()
+
         // if (this.content === undefined) {
         //     return ''
         // }
@@ -184,10 +191,6 @@ export class Inspector extends EventEmitter {
         // return str
     }
 
-    private escapeHtml(text: string) {
-        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&#39;')
-    }
-
     private renderHtml() {
         // if (this.panel === undefined || this.title === undefined || this.content === undefined) {
         if (this.panel === undefined || this.title === undefined) {
@@ -205,9 +208,9 @@ export class Inspector extends EventEmitter {
             </head>
             <body>
                 <div id="content">
-                    <div class="inspect-title">${this.escapeHtml(this.title)}</div>
+                    <div class="inspect-title">${strToHtml(this.title)}</div>
                     <hr></hr>
-                    <div class="inspect-content">${this.renderContent()}</div>
+                    <div class="inspector-content">${this.renderContent()}</div>
                 </div>
 
                 <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>

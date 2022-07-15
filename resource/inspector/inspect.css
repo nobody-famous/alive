@@ -7,6 +7,16 @@
     padding-top: 0.5rem;
 }
 
+.inspector-content {
+    display: grid;
+    grid-template-columns: fit-content(100px) 1fr;
+    gap: 0.5rem;
+}
+
+.inspector-array-index {
+    text-align: right;
+}
+
 .inspect-item {
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
