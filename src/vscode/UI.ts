@@ -22,14 +22,17 @@ export class UI extends EventEmitter {
     private asdfTree: AsdfSystemsTreeProvider | undefined
     private threadsTree: ThreadsTreeProvider | undefined
     private replView: LispRepl
+    private inspectorPanel: InspectorPanel
 
     constructor(state: ExtensionState) {
         super()
 
         this.state = state
         this.replView = new LispRepl(state.ctx)
+        this.inspectorPanel = new InspectorPanel(state.ctx)
 
         this.initRepl()
+        this.initInspectorPanel()
 
         vscode.window.registerWebviewViewProvider('lispRepl', this.replView)
     }
@@ -95,9 +98,7 @@ export class UI extends EventEmitter {
     }
 
     initInspector(): void {
-        const view = new InspectorPanel(this.state.ctx)
-
-        vscode.window.registerWebviewViewProvider('lispInspector', view)
+        vscode.window.registerWebviewViewProvider('lispInspector', this.inspectorPanel)
     }
 
     initPackagesTree(pkgs: Package[]): void {
@@ -160,6 +161,41 @@ export class UI extends EventEmitter {
         })
     }
 
+    private requestPackages = () => {
+        return new Promise<Package[]>((resolve, reject) => {
+            this.emit('listPackages', (pkgs: Package[]) => {
+                resolve(pkgs)
+            })
+        })
+    }
+
+    private selectPackage = async () => {
+        const pkgs = await this.requestPackages()
+        const names: string[] = []
+
+        for (const pkg of pkgs) {
+            names.push(pkg.name.toLowerCase())
+
+            for (const nick of pkg.nicknames) {
+                names.push(nick.toLowerCase())
+            }
+        }
+
+        return await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
+    }
+
+    async initInspectorPanel() {
+        this.inspectorPanel.on('eval', async (pkg: string, text: string) => {})
+
+        this.inspectorPanel.on('requestPackage', async () => {
+            const pick = await this.selectPackage()
+
+            if (pick !== undefined) {
+                this.inspectorPanel.setPackage(pick)
+            }
+        })
+    }
+
     async initRepl() {
         this.replView.on('eval', async (pkg: string, text: string) => {
             const itemsCount = this.historyTree?.items.length ?? 0
@@ -182,27 +218,8 @@ export class UI extends EventEmitter {
             this.emit('eval', text, pkg, true)
         })
 
-        const requestPackages = () => {
-            return new Promise<Package[]>((resolve, reject) => {
-                this.emit('listPackages', (pkgs: Package[]) => {
-                    resolve(pkgs)
-                })
-            })
-        }
-
         this.replView.on('requestPackage', async () => {
-            const pkgs = await requestPackages()
-            const names: string[] = []
-
-            for (const pkg of pkgs) {
-                names.push(pkg.name.toLowerCase())
-
-                for (const nick of pkg.nicknames) {
-                    names.push(nick.toLowerCase())
-                }
-            }
-
-            const pick = await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
+            const pick = await this.selectPackage()
 
             if (pick !== undefined) {
                 this.replView.setPackage(pick)
