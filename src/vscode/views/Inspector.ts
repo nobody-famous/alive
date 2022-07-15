@@ -1,22 +1,26 @@
-import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { EventEmitter } from 'events'
+import { InspectInfo } from '../Types'
+
 // import { unescape } from '../../lisp'
 // import { InspectContent, InspectContentAction } from '../../swank/Types'
 
 export class Inspector extends EventEmitter {
     ctx: vscode.ExtensionContext
     viewCol: vscode.ViewColumn
+    info: InspectInfo
     panel?: vscode.WebviewPanel
 
     title?: string
     // content?: InspectContent
 
-    constructor(ctx: vscode.ExtensionContext, viewCol: vscode.ViewColumn) {
+    constructor(ctx: vscode.ExtensionContext, viewCol: vscode.ViewColumn, result: InspectInfo) {
         super()
 
         this.ctx = ctx
         this.viewCol = viewCol
+        this.info = result
     }
 
     // show(title: string, content: InspectContent) {
@@ -50,6 +54,10 @@ export class Inspector extends EventEmitter {
             }
         })
 
+        this.panel.onDidDispose(() => {
+            console.log('INSPECTOR CLOSED')
+        })
+
         vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
     }
 
@@ -75,7 +83,85 @@ export class Inspector extends EventEmitter {
         // return str
     }
 
+    private renderArray(value: Array<unknown>) {
+        const entries = value.map((value, index) => {
+            return `
+                <div>
+                    <div>${index}</div>
+                    <div>${value}</div>
+                </div>
+            `
+        })
+
+        return entries.join('')
+    }
+
+    private renderObject(value: object | null) {
+        if (value === null) {
+            return 'NULL'
+        }
+
+        const valueObj = value as { [index: string]: unknown }
+        const entries = Object.keys(valueObj).map((key) => {
+            return `
+                <div>
+                    <span>${key}</span>
+                    <span>${JSON.stringify(valueObj[key])}</span>
+                </div>
+            `
+        })
+
+        return entries.join('')
+    }
+
+    private renderValue(value: unknown) {
+        if (Array.isArray(value)) {
+            return this.renderArray(value)
+        } else if (typeof value === 'object') {
+            return this.renderObject(value)
+        }
+    }
+
+    private renderFields() {
+        if (typeof this.info.result !== 'object') {
+            return
+        }
+
+        const resultObj = this.info.result as { [index: string]: unknown }
+
+        if (resultObj.value === undefined) {
+            return
+        }
+
+        const divs = Object.keys(resultObj).map((key) => {
+            if (key === 'value') {
+                return ''
+            }
+
+            return `
+            <div>
+                <span>${key}</span>
+                <span>${JSON.stringify(resultObj[key])}</span>
+            </div>
+            `
+        })
+
+        divs.push(`
+            <div>
+                <span>value</span>
+                <span>${this.renderValue(resultObj['value'])}</span>
+            </div>
+        `)
+
+        return divs.join('')
+    }
+
     private renderContent() {
+        return `
+            <div>
+                ${this.renderFields()}
+            </div>
+        `
         // if (this.content === undefined) {
         //     return ''
         // }

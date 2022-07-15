@@ -8,7 +8,7 @@ import {
     EvalInfo,
     ExtensionState,
     HostPort,
-    InspectResult,
+    InspectInfo,
     Package,
     Thread,
 } from '../Types'
@@ -23,7 +23,7 @@ export declare interface LSP {
     on(event: 'output', listener: (str: string) => void): this
     on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
     on(event: 'getUserInput', listener: (fn: (input: string) => void) => void): this
-    on(event: 'inspectResult', listener: (result: InspectResult) => void): this
+    on(event: 'inspectResult', listener: (result: InspectInfo) => void): this
 }
 
 export class LSP extends EventEmitter {
@@ -165,7 +165,7 @@ export class LSP extends EventEmitter {
                 return
             }
 
-            this.emit('inspectResult', resp as InspectResult)
+            this.emit('inspectResult', resp as InspectInfo)
         } catch (err) {
             const errObj = err as { message: string }
 

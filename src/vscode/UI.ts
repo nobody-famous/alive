@@ -6,8 +6,9 @@ import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
 import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
-import { DebugInfo, ExtensionState, HistoryItem, InspectResult, Package, Thread } from './Types'
+import { DebugInfo, ExtensionState, HistoryItem, InspectInfo, Package, Thread } from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
+import { Inspector } from './views/Inspector'
 
 export declare interface UI {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
@@ -185,8 +186,10 @@ export class UI extends EventEmitter {
         return await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
     }
 
-    newInspector(result: InspectResult) {
-        console.log('NEW INSPECTOR', result)
+    newInspector(result: InspectInfo) {
+        const inspector = new Inspector(this.state.ctx, vscode.ViewColumn.Two, result)
+
+        inspector.show('Some Title')
     }
 
     async initInspectorPanel() {

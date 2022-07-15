@@ -80,7 +80,7 @@ export interface EvalInfo {
     package: string
 }
 
-export interface InspectResult {
+export interface InspectInfo {
     id: number
     result: unknown
 }
