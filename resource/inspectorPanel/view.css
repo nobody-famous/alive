@@ -19,7 +19,7 @@ body {
 .inspector-panel-input-text-box {
     flex-grow: 1;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
 }
 
 .inspector-panel-input-form {
@@ -27,21 +27,20 @@ body {
 }
 
 .inspector-panel-input-label {
-    text-align: right;
+    text-align: left;
     display: inline-block;
-    height: 1.5rem;
-    line-height: 1.5rem;
     cursor: pointer;
 }
 
 .inspector-panel-input-text {
-    color: var(--vscode-editor-foreground);
+    color: var(--vscode-activityBar-foreground);
     caret-color: var(--vscode-editor-foreground);
-    background-color: var(--vscode-sideBar-background);
+    background-color: var(--vscode-activityBar-background);
     border: none;
+    border-radius: 5px;
     height: 1.5rem;
     line-height: 1.5rem;
-    width: 95%;
+    width: 100%;
 }
 
 input:focus,

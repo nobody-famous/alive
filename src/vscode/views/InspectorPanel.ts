@@ -28,7 +28,6 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
 
         webviewView.webview.onDidReceiveMessage(
             (msg: { command: string; text?: string; pkg?: string }) => {
-                console.log('MSG', msg)
                 switch (msg.command) {
                     case 'eval':
                         return this.doEval(msg.text ?? '')
@@ -70,7 +69,6 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
                         <div class="inspector-panel-input-text-box">
                             <div class="inspector-panel-input-label" onclick="requestPackage()">
                                 <span id="inspector-panel-package">${this.package}</span>
-                                >
                             </div>
                             <form id="inspector-panel-input-form" class="inspector-panel-input-form" action="">
                                 <input class="inspector-panel-input-text" id="inspector-panel-input-text" type="text">
