@@ -51,7 +51,7 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
     }
 
     private doEval(text: string) {
-        this.emit('eval', this.package, text)
+        this.emit('inspect', this.package, text)
     }
 
     private getHtmlForView(): string {

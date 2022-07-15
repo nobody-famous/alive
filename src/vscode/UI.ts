@@ -6,12 +6,13 @@ import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
 import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
-import { DebugInfo, ExtensionState, HistoryItem, Package, Thread } from './Types'
+import { DebugInfo, ExtensionState, HistoryItem, InspectResult, Package, Thread } from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
 
 export declare interface UI {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
     on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
+    on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
     on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
 }
 
@@ -184,8 +185,12 @@ export class UI extends EventEmitter {
         return await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
     }
 
+    newInspector(result: InspectResult) {
+        console.log('NEW INSPECTOR', result)
+    }
+
     async initInspectorPanel() {
-        this.inspectorPanel.on('eval', async (pkg: string, text: string) => {})
+        this.inspectorPanel.on('inspect', async (pkg: string, text: string) => this.emit('inspect', text, pkg))
 
         this.inspectorPanel.on('requestPackage', async () => {
             const pick = await this.selectPackage()

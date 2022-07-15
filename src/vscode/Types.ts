@@ -79,3 +79,8 @@ export interface EvalInfo {
     text: string
     package: string
 }
+
+export interface InspectResult {
+    id: number
+    result: unknown
+}

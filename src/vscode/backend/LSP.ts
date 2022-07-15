@@ -8,6 +8,7 @@ import {
     EvalInfo,
     ExtensionState,
     HostPort,
+    InspectResult,
     Package,
     Thread,
 } from '../Types'
@@ -22,6 +23,7 @@ export declare interface LSP {
     on(event: 'output', listener: (str: string) => void): this
     on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
     on(event: 'getUserInput', listener: (fn: (input: string) => void) => void): this
+    on(event: 'inspectResult', listener: (result: InspectResult) => void): this
 }
 
 export class LSP extends EventEmitter {
@@ -143,6 +145,38 @@ export class LSP extends EventEmitter {
         }
 
         this.emit('output', paramsObj.data)
+    }
+
+    async inspect(text: string, pkgName: string): Promise<void> {
+        try {
+            const promise = this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
+
+            this.emit('refreshThreads')
+
+            const resp = await promise
+
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const resultObj = resp as { [index: string]: unknown }
+
+            if (typeof resultObj.id !== 'number' || typeof resultObj.result !== 'object') {
+                return
+            }
+
+            this.emit('inspectResult', resp as InspectResult)
+        } catch (err) {
+            const errObj = err as { message: string }
+
+            if (errObj.message !== undefined) {
+                this.emit('output', errObj.message)
+            } else {
+                this.emit('output', JSON.stringify(err))
+            }
+        } finally {
+            this.emit('refreshThreads')
+        }
     }
 
     async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {

@@ -4,7 +4,7 @@ import * as path from 'path'
 import { promises as fs } from 'fs'
 import { PackageNode, ExportNode } from './vscode/views/PackagesTree'
 import { ThreadNode } from './vscode/views/ThreadsTree'
-import { ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
+import { ExtensionDeps, ExtensionState, HistoryItem, InspectResult } from './vscode/Types'
 import { COMMON_LISP_ID, getWorkspaceOrFilePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
@@ -236,6 +236,7 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
     deps.ui.on('listPackages', async (fn) => fn(await deps.lsp.listPackages()))
     deps.ui.on('eval', (text, pkgName, storeResult) => deps.lsp.eval(text, pkgName, storeResult))
+    deps.ui.on('inspect', (text, pkgName) => deps.lsp.inspect(text, pkgName))
 
     deps.ui.initInspector()
 }
@@ -247,4 +248,5 @@ function initLSP(deps: ExtensionDeps, state: ExtensionState) {
     deps.lsp.on('output', (str) => deps.ui.addReplText(str))
     deps.lsp.on('getRestartIndex', async (info, fn) => fn(await deps.ui.getRestartIndex(info)))
     deps.lsp.on('getUserInput', async (fn) => fn(await deps.ui.getUserInput()))
+    deps.lsp.on('inspectResult', (result: InspectResult) => deps.ui.newInspector(result))
 }
