@@ -245,6 +245,10 @@
             {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
+            },
+            {
+                "command": "alive.inspect",
+                "title": "Alive: Inspect A Symbol"
             }
         ],
         "menus": {

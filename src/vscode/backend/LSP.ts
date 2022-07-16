@@ -9,6 +9,7 @@ import {
     ExtensionState,
     HostPort,
     InspectInfo,
+    LispSymbol,
     Package,
     Thread,
 } from '../Types'
@@ -47,6 +48,9 @@ export class LSP extends EventEmitter {
             })
         }
         const clientOpts: LanguageClientOptions = {
+            markdown: {
+                isTrusted: true,
+            },
             documentSelector: [
                 { scheme: 'file', language: COMMON_LISP_ID },
                 { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -508,6 +512,33 @@ export class LSP extends EventEmitter {
         }
 
         return new vscode.Range(startPos, endPos)
+    }
+
+    async getSymbol(fileUri: vscode.Uri, pos: vscode.Position): Promise<LispSymbol | undefined> {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/symbol', {
+                textDocument: {
+                    uri: fileUri.toString(),
+                },
+                position: pos,
+            })
+
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const respObj = resp as { [index: string]: unknown }
+
+            if (!Array.isArray(respObj.value)) {
+                return
+            }
+
+            const [name, pkgName] = respObj.value
+
+            return { name, package: pkgName }
+        } catch (err) {
+            console.log('Failed to get symbol', err)
+        }
     }
 
     async getHoverText(fileUri: vscode.Uri, pos: vscode.Position): Promise<string> {

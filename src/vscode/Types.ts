@@ -84,3 +84,8 @@ export interface InspectInfo {
     id: number
     result: unknown
 }
+
+export interface LispSymbol {
+    name: string
+    package: string
+}
