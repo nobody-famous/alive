@@ -56,7 +56,7 @@ export class Inspector extends EventEmitter {
         })
 
         this.panel.onDidDispose(() => {
-            console.log('INSPECTOR CLOSED')
+            this.emit('inspectorClosed', this.info)
         })
 
         vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
@@ -158,7 +158,10 @@ export class Inspector extends EventEmitter {
                 return ''
             }
 
-            return this.renderRow(key, JSON.stringify(resultObj[key]))
+            const entry = resultObj[key]
+            const str = typeof entry === 'string' ? strToHtml(entry) : JSON.stringify(entry)
+
+            return this.renderRow(key, str)
         })
 
         divs.push(this.renderRow('value', this.renderValue(resultObj['value'])))

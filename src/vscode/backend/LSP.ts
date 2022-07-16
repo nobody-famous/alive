@@ -151,6 +151,42 @@ export class LSP extends EventEmitter {
         this.emit('output', paramsObj.data)
     }
 
+    async inspectClosed(info: InspectInfo) {
+        await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
+    }
+
+    async inspectSymbol(symbol: LispSymbol): Promise<void> {
+        try {
+            const promise = this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
+
+            this.emit('refreshThreads')
+
+            const resp = await promise
+
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const resultObj = resp as { [index: string]: unknown }
+
+            if (typeof resultObj.id !== 'number' || typeof resultObj.result !== 'object') {
+                return
+            }
+
+            this.emit('inspectResult', resp as InspectInfo)
+        } catch (err) {
+            const errObj = err as { message: string }
+
+            if (errObj.message !== undefined) {
+                this.emit('output', errObj.message)
+            } else {
+                this.emit('output', JSON.stringify(err))
+            }
+        } finally {
+            this.emit('refreshThreads')
+        }
+    }
+
     async inspect(text: string, pkgName: string): Promise<void> {
         try {
             const promise = this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })

@@ -13,7 +13,6 @@ body {
 .inspector-panel-input-box {
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid var(--vscode-editor-foreground);
 }
 
 .inspector-panel-input-text-box {

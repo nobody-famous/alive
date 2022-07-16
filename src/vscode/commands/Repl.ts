@@ -86,7 +86,7 @@ export async function loadAsdfSystem(deps: ExtensionDeps) {
 }
 
 export async function inspect(deps: ExtensionDeps, symbol: LispSymbol) {
-    console.log('INSPECT', symbol)
+    await deps.lsp.inspectSymbol(symbol)
 }
 
 export async function loadFile(deps: ExtensionDeps) {

@@ -14,6 +14,7 @@ export declare interface UI {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
     on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
     on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
+    on(event: 'inspectClosed', listener: (info: InspectInfo) => void): this
     on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
 }
 
@@ -189,7 +190,9 @@ export class UI extends EventEmitter {
     newInspector(result: InspectInfo) {
         const inspector = new Inspector(this.state.ctx, vscode.ViewColumn.Two, result)
 
-        inspector.show('Some Title')
+        inspector.on('inspectorClosed', (info: InspectInfo) => this.emit('inspectClosed', info))
+
+        inspector.show(`Inspector ${result.id}`)
     }
 
     async initInspectorPanel() {

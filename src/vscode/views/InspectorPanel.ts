@@ -1,6 +1,5 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as os from 'os'
 import EventEmitter = require('events')
 
 export class InspectorPanel extends EventEmitter implements vscode.WebviewViewProvider {
