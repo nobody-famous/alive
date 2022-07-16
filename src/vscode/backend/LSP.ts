@@ -173,7 +173,14 @@ export class LSP extends EventEmitter {
                 return
             }
 
-            this.emit('inspectResult', resp as InspectInfo)
+            const info: InspectInfo = {
+                id: resultObj.id,
+                result: resultObj.result,
+                text: symbol.name,
+                package: symbol.package,
+            }
+
+            this.emit('inspectResult', info)
         } catch (err) {
             const errObj = err as { message: string }
 
@@ -205,7 +212,14 @@ export class LSP extends EventEmitter {
                 return
             }
 
-            this.emit('inspectResult', resp as InspectInfo)
+            const info: InspectInfo = {
+                id: resultObj.id,
+                result: resultObj.result,
+                text: text,
+                package: pkgName,
+            }
+
+            this.emit('inspectResult', info)
         } catch (err) {
             const errObj = err as { message: string }
 

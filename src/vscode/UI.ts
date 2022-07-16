@@ -192,7 +192,7 @@ export class UI extends EventEmitter {
 
         inspector.on('inspectorClosed', (info: InspectInfo) => this.emit('inspectClosed', info))
 
-        inspector.show(`Inspector ${result.id}`)
+        inspector.show()
     }
 
     async initInspectorPanel() {

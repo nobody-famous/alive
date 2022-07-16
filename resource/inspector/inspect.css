@@ -13,6 +13,10 @@
     gap: 0.5rem;
 }
 
+.inspector-row-key {
+    border-right: 1px solid var(--vscode-editor-foreground);
+}
+
 .inspector-array-index {
     text-align: right;
 }

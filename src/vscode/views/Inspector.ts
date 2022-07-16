@@ -14,7 +14,6 @@ export class Inspector extends EventEmitter {
     panel?: vscode.WebviewPanel
 
     title?: string
-    // content?: InspectContent
 
     constructor(ctx: vscode.ExtensionContext, viewCol: vscode.ViewColumn, result: InspectInfo) {
         super()
@@ -24,16 +23,14 @@ export class Inspector extends EventEmitter {
         this.info = result
     }
 
-    // show(title: string, content: InspectContent) {
-    show(title: string) {
-        this.title = title
-        // this.content = content
+    show() {
+        this.title = this.info.text
 
         if (this.panel !== undefined) {
             this.stop()
         }
 
-        this.initPanel(title)
+        this.initPanel(this.title)
         this.renderHtml()
     }
 
@@ -211,7 +208,7 @@ export class Inspector extends EventEmitter {
             </head>
             <body>
                 <div id="content">
-                    <div class="inspect-title">${strToHtml(this.title)}</div>
+                    <div class="inspect-title">${strToHtml(this.info.package)}:${strToHtml(this.info.text)}</div>
                     <hr></hr>
                     <div class="inspector-content">${this.renderContent()}</div>
                 </div>
