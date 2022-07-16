@@ -1,7 +1,7 @@
 import * as path from 'path'
 import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { CompileFileNote, ExtensionDeps, ExtensionState } from '../Types'
+import { CompileFileNote, ExtensionDeps, ExtensionState, LispSymbol } from '../Types'
 import { COMMON_LISP_ID, createFolder, strToMarkdown, useEditor } from '../Utils'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
@@ -83,6 +83,10 @@ export async function loadAsdfSystem(deps: ExtensionDeps) {
 
     await vscode.workspace.saveAll()
     await deps.lsp.loadAsdfSystem(name)
+}
+
+export async function inspect(deps: ExtensionDeps, symbol: LispSymbol) {
+    await deps.lsp.inspectSymbol(symbol)
 }
 
 export async function loadFile(deps: ExtensionDeps) {

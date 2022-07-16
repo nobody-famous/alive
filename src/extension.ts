@@ -2,12 +2,13 @@ import * as vscode from 'vscode'
 import * as cmds from './vscode/commands'
 import * as path from 'path'
 import { promises as fs } from 'fs'
-import { PackageNode, ExportNode, ThreadNode } from './vscode/providers'
-import { ExtensionDeps, ExtensionState, HistoryItem } from './vscode/Types'
+import { PackageNode, ExportNode } from './vscode/views/PackagesTree'
+import { ThreadNode } from './vscode/views/ThreadsTree'
+import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo } from './vscode/Types'
 import { COMMON_LISP_ID, getWorkspaceOrFilePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
-import { HistoryNode } from './vscode/providers/ReplHistory'
+import { HistoryNode } from './vscode/views/ReplHistory'
 import { UI } from './vscode/UI'
 import { log, toLog } from './vscode/Log'
 import { getHoverProvider } from './vscode/providers/Hover'
@@ -79,6 +80,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
         vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(deps, state)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(deps)),
+        vscode.commands.registerCommand('alive.inspect', (symbol) => cmds.inspect(deps, symbol)),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
             const item = await deps.ui.selectHistoryItem()
@@ -235,6 +237,10 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
     deps.ui.on('listPackages', async (fn) => fn(await deps.lsp.listPackages()))
     deps.ui.on('eval', (text, pkgName, storeResult) => deps.lsp.eval(text, pkgName, storeResult))
+    deps.ui.on('inspect', (text, pkgName) => deps.lsp.inspect(text, pkgName))
+    deps.ui.on('inspectClosed', (info) => deps.lsp.inspectClosed(info))
+
+    deps.ui.initInspector()
 }
 
 function initLSP(deps: ExtensionDeps, state: ExtensionState) {
@@ -244,4 +250,5 @@ function initLSP(deps: ExtensionDeps, state: ExtensionState) {
     deps.lsp.on('output', (str) => deps.ui.addReplText(str))
     deps.lsp.on('getRestartIndex', async (info, fn) => fn(await deps.ui.getRestartIndex(info)))
     deps.lsp.on('getUserInput', async (fn) => fn(await deps.ui.getUserInput()))
+    deps.lsp.on('inspectResult', (result: InspectInfo) => deps.ui.newInspector(result))
 }

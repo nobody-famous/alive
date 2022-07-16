@@ -9,6 +9,17 @@ document.getElementById('repl-input-form').onsubmit = (event) => {
     textInput.value = ''
 }
 
+document.getElementById('repl-user-input-form').onsubmit = (event) => {
+    event.preventDefault()
+
+    const textInput = document.getElementById('repl-user-input')
+
+    vscode.postMessage({ command: 'userInput', text: textInput.value })
+
+    textInput.value = ''
+    hideUserInput()
+}
+
 window.addEventListener('message', (event) => {
     const data = event.data
 
@@ -33,6 +44,9 @@ window.addEventListener('message', (event) => {
             break
         case 'clearInput':
             clearInput()
+            break
+        case 'getUserInput':
+            showUserInput()
             break
     }
 })
@@ -90,6 +104,31 @@ function setPackage(name) {
 
     pkg.innerHTML = name
     textInput.focus()
+}
+
+function showUserInput() {
+    const inputElem = document.getElementById('repl-user-input')
+    const boxElem = document.getElementById('repl-user-input-box')
+    const textElem = document.getElementById('repl-text')
+
+    if (inputElem !== undefined && boxElem !== undefined && textElem !== undefined) {
+        boxElem.style.display = 'flex'
+
+        inputElem.disabled = false
+        inputElem.focus()
+
+        textElem.scrollTop = textElem.scrollHeight
+    }
+}
+
+function hideUserInput() {
+    const inputElem = document.getElementById('repl-user-input')
+    const boxElem = document.getElementById('repl-user-input-box')
+
+    if (inputElem !== undefined && boxElem !== undefined) {
+        inputElem.disabled = true
+        boxElem.style.display = 'none'
+    }
 }
 
 function saveState() {

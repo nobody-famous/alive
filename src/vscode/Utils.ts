@@ -100,6 +100,10 @@ export function strToMarkdown(text: string): string {
     return text.replace(/ /g, '&nbsp;').replace(/\n/g, '  \n')
 }
 
+export function strToHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/ /g, '&nbsp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace(/\n/g, '<br>')
+}
+
 export function hasValidLangId(doc: vscode.TextDocument, ids: string[]): boolean {
     return ids.includes(doc.languageId)
 }

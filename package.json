@@ -72,6 +72,11 @@
                     "name": "REPL History"
                 },
                 {
+                    "id": "lispInspector",
+                    "type": "webview",
+                    "name": "Inspector"
+                },
+                {
                     "id": "lispPackages",
                     "name": "Packages"
                 },
@@ -240,6 +245,10 @@
             {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
+            },
+            {
+                "command": "alive.inspect",
+                "title": "Alive: Inspect A Symbol"
             }
         ],
         "menus": {

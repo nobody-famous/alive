@@ -20,8 +20,20 @@ class Provider implements vscode.HoverProvider {
             return new vscode.Hover(this.state.hoverText)
         }
 
-        const text = await this.lsp.getHoverText(doc.uri, pos)
+        let text = await this.lsp.getHoverText(doc.uri, pos)
 
-        return new vscode.Hover(text)
+        if (text !== '') {
+            const symbol = await this.lsp.getSymbol(doc.uri, pos)
+            const json = JSON.stringify(symbol)
+
+            text += `<br>[Inspect](command:alive.inspect?${encodeURIComponent(json)})`
+        }
+
+        const mdString = new vscode.MarkdownString(text)
+
+        mdString.supportHtml = true
+        mdString.isTrusted = true
+
+        return new vscode.Hover(mdString)
     }
 }

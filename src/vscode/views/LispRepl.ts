@@ -37,6 +37,8 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
                         return this.emit('historyUp')
                     case 'historyDown':
                         return this.emit('historyDown')
+                    case 'userInput':
+                        return this.emit('userInput', msg.text ?? '')
                 }
             },
             undefined,
@@ -104,6 +106,12 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         })
     }
 
+    getUserInput() {
+        this.view?.webview.postMessage({
+            type: 'getUserInput',
+        })
+    }
+
     private doEval(text: string) {
         this.emit('eval', this.package, text)
     }
@@ -121,6 +129,14 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
                 <body>
                     <textarea id="repl-text" class="repl-text" readonly></textarea>
                     <div class="repl-input-box">
+                        <div class="repl-input-text-box" id="repl-user-input-box">
+                            <div class="repl-input-label">
+                                Input >
+                            </div>
+                            <form id="repl-user-input-form" class="repl-input-form" action="">
+                                <input class="repl-input-text" id="repl-user-input" type="text" disabled>
+                            </form>
+                        </div>
                         <div class="repl-input-text-box">
                             <div class="repl-input-label" onclick="requestPackage()">
                                 <span id="repl-package">${this.package}</span>

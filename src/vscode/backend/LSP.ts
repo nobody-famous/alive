@@ -8,6 +8,8 @@ import {
     EvalInfo,
     ExtensionState,
     HostPort,
+    InspectInfo,
+    LispSymbol,
     Package,
     Thread,
 } from '../Types'
@@ -22,6 +24,7 @@ export declare interface LSP {
     on(event: 'output', listener: (str: string) => void): this
     on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
     on(event: 'getUserInput', listener: (fn: (input: string) => void) => void): this
+    on(event: 'inspectResult', listener: (result: InspectInfo) => void): this
 }
 
 export class LSP extends EventEmitter {
@@ -45,6 +48,9 @@ export class LSP extends EventEmitter {
             })
         }
         const clientOpts: LanguageClientOptions = {
+            markdown: {
+                isTrusted: true,
+            },
             documentSelector: [
                 { scheme: 'file', language: COMMON_LISP_ID },
                 { scheme: 'untitled', language: COMMON_LISP_ID },
@@ -143,6 +149,88 @@ export class LSP extends EventEmitter {
         }
 
         this.emit('output', paramsObj.data)
+    }
+
+    async inspectClosed(info: InspectInfo) {
+        await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
+    }
+
+    async inspectSymbol(symbol: LispSymbol): Promise<void> {
+        try {
+            const promise = this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
+
+            this.emit('refreshThreads')
+
+            const resp = await promise
+
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const resultObj = resp as { [index: string]: unknown }
+
+            if (typeof resultObj.id !== 'number' || typeof resultObj.result !== 'object') {
+                return
+            }
+
+            const info: InspectInfo = {
+                id: resultObj.id,
+                result: resultObj.result,
+                text: symbol.name,
+                package: symbol.package,
+            }
+
+            this.emit('inspectResult', info)
+        } catch (err) {
+            const errObj = err as { message: string }
+
+            if (errObj.message !== undefined) {
+                this.emit('output', errObj.message)
+            } else {
+                this.emit('output', JSON.stringify(err))
+            }
+        } finally {
+            this.emit('refreshThreads')
+        }
+    }
+
+    async inspect(text: string, pkgName: string): Promise<void> {
+        try {
+            const promise = this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
+
+            this.emit('refreshThreads')
+
+            const resp = await promise
+
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const resultObj = resp as { [index: string]: unknown }
+
+            if (typeof resultObj.id !== 'number' || typeof resultObj.result !== 'object') {
+                return
+            }
+
+            const info: InspectInfo = {
+                id: resultObj.id,
+                result: resultObj.result,
+                text: text,
+                package: pkgName,
+            }
+
+            this.emit('inspectResult', info)
+        } catch (err) {
+            const errObj = err as { message: string }
+
+            if (errObj.message !== undefined) {
+                this.emit('output', errObj.message)
+            } else {
+                this.emit('output', JSON.stringify(err))
+            }
+        } finally {
+            this.emit('refreshThreads')
+        }
     }
 
     async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
@@ -474,6 +562,33 @@ export class LSP extends EventEmitter {
         }
 
         return new vscode.Range(startPos, endPos)
+    }
+
+    async getSymbol(fileUri: vscode.Uri, pos: vscode.Position): Promise<LispSymbol | undefined> {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/symbol', {
+                textDocument: {
+                    uri: fileUri.toString(),
+                },
+                position: pos,
+            })
+
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const respObj = resp as { [index: string]: unknown }
+
+            if (!Array.isArray(respObj.value)) {
+                return
+            }
+
+            const [name, pkgName] = respObj.value
+
+            return { name, package: pkgName }
+        } catch (err) {
+            console.log('Failed to get symbol', err)
+        }
     }
 
     async getHoverText(fileUri: vscode.Uri, pos: vscode.Position): Promise<string> {

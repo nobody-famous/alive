@@ -79,3 +79,15 @@ export interface EvalInfo {
     text: string
     package: string
 }
+
+export interface InspectInfo {
+    id: number
+    result: unknown
+    text: string
+    package: string
+}
+
+export interface LispSymbol {
+    name: string
+    package: string
+}
