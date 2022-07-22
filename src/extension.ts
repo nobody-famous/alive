@@ -223,14 +223,38 @@ function openTextDocument(deps: ExtensionDeps, state: ExtensionState, doc: vscod
 }
 
 async function initTreeViews(deps: ExtensionDeps, history: HistoryItem[]) {
-    const pkgs = await deps.lsp.listPackages()
-    const systems = await deps.lsp.listAsdfSystems()
-    const threads = await deps.lsp.listThreads()
+    const tasks = [initThreadsTree(deps), initAsdfSystemsTree(deps), initPackagesTree(deps)]
 
-    deps.ui.initPackagesTree(pkgs)
+    await Promise.allSettled(tasks)
+
     deps.ui.initHistoryTree(history)
-    deps.ui.initAsdfSystemsTree(systems)
-    deps.ui.initThreadsTree(threads)
+}
+
+async function initThreadsTree(deps: ExtensionDeps) {
+    try {
+        const threads = await deps.lsp.listThreads()
+        deps.ui.initThreadsTree(threads)
+    } catch (err) {
+        console.log(`Failed to init threads tree: ${err}`)
+    }
+}
+
+async function initAsdfSystemsTree(deps: ExtensionDeps) {
+    try {
+        const systems = await deps.lsp.listAsdfSystems()
+        deps.ui.initAsdfSystemsTree(systems)
+    } catch (err) {
+        console.log(`Failed to init ASDF tree: ${err}`)
+    }
+}
+
+async function initPackagesTree(deps: ExtensionDeps) {
+    try {
+        const pkgs = await deps.lsp.listPackages()
+        deps.ui.initPackagesTree(pkgs)
+    } catch (err) {
+        console.log(`Failed to init packages tree: ${err}`)
+    }
 }
 
 function initUI(deps: ExtensionDeps, state: ExtensionState) {
