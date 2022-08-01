@@ -636,7 +636,7 @@ const parsePos = (data: unknown): vscode.Position | undefined => {
 
     const dataObj = data as { [index: string]: unknown }
     const line = parseToInt(dataObj.line)
-    const col = parseToInt(dataObj.col)
+    const col = parseToInt(dataObj.character)
 
     if (line === undefined || col === undefined) {
         return
