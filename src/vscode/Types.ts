@@ -70,6 +70,7 @@ export interface RestartInfo {
 }
 
 export interface SourceLocation {
+    function: string
     file: string | null
     position: vscode.Position | null
 }

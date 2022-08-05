@@ -69,6 +69,15 @@ export class UI extends EventEmitter {
                 resolve(num)
             })
 
+            view.on('jump-to', async (file: string, line: number, char: number) => {
+                const doc = await vscode.workspace.openTextDocument(file)
+                const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One)
+                const pos = new vscode.Position(line, char)
+
+                editor.selection = new vscode.Selection(pos, pos)
+                editor.revealRange(new vscode.Range(pos, pos))
+            })
+
             view.run()
         })
     }

@@ -22,6 +22,10 @@ export function isSourceLocation(item: unknown): item is SourceLocation {
 
     const itemObj = item as { [index: string]: unknown }
 
+    if (typeof itemObj.function !== 'string') {
+        return false
+    }
+
     if (itemObj.file !== null && typeof itemObj.file !== 'string') {
         return false
     }

@@ -1,10 +1,16 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { isPosition } from '../Guards'
 import { DebugInfo, RestartInfo } from '../Types'
 import { strToHtml } from '../Utils'
 // import * as event from '../../swank/event'
 // import { Frame, FrameVariable } from '../../swank/Types'
+
+interface jsMessage {
+    command: string
+    [index: string]: unknown
+}
 
 export class DebugView extends EventEmitter {
     ctx: vscode.ExtensionContext
@@ -43,20 +49,22 @@ export class DebugView extends EventEmitter {
         )
 
         this.panel.webview.onDidReceiveMessage(
-            (msg: { command: string; number: number; text?: string }) => {
+            (msg: jsMessage) => {
                 switch (msg.command) {
                     case 'restart':
-                        return this.restartCommand(msg.number)
+                        return this.restartCommand(msg)
                     case 'bt_locals':
-                        return this.btLocalsCommand(msg.number)
+                        return this.btLocalsCommand(msg)
                     case 'frame_restart':
-                        return this.frameRestartCommand(msg.number)
+                        return this.frameRestartCommand(msg)
                     case 'frame_eval':
-                        return this.frameValueCommand(msg.number, msg.text ?? '')
+                        return this.frameValueCommand(msg)
                     case 'input_changed':
-                        return this.inputChangedCommand(msg.number, msg.text ?? '')
+                        return this.inputChangedCommand(msg)
                     case 'inspect_cond':
                         return this.inspectCondCommand()
+                    case 'jump_to':
+                        return this.jumpTo(msg)
                 }
             },
             undefined,
@@ -80,6 +88,16 @@ export class DebugView extends EventEmitter {
     //     this.renderHtml()
     // }
 
+    jumpTo(msg: jsMessage) {
+        const file = typeof msg.file === 'string' ? msg.file : undefined
+        const line = typeof msg.line === 'number' ? msg.line : undefined
+        const char = typeof msg.char === 'number' ? msg.char : undefined
+
+        if (file !== undefined && line !== undefined && char !== undefined) {
+            this.emit('jump-to', file, line, char)
+        }
+    }
+
     setEvalResponse(ndx: number, text: string) {
         this.frameEval[ndx] = text
         this.renderHtml()
@@ -89,23 +107,41 @@ export class DebugView extends EventEmitter {
         // this.emit('inspect-cond', this.event.threadID)
     }
 
-    private frameRestartCommand(num: number) {
-        this.emit('frame-restart', num)
+    private frameRestartCommand(msg: jsMessage) {
+        if (typeof msg.number === 'number') {
+            this.emit('frame-restart', msg.number)
+        }
     }
 
-    private inputChangedCommand(num: number, text: string) {
+    private inputChangedCommand(msg: jsMessage) {
+        const num = typeof msg.number === 'number' ? msg.number : undefined
+        const text = typeof msg.text === 'string' ? msg.text : ''
+
+        if (num === undefined) {
+            return
+        }
+
         this.frameInput[num] = text
     }
 
-    private frameValueCommand(num: number, text: string) {
-        if (text.length === 0) {
+    private frameValueCommand(msg: jsMessage) {
+        const num = typeof msg.number === 'number' ? msg.number : undefined
+        const text = typeof msg.text === 'string' ? msg.text : ''
+
+        if (num === undefined || text.length === 0) {
             return
         }
 
         this.emit('frame-eval', num, text)
     }
 
-    private btLocalsCommand(num: number) {
+    private btLocalsCommand(msg: jsMessage) {
+        const num = typeof msg.number === 'number' ? msg.number : undefined
+
+        if (num === undefined) {
+            return
+        }
+
         if (this.frameExpanded[num] === undefined) {
             this.frameExpanded[num] = false
         }
@@ -119,10 +155,13 @@ export class DebugView extends EventEmitter {
         this.renderHtml()
     }
 
-    private restartCommand(num: number) {
+    private restartCommand(msg: jsMessage) {
         // const restart = this.event.restarts[num]
         // this.emit('restart', num, restart)
-        this.emit('restart', num)
+
+        if (typeof msg.number === 'number') {
+            this.emit('restart', msg.number)
+        }
     }
 
     private renderCondList() {
@@ -241,8 +280,32 @@ export class DebugView extends EventEmitter {
         let str = ''
         let ndx = this.info.stackTrace.length
 
+        const posStr = (file: string | null, pos: vscode.Position | null) => {
+            if (file === null || pos === null) {
+                return ''
+            }
+
+            const fileStr = strToHtml(file)
+            const lineStr = `${pos.line + 1}`
+            const charStr = `${pos.character + 1}`
+
+            return `${fileStr}:${lineStr}:${charStr}`
+        }
+
         for (const bt of this.info.stackTrace) {
-            str += `<div class="list-item"">${ndx}: ${strToHtml(bt.file ?? '')}</div>`
+            const selectClass = bt.file !== null && bt.position !== null ? 'clickable' : ''
+
+            str += `
+                <div class="list-item">
+                    <div class="list-item-ndx">${ndx}</div>
+                    <div class="list-item-loc ${selectClass}"
+                        onclick="jump_to('${strToHtml(bt.file ?? '')}', ${bt.position?.line}, ${bt.position?.character})"
+                    >
+                        <div class="list-item-fn">${strToHtml(bt.function)}</div>
+                        <div class="list-item-file">${posStr(bt.file, bt.position)}</div>
+                    </div>
+                </div>
+            `
             ndx -= 1
         }
 
