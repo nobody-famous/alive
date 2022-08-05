@@ -242,7 +242,7 @@ export class DebugView extends EventEmitter {
         let ndx = this.info.stackTrace.length
 
         for (const bt of this.info.stackTrace) {
-            str += `<div class="list-item"">${ndx}: ${strToHtml(bt)}</div>`
+            str += `<div class="list-item"">${ndx}: ${strToHtml(bt.file ?? '')}</div>`
             ndx -= 1
         }
 

@@ -1,5 +1,7 @@
-import * as vscode from 'vscode'
+import { EventEmitter } from 'events'
 import * as net from 'net'
+import * as vscode from 'vscode'
+import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import {
     CompileFileNote,
     CompileFileResp,
@@ -11,11 +13,11 @@ import {
     InspectInfo,
     LispSymbol,
     Package,
+    RestartInfo,
     Thread,
 } from '../Types'
+import { isRestartInfo, isStackTrace } from '../Guards'
 import { COMMON_LISP_ID, hasValidLangId, strToMarkdown } from '../Utils'
-import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { EventEmitter } from 'events'
 
 export declare interface LSP {
     on(event: 'refreshPackages', listener: () => void): this
@@ -112,28 +114,13 @@ export class LSP extends EventEmitter {
             return
         }
 
-        for (const item of paramsObj.restarts) {
-            if (typeof item !== 'object') {
-                return
-            }
-
-            const itemObj = item as { [index: string]: unknown }
-
-            if (typeof itemObj.name !== 'string' || typeof itemObj.description !== 'string') {
-                return
-            }
-        }
-
-        for (const item of paramsObj.stackTrace) {
-            if (typeof item !== 'string') {
-                return
-            }
-        }
+        const isRestarts = paramsObj.restarts.reduce((acc, item) => acc && isRestartInfo(item))
+        const isStack = isStackTrace(paramsObj.stackTrace)
 
         return {
             message: paramsObj.message,
-            restarts: paramsObj.restarts,
-            stackTrace: paramsObj.stackTrace,
+            restarts: isRestarts ? paramsObj.restarts : [],
+            stackTrace: isStack ? paramsObj.stackTrace : [],
         }
     }
 

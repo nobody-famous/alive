@@ -69,10 +69,15 @@ export interface RestartInfo {
     description: string
 }
 
+export interface SourceLocation {
+    file: string | null
+    position: vscode.Position | null
+}
+
 export interface DebugInfo {
     message: string
     restarts: Array<RestartInfo>
-    stackTrace: Array<string>
+    stackTrace: Array<SourceLocation>
 }
 
 export interface EvalInfo {
