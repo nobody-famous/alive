@@ -281,15 +281,19 @@ export class DebugView extends EventEmitter {
         let ndx = this.info.stackTrace.length
 
         const posStr = (file: string | null, pos: vscode.Position | null) => {
-            if (file === null || pos === null) {
+            if (file === null) {
                 return ''
             }
 
-            const fileStr = strToHtml(file)
-            const lineStr = `${pos.line + 1}`
-            const charStr = `${pos.character + 1}`
+            let str = strToHtml(file)
 
-            return `${fileStr}:${lineStr}:${charStr}`
+            if (pos != null) {
+                const lineStr = `${pos.line + 1}`
+                const charStr = `${pos.character + 1}`
+                str += `:${lineStr}:${charStr}`
+            }
+
+            return str
         }
 
         for (const bt of this.info.stackTrace) {
