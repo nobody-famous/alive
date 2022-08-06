@@ -30,8 +30,20 @@ body.vscode-light .list-box {
 }
 
 .list-item {
+    display: flex;
+    flex-direction: row;
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
+}
+
+.list-item-ndx {
+    flex-shrink: 1;
+    margin-right: 0.5rem;
+}
+
+.list-item-loc {
+    display: flex;
+    flex-direction: column;
 }
 
 .clickable {
