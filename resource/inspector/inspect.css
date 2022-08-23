@@ -1,4 +1,11 @@
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
 #content {
+    height: 100%;
     font: 'Consolas', 'Courier New', 'monospace';
 }
 
@@ -8,13 +15,31 @@
 }
 
 .inspector-content {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    height: calc(100% - 3rem);
+}
+
+.inspector-data {
+    flex-grow: 1;
     display: grid;
     grid-template-columns: fit-content(100px) 1fr;
     gap: 0.5rem;
+    height: calc(100% - 3rem);
+}
+
+.inspector-eval {
+    height: 3rem;
+    background-color: red;
 }
 
 .inspector-row-key {
     border-right: 1px solid var(--vscode-editor-foreground);
+}
+
+.inspector-row-value {
+    overflow: auto;
 }
 
 .inspector-array-index {

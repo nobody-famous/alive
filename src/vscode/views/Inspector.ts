@@ -210,7 +210,12 @@ export class Inspector extends EventEmitter {
                 <div id="content">
                     <div class="inspect-title">${strToHtml(this.info.package)}:${strToHtml(this.info.text)}</div>
                     <hr></hr>
-                    <div class="inspector-content">${this.renderContent()}</div>
+                    <div class="inspector-content">
+                        <div class="inspector-data">
+                            ${this.renderContent()}
+                        </div>
+                        <div class="inspector-eval"></div>
+                    </div>
                 </div>
 
                 <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>
