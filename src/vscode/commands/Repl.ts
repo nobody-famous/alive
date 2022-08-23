@@ -108,8 +108,25 @@ export async function compileFile(deps: ExtensionDeps, state: ExtensionState) {
         try {
             state.compileRunning = true
 
+            await vscode.workspace.saveAll()
+            await deps.lsp.compileFile(editor.document.uri.fsPath)
+        } finally {
+            state.compileRunning = false
+        }
+    })
+}
+
+export async function tryCompileFile(deps: ExtensionDeps, state: ExtensionState) {
+    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+        if (state.compileRunning) {
+            return
+        }
+
+        try {
+            state.compileRunning = true
+
             const toCompile = await createTempFile(state, editor.document)
-            const resp = await deps.lsp.compileFile(toCompile)
+            const resp = await deps.lsp.tryCompileFile(toCompile)
 
             if (resp === undefined) {
                 return

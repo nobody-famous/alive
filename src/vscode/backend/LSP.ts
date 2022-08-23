@@ -399,7 +399,11 @@ export class LSP extends EventEmitter {
         this.emit('startCompileTimer')
     }
 
-    async compileFile(path: string): Promise<CompileFileResp | undefined> {
+    async compileFile(path: string): Promise<void> {
+        await this.client?.sendRequest('$/alive/compile', { path })
+    }
+
+    async tryCompileFile(path: string): Promise<CompileFileResp | undefined> {
         const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
 
         if (typeof resp !== 'object' || resp === null) {
