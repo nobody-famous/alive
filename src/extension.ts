@@ -71,6 +71,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr(deps)),
         vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(deps)),
         vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(deps)),
+        vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(deps, state)),
 
         vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(deps)),
 

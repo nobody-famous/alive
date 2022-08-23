@@ -137,7 +137,7 @@ export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.compileFile(deps, state)
+        await cmds.tryCompileFile(deps, state)
         refreshPackages(deps)
     }, 500)
 }
