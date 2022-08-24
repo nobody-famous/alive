@@ -214,7 +214,11 @@ export class Inspector extends EventEmitter {
                         <div class="inspector-data">
                             ${this.renderContent()}
                         </div>
-                        <div class="inspector-eval"></div>
+                        <div class="inspector-eval">
+                            <form id="eval-form" action="">
+                                <input class="inspector-eval-text" id="eval-text" type="text">
+                            </form>
+                        </div>
                     </div>
                 </div>
 

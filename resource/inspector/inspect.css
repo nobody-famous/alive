@@ -26,12 +26,24 @@ body {
     display: grid;
     grid-template-columns: fit-content(100px) 1fr;
     gap: 0.5rem;
-    height: calc(100% - 3rem);
 }
 
 .inspector-eval {
-    height: 3rem;
-    background-color: red;
+    width: calc(100% - 20px);
+}
+
+.inspector-eval-text {
+    height: 1.5rem;
+    line-height: 1.5rem;
+    width: calc(100% - 10px);
+    border-radius: 5px;
+    border: 1px solid var(--vscode-editor-foreground);
+    color: 1px solid var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+}
+
+.inspector-eval-text:focus {
+    outline: none;
 }
 
 .inspector-row-key {
