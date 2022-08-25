@@ -264,6 +264,7 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('eval', (text, pkgName, storeResult) => deps.lsp.eval(text, pkgName, storeResult))
     deps.ui.on('inspect', (text, pkgName) => deps.lsp.inspect(text, pkgName))
     deps.ui.on('inspectClosed', (info) => deps.lsp.inspectClosed(info))
+    deps.ui.on('inspectEval', (info, text) => deps.lsp.inspectEval(info, text))
 
     deps.ui.initInspector()
 }

@@ -5,7 +5,7 @@ document.getElementById('eval-form').onsubmit = (event) => {
 
     const textInput = document.getElementById('eval-text')
 
-    console.log('onsubmit', textInput)
+    vscode.postMessage({ command: 'eval', text: textInput.value })
 }
 
 function inspect_action(index) {
@@ -14,8 +14,4 @@ function inspect_action(index) {
 
 function inspect_value(index) {
     vscode.postMessage({ command: 'value', index })
-}
-
-function eval_submit() {
-    console.log('***** eval_submit called')
 }

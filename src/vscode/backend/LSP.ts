@@ -142,6 +142,24 @@ export class LSP extends EventEmitter {
         await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
     }
 
+    private handleError(err: unknown) {
+        const errObj = err as { message: string }
+
+        if (errObj.message !== undefined) {
+            this.emit('output', errObj.message)
+        } else {
+            this.emit('output', JSON.stringify(err))
+        }
+    }
+
+    async inspectEval(info: InspectInfo, text: string) {
+        try {
+            await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
     async inspectSymbol(symbol: LispSymbol): Promise<void> {
         try {
             const promise = this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
@@ -169,13 +187,7 @@ export class LSP extends EventEmitter {
 
             this.emit('inspectResult', info)
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            this.handleError(err)
         } finally {
             this.emit('refreshThreads')
         }

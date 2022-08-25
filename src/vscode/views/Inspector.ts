@@ -43,17 +43,19 @@ export class Inspector extends EventEmitter {
     private initPanel(title: string) {
         this.panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
 
-        this.panel.webview.onDidReceiveMessage((msg: { command: string; index: number }) => {
+        this.panel.webview.onDidReceiveMessage((msg: { command: string; [index: string]: unknown }) => {
             switch (msg.command.toUpperCase()) {
                 case 'VALUE':
                     return this.emit('inspect-part', msg.index)
                 case 'ACTION':
                     return this.emit('inspector-action', msg.index)
+                case 'EVAL':
+                    return this.emit('inspector-eval', msg.text)
             }
         })
 
         this.panel.onDidDispose(() => {
-            this.emit('inspectorClosed', this.info)
+            this.emit('inspectorClosed')
         })
 
         vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)

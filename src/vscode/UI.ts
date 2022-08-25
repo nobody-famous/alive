@@ -15,6 +15,7 @@ export declare interface UI {
     on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
     on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
     on(event: 'inspectClosed', listener: (info: InspectInfo) => void): this
+    on(event: 'inspectEval', listener: (info: InspectInfo, text: string) => void): this
     on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
 }
 
@@ -200,10 +201,11 @@ export class UI extends EventEmitter {
         return await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
     }
 
-    newInspector(result: InspectInfo) {
-        const inspector = new Inspector(this.state.ctx, vscode.ViewColumn.Two, result)
+    newInspector(info: InspectInfo) {
+        const inspector = new Inspector(this.state.ctx, vscode.ViewColumn.Two, info)
 
-        inspector.on('inspectorClosed', (info: InspectInfo) => this.emit('inspectClosed', info))
+        inspector.on('inspectorClosed', () => this.emit('inspectClosed', info))
+        inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
 
         inspector.show()
     }
