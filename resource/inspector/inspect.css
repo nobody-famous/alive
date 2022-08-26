@@ -22,13 +22,15 @@ body {
 }
 
 .inspector-data {
-    flex-grow: 1;
     display: grid;
     grid-template-columns: fit-content(100px) 1fr;
     gap: 0.5rem;
+    max-height: calc(100% - 2rem);
 }
 
 .inspector-eval {
+    position: fixed;
+    bottom: 0.5rem;
     width: calc(100% - 20px);
 }
 

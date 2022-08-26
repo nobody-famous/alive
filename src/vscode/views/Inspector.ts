@@ -119,7 +119,7 @@ export class Inspector extends EventEmitter {
         return `
             <div class="inspector-content">
                 ${entries.join('')}
-            <div>
+            </div>
         `
     }
 
