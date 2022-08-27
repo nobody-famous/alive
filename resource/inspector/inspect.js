@@ -6,6 +6,7 @@ document.getElementById('eval-form').onsubmit = (event) => {
     const textInput = document.getElementById('eval-text')
 
     vscode.postMessage({ command: 'eval', text: textInput.value })
+    textInput.value = ''
 }
 
 function inspect_action(index) {
