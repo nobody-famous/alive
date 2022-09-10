@@ -4,18 +4,47 @@ An attempt to create a Common Lisp extension for VSCode. It's still a work in pr
 
 The name is partly a self-deprecating take on SLIME's name, but also reflects the goal of the project which is to reach Minimum Viable Product status. For VSCode language extensions, there is a lot that is expected for the bare minimum, including formatting, code completion, syntax highlighting, etc.
 
-The LSP server that the extension relies on currently only supports SBCL. The extension isn't intended to be compiler-specific, but it is at the moment. The server can be found here, https://github.com/nobody-famous/alive-lsp
+The LSP server that the extension relies on currently only supports [Steel Bank Common Lisp (SBCL)](https://www.sbcl.org/). The extension isn't intended to be compiler-specific, but it is at the moment. The server can be found here, https://github.com/nobody-famous/alive-lsp
 
-## Library Requirements
+## Extension Requirements
 
-ASDF needs to be version 3.3.3 or later.
+The following must be installed prior to useing the Alive extension. It is okay for these to be installed after the extension is installed, although you may need to reload your VS Code window after doing so.
 
-The LSP server uses the following libraries, which need to be installed for it to work.
+* [ASDF](https://asdf.common-lisp.dev/) (*not* [asdf](https://asdf-vm.com/)): version 3.3.3 or later.
 
--   bordeaux-threads
--   usocket
--   cl-json
--   flexi-streams
+  - Note: SBCL comes with ASDF already installed.
+
+* The LSP server uses the following Common Lisp libraries, which need to be installed for it to work.
+  - Libraries: 
+
+    - bordeaux-threads
+    - usocket
+    - cl-json
+    - flexi-streams
+
+  - If you are new to Common Lisp, then the [Quicklisp](https://www.quicklisp.org/beta/) library manager is recommended. Follow the installation instructions to install Quicklisp. Then the above libraries can be installed be executing the following expressions in an `sbcl` shell:
+
+    - `(ql:quickload "bordeaux-threads")`
+    - `(ql:quickload "usocket")`
+    - `(ql:quickload "cl-json")`
+    - `(ql:quickload "flexi-streams")`
+
+    <details>
+    <summary>An example SBCL and Quicklisp session (where `...` stands for a bunch of stuff printed to the console)</summary>
+
+    ```lisp
+    > sbcl
+    ...
+    * (ql:quickload "bordeaux-threads")
+    ...
+    * (ql:quickload "usocket")
+    ...
+    * (ql:quickload "cl-json")
+    ...
+    * (ql:quickload "flexi-streams")
+    ...
+    ```
+    </details>
 
 ## Features
 
