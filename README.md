@@ -22,7 +22,7 @@ The following must be installed prior to useing the Alive extension. It is okay 
     - cl-json
     - flexi-streams
 
-  - If you are new to Common Lisp, then the [Quicklisp](https://www.quicklisp.org/beta/) library manager is recommended. Follow the installation instructions to install Quicklisp. Then the above libraries can be installed be executing the following expressions in an `sbcl` shell:
+  - If you are new to Common Lisp, then the [Quicklisp](https://www.quicklisp.org/beta/) library manager is recommended. Follow the installation instructions to install Quicklisp. Then the above libraries can be installed by executing the following expressions in an `sbcl` shell:
 
     - `(ql:quickload "bordeaux-threads")`
     - `(ql:quickload "usocket")`
