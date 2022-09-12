@@ -160,6 +160,15 @@ export class LSP extends EventEmitter {
         }
     }
 
+    async inspectRefresh(info: InspectInfo) {
+        try {
+            const result = await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
+            console.log('***** REFRESH', result)
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
     async inspectSymbol(symbol: LispSymbol): Promise<void> {
         try {
             const promise = this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })

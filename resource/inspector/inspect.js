@@ -9,6 +9,12 @@ document.getElementById('eval-form').onsubmit = (event) => {
     textInput.value = ''
 }
 
+document.getElementById('refresh-btn').onclick = (event) => {
+    event.preventDefault()
+
+    vscode.postMessage({ command: 'refresh' })
+}
+
 function inspect_action(index) {
     vscode.postMessage({ command: 'action', index })
 }

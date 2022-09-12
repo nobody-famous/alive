@@ -16,6 +16,7 @@ export declare interface UI {
     on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
     on(event: 'inspectClosed', listener: (info: InspectInfo) => void): this
     on(event: 'inspectEval', listener: (info: InspectInfo, text: string) => void): this
+    on(event: 'inspectRefresh', listener: (info: InspectInfo) => void): this
     on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
 }
 
@@ -206,6 +207,7 @@ export class UI extends EventEmitter {
 
         inspector.on('inspectorClosed', () => this.emit('inspectClosed', info))
         inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
+        inspector.on('inspector-refresh', (text: string) => this.emit('inspectRefresh', info))
 
         inspector.show()
     }

@@ -10,9 +10,17 @@ body {
     font: 'Consolas', 'Courier New', 'monospace';
 }
 
-.inspect-title {
+.inspector-title {
+    display: flex;
+    flex-direction: row;
     font-weight: bold;
     padding-top: 0.5rem;
+}
+
+.inspector-refresh {
+    padding-top: 2px;
+    padding-right: 0.25rem;
+    cursor: pointer;
 }
 
 .inspector-content {
@@ -29,8 +37,7 @@ body {
     max-height: calc(100% - 2rem);
 }
 
-.inspector-eval {
-}
+.inspector-eval {}
 
 .inspector-eval-text {
     height: 1.5rem;
