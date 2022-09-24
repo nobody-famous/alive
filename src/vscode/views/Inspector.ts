@@ -1,7 +1,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { EventEmitter } from 'events'
-import { InspectInfo } from '../Types'
+import { InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
 
 // import { unescape } from '../../lisp'
@@ -38,6 +38,11 @@ export class Inspector extends EventEmitter {
         this.panel?.dispose()
         this.panel = undefined
         vscode.commands.executeCommand('setContext', 'clInspectorActive', false)
+    }
+
+    update(data: InspectResult) {
+        this.info.result = data.result
+        this.renderHtml()
     }
 
     private initPanel(title: string) {

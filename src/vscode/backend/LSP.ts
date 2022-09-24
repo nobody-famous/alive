@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
+import { isRestartInfo, isStackTrace } from '../Guards'
 import {
     CompileFileNote,
     CompileFileResp,
@@ -11,12 +12,12 @@ import {
     ExtensionState,
     HostPort,
     InspectInfo,
+    InspectResult,
+    isInspectResult,
     LispSymbol,
     Package,
-    RestartInfo,
-    Thread,
+    Thread
 } from '../Types'
-import { isRestartInfo, isStackTrace } from '../Guards'
 import { COMMON_LISP_ID, hasValidLangId, strToMarkdown } from '../Utils'
 
 export declare interface LSP {
@@ -27,6 +28,7 @@ export declare interface LSP {
     on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
     on(event: 'getUserInput', listener: (fn: (input: string) => void) => void): this
     on(event: 'inspectResult', listener: (result: InspectInfo) => void): this
+    on(event: 'inspectUpdate', listener: (result: InspectResult) => void): this
 }
 
 export class LSP extends EventEmitter {
@@ -162,8 +164,11 @@ export class LSP extends EventEmitter {
 
     async inspectRefresh(info: InspectInfo) {
         try {
-            const result = await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
-            console.log('***** REFRESH', result)
+            const resp = await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
+
+            if (isInspectResult(resp)) {
+                this.emit('inspectUpdate', resp)
+            }
         } catch (err) {
             this.handleError(err)
         }
@@ -177,24 +182,16 @@ export class LSP extends EventEmitter {
 
             const resp = await promise
 
-            if (typeof resp !== 'object') {
-                return
+            if (isInspectResult(resp)) {
+                const info: InspectInfo = {
+                    id: resp.id,
+                    result: resp.result,
+                    text: symbol.name,
+                    package: symbol.package,
+                }
+
+                this.emit('inspectResult', info)
             }
-
-            const resultObj = resp as { [index: string]: unknown }
-
-            if (typeof resultObj.id !== 'number' || typeof resultObj.result !== 'object') {
-                return
-            }
-
-            const info: InspectInfo = {
-                id: resultObj.id,
-                result: resultObj.result,
-                text: symbol.name,
-                package: symbol.package,
-            }
-
-            this.emit('inspectResult', info)
         } catch (err) {
             this.handleError(err)
         } finally {

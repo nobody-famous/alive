@@ -86,9 +86,26 @@ export interface EvalInfo {
     package: string
 }
 
-export interface InspectInfo {
+export interface InspectResult {
     id: number
     result: unknown
+}
+
+export function isInspectResult(data: unknown): data is InspectResult {
+    if (typeof data !== 'object' || data === null) {
+        return false
+    }
+
+    const obj = data as { [index: string]: unknown }
+
+    if (typeof obj.id !== 'number' || typeof obj.result !== 'object' || obj.result === null) {
+        return false
+    }
+
+    return true
+}
+
+export interface InspectInfo extends InspectResult {
     text: string
     package: string
 }

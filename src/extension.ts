@@ -4,7 +4,7 @@ import * as path from 'path'
 import { promises as fs } from 'fs'
 import { PackageNode, ExportNode } from './vscode/views/PackagesTree'
 import { ThreadNode } from './vscode/views/ThreadsTree'
-import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo } from './vscode/Types'
+import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
 import { COMMON_LISP_ID, getWorkspaceOrFilePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
@@ -278,4 +278,5 @@ function initLSP(deps: ExtensionDeps, state: ExtensionState) {
     deps.lsp.on('getRestartIndex', async (info, fn) => fn(await deps.ui.getRestartIndex(info)))
     deps.lsp.on('getUserInput', async (fn) => fn(await deps.ui.getUserInput()))
     deps.lsp.on('inspectResult', (result: InspectInfo) => deps.ui.newInspector(result))
+    deps.lsp.on('inspectUpdate', (result: InspectResult) => deps.ui.updateInspector(result))
 }
