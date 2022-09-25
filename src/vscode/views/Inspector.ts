@@ -118,8 +118,10 @@ export class Inspector extends EventEmitter {
             const valueStr = typeof v === 'string' ? v : JSON.stringify(v)
 
             return `
-                <div>${strToHtml(key)}</div>
-                <div>${strToHtml(valueStr)}</div>
+                <div class="inspector-object-row">
+                    <div class="inspector-object-key">${strToHtml(key)}</div>
+                    <div class="inspector-object-value">${strToHtml(valueStr)}</div>
+                </div>
             `
         })
 
@@ -235,7 +237,11 @@ export class Inspector extends EventEmitter {
                     </div>
                     <div class="inspector-eval">
                         <form id="eval-form" action="">
-                            <input class="inspector-eval-text" id="eval-text" type="text">
+                            <input class="inspector-eval-text"
+                                   id="eval-text"
+                                   type="text"
+                                   placeholder="Use * to refer to the current value"
+                            >
                         </form>
                     </div>
                 </div>

@@ -61,6 +61,16 @@ body {
     overflow: auto;
 }
 
+.inspector-object-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+}
+
+.inspector-object-value {
+    flex-grow: 1;
+}
+
 .inspector-array-index {
     text-align: right;
 }

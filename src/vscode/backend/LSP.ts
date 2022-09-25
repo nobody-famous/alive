@@ -16,7 +16,7 @@ import {
     isInspectResult,
     LispSymbol,
     Package,
-    Thread
+    Thread,
 } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, strToMarkdown } from '../Utils'
 
@@ -156,7 +156,9 @@ export class LSP extends EventEmitter {
 
     async inspectEval(info: InspectInfo, text: string) {
         try {
-            await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
+            const resp = await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
+            console.log('***** eval resp', typeof resp, resp)
+            await this.inspectRefresh(info)
         } catch (err) {
             this.handleError(err)
         }
