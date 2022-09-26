@@ -10,6 +10,16 @@ import { log, toLog } from '../vscode/Log'
 
 export const COMMON_LISP_ID = 'lisp'
 
+export const parseToInt = (data: unknown): number | undefined => {
+    if (typeof data !== 'string' && typeof data !== 'number') {
+        return
+    }
+
+    const int = typeof data === 'string' ? parseInt(data) : data
+
+    return Number.isFinite(int) ? int : undefined
+}
+
 export async function getWorkspaceOrFilePath(): Promise<string> {
     log(`Get workspace path: ${toLog(vscode.workspace.workspaceFolders)}`)
 

@@ -18,7 +18,7 @@ import {
     Package,
     Thread,
 } from '../Types'
-import { COMMON_LISP_ID, hasValidLangId, strToMarkdown } from '../Utils'
+import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
 
 export declare interface LSP {
     on(event: 'refreshPackages', listener: () => void): this
@@ -157,7 +157,18 @@ export class LSP extends EventEmitter {
     async inspectEval(info: InspectInfo, text: string) {
         try {
             const resp = await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
-            console.log('***** eval resp', typeof resp, resp)
+
+            if (isInspectResult(resp) && resp.id !== info.id) {
+                const newInfo: InspectInfo = {
+                    id: resp.id,
+                    result: resp.result,
+                    text,
+                    package: info.package,
+                }
+
+                this.emit('inspectResult', newInfo)
+            }
+
             await this.inspectRefresh(info)
         } catch (err) {
             this.handleError(err)
@@ -628,16 +639,6 @@ export class LSP extends EventEmitter {
 
         return ''
     }
-}
-
-const parseToInt = (data: unknown): number | undefined => {
-    if (typeof data !== 'string' && typeof data !== 'number') {
-        return
-    }
-
-    const int = typeof data === 'string' ? parseInt(data) : data
-
-    return Number.isFinite(int) ? int : undefined
 }
 
 const parsePos = (data: unknown): vscode.Position | undefined => {

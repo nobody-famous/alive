@@ -2,6 +2,7 @@ import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
 import { LSP } from './backend/LSP'
 import { UI } from './UI'
+import { parseToInt } from './Utils'
 
 export interface ExtensionDeps {
     ui: UI
@@ -97,8 +98,10 @@ export function isInspectResult(data: unknown): data is InspectResult {
     }
 
     const obj = data as { [index: string]: unknown }
+    const id = parseToInt(obj.id)
+    const result = obj.result
 
-    if (typeof obj.id !== 'number' || typeof obj.result !== 'object' || obj.result === null) {
+    if (!Number.isFinite(id) || typeof result === undefined) {
         return false
     }
 

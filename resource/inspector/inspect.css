@@ -3,6 +3,10 @@ body {
     height: 100%;
 }
 
+hr {
+    width: 100%;
+}
+
 #content {
     display: flex;
     flex-direction: column;
@@ -37,7 +41,8 @@ body {
     max-height: calc(100% - 2rem);
 }
 
-.inspector-eval {}
+.inspector-eval {
+}
 
 .inspector-eval-text {
     height: 1.5rem;
