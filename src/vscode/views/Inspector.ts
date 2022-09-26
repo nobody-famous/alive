@@ -95,8 +95,10 @@ export class Inspector extends EventEmitter {
             const strValue = strToHtml(typeof value === 'string' ? value : JSON.stringify(value))
 
             return `
-                <div class="inspector-array-index">${index}:</div>
-                <div>${strValue}</div>
+                <div class="inspector-object-row">
+                    <div class="inspector-object-key">${strToHtml(index.toString())}:</div>
+                    <div class="inspector-object-value">${strToHtml(strValue)}</div>
+                </div>
             `
         })
 
