@@ -249,6 +249,10 @@
             {
                 "command": "alive.inspect",
                 "title": "Alive: Inspect A Symbol"
+            },
+            {
+                "command": "alive.openScratchPad",
+                "title": "Alive: Open Scratch Pad"
             }
         ],
         "menus": {

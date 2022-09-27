@@ -144,16 +144,51 @@ export async function tryCompileFile(deps: ExtensionDeps, state: ExtensionState)
     })
 }
 
-async function createTempFile(state: ExtensionState, doc: vscode.TextDocument) {
-    const dir = state.workspacePath
-    const faslDir = path.join(dir, '.vscode', 'alive', 'fasl')
-    const fileName = path.join(faslDir, 'tmp.lisp')
-    const content = new TextEncoder().encode(doc.getText())
+export async function openScratchPad(state: ExtensionState) {
+    const subdir = path.join('.vscode', 'alive')
+    const folder = getFolderPath(state, subdir)
+    const fileName = path.join(folder, 'scratch.lisp')
 
-    await createFolder(vscode.Uri.file(faslDir))
-    await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), content)
+    // Make sure the folder exists
+    await createFolder(vscode.Uri.file(folder))
+
+    // Make sure the file exists
+    const content = await readFileContent(fileName)
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), new TextEncoder().encode(content))
+
+    // Open an editor with the file
+    const doc = await vscode.workspace.openTextDocument(fileName)
+    await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
+}
+
+function getFolderPath(state: ExtensionState, subdir: string) {
+    const dir = state.workspacePath
+    return path.join(dir, subdir)
+}
+
+async function readFileContent(path: string): Promise<string> {
+    try {
+        const content = await vscode.workspace.fs.readFile(vscode.Uri.file(path))
+
+        return content.toString()
+    } catch (err) {
+        return ''
+    }
+}
+async function createFile(state: ExtensionState, subdir: string, name: string, content: string) {
+    const folder = getFolderPath(state, subdir)
+    const fileName = path.join(folder, name)
+
+    await createFolder(vscode.Uri.file(folder))
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), new TextEncoder().encode(content))
 
     return fileName
+}
+
+async function createTempFile(state: ExtensionState, doc: vscode.TextDocument) {
+    const subdir = path.join('.vscode', 'alive', 'fasl')
+
+    return await createFile(state, subdir, 'tmp.lisp', doc.getText())
 }
 
 function convertSeverity(sev: string): vscode.DiagnosticSeverity {
