@@ -219,6 +219,12 @@ export class UI extends EventEmitter {
         inspector.show()
     }
 
+    refreshInspectors() {
+        for (const [_, insp] of this.inspectors) {
+            this.emit('inspectRefresh', insp.info)
+        }
+    }
+
     updateInspector(result: InspectResult) {
         const inspector = this.inspectors.get(result.id)
 

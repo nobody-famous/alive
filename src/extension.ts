@@ -273,6 +273,7 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
 function initLSP(deps: ExtensionDeps, state: ExtensionState) {
     deps.lsp.on('refreshPackages', () => cmds.refreshPackages(deps))
     deps.lsp.on('refreshThreads', () => cmds.refreshThreads(deps))
+    deps.lsp.on('refreshInspectors', () => deps.ui.refreshInspectors())
     deps.lsp.on('startCompileTimer', () => startCompileTimer(deps, state))
     deps.lsp.on('output', (str) => deps.ui.addReplText(str))
     deps.lsp.on('getRestartIndex', async (info, fn) => fn(await deps.ui.getRestartIndex(info)))

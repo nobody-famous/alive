@@ -111,7 +111,14 @@ export function strToMarkdown(text: string): string {
 }
 
 export function strToHtml(str: string): string {
-    return str.replace(/&/g, '&amp;').replace(/ /g, '&nbsp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace(/\n/g, '<br>')
+    const html = str
+        .replace(/&/g, '&amp;')
+        .replace(/\</g, '&lt;')
+        .replace(/\>/g, '&gt;')
+        .replace(/ /g, '&nbsp;')
+        .replace(/\n/g, '<br>')
+
+    return html
 }
 
 export function hasValidLangId(doc: vscode.TextDocument, ids: string[]): boolean {

@@ -23,6 +23,7 @@ import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Ut
 export declare interface LSP {
     on(event: 'refreshPackages', listener: () => void): this
     on(event: 'refreshThreads', listener: () => void): this
+    on(event: 'refreshInspectors', listener: () => void): this
     on(event: 'startCompileTimer', listener: () => void): this
     on(event: 'output', listener: (str: string) => void): this
     on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
@@ -187,11 +188,16 @@ export class LSP extends EventEmitter {
         }
     }
 
+    private emitRefresh() {
+        this.emit('refreshThreads')
+        this.emit('refreshInspectors')
+    }
+
     async inspectSymbol(symbol: LispSymbol): Promise<void> {
         try {
             const promise = this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
 
@@ -208,7 +214,7 @@ export class LSP extends EventEmitter {
         } catch (err) {
             this.handleError(err)
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
     }
 
@@ -216,7 +222,7 @@ export class LSP extends EventEmitter {
         try {
             const promise = this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
 
@@ -247,7 +253,7 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
     }
 
@@ -255,7 +261,7 @@ export class LSP extends EventEmitter {
         try {
             const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
 
@@ -277,7 +283,7 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
 
         return
@@ -339,7 +345,7 @@ export class LSP extends EventEmitter {
 
     async killThread(thread: Thread): Promise<void> {
         await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
-        this.emit('refreshThreads')
+        this.emitRefresh()
     }
 
     async listThreads(): Promise<Thread[]> {
@@ -373,7 +379,7 @@ export class LSP extends EventEmitter {
         try {
             const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
             if (typeof resp !== 'object') {
@@ -408,7 +414,7 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
     }
 

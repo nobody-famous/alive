@@ -97,7 +97,7 @@ export class Inspector extends EventEmitter {
             return `
                 <div class="inspector-object-row">
                     <div class="inspector-object-key">${strToHtml(index.toString())}:</div>
-                    <div class="inspector-object-value">${strToHtml(strValue)}</div>
+                    <div class="inspector-object-value">${strValue}</div>
                 </div>
             `
         })
