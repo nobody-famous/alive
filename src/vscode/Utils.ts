@@ -10,6 +10,16 @@ import { log, toLog } from '../vscode/Log'
 
 export const COMMON_LISP_ID = 'lisp'
 
+export const parseToInt = (data: unknown): number | undefined => {
+    if (typeof data !== 'string' && typeof data !== 'number') {
+        return
+    }
+
+    const int = typeof data === 'string' ? parseInt(data) : data
+
+    return Number.isFinite(int) ? int : undefined
+}
+
 export async function getWorkspaceOrFilePath(): Promise<string> {
     log(`Get workspace path: ${toLog(vscode.workspace.workspaceFolders)}`)
 
@@ -101,7 +111,14 @@ export function strToMarkdown(text: string): string {
 }
 
 export function strToHtml(str: string): string {
-    return str.replace(/&/g, '&amp;').replace(/ /g, '&nbsp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace(/\n/g, '<br>')
+    const html = str
+        .replace(/&/g, '&amp;')
+        .replace(/\</g, '&lt;')
+        .replace(/\>/g, '&gt;')
+        .replace(/ /g, '&nbsp;')
+        .replace(/\n/g, '<br>')
+
+    return html
 }
 
 export function hasValidLangId(doc: vscode.TextDocument, ids: string[]): boolean {

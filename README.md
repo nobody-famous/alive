@@ -78,6 +78,18 @@ The current idea is to use VSCode as the REPL, leveraging VSCode features to giv
 -   User input requested by the REPL is prompted with a text box.
 -   History items can be re-run by using the up/down arrow keys in the REPL console, using the re-run action in the history tree view, or using "REPL History" from the command palette.
 
+## Inspector
+
+An inspector can be opened by evaluating an expression in the inspector view or by clicking `Inspect` at the bottom of the hover text for a symbol.
+
+### Eval Text
+
+At the bottom of each inspector view is a text field that can be used to evaluate expressions.
+
+The value in the inspector can be referenced with `*`. For example, `(format T "~A" *)` will print the current value in the REPL window.
+
+If the result of the expression is not `nil`, a new inspector view will be opened with the value.
+
 ## Threads
 
 Forms sent for evaluation by the user are run in their own thread. The threads have names like "N - $/alive/eval" where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds. If one of them gets stuck in an infinite loop or something, it should be safe to terminate the thread using the "X" action in the threads tree view.
@@ -111,6 +123,10 @@ Expressions that are evaluated from the REPL window are added to the history. Th
 ### Load ASDF System
 
 Tell the REPL to load an ASDF system. A list of known systems will be given to choose from.
+
+### Open Scratch Pad
+
+Opens a temporary file, `{workspace}/.vscode/alive/scratch.lisp`, that can be used to evaluate expressions, making use of the normal editing features like code completion.
 
 ## License
 

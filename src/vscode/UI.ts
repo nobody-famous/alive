@@ -6,7 +6,7 @@ import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
 import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
-import { DebugInfo, ExtensionState, HistoryItem, InspectInfo, Package, Thread } from './Types'
+import { DebugInfo, ExtensionState, HistoryItem, InspectInfo, InspectResult, Package, Thread } from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 
@@ -15,6 +15,8 @@ export declare interface UI {
     on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
     on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
     on(event: 'inspectClosed', listener: (info: InspectInfo) => void): this
+    on(event: 'inspectEval', listener: (info: InspectInfo, text: string) => void): this
+    on(event: 'inspectRefresh', listener: (info: InspectInfo) => void): this
     on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
 }
 
@@ -26,12 +28,14 @@ export class UI extends EventEmitter {
     private threadsTree: ThreadsTreeProvider | undefined
     private replView: LispRepl
     private inspectorPanel: InspectorPanel
+    private inspectors: Map<number, Inspector>
 
     constructor(state: ExtensionState) {
         super()
 
         this.state = state
         this.replView = new LispRepl(state.ctx)
+        this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
 
         this.initRepl()
@@ -200,12 +204,35 @@ export class UI extends EventEmitter {
         return await vscode.window.showQuickPick(names.sort(), { placeHolder: 'Select Package' })
     }
 
-    newInspector(result: InspectInfo) {
-        const inspector = new Inspector(this.state.ctx, vscode.ViewColumn.Two, result)
+    newInspector(info: InspectInfo) {
+        const inspector = new Inspector(this.state.ctx, vscode.ViewColumn.Two, info)
 
-        inspector.on('inspectorClosed', (info: InspectInfo) => this.emit('inspectClosed', info))
+        this.inspectors.set(info.id, inspector)
+
+        inspector.on('inspectorClosed', () => {
+            this.inspectors.delete(info.id)
+            this.emit('inspectClosed', info)
+        })
+        inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
+        inspector.on('inspector-refresh', (text: string) => this.emit('inspectRefresh', info))
 
         inspector.show()
+    }
+
+    refreshInspectors() {
+        for (const [_, insp] of this.inspectors) {
+            this.emit('inspectRefresh', insp.info)
+        }
+    }
+
+    updateInspector(result: InspectResult) {
+        const inspector = this.inspectors.get(result.id)
+
+        if (inspector === undefined) {
+            return
+        }
+
+        inspector.update(result)
     }
 
     async initInspectorPanel() {

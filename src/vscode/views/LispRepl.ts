@@ -45,7 +45,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
             this.ctx.subscriptions
         )
 
-        webviewView.onDidChangeVisibility((e) => this.saveState())
+        webviewView.onDidChangeVisibility((e) => this.restoreState())
 
         webviewView.webview.html = this.getHtmlForView()
     }
@@ -56,7 +56,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         })
     }
 
-    saveState() {
+    restoreState() {
         this.view?.webview.postMessage({
             type: 'restoreState',
         })
@@ -68,10 +68,6 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
             type: 'setPackage',
             name: pkg,
         })
-
-        this.view?.webview.postMessage({
-            type: 'saveState',
-        })
     }
 
     setInput(text: string) {
@@ -79,19 +75,11 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
             type: 'setInput',
             text: text,
         })
-
-        this.view?.webview.postMessage({
-            type: 'saveState',
-        })
     }
 
     clearInput() {
         this.view?.webview.postMessage({
             type: 'clearInput',
-        })
-
-        this.view?.webview.postMessage({
-            type: 'saveState',
         })
     }
 
@@ -99,10 +87,6 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         this.view?.webview.postMessage({
             type: 'addText',
             text: `${text}${os.EOL}`,
-        })
-
-        this.view?.webview.postMessage({
-            type: 'saveState',
         })
     }
 

@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.3.13",
+    "version": "0.3.14",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -249,6 +249,10 @@
             {
                 "command": "alive.inspect",
                 "title": "Alive: Inspect A Symbol"
+            },
+            {
+                "command": "alive.openScratchPad",
+                "title": "Alive: Open Scratch Pad"
             }
         ],
         "menus": {

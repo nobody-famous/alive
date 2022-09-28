@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
+import { isRestartInfo, isStackTrace } from '../Guards'
 import {
     CompileFileNote,
     CompileFileResp,
@@ -11,22 +12,24 @@ import {
     ExtensionState,
     HostPort,
     InspectInfo,
+    InspectResult,
+    isInspectResult,
     LispSymbol,
     Package,
-    RestartInfo,
     Thread,
 } from '../Types'
-import { isRestartInfo, isStackTrace } from '../Guards'
-import { COMMON_LISP_ID, hasValidLangId, strToMarkdown } from '../Utils'
+import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
 
 export declare interface LSP {
     on(event: 'refreshPackages', listener: () => void): this
     on(event: 'refreshThreads', listener: () => void): this
+    on(event: 'refreshInspectors', listener: () => void): this
     on(event: 'startCompileTimer', listener: () => void): this
     on(event: 'output', listener: (str: string) => void): this
     on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
     on(event: 'getUserInput', listener: (fn: (input: string) => void) => void): this
     on(event: 'inspectResult', listener: (result: InspectInfo) => void): this
+    on(event: 'inspectUpdate', listener: (result: InspectResult) => void): this
 }
 
 export class LSP extends EventEmitter {
@@ -142,42 +145,76 @@ export class LSP extends EventEmitter {
         await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
     }
 
+    private handleError(err: unknown) {
+        const errObj = err as { message: string }
+
+        if (errObj.message !== undefined) {
+            this.emit('output', errObj.message)
+        } else {
+            this.emit('output', JSON.stringify(err))
+        }
+    }
+
+    async inspectEval(info: InspectInfo, text: string) {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
+
+            if (isInspectResult(resp) && resp.id !== info.id) {
+                const newInfo: InspectInfo = {
+                    id: resp.id,
+                    result: resp.result,
+                    text,
+                    package: info.package,
+                }
+
+                this.emit('inspectResult', newInfo)
+            }
+
+            await this.inspectRefresh(info)
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
+    async inspectRefresh(info: InspectInfo) {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
+
+            if (isInspectResult(resp)) {
+                this.emit('inspectUpdate', resp)
+            }
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
+    private emitRefresh() {
+        this.emit('refreshThreads')
+        this.emit('refreshInspectors')
+    }
+
     async inspectSymbol(symbol: LispSymbol): Promise<void> {
         try {
             const promise = this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
 
-            if (typeof resp !== 'object') {
-                return
+            if (isInspectResult(resp)) {
+                const info: InspectInfo = {
+                    id: resp.id,
+                    result: resp.result,
+                    text: symbol.name,
+                    package: symbol.package,
+                }
+
+                this.emit('inspectResult', info)
             }
-
-            const resultObj = resp as { [index: string]: unknown }
-
-            if (typeof resultObj.id !== 'number' || typeof resultObj.result !== 'object') {
-                return
-            }
-
-            const info: InspectInfo = {
-                id: resultObj.id,
-                result: resultObj.result,
-                text: symbol.name,
-                package: symbol.package,
-            }
-
-            this.emit('inspectResult', info)
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            this.handleError(err)
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
     }
 
@@ -185,7 +222,7 @@ export class LSP extends EventEmitter {
         try {
             const promise = this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
 
@@ -216,7 +253,7 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
     }
 
@@ -224,7 +261,7 @@ export class LSP extends EventEmitter {
         try {
             const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
 
@@ -246,7 +283,7 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
 
         return
@@ -308,7 +345,7 @@ export class LSP extends EventEmitter {
 
     async killThread(thread: Thread): Promise<void> {
         await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
-        this.emit('refreshThreads')
+        this.emitRefresh()
     }
 
     async listThreads(): Promise<Thread[]> {
@@ -342,7 +379,7 @@ export class LSP extends EventEmitter {
         try {
             const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-            this.emit('refreshThreads')
+            this.emitRefresh()
 
             const resp = await promise
             if (typeof resp !== 'object') {
@@ -377,7 +414,7 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         } finally {
-            this.emit('refreshThreads')
+            this.emitRefresh()
         }
     }
 
@@ -608,16 +645,6 @@ export class LSP extends EventEmitter {
 
         return ''
     }
-}
-
-const parseToInt = (data: unknown): number | undefined => {
-    if (typeof data !== 'string' && typeof data !== 'number') {
-        return
-    }
-
-    const int = typeof data === 'string' ? parseInt(data) : data
-
-    return Number.isFinite(int) ? int : undefined
 }
 
 const parsePos = (data: unknown): vscode.Position | undefined => {

@@ -73,6 +73,8 @@ function clear() {
     const textArea = document.getElementById('repl-text')
 
     textArea.value = ''
+
+    saveState()
 }
 
 function clearInput() {
@@ -92,6 +94,8 @@ function addText(text) {
 
     textArea.value += text
     textArea.scrollTop = textArea.scrollHeight
+
+    saveState()
 }
 
 function requestPackage() {
@@ -104,6 +108,7 @@ function setPackage(name) {
 
     pkg.innerHTML = name
     textInput.focus()
+    saveState()
 }
 
 function showUserInput() {

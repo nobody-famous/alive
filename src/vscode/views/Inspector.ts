@@ -1,7 +1,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { EventEmitter } from 'events'
-import { InspectInfo } from '../Types'
+import { InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
 
 // import { unescape } from '../../lisp'
@@ -40,20 +40,29 @@ export class Inspector extends EventEmitter {
         vscode.commands.executeCommand('setContext', 'clInspectorActive', false)
     }
 
+    update(data: InspectResult) {
+        this.info.result = data.result
+        this.renderHtml()
+    }
+
     private initPanel(title: string) {
         this.panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
 
-        this.panel.webview.onDidReceiveMessage((msg: { command: string; index: number }) => {
+        this.panel.webview.onDidReceiveMessage((msg: { command: string; [index: string]: unknown }) => {
             switch (msg.command.toUpperCase()) {
                 case 'VALUE':
                     return this.emit('inspect-part', msg.index)
                 case 'ACTION':
                     return this.emit('inspector-action', msg.index)
+                case 'EVAL':
+                    return this.emit('inspector-eval', msg.text)
+                case 'REFRESH':
+                    return this.emit('inspector-refresh')
             }
         })
 
         this.panel.onDidDispose(() => {
-            this.emit('inspectorClosed', this.info)
+            this.emit('inspectorClosed')
         })
 
         vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
@@ -86,8 +95,10 @@ export class Inspector extends EventEmitter {
             const strValue = strToHtml(typeof value === 'string' ? value : JSON.stringify(value))
 
             return `
-                <div class="inspector-array-index">${index}:</div>
-                <div>${strValue}</div>
+                <div class="inspector-object-row">
+                    <div class="inspector-object-key">${strToHtml(index.toString())}:</div>
+                    <div class="inspector-object-value">${strValue}</div>
+                </div>
             `
         })
 
@@ -109,15 +120,17 @@ export class Inspector extends EventEmitter {
             const valueStr = typeof v === 'string' ? v : JSON.stringify(v)
 
             return `
-                <div>${strToHtml(key)}</div>
-                <div>${strToHtml(valueStr)}</div>
+                <div class="inspector-object-row">
+                    <div class="inspector-object-key">${strToHtml(key)}</div>
+                    <div class="inspector-object-value">${strToHtml(valueStr)}</div>
+                </div>
             `
         })
 
         return `
             <div class="inspector-content">
                 ${entries.join('')}
-            <div>
+            </div>
         `
     }
 
@@ -208,9 +221,31 @@ export class Inspector extends EventEmitter {
             </head>
             <body>
                 <div id="content">
-                    <div class="inspect-title">${strToHtml(this.info.package)}:${strToHtml(this.info.text)}</div>
+                    <div class="inspector-title">
+                        <div id="refresh-btn" class="inspector-refresh">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M5.56277 2.51577C3.46372 3.4501 2.00024 5.55414 2.00024 7.99999C2.00024 11.3137 4.68654 14 8.00024 14C11.314 14 14.0002 11.3137 14.0002 7.99999C14.0002 5.32519 12.25 3.05919 9.83224 2.28482L9.52992 3.23832C11.5431 3.88454 13.0002 5.7721 13.0002 7.99999C13.0002 10.7614 10.7617 13 8.00024 13C5.23882 13 3.00024 10.7614 3.00024 7.99999C3.00024 6.31104 3.83766 4.81767 5.11994 3.91245L5.56277 2.51577Z" fill="currentColor"/>
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M5.00024 3H2.00024V2H5.50024L6.00024 2.5V6H5.00024V3Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                    
+                        ${strToHtml(this.info.package)}:${strToHtml(this.info.text)}
+                    </div>
                     <hr></hr>
-                    <div class="inspector-content">${this.renderContent()}</div>
+                    <div class="inspector-content">
+                        <div class="inspector-data">
+                            ${this.renderContent()}
+                        </div>
+                    </div>
+                    <div class="inspector-eval">
+                        <form id="eval-form" action="">
+                            <input class="inspector-eval-text"
+                                   id="eval-text"
+                                   type="text"
+                                   placeholder="Use * to refer to the current value"
+                            >
+                        </form>
+                    </div>
                 </div>
 
                 <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>
