@@ -76,6 +76,10 @@ export class LSP extends EventEmitter {
             this.sendOutput(params)
         })
 
+        this.client.onNotification('$/alive/refresh', (params: unknown) => {
+            this.emitRefresh()
+        })
+
         this.client.onRequest('$/alive/debugger', async (params: unknown) => {
             const info = this.parseDebugInfo(params)
             if (info === undefined) {
@@ -195,11 +199,7 @@ export class LSP extends EventEmitter {
 
     async inspectSymbol(symbol: LispSymbol): Promise<void> {
         try {
-            const promise = this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
-
-            this.emitRefresh()
-
-            const resp = await promise
+            const resp = await this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
 
             if (isInspectResult(resp)) {
                 const info: InspectInfo = {
@@ -213,18 +213,12 @@ export class LSP extends EventEmitter {
             }
         } catch (err) {
             this.handleError(err)
-        } finally {
-            this.emitRefresh()
         }
     }
 
     async inspect(text: string, pkgName: string): Promise<void> {
         try {
-            const promise = this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
-
-            this.emitRefresh()
-
-            const resp = await promise
+            const resp = await this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
 
             if (typeof resp !== 'object') {
                 return
@@ -252,18 +246,12 @@ export class LSP extends EventEmitter {
             } else {
                 this.emit('output', JSON.stringify(err))
             }
-        } finally {
-            this.emitRefresh()
         }
     }
 
     async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
         try {
-            const promise = this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
-
-            this.emitRefresh()
-
-            const resp = await promise
+            const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
             if (typeof resp !== 'object') {
                 return
@@ -282,8 +270,6 @@ export class LSP extends EventEmitter {
             } else {
                 this.emit('output', JSON.stringify(err))
             }
-        } finally {
-            this.emitRefresh()
         }
 
         return
@@ -345,7 +331,6 @@ export class LSP extends EventEmitter {
 
     async killThread(thread: Thread): Promise<void> {
         await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
-        this.emitRefresh()
     }
 
     async listThreads(): Promise<Thread[]> {
@@ -379,8 +364,6 @@ export class LSP extends EventEmitter {
         try {
             const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-            this.emitRefresh()
-
             const resp = await promise
             if (typeof resp !== 'object') {
                 return
@@ -413,8 +396,6 @@ export class LSP extends EventEmitter {
             } else {
                 this.emit('output', JSON.stringify(err))
             }
-        } finally {
-            this.emitRefresh()
         }
     }
 

@@ -15,7 +15,10 @@
     ],
     "main": "./out/src/extension.js",
     "activationEvents": [
-        "onLanguage:lisp"
+        "onLanguage:lisp",
+        "workspaceContains:**/*.lisp",
+        "workspaceContains:**/*.asd",
+        "workspaceContains:**/*.asdf"
     ],
     "scripts": {
         "vscode:prepublish": "npm run compile",
