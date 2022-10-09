@@ -396,6 +396,22 @@
                     "description": "Https url from which to download alive-lsp release",
                     "default": "https://api.github.com/repos/nobody-famous/alive-lsp/releases"
                 },
+                "alive.lsp.remote.host": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Host the LSP server is running on",
+                    "default": null
+                },
+                "alive.lsp.remote.port": {
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "Port the LSP server is running on",
+                    "default": null
+                },
                 "alive.lsp.startCommand": {
                     "type": "array",
                     "default": [
