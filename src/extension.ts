@@ -20,6 +20,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
 
+    const aliveConfig = vscode.workspace.getConfiguration('alive')
     const editorConfig = vscode.workspace.getConfiguration('editor')
     await editorConfig.update('formatOnType', true, false, true)
 
@@ -41,24 +42,32 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         lsp: new LSP(state),
     }
 
-    try {
-        state.lspInstallPath = await downloadLspServer()
-        log(`LSP install path: ${toLog(state.lspInstallPath)}`)
-    } catch (err) {
-        vscode.window.showErrorMessage(`Failed to download LSP server: ${err}`)
-        return
+    let lspHost = typeof aliveConfig.lsp.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
+    let lspPort = typeof aliveConfig.lsp.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
+    const useRemoteServer = lspHost !== undefined && lspPort !== undefined
+
+    if (useRemoteServer) {
+        log(`Using remote server ${toLog(lspHost)} ${toLog(lspPort)}`)
+    } else {
+        try {
+            state.lspInstallPath = await downloadLspServer()
+            log(`LSP install path: ${toLog(state.lspInstallPath)}`)
+        } catch (err) {
+            vscode.window.showErrorMessage(`Failed to download LSP server: ${err}`)
+            return
+        }
+
+        lspHost = '127.0.0.1'
+        lspPort = await startLspServer(state)
+        log(`Server port ${toLog(lspPort)}`)
     }
-
-    const port = await startLspServer(state)
-
-    log(`Server port ${toLog(port)}`)
 
     const history = await readReplHistory(state.replHistoryFile)
 
     initUI(deps, state)
     initLSP(deps, state)
 
-    await deps.lsp.connect({ host: '127.0.0.1', port })
+    await deps.lsp.connect({ host: lspHost, port: lspPort })
     await initTreeViews(deps, history)
 
     const activeDoc = vscode.window.activeTextEditor?.document

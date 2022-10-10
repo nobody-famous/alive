@@ -73,6 +73,22 @@ export class UI extends EventEmitter {
                 resolve(num)
             })
 
+            view.on('debugClosed', () => {
+                const num = info.restarts?.reduce((acc: number | undefined, item, ndx) => {
+                    if (typeof acc === 'number') {
+                        return acc
+                    } else if (item.name.toLowerCase() === 'abort') {
+                        return ndx
+                    }
+
+                    return acc
+                }, undefined)
+
+                view.stop()
+
+                typeof num === 'number' ? resolve(num) : reject('Failed to abort debugger')
+            })
+
             view.on('jump-to', async (file: string, line: number, char: number) => {
                 const doc = await vscode.workspace.openTextDocument(file)
                 const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One)

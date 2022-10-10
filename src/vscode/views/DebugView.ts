@@ -71,6 +71,10 @@ export class DebugView extends EventEmitter {
             this.ctx.subscriptions
         )
 
+        this.panel.onDidDispose(() => {
+            this.emit('debugClosed')
+        })
+
         this.panel.onDidChangeViewState(() => {
             vscode.commands.executeCommand('setContext', 'clDebugViewActive', this.panel?.active)
         })
