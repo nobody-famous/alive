@@ -46,7 +46,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     let lspPort = typeof aliveConfig.lsp.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
     const useRemoteServer = lspHost !== undefined && lspPort !== undefined
 
-    if (!useRemoteServer) {
+    if (useRemoteServer) {
+        log(`Using remote server ${toLog(lspHost)} ${toLog(lspPort)}`)
+    } else {
         try {
             state.lspInstallPath = await downloadLspServer()
             log(`LSP install path: ${toLog(state.lspInstallPath)}`)
