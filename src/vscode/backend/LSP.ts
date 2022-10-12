@@ -20,6 +20,8 @@ import {
 } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
 
+type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
+
 export declare interface LSP {
     on(event: 'refreshPackages', listener: () => void): this
     on(event: 'refreshThreads', listener: () => void): this
@@ -42,7 +44,7 @@ export class LSP extends EventEmitter {
         this.state = state
     }
 
-    async connect(hostPort: HostPort): Promise<void> {
+    connect = async (hostPort: HostPort): Promise<void> => {
         const serverOpts: () => Promise<StreamInfo> = () => {
             return new Promise((resolve, reject) => {
                 const socket: net.Socket = net.connect({ port: hostPort.port, host: hostPort.host }, () =>
@@ -110,7 +112,7 @@ export class LSP extends EventEmitter {
         })
     }
 
-    private parseDebugInfo(params: unknown): DebugInfo | undefined {
+    private parseDebugInfo = (params: unknown): DebugInfo | undefined => {
         if (typeof params !== 'object' || params === null) {
             return
         }
@@ -131,7 +133,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    private sendOutput(params: unknown) {
+    private sendOutput = (params: unknown) => {
         if (typeof params !== 'object' || params === null) {
             throw new Error('Invalid output message')
         }
@@ -145,11 +147,11 @@ export class LSP extends EventEmitter {
         this.emit('output', paramsObj.data)
     }
 
-    async inspectClosed(info: InspectInfo) {
+    inspectClosed = async (info: InspectInfo) => {
         await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
     }
 
-    private handleError(err: unknown) {
+    private handleError = (err: unknown) => {
         const errObj = err as { message: string }
 
         if (errObj.message !== undefined) {
@@ -159,7 +161,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    async inspectEval(info: InspectInfo, text: string) {
+    inspectEval = async (info: InspectInfo, text: string) => {
         try {
             const resp = await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
 
@@ -180,7 +182,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    async inspectRefresh(info: InspectInfo) {
+    inspectRefresh = async (info: InspectInfo) => {
         try {
             const resp = await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
 
@@ -197,7 +199,7 @@ export class LSP extends EventEmitter {
         this.emit('refreshInspectors')
     }
 
-    async inspectSymbol(symbol: LispSymbol): Promise<void> {
+    inspectSymbol = async (symbol: LispSymbol): Promise<void> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
 
@@ -216,7 +218,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    async inspect(text: string, pkgName: string): Promise<void> {
+    inspect = async (text: string, pkgName: string): Promise<void> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
 
@@ -249,7 +251,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    async doEval(text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> {
+    doEval = async (text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
@@ -275,7 +277,7 @@ export class LSP extends EventEmitter {
         return
     }
 
-    async eval(text: string, pkgName: string, storeResult?: boolean): Promise<void> {
+    eval = async (text: string, pkgName: string, storeResult?: boolean): Promise<void> => {
         const result = await this.doEval(text, pkgName, storeResult)
 
         if (result !== undefined) {
@@ -283,7 +285,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    async listAsdfSystems(): Promise<string[]> {
+    listAsdfSystems = async (): Promise<string[]> => {
         const resp = await this.client?.sendRequest('$/alive/listAsdfSystems')
         const respObj = resp as { systems: Array<string> }
 
@@ -302,7 +304,7 @@ export class LSP extends EventEmitter {
         return systems
     }
 
-    async listPackages(): Promise<Package[]> {
+    listPackages = async (): Promise<Package[]> => {
         const resp = await this.client?.sendRequest('$/alive/listPackages')
         const respObj = resp as { packages: Array<{ name: string; exports: Array<string> }> }
 
@@ -329,11 +331,11 @@ export class LSP extends EventEmitter {
         return pkgs
     }
 
-    async killThread(thread: Thread): Promise<void> {
+    killThread = async (thread: Thread): Promise<void> => {
         await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
     }
 
-    async listThreads(): Promise<Thread[]> {
+    listThreads = async (): Promise<Thread[]> => {
         const resp = await this.client?.sendRequest('$/alive/listThreads')
         const respObj = resp as { threads: Array<Thread> }
 
@@ -356,11 +358,11 @@ export class LSP extends EventEmitter {
         return threads
     }
 
-    async loadAsdfSystem(name: string): Promise<CompileFileResp | undefined> {
+    loadAsdfSystem = async (name: string): Promise<CompileFileResp | undefined> => {
         return await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
     }
 
-    async loadFile(path: string, showMsgs?: boolean): Promise<void> {
+    loadFile = async (path: string, showMsgs?: boolean): Promise<void> => {
         try {
             const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
@@ -399,7 +401,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    textDocumentChanged(event: vscode.TextDocumentChangeEvent): void {
+    textDocumentChanged = (event: vscode.TextDocumentChangeEvent): void => {
         if (!hasValidLangId(event.document, [COMMON_LISP_ID])) {
             return
         }
@@ -409,7 +411,7 @@ export class LSP extends EventEmitter {
         this.emit('startCompileTimer')
     }
 
-    editorChanged(editor?: vscode.TextEditor): void {
+    editorChanged = (editor?: vscode.TextEditor): void => {
         if (editor === undefined || !hasValidLangId(editor.document, [COMMON_LISP_ID])) {
             return
         }
@@ -417,11 +419,11 @@ export class LSP extends EventEmitter {
         this.emit('startCompileTimer')
     }
 
-    async compileFile(path: string): Promise<void> {
+    compileFile = async (path: string): Promise<void> => {
         await this.client?.sendRequest('$/alive/compile', { path })
     }
 
-    async tryCompileFile(path: string): Promise<CompileFileResp | undefined> {
+    tryCompileFile = async (path: string): Promise<CompileFileResp | undefined> => {
         const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
 
         if (typeof resp !== 'object' || resp === null) {
@@ -486,11 +488,34 @@ export class LSP extends EventEmitter {
         return { notes }
     }
 
-    isConnected(): boolean {
+    isConnected = (): boolean => {
         return this.client !== undefined
     }
 
-    async getEvalInfo(editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> {
+    getTextAndPackage = async (editor: vscode.TextEditor | undefined, rangeFn: RangeFunction): Promise<EvalInfo | undefined> => {
+        if (editor === undefined) {
+            return
+        }
+
+        const range = editor.selection.isEmpty
+            ? await rangeFn(editor)
+            : new vscode.Range(editor.selection.start, editor.selection.end)
+
+        if (range === undefined) {
+            return
+        }
+
+        const text = editor.document.getText(range)
+        const pkg = await this.getPackage(editor, range.start)
+
+        return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
+    }
+
+    getEvalInfo = async (editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> => {
+        return await this.getTextAndPackage(editor, this.getTopExprRange)
+    }
+
+    getMacroInfo = async (editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> => {
         if (editor === undefined) {
             return
         }
@@ -509,7 +534,7 @@ export class LSP extends EventEmitter {
         return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
     }
 
-    async getPackage(editor: vscode.TextEditor, pos: vscode.Position): Promise<string | undefined> {
+    getPackage = async (editor: vscode.TextEditor, pos: vscode.Position): Promise<string | undefined> => {
         const doc = editor.document
         const resp = await this.client?.sendRequest('$/alive/getPackageForPosition', {
             textDocument: {
@@ -527,7 +552,7 @@ export class LSP extends EventEmitter {
         return respObj.package
     }
 
-    async removePackage(name: string): Promise<void> {
+    removePackage = async (name: string): Promise<void> => {
         await this.client?.sendRequest('$/alive/removePackage', {
             name,
         })
@@ -535,7 +560,7 @@ export class LSP extends EventEmitter {
         this.emit('refreshPackages')
     }
 
-    async removeExport(pkg: string, name: string): Promise<void> {
+    removeExport = async (pkg: string, name: string): Promise<void> => {
         await this.client?.sendRequest('$/alive/unexportSymbol', {
             package: pkg,
             symbol: name,
@@ -544,14 +569,14 @@ export class LSP extends EventEmitter {
         this.emit('refreshPackages')
     }
 
-    async getTopExprRange(editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> {
+    getExprRange = async (editor: vscode.TextEditor | undefined, method: string): Promise<vscode.Range | undefined> => {
         if (editor?.document === undefined) {
-            return undefined
+            return
         }
 
         const doc = editor.document
 
-        const resp = await this.client?.sendRequest('$/alive/topFormBounds', {
+        const resp = await this.client?.sendRequest(method, {
             textDocument: {
                 uri: doc.uri.toString(),
             },
@@ -573,7 +598,15 @@ export class LSP extends EventEmitter {
         return new vscode.Range(startPos, endPos)
     }
 
-    async getSymbol(fileUri: vscode.Uri, pos: vscode.Position): Promise<LispSymbol | undefined> {
+    getSurroundingExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
+        return await this.getExprRange(editor, '$/alive/surroundingFormBounds')
+    }
+
+    getTopExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
+        return await this.getExprRange(editor, '$/alive/topFormBounds')
+    }
+
+    getSymbol = async (fileUri: vscode.Uri, pos: vscode.Position): Promise<LispSymbol | undefined> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/symbol', {
                 textDocument: {
@@ -600,7 +633,7 @@ export class LSP extends EventEmitter {
         }
     }
 
-    async getHoverText(fileUri: vscode.Uri, pos: vscode.Position): Promise<string> {
+    getHoverText = async (fileUri: vscode.Uri, pos: vscode.Position): Promise<string> => {
         try {
             const resp = await this.client?.sendRequest('textDocument/hover', {
                 textDocument: {
