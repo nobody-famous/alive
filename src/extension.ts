@@ -92,6 +92,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(deps)),
         vscode.commands.registerCommand('alive.inspect', (symbol) => cmds.inspect(deps, symbol)),
         vscode.commands.registerCommand('alive.openScratchPad', () => cmds.openScratchPad(state)),
+        vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(deps, state)),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
             const item = await deps.ui.selectHistoryItem()

@@ -15,6 +15,7 @@ import {
     InspectResult,
     isInspectResult,
     LispSymbol,
+    MacroInfo,
     Package,
     Thread,
 } from '../Types'
@@ -273,8 +274,6 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         }
-
-        return
     }
 
     eval = async (text: string, pkgName: string, storeResult?: boolean): Promise<void> => {
@@ -515,13 +514,37 @@ export class LSP extends EventEmitter {
         return await this.getTextAndPackage(editor, this.getTopExprRange)
     }
 
-    getMacroInfo = async (editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> => {
+    macroexpand = async (text: string, pkgName: string): Promise<string | undefined> => {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/macroexpand', { text, package: pkgName })
+
+            if (typeof resp !== 'object') {
+                return
+            }
+
+            const resultObj = resp as { text: string }
+
+            if (resultObj.text !== undefined) {
+                return resultObj.text
+            }
+        } catch (err) {
+            const errObj = err as { message: string }
+
+            if (errObj.message !== undefined) {
+                this.emit('output', errObj.message)
+            } else {
+                this.emit('output', JSON.stringify(err))
+            }
+        }
+    }
+
+    getMacroInfo = async (editor: vscode.TextEditor | undefined): Promise<MacroInfo | undefined> => {
         if (editor === undefined) {
             return
         }
 
         const range = editor.selection.isEmpty
-            ? await this.getTopExprRange(editor)
+            ? await this.getSurroundingExprRange(editor)
             : new vscode.Range(editor.selection.start, editor.selection.end)
 
         if (range === undefined) {
@@ -531,7 +554,7 @@ export class LSP extends EventEmitter {
         const text = editor.document.getText(range)
         const pkg = await this.getPackage(editor, range.start)
 
-        return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
+        return text !== undefined && pkg !== undefined ? { range, text, package: pkg } : undefined
     }
 
     getPackage = async (editor: vscode.TextEditor, pos: vscode.Position): Promise<string | undefined> => {

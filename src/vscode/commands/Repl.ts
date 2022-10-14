@@ -161,6 +161,26 @@ export async function openScratchPad(state: ExtensionState) {
     await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
 }
 
+export async function macroexpand(deps: ExtensionDeps, state: ExtensionState) {
+    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+        const info = await deps.lsp.getMacroInfo(editor)
+
+        if (info === undefined) {
+            return
+        }
+
+        try {
+            const newText = await deps.lsp.macroexpand(info?.text, info?.package)
+
+            if (typeof newText === 'string') {
+                editor.edit((builder) => builder.replace(info.range, newText))
+            }
+        } catch (err) {
+            console.log(err)
+        }
+    })
+}
+
 function getFolderPath(state: ExtensionState, subdir: string) {
     const dir = state.workspacePath
     return path.join(dir, subdir)

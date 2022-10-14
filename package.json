@@ -255,6 +255,10 @@
             {
                 "command": "alive.openScratchPad",
                 "title": "Alive: Open Scratch Pad"
+            },
+            {
+                "command": "alive.macroexpand",
+                "title": "Alive: Macro Expand"
             }
         ],
         "menus": {
