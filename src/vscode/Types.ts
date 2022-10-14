@@ -87,6 +87,12 @@ export interface EvalInfo {
     package: string
 }
 
+export interface MacroInfo {
+    range: vscode.Range
+    text: string
+    package: string
+}
+
 export interface InspectResult {
     id: number
     result: unknown

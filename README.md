@@ -128,6 +128,14 @@ Tell the REPL to load an ASDF system. A list of known systems will be given to c
 
 Opens a temporary file, `{workspace}/.vscode/alive/scratch.lisp`, that can be used to evaluate expressions, making use of the normal editing features like code completion.
 
+### Macro Expand
+
+Selected text is passed to macroexpand and expanded in place. If nothing is selected, the form surrounding the cursor is sent.
+
+### Macro Expand 1
+
+Selected text is passed to macroexpand-1 and expanded in place. If nothing is selected, the form surrounding the cursor is sent.
+
 ## License
 
 Unless otherwise noted, all files are in the Public Domain.

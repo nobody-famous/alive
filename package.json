@@ -250,11 +250,19 @@
             },
             {
                 "command": "alive.inspect",
-                "title": "Alive: Inspect A Symbol"
+                "title": "Alive: Inspect Symbol"
             },
             {
                 "command": "alive.openScratchPad",
                 "title": "Alive: Open Scratch Pad"
+            },
+            {
+                "command": "alive.macroexpand",
+                "title": "Alive: Macro Expand"
+            },
+            {
+                "command": "alive.macroexpand1",
+                "title": "Alive: Macro Expand 1"
             }
         ],
         "menus": {
