@@ -514,9 +514,9 @@ export class LSP extends EventEmitter {
         return await this.getTextAndPackage(editor, this.getTopExprRange)
     }
 
-    macroexpand = async (text: string, pkgName: string): Promise<string | undefined> => {
+    private doMacroExpand = async (method: string, text: string, pkgName: string) => {
         try {
-            const resp = await this.client?.sendRequest('$/alive/macroexpand', { text, package: pkgName })
+            const resp = await this.client?.sendRequest(method, { text, package: pkgName })
 
             if (typeof resp !== 'object') {
                 return
@@ -536,6 +536,14 @@ export class LSP extends EventEmitter {
                 this.emit('output', JSON.stringify(err))
             }
         }
+    }
+
+    macroexpand = async (text: string, pkgName: string): Promise<string | undefined> => {
+        return await this.doMacroExpand('$/alive/macroexpand', text, pkgName)
+    }
+
+    macroexpand1 = async (text: string, pkgName: string): Promise<string | undefined> => {
+        return await this.doMacroExpand('$/alive/macroexpand1', text, pkgName)
     }
 
     getMacroInfo = async (editor: vscode.TextEditor | undefined): Promise<MacroInfo | undefined> => {
