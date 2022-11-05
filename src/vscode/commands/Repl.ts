@@ -89,6 +89,16 @@ export async function inspect(deps: ExtensionDeps, symbol: LispSymbol) {
     await deps.lsp.inspectSymbol(symbol)
 }
 
+export async function inspectMacro(deps: ExtensionDeps) {
+    const editor = vscode.window.activeTextEditor
+    const info = await deps.lsp.getMacroInfo(editor)
+
+    if (info !== undefined) {
+        await vscode.workspace.saveAll()
+        await deps.lsp.inspectMacro(info.text, info.package)
+    }
+}
+
 export async function loadFile(deps: ExtensionDeps) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         await editor.document.save()

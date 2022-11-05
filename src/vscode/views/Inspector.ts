@@ -214,6 +214,8 @@ export class Inspector extends EventEmitter {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspector', 'inspect.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspector', 'inspect.css'))
 
+        console.log('**** INSPECTOR', this.info.resultType)
+
         this.panel.webview.html = `
             <html>
             <head>

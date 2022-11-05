@@ -253,6 +253,10 @@
                 "title": "Alive: Inspect Symbol"
             },
             {
+                "command": "alive.inspectMacro",
+                "title": "Alive: Inspect Macro"
+            },
+            {
                 "command": "alive.openScratchPad",
                 "title": "Alive: Open Scratch Pad"
             },

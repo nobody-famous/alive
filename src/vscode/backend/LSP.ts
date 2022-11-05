@@ -169,6 +169,7 @@ export class LSP extends EventEmitter {
             if (isInspectResult(resp) && resp.id !== info.id) {
                 const newInfo: InspectInfo = {
                     id: resp.id,
+                    resultType: resp.resultType,
                     result: resp.result,
                     text,
                     package: info.package,
@@ -207,9 +208,30 @@ export class LSP extends EventEmitter {
             if (isInspectResult(resp)) {
                 const info: InspectInfo = {
                     id: resp.id,
+                    resultType: resp.resultType,
                     result: resp.result,
                     text: symbol.name,
                     package: symbol.package,
+                }
+
+                this.emit('inspectResult', info)
+            }
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
+    inspectMacro = async (text: string, pkgName: string): Promise<void> => {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/inspectMacro', { text, package: pkgName })
+
+            if (isInspectResult(resp)) {
+                const info: InspectInfo = {
+                    id: resp.id,
+                    resultType: resp.resultType,
+                    result: resp.result,
+                    text: text,
+                    package: pkgName,
                 }
 
                 this.emit('inspectResult', info)
@@ -223,32 +245,19 @@ export class LSP extends EventEmitter {
         try {
             const resp = await this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
 
-            if (typeof resp !== 'object') {
-                return
+            if (isInspectResult(resp)) {
+                const info: InspectInfo = {
+                    id: resp.id,
+                    resultType: resp.resultType,
+                    result: resp.result,
+                    text: text,
+                    package: pkgName,
+                }
+
+                this.emit('inspectResult', info)
             }
-
-            const resultObj = resp as { [index: string]: unknown }
-
-            if (typeof resultObj.id !== 'number' || typeof resultObj.result !== 'object') {
-                return
-            }
-
-            const info: InspectInfo = {
-                id: resultObj.id,
-                result: resultObj.result,
-                text: text,
-                package: pkgName,
-            }
-
-            this.emit('inspectResult', info)
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            this.handleError(err)
         }
     }
 
