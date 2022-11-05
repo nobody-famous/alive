@@ -279,6 +279,8 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('inspectClosed', (info) => deps.lsp.inspectClosed(info))
     deps.ui.on('inspectEval', (info, text) => deps.lsp.inspectEval(info, text))
     deps.ui.on('inspectRefresh', (info) => deps.lsp.inspectRefresh(info))
+    deps.ui.on('inspectRefreshMacro', (info) => deps.lsp.inspectRefreshMacro(info))
+    deps.ui.on('inspectMacroInc', (info) => deps.lsp.inspectMacroInc(info))
 
     deps.ui.initInspector()
 }

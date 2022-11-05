@@ -34,11 +34,25 @@ hr {
     overflow: auto;
 }
 
+.inspector-btn-box {
+    display: flex;
+    flex-direction: row;
+    overflow: auto;
+}
+
 .inspector-data {
     display: grid;
     grid-template-columns: fit-content(100px) 1fr;
     gap: 0.5rem;
     max-height: calc(100% - 2rem);
+}
+
+.inspector-macro-data {
+    max-height: calc(100% - 2rem);
+}
+
+.inspector-macro-text {
+    margin-bottom: 1rem;
 }
 
 .inspector-eval {

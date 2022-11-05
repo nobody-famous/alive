@@ -55,6 +55,7 @@ The following must be installed prior to useing the Alive extension. It is okay 
 -   REPL integration
 -   REPL history
 -   Inline evaluation
+-   Macro expansion
 
 ## Extension Settings
 
@@ -81,6 +82,8 @@ The current idea is to use VSCode as the REPL, leveraging VSCode features to giv
 ## Inspector
 
 An inspector can be opened by evaluating an expression in the inspector view or by clicking `Inspect` at the bottom of the hover text for a symbol.
+
+There is also an inspector for macros, using the Inspect Macro command. An inspector opens that shows one level of expansion for the macro at the current cursor position. It has a button to refresh the inspector or increment the level of expansion by one. When an expression is sent for evaluation, such as redefining the macro, the expansion is refreshed back to one level.
 
 ### Eval Text
 
@@ -128,13 +131,17 @@ Tell the REPL to load an ASDF system. A list of known systems will be given to c
 
 Opens a temporary file, `{workspace}/.vscode/alive/scratch.lisp`, that can be used to evaluate expressions, making use of the normal editing features like code completion.
 
-### Macro Expand
+### Macro Expand All
 
 Selected text is passed to macroexpand and expanded in place. If nothing is selected, the form surrounding the cursor is sent.
 
 ### Macro Expand 1
 
 Selected text is passed to macroexpand-1 and expanded in place. If nothing is selected, the form surrounding the cursor is sent.
+
+### Inspect Macro
+
+An inspector is opened for the currently selected text. If nothing is selected, the form surrounding the cursor is sent.
 
 ## License
 
