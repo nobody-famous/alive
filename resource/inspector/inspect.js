@@ -1,24 +1,31 @@
 const vscode = acquireVsCodeApi()
+const evalForm = document.getElementById('eval-form')
+const refreshBtn = document.getElementById('refresh-btn')
+const expIncBtn = document.getElementById('expand-inc-btn')
 
-document.getElementById('eval-form').onsubmit = (event) => {
-    event.preventDefault()
+if (evalForm !== null) {
+    evalForm.onsubmit = (event) => {
+        event.preventDefault()
 
-    const textInput = document.getElementById('eval-text')
+        const textInput = document.getElementById('eval-text')
 
-    vscode.postMessage({ command: 'eval', text: textInput.value })
-    textInput.value = ''
+        vscode.postMessage({ command: 'eval', text: textInput.value })
+        textInput.value = ''
+    }
 }
 
-document.getElementById('refresh-btn').onclick = (event) => {
-    event.preventDefault()
+if (refreshBtn !== null) {
+    refreshBtn.onclick = (event) => {
+        event.preventDefault()
 
-    vscode.postMessage({ command: 'refresh' })
+        vscode.postMessage({ command: 'refresh' })
+    }
 }
 
-function inspect_action(index) {
-    vscode.postMessage({ command: 'action', index })
-}
+if (expIncBtn !== null) {
+    expIncBtn.onclick = (event) => {
+        event.preventDefault()
 
-function inspect_value(index) {
-    vscode.postMessage({ command: 'value', index })
+        vscode.postMessage({ command: 'expInc' })
+    }
 }

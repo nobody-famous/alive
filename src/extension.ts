@@ -91,6 +91,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(deps, state)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(deps)),
         vscode.commands.registerCommand('alive.inspect', (symbol) => cmds.inspect(deps, symbol)),
+        vscode.commands.registerCommand('alive.inspectMacro', () => cmds.inspectMacro(deps)),
         vscode.commands.registerCommand('alive.openScratchPad', () => cmds.openScratchPad(state)),
         vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(deps, state)),
         vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(deps, state)),
@@ -278,6 +279,8 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('inspectClosed', (info) => deps.lsp.inspectClosed(info))
     deps.ui.on('inspectEval', (info, text) => deps.lsp.inspectEval(info, text))
     deps.ui.on('inspectRefresh', (info) => deps.lsp.inspectRefresh(info))
+    deps.ui.on('inspectRefreshMacro', (info) => deps.lsp.inspectRefreshMacro(info))
+    deps.ui.on('inspectMacroInc', (info) => deps.lsp.inspectMacroInc(info))
 
     deps.ui.initInspector()
 }

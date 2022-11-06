@@ -95,6 +95,7 @@ export interface MacroInfo {
 
 export interface InspectResult {
     id: number
+    resultType: string
     result: unknown
 }
 
@@ -105,9 +106,10 @@ export function isInspectResult(data: unknown): data is InspectResult {
 
     const obj = data as { [index: string]: unknown }
     const id = parseToInt(obj.id)
+    const resultType = obj.resultType
     const result = obj.result
 
-    if (!Number.isFinite(id) || typeof result === undefined) {
+    if (!Number.isFinite(id) || typeof result === undefined || typeof resultType !== 'string') {
         return false
     }
 

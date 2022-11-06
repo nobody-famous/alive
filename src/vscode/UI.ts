@@ -17,6 +17,8 @@ export declare interface UI {
     on(event: 'inspectClosed', listener: (info: InspectInfo) => void): this
     on(event: 'inspectEval', listener: (info: InspectInfo, text: string) => void): this
     on(event: 'inspectRefresh', listener: (info: InspectInfo) => void): this
+    on(event: 'inspectRefreshMacro', listener: (info: InspectInfo) => void): this
+    on(event: 'inspectMacroInc', listener: (info: InspectInfo) => void): this
     on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
 }
 
@@ -231,6 +233,8 @@ export class UI extends EventEmitter {
         })
         inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
         inspector.on('inspector-refresh', (text: string) => this.emit('inspectRefresh', info))
+        inspector.on('inspector-refresh-macro', (text: string) => this.emit('inspectRefreshMacro', info))
+        inspector.on('inspector-macro-inc', (text: string) => this.emit('inspectMacroInc', info))
 
         inspector.show()
     }
