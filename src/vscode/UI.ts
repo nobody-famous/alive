@@ -63,6 +63,8 @@ export class UI extends EventEmitter {
     }
 
     async getRestartIndex(info: DebugInfo): Promise<number | undefined> {
+        let index: number | undefined = undefined
+
         return new Promise<number>((resolve, reject) => {
             if (this.state.ctx === undefined) {
                 return reject('Debugger: No extension context')
@@ -71,20 +73,23 @@ export class UI extends EventEmitter {
             const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
 
             view.on('restart', (num: number) => {
+                index = num
                 view.stop()
-                resolve(num)
             })
 
             view.on('debugClosed', () => {
-                const num = info.restarts?.reduce((acc: number | undefined, item, ndx) => {
-                    if (typeof acc === 'number') {
-                        return acc
-                    } else if (item.name.toLowerCase() === 'abort') {
-                        return ndx
-                    }
+                const num =
+                    typeof index === 'number'
+                        ? index
+                        : info.restarts?.reduce((acc: number | undefined, item, ndx) => {
+                              if (typeof acc === 'number') {
+                                  return acc
+                              } else if (item.name.toLowerCase() === 'abort') {
+                                  return ndx
+                              }
 
-                    return acc
-                }, undefined)
+                              return acc
+                          }, undefined)
 
                 view.stop()
 
