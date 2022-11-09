@@ -56,6 +56,8 @@ The following must be installed prior to useing the Alive extension. It is okay 
 -   REPL history
 -   Inline evaluation
 -   Macro expansion
+-   Jump To Definition
+-   Expand Selection
 
 ## Extension Settings
 
