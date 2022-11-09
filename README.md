@@ -66,6 +66,8 @@ This extension contributes the following settings:
 -   `alive.lsp.install.path`: Directory where the LSP source code is installed
 -   `alive.lsp.startCommand`: Command used to start the LSP server
 -   `alive.format.indentWidth`: Default indentation width
+-   `alive.lsp.remote.host`: Host of the LSP server to connect to
+-   `alive.lsp.remote.port`: Port of the LSP server to connect to
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
