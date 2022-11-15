@@ -121,7 +121,7 @@ export class UI extends EventEmitter {
 
             const recvInput = (text: string) => {
                 this.replView?.off('userInput', recvInput)
-                resolve(`${text}\n`)
+                resolve(text)
             }
 
             this.replView?.on('userInput', recvInput)
