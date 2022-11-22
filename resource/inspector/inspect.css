@@ -11,7 +11,9 @@ hr {
     display: flex;
     flex-direction: column;
     height: 100%;
-    font: 'Consolas', 'Courier New', 'monospace';
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
 }
 
 .inspector-title {

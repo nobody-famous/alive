@@ -14,6 +14,9 @@ body {
     overflow: auto;
     flex-grow: 1;
     border-bottom: 1px solid var(--vscode-editor-foreground);
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
 }
 
 .repl-text:focus {
@@ -22,25 +25,40 @@ body {
 
 #repl-user-input-box {
     display: none;
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
 }
 
 #repl-user-input-form {
     flex-grow: 1;
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
 }
 
 .repl-input-box {
     display: flex;
     flex-direction: column;
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
 }
 
 .repl-input-text-box {
     flex-grow: 1;
     display: flex;
     flex-direction: row;
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
 }
 
 .repl-input-form {
     flex-grow: 1;
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
 }
 
 .repl-input-label {
@@ -55,6 +73,9 @@ body {
     color: var(--vscode-editor-foreground);
     caret-color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
     border: none;
     height: 1.5rem;
     line-height: 1.5rem;
@@ -70,6 +91,9 @@ textarea {
     width: 100%;
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
+    font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
+    font-weight: var(--vscode-editor-font-weight);
     animation-name: blink;
     border: none;
 }
