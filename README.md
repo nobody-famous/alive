@@ -58,6 +58,7 @@ The following must be installed prior to useing the Alive extension. It is okay 
 -   Macro expansion
 -   Jump To Definition
 -   Expand Selection
+-   Document Symbols
 
 ## Extension Settings
 
