@@ -5,7 +5,7 @@ import { promises as fs } from 'fs'
 import { PackageNode, ExportNode } from './vscode/views/PackagesTree'
 import { ThreadNode } from './vscode/views/ThreadsTree'
 import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
-import { COMMON_LISP_ID, getWorkspaceOrFilePath, hasValidLangId, startCompileTimer } from './vscode/Utils'
+import { COMMON_LISP_ID, getWorkspaceOrFilePath, hasValidLangId, startCompileTimer, updateDiagnostics } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
 import { HistoryNode } from './vscode/views/ReplHistory'
@@ -271,6 +271,12 @@ async function initPackagesTree(deps: ExtensionDeps) {
     }
 }
 
+async function diagnosticsRefresh(deps: ExtensionDeps, state: ExtensionState, editors: vscode.TextEditor[]) {
+    for (const editor of editors) {
+        await updateDiagnostics(deps, state, editor)
+    }
+}
+
 function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
     deps.ui.on('listPackages', async (fn) => fn(await deps.lsp.listPackages()))
@@ -281,6 +287,7 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
     deps.ui.on('inspectRefresh', (info) => deps.lsp.inspectRefresh(info))
     deps.ui.on('inspectRefreshMacro', (info) => deps.lsp.inspectRefreshMacro(info))
     deps.ui.on('inspectMacroInc', (info) => deps.lsp.inspectMacroInc(info))
+    deps.ui.on('diagnosticsRefresh', (editors) => diagnosticsRefresh(deps, state, editors))
 
     deps.ui.initInspector()
 }
@@ -289,6 +296,7 @@ function initLSP(deps: ExtensionDeps, state: ExtensionState) {
     deps.lsp.on('refreshPackages', () => cmds.refreshPackages(deps))
     deps.lsp.on('refreshThreads', () => cmds.refreshThreads(deps))
     deps.lsp.on('refreshInspectors', () => deps.ui.refreshInspectors())
+    deps.lsp.on('refreshDiagnostics', () => deps.ui.refreshDiagnostics())
     deps.lsp.on('startCompileTimer', () => startCompileTimer(deps, state))
     deps.lsp.on('output', (str) => deps.ui.addReplText(str))
     deps.lsp.on('getRestartIndex', async (info, fn) => fn(await deps.ui.getRestartIndex(info)))

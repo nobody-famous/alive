@@ -27,6 +27,7 @@ export declare interface LSP {
     on(event: 'refreshPackages', listener: () => void): this
     on(event: 'refreshThreads', listener: () => void): this
     on(event: 'refreshInspectors', listener: () => void): this
+    on(event: 'refreshDiagnostics', listener: () => void): this
     on(event: 'startCompileTimer', listener: () => void): this
     on(event: 'output', listener: (str: string) => void): this
     on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
@@ -237,6 +238,7 @@ export class LSP extends EventEmitter {
     private emitRefresh() {
         this.emit('refreshThreads')
         this.emit('refreshInspectors')
+        this.emit('refreshDiagnostics')
     }
 
     inspectSymbol = async (symbol: LispSymbol): Promise<void> => {
