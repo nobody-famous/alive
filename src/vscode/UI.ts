@@ -20,6 +20,7 @@ export declare interface UI {
     on(event: 'inspectRefreshMacro', listener: (info: InspectInfo) => void): this
     on(event: 'inspectMacroInc', listener: (info: InspectInfo) => void): this
     on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
+    on(event: 'diagnosticsRefresh', listener: (editors: vscode.TextEditor[]) => void): this
 }
 
 export class UI extends EventEmitter {
@@ -248,6 +249,10 @@ export class UI extends EventEmitter {
         for (const [_, insp] of this.inspectors) {
             this.emit('inspectRefresh', insp.info)
         }
+    }
+
+    refreshDiagnostics() {
+        this.emit('diagnosticsRefresh', vscode.window.visibleTextEditors)
     }
 
     updateInspector(result: InspectResult) {

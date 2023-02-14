@@ -1,10 +1,8 @@
 import * as path from 'path'
-import { TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { CompileFileNote, ExtensionDeps, ExtensionState, LispSymbol } from '../Types'
-import { COMMON_LISP_ID, createFolder, strToMarkdown, useEditor } from '../Utils'
-
-const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
+import { TextEncoder } from 'util'
+import { ExtensionDeps, ExtensionState, LispSymbol } from '../Types'
+import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, updateDiagnostics, useEditor } from '../Utils'
 
 export function clearRepl(deps: ExtensionDeps) {
     deps.ui.clearRepl()
@@ -132,25 +130,7 @@ export async function tryCompileFile(deps: ExtensionDeps, state: ExtensionState)
             return
         }
 
-        try {
-            state.compileRunning = true
-
-            const toCompile = await createTempFile(state, editor.document)
-            const resp = await deps.lsp.tryCompileFile(toCompile)
-
-            if (resp === undefined) {
-                return
-            }
-
-            const fileMap: { [index: string]: string } = {}
-
-            fileMap[toCompile] = editor.document.fileName
-            compilerDiagnostics.set(vscode.Uri.file(editor.document.fileName), [])
-
-            updateCompilerDiagnostics(fileMap, resp.notes)
-        } finally {
-            state.compileRunning = false
-        }
+        await updateDiagnostics(deps, state, editor)
     })
 }
 
@@ -199,11 +179,6 @@ export async function macroexpand1(deps: ExtensionDeps, state: ExtensionState) {
     await doMacroExpand(deps, deps.lsp.macroexpand1)
 }
 
-function getFolderPath(state: ExtensionState, subdir: string) {
-    const dir = state.workspacePath
-    return path.join(dir, subdir)
-}
-
 async function readFileContent(path: string): Promise<string> {
     try {
         const content = await vscode.workspace.fs.readFile(vscode.Uri.file(path))
@@ -211,59 +186,5 @@ async function readFileContent(path: string): Promise<string> {
         return content.toString()
     } catch (err) {
         return ''
-    }
-}
-async function createFile(state: ExtensionState, subdir: string, name: string, content: string) {
-    const folder = getFolderPath(state, subdir)
-    const fileName = path.join(folder, name)
-
-    await createFolder(vscode.Uri.file(folder))
-    await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), new TextEncoder().encode(content))
-
-    return fileName
-}
-
-async function createTempFile(state: ExtensionState, doc: vscode.TextDocument) {
-    const subdir = path.join('.vscode', 'alive', 'fasl')
-
-    return await createFile(state, subdir, 'tmp.lisp', doc.getText())
-}
-
-function convertSeverity(sev: string): vscode.DiagnosticSeverity {
-    switch (sev) {
-        case 'error':
-        case 'read_error':
-            return vscode.DiagnosticSeverity.Error
-        case 'note':
-        case 'redefinition':
-        case 'style_warning':
-        case 'warning':
-            return vscode.DiagnosticSeverity.Warning
-        default:
-            return vscode.DiagnosticSeverity.Error
-    }
-}
-
-async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, notes: CompileFileNote[]) {
-    const diags: { [index: string]: vscode.Diagnostic[] } = {}
-
-    for (const note of notes) {
-        const notesFile = note.location.file.replace(/\//g, path.sep)
-        const fileName = fileMap[notesFile] ?? note.location.file
-
-        const doc = await vscode.workspace.openTextDocument(fileName)
-        const startPos = note.location.start
-        const endPos = note.location.end
-
-        if (diags[fileName] === undefined) {
-            diags[fileName] = []
-        }
-
-        const diag = new vscode.Diagnostic(new vscode.Range(startPos, endPos), note.message, convertSeverity(note.severity))
-        diags[fileName].push(diag)
-    }
-
-    for (const [file, arr] of Object.entries(diags)) {
-        compilerDiagnostics.set(vscode.Uri.file(file), arr)
     }
 }
