@@ -22,7 +22,7 @@ import { getHoverProvider } from './vscode/providers/Hover'
 // Could also get() the default setting at load time and remove the hyphen
 // but it seems like a good idea to take control of this configuration item
 // in order to be independent of any future changes to the default setting.
-const wordSeparators = "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
+const wordSeparators = "`|;:'\","
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
     log(`Activating extension`)
@@ -35,7 +35,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     const editorConfig = vscode.workspace.getConfiguration('editor')
     await editorConfig.update('formatOnType', true, false, true)
     const lispConfig = vscode.workspace.getConfiguration('', { languageId: COMMON_LISP_ID });
-    await lispConfig.update("editor.wordSeparators", "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?", false, true)
+    await lispConfig.update("editor.wordSeparators", wordSeparators, false, true)
 
     log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 
