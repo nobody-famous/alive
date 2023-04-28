@@ -11,7 +11,11 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "internalConsoleOptions": "openOnSessionStart",
-            "args": ["--disable-extensions", "--extensionDevelopmentPath=${workspaceFolder}"]
+            "args": [
+                // "--disable-extensions",
+                "--extensionDevelopmentPath=${workspaceFolder}"
+            ],
+            "preLaunchTask": "${defaultBuildTask}"
         }
     ]
 }
