@@ -1,11 +1,8 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isPosition } from '../Guards'
 import { DebugInfo, RestartInfo } from '../Types'
 import { strToHtml } from '../Utils'
-// import * as event from '../../swank/event'
-// import { Frame, FrameVariable } from '../../swank/Types'
 
 interface jsMessage {
     command: string
@@ -17,15 +14,11 @@ export class DebugView extends EventEmitter {
     title: string
     panel?: vscode.WebviewPanel
     info: DebugInfo
-    // event: event.Debug
-    // activate?: event.DebugActivate
     frameExpanded: { [index: number]: boolean | undefined } = {}
-    // frameLocals: { [index: number]: FrameVariable[] | undefined } = {}
     frameEval: { [index: number]: string | undefined } = {}
     frameInput: { [index: number]: string | undefined } = {}
     viewCol: vscode.ViewColumn
 
-    // constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, event: event.Debug) {
     constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, info: DebugInfo) {
         super()
 
@@ -33,7 +26,6 @@ export class DebugView extends EventEmitter {
         this.title = title
         this.viewCol = viewCol
         this.info = info
-        // this.event = event
     }
 
     run() {
@@ -87,11 +79,6 @@ export class DebugView extends EventEmitter {
         this.panel = undefined
     }
 
-    // setLocals(ndx: number, locals: FrameVariable[]) {
-    //     this.frameLocals[ndx] = locals
-    //     this.renderHtml()
-    // }
-
     jumpTo(msg: jsMessage) {
         const file = typeof msg.file === 'string' ? msg.file : undefined
         const line = typeof msg.line === 'number' ? msg.line : undefined
@@ -108,7 +95,6 @@ export class DebugView extends EventEmitter {
     }
 
     private inspectCondCommand() {
-        // this.emit('inspect-cond', this.event.threadID)
     }
 
     private frameRestartCommand(msg: jsMessage) {
@@ -152,17 +138,10 @@ export class DebugView extends EventEmitter {
 
         this.frameExpanded[num] = !this.frameExpanded[num]
 
-        // if (this.frameLocals[num] === undefined) {
-        //     this.emit('frame-locals', num)
-        // }
-
         this.renderHtml()
     }
 
     private restartCommand(msg: jsMessage) {
-        // const restart = this.event.restarts[num]
-        // this.emit('restart', num, restart)
-
         if (typeof msg.number === 'number') {
             this.emit('restart', msg.number)
         }
@@ -186,99 +165,6 @@ export class DebugView extends EventEmitter {
             </div>
         `
     }
-
-    private renderLocals(ndx: number) {
-        let str = `<div class="locals-title">Locals:</div>`
-
-        // const locals = this.frameLocals[ndx] ?? []
-
-        // for (const local of locals) {
-        //     str += `<div class="locals-var">${local.name} = ${local.value}</div>`
-        // }
-
-        return str
-    }
-
-    // private isRestartable(bt: Frame): boolean {
-    //     const opts = bt.opts ?? []
-
-    //     for (const opt of opts) {
-    //         if (opt.name.toUpperCase() === ':RESTARTABLE' && opt.value) {
-    //             return true
-    //         }
-    //     }
-
-    //     return false
-    // }
-
-    private renderRestartBtn(ndx: number) {
-        return `<button class="debug-btn restart-btn" onclick="frame_restart(${ndx})")>
-                    R
-                </button>`
-    }
-
-    private renderEvalInFrame(ndx: number) {
-        let str = ''
-
-        str += `<div class="eval-box">
-                    <div class="eval-row">
-                        <div class="eval-label">
-                            <button class="debug-btn eval-btn" onclick="frame_eval(${ndx})">
-                                Eval
-                            </button>
-                        </div>
-                        <div class="eval-input-box">
-                            <form onsubmit="frame_eval(${ndx})">
-                                <input id="eval-input-${ndx}" type="text" class="eval-input"
-                                    onchange="input_changed(${ndx})"
-                                    value="${this.frameInput[ndx] ?? ''}"
-                                >
-                            </form>
-                        </div>
-                    </div>
-                    <div class="eval-row">
-                        <div class="eval-label"></div>
-                        <div class="eval-result-box">
-                            <input type="text" readonly class="eval-result" value="${this.frameEval[ndx] ?? ''}">
-                        </div>
-                    </div>
-                </div>`
-
-        return str
-    }
-
-    private renderExpanded(ndx: number) {
-        if (!this.frameExpanded[ndx]) {
-            return ''
-        }
-
-        let str = `<div class="locals-box">
-                       ${this.renderLocals(ndx)}
-                       ${this.renderEvalInFrame(ndx)}
-                   </div>`
-
-        return str
-    }
-
-    // private renderBtTable(bt: Frame) {
-    //     let str = ''
-
-    //     str += `<table class="frame-table list-item">
-    //               <tbody>
-    //                 <tr>
-    //                     <td class="frame-btn-cell">${this.isRestartable(bt) ? this.renderRestartBtn(bt.num) : ''}</td>
-    //                     <td class="frame-num-cell">${bt.num}:</td>
-    //                     <td class="frame-data-cell">
-    //                         <div class="clickable" onclick="bt_locals(${bt.num})">
-    //                             ${bt.desc}
-    //                         </div>
-    //                         ${this.renderExpanded(bt.num)}
-    //                     </td>
-    //                 </tr>
-    //               </tbody>
-    //             </table>`
-    //     return str
-    // }
 
     private renderBtList() {
         let str = ''
@@ -316,10 +202,6 @@ export class DebugView extends EventEmitter {
             `
             ndx -= 1
         }
-
-        // for (const bt of this.event.frames) {
-        //     str += this.renderBtTable(bt)
-        // }
 
         return str
     }
