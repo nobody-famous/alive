@@ -270,6 +270,18 @@
             }
         ],
         "menus": {
+            "editor/context": [
+                {
+                    "command": "alive.loadFile",
+                    "when": "editorLangId == lisp",
+                    "group": "z_commands"
+                },
+                {
+                    "command": "alive.compileFile",
+                    "when": "editorLangId == lisp",
+                    "group": "z_commands"
+                }
+            ],
             "view/title": [
                 {
                     "command": "alive.refreshPackages",
