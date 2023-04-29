@@ -102,8 +102,8 @@ export class UI extends EventEmitter {
                 const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One)
                 const pos = new vscode.Position(line, char)
                 const range = new vscode.Range(
-                    new vscode.Position(pos.line - 10, pos.character),
-                    new vscode.Position(pos.line + 10, pos.character)
+                    new vscode.Position(Math.max(0, pos.line - 10), pos.character),
+                    new vscode.Position(Math.max(0, pos.line + 10), pos.character)
                 )
 
                 editor.selection = new vscode.Selection(pos, pos)
