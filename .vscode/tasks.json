@@ -31,7 +31,10 @@
             "problemMatcher": [
                 "$tsc"
             ],
-            "group": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "label": "npm: compile",
             "detail": "tsc -p ./"
         },
