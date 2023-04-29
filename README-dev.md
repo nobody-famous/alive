@@ -143,3 +143,10 @@ When this is showing there will be a small green triangle outline at the top of 
 After your changes are working properly it is time to submit a PR from your development branch.
 [Submit the PR from your fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)
 to the [Alive repository](https://github.com/nobody-famous/alive) on `github`.
+
+## VSCode Extension Language Server
+
+VSCode language extensions depend upon a separate [Language Server](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide) Protocol (LSP) which understands the language and provides support to the language extension itself.
+
+For the Alive extension this code is provided in the
+[Alive-lsp](https://github.com/nobody-famous/alive-lsp) repository.
