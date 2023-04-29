@@ -28,10 +28,10 @@ Install the following tools:
 * TypeScript
 
 You should be able to execute the following programs:
-* `git`
-* `sbcl`
-* `npm`
-* `tsc`
+* `git` (or whatever tool you prefer)
+* `sbcl` SBCL REPL
+* `npm` JavaScript package manager
+* `tsc` TypeScript compiler
 
 ### Acquiring the Code
 
@@ -69,7 +69,7 @@ Execute
 ```
 git diff package-lock.json
 ```
-to make sure that the version number is the _only_ thing incremented.
+(or whatever command or tool you prefer) to make sure that the version number is the _only_ thing incremented.
 The `diff` should look something like
 ```
 {
@@ -93,10 +93,11 @@ If these are the _only_ changes run
 ```
 git checkout package-lock.json
 ```
-to revert the changes.
+(or whatever command or tool you prefer) to revert the changes.
 
-_If there are other changes_ then something _weird_ happened.
-It's probably better to _not_ revert the change to `package-lock.json`.
+_If there are other changes_ then something bad happened.
+It's probably better to not revert the change to `package-lock.json`.
+Beyond that you'll probably have to dig some.
 
 #### Verify Build
 
@@ -106,6 +107,9 @@ tsc -p ./tsconfig.build.json
 ```
 without any errors.
 
+_If there are errors_ something bad happened.
+Beyond that you'll probably have to dig some.
+
 ## Development and Debugging
 
 ### Development Branch
@@ -114,7 +118,7 @@ Always work on a branch via:
 ```
 git checkout -b <branch-name>
 ```
-or whatever command or tool you prefer.
+(or whatever command or tool you prefer).
 
 ### Development
 
