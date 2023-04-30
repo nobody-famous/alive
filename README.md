@@ -154,8 +154,7 @@ Unless otherwise noted, all files are in the Public Domain.
 
 ## Developing Alive Code
 
-If you are interesting in making changes to Alive you should take a look at the
-Development Notes](README-dev.md).
+If you are interesting in making changes to Alive you should take a look at the [Development Notes](README-dev.md).
 
 ## Release Notes
 
