@@ -4,8 +4,13 @@ Notes on making changes to the Alive codebase.
 
 ## Basic Knowledge
 
-Alive is primarily constructed using Lisp and TypeScript.
-Basic knowledge of both languages is necessary.
+Alive is primarily constructed using TypeScript.
+Basic knowledge of this language or JavaScript is necessary.
+Familiarity with `npm` is recommended.
+
+Alive provides a language extension to support Common Lisp.
+Basic understanding of that language and the Lisp REPL is assumed.
+The specific Common Lisp implementation is Steel Bank Common Lisp.
 
 The Alive codebase is hosted on
 [github](https://github.com/nobody-famous/alive).
@@ -29,7 +34,7 @@ Install the following tools:
 
 You should be able to execute the following programs:
 * `git` (or whatever tool you prefer)
-* `sbcl` SBCL REPL
+* `sbcl` Common Lisp REPL
 * `npm` JavaScript package manager
 * `tsc` TypeScript compiler
 
