@@ -152,9 +152,10 @@ An inspector is opened for the currently selected text. If nothing is selected, 
 
 Unless otherwise noted, all files are in the Public Domain.
 
-## Links
+## Developing Alive Code
 
-* [Development Notes](README-dev.md) for those interested in making changes to Alive.
+If you are interesting in making changes to Alive you should take a look at the
+Development Notes](README-dev.md).
 
 ## Release Notes
 
