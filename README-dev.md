@@ -33,10 +33,13 @@ You should be able to execute the following programs:
 * `npm` JavaScript package manager
 * `tsc` TypeScript compiler
 
+The rest of this document assumes the command-line use of `git`.
+You may prefer a different tool (including VSCode).
+
 ### Acquiring the Code
 
 Alive development is done on a fork of the repository.
-Pull Requests (PRs) are made from a branch in the fork
+Pull Requests (PRs) are made from a branch in that fork
 into the Alive repository.
 
 * [Create a fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo)
@@ -61,15 +64,21 @@ Failing to do this will result in hundreds of errors
 as the Alive code will not be able to link to
 the VSCode Extension API.
 
-A side effect of this step is the incrementing of a version number
-in the `package-lock.json` file.
+A side effect of this step is the possible incrementing of a version number in the `package-lock.json` file.
 This is an unnecessary change and should not be propagated into the code.
+
+Execute
+```
+git status
+```
+to check for any changes.
+If there are none skip to **Compile Code** below.
 
 Execute
 ```
 git diff package-lock.json
 ```
-(or whatever command or tool you prefer) to make sure that the version number is the _only_ thing incremented.
+to make sure that the version number is the _only_ thing incremented.
 The `diff` should look something like
 ```
 {
@@ -93,47 +102,60 @@ If these are the _only_ changes run
 ```
 git checkout package-lock.json
 ```
-(or whatever command or tool you prefer) to revert the changes.
+to revert the changes.
 
 _If there are other changes_ then something bad happened.
 It's probably better to not revert the change to `package-lock.json`.
-Beyond that you'll probably have to dig some.
 
-#### Verify Build
+#### Compile Code
 
 At this point it should be possible to execute
 ```
-tsc -p ./tsconfig.build.json
+npm run compile
 ```
 without any errors.
 
 _If there are errors_ something bad happened.
-Beyond that you'll probably have to dig some.
 
 ## Development and Debugging
 
 ### Development Branch
 
-Always work on a branch via:
+Always work on a development branch, not the main branch:
 ```
 git checkout -b <branch-name>
 ```
-(or whatever command or tool you prefer).
 
 ### Development
 
 Make whatever changes seem appropriate on your development branch.
 
-Use VSCode for development in order to get the debugger support
-for VSCode extension work.
+Use VSCode in order to get the debugger support
+for VSCode extension development.
+
+Compilation of the extension code is not done automatically by VSCode.
+It can be done manually by hitting <ctrl>-<shift>-B and choosing
+an appropriate task.
+
+The recommended task is `npm:watch` which will start a process that
+will automatically compile and build anytime a file changes.
+The process will run in the VSCode Terminal window.
+
+The same thing can be done in a shell window by executing
+```
+npm run watch
+```
 
 ### Debugging
 
 The simplest way to launch the debugger is with the `F5` key.
-This should bring up another VSCode window with the modified Alive extension.
+This should bring up a testing VSCode window with the modified Alive extension.
 Test the extension within this window.
 
-Standard VSCode debugging features (e.g. breakpoints, stepping through code) are available.
+Standard VSCode debugging features (e.g. breakpoints, stepping through code) are available in the development VSCode window.
+A floating button bar on the upper right has icons for
+stepping through code and a red square outline
+which will kill the testing window.
 
 You can also start the debugger from the `Run and Debug` panel.
 When this is showing there will be a small green triangle outline at the top of the panel which will do the same thing as the `F5` key.
