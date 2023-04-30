@@ -129,17 +129,15 @@ git checkout -b <branch-name>
 ### Development
 
 Make whatever changes seem appropriate on your development branch.
-
-Use VSCode in order to get the debugger support
-for VSCode extension development.
+Use VSCode in order to get the debugger support for VSCode extension development.
 
 Compilation of the extension code is not done automatically by VSCode.
-It can be done manually by hitting <ctrl>-<shift>-B and choosing
+It can be done manually by hitting `<ctrl>-<shift>-B` and choosing
 an appropriate task.
 
 The recommended task is `npm:watch` which will start a process that
 will automatically compile and build anytime a file changes.
-The process will run in the VSCode Terminal window.
+The process will run forever in the VSCode Terminal window once started.
 
 The same thing can be done in a shell window by executing
 ```
@@ -149,7 +147,7 @@ npm run watch
 ### Debugging
 
 The simplest way to launch the debugger is with the `F5` key.
-This should bring up a testing VSCode window with the modified Alive extension.
+This should bring up a VSCode Extension Development Host -- another VSCode window with the modified Alive extension.
 Test the extension within this window.
 
 Standard VSCode debugging features (e.g. breakpoints, stepping through code) are available in the development VSCode window.
@@ -157,8 +155,10 @@ A floating button bar on the upper right has icons for
 stepping through code and a red square outline
 which will kill the testing window.
 
-You can also start the debugger from the `Run and Debug` panel.
-When this is showing there will be a small green triangle outline at the top of the panel which will do the same thing as the `F5` key.
+You can also start the debugger from the `Run and Debug` panel
+that you can start from the Activity Bar on the left.
+When this is showing there will be a small green triangle outline at the top of the panel which launch the Extension Development Host
+the same as the `F5` key.
 
 ## Submitting Pull Requests
 
@@ -168,7 +168,5 @@ to the [Alive repository](https://github.com/nobody-famous/alive) on `github`.
 
 ## VSCode Extension Language Server
 
-VSCode language extensions depend upon a separate [Language Server](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide) Protocol (LSP) which understands the language and provides support to the language extension itself.
-
-For the Alive extension this code is provided in the
+VSCode language extensions depend upon a separate [Language Server Protocol](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide) (LSP) which understands the language and provides support to the language extension itself. For the Alive extension this code is provided in the
 [Alive-lsp](https://github.com/nobody-famous/alive-lsp) repository.
