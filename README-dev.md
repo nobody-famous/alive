@@ -6,7 +6,9 @@ Notes on making changes to the Alive codebase.
 
 Alive is primarily constructed using TypeScript.
 Basic knowledge of this language or JavaScript is necessary.
-Familiarity with `npm` is recommended.
+Familiarity with
+[`npm`](https://nodejs.dev/en/learn/an-introduction-to-the-npm-package-manager/)
+is recommended.
 
 Alive provides a language extension to support Common Lisp.
 Basic understanding of that language and the Lisp REPL is assumed.
@@ -28,15 +30,14 @@ Start learning with the
 ### Install Tools
 
 Install the following tools:
+* `git`
+* `npm` JavaScript package manager (`yarn` might also work)
 * Steel Bank Common Lisp (SBCL)
-* JavaScript
-* TypeScript
 
 You should be able to execute the following programs:
-* `git` (or whatever tool you prefer)
-* `sbcl` Common Lisp REPL
+* `git` (or whatever tool you prefer to use)
 * `npm` JavaScript package manager
-* `tsc` TypeScript compiler
+* `sbcl` Common Lisp REPL
 
 The rest of this document assumes the command-line use of `git`.
 You may prefer a different tool (including VSCode).
@@ -68,49 +69,6 @@ specified in the `package.json` file.
 Failing to do this will result in hundreds of errors
 as the Alive code will not be able to link to
 the VSCode Extension API.
-
-A side effect of this step is the possible incrementing of a version number in the `package-lock.json` file.
-This is an unnecessary change and should not be propagated into the code.
-
-Execute
-```
-git status
-```
-to check for any changes.
-If there are none skip to **Compile Code** below.
-
-Execute
-```
-git diff package-lock.json
-```
-to make sure that the version number is the _only_ thing incremented.
-The `diff` should look something like
-```
-{
-     "name": "alive",
--    "version": "0.3.19",
-+    "version": "0.3.20",
-     "lockfileVersion": 2,
-     "requires": true,
-     "packages": {
-         "": {
-             "name": "alive",
--            "version": "0.3.19",
-+            "version": "0.3.20",
-             "dependencies": {
-                 "axios": "^0.21.4",
-                 "node-stream-zip": "^1.15.0",
-```
-though the version numbers may be different.
-
-If these are the _only_ changes run
-```
-git checkout package-lock.json
-```
-to revert the changes.
-
-_If there are other changes_ then something bad happened.
-It's probably better to not revert the change to `package-lock.json`.
 
 #### Compile Code
 
