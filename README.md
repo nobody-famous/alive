@@ -80,25 +80,98 @@ Syntax highlighting is done using semantic tokens. This is mainly to avoid regex
 The current idea is to use VSCode as the REPL, leveraging VSCode features to give a visual insight into the running image.
 
 -   There is a REPL console that mimics the debug console.
--   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
 -   User input requested by the REPL is prompted with a text box.
+-   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
 -   History items can be re-run by using the up/down arrow keys in the REPL console, using the re-run action in the history tree view, or using "REPL History" from the command palette.
 
-## Inspector
+### Lisp Tree View
 
-An inspector can be opened by evaluating an expression in the inspector view or by clicking `Inspect` at the bottom of the hover text for a symbol.
+The Lisp Tree View is invoked by clicking on the following icon in the Activty Bar on the left of the VSCode workbench:
+
+<img src="images/lisp-icon-sm.png" alt="alt text"/>
+
+There are a number of panels in the Lisp Tree View to display and
+manipulate different aspects of your current Lisp REPL.
+
+#### REPL History
+
+The **REPL HISTORY** view displays all of the Lisp forms executed in the provided REPL.
+The remove icon at the right of the title bar for this view clears the history.
+
+For each form in the list there are actions.
+Clicking on a form expands to show the form's containing package.
+To the right of the form are three icons:
+* The pencil icon puts the form into the entry line below the REPL
+  and leaves it there to be edited and executed.
+* The circle arrow icon sends the form to the REPL to be executed again.
+* The minus icon removes the item from the history.
+
+#### Inspector
+
+The **INSPECTOR** view can generate an inspect panel for a symbol.
+Inspection is done in the context of a specific package.
+The line below the title bar displays the current package,
+clicking on that line brings up a menu of packages from which to choose.
+
+Once the package is chosen, the next line is user entry box
+for the name of the symbol to be inspected.
+Once a symbol is entered an inspect panel is generated on the right side of the workbench.
+By default unquoted symbols are variables in the chosen package.
+To inspect a function it is necessary to quote it by prepending the name with `'`.
+
+#### Packages
+
+The **PACKAGES** view shows all of the packages in the REPL.
+The circle arrow icon at the right of the title bar for this view
+updates the package list to be current with the REPL,
+this view is not automatically updated when packages are added.
+
+For each package in the list there are actions.
+Clicking on the minus icon at the right removes the package.
+Clicking on the package itself expands to a list of symbols in that package.
+
+#### ASDF Systems
+
+The **ASDF SYSTEMS** view shows all of the ASDF systems defined in the REPL.
+The circle arrow icon at the right of the title bar for this view
+updates the ASDF system list to be current with the REPL,
+this view is not automatically updated when systems are added.
+
+For each ASDF system in the list,
+clicking on the plus icon at the right executes
+**Alive: Load ASDF System By Name** for that system.
+
+#### Threads
+
+The **THREADS** view shows all of the threads executing in the REPL.
+The circle arrow icon at the right of the title bar for this view
+updates the ASDF system list to be current with the REPL,
+This may not be necessary as in at least some cases the addition
+of a thread shows up automatically in this view.
+
+For each thread in the list,
+clicking on the minus icon at the right kills the thread.
+
+### Inspection
+
+An inspector can be opened by evaluating an expression in the inspector view described above or by clicking `Inspect` at the bottom of the hover text for a symbol.
+In either case the same inspector view is opened on the right.
 
 There is also an inspector for macros, using the Inspect Macro command. An inspector opens that shows one level of expansion for the macro at the current cursor position. It has a button to refresh the inspector or increment the level of expansion by one. When an expression is sent for evaluation, such as redefining the macro, the expansion is refreshed back to one level.
 
-### Eval Text
-
 At the bottom of each inspector view is a text field that can be used to evaluate expressions.
-
 The value in the inspector can be referenced with `*`. For example, `(format T "~A" *)` will print the current value in the REPL window.
 
 If the result of the expression is not `nil`, a new inspector view will be opened with the value.
 
-## Threads
+### REPL Form Evaluation
+
+At the bottom of the VSCode workbench, in the Panel area,
+is an addition **REPL** view with a user input area at the bottom.
+Results of execution of any form by the REPL are shown in this panel.
+The user may also enter ad hoc forms in the user input area.
+Forms entered by the user are added to the history list shown in
+**REPL HISTORY** view in the Lisp Tree View described above.
 
 Forms sent for evaluation by the user are run in their own thread. The threads have names like "N - $/alive/eval" where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds. If one of them gets stuck in an infinite loop or something, it should be safe to terminate the thread using the "X" action in the threads tree view.
 
