@@ -84,23 +84,7 @@ The current idea is to use VSCode as the REPL, leveraging VSCode features to giv
 -   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
 -   History items can be re-run by using the up/down arrow keys in the REPL console, using the re-run action in the history tree view, or using "REPL History" from the command palette.
 
-### Inspection
-
-An inspector can be opened by clicking `Inspect` at the bottom of the hover text for a symbol, for example:
-
-<img src="images/view-inspector-goober.png" alt="edit icon"/>
-
-The same view can be opened by evaluating an expression in the **Inspector** view in the Lisp Tree View described below.
-In either case the same inspector view is opened in a panel
-on the right side of the workbench.
-
-At the bottom of each inspector view is a text field that can be used to evaluate expressions.
-The value in the inspector can be referenced with `*`.
-For example, `(format T "~A" *)` will print the current value in the REPL window.
-
-There is also an inspector for macros, using the Inspect Macro command. An inspector opens that shows one level of expansion for the macro at the current cursor position. It has a button to refresh the inspector or increment the level of expansion by one. When an expression is sent for evaluation, such as redefining the macro, the expansion is refreshed back to one level.
-
-### REPL Form Evaluation
+### Form Evaluation
 
 At the bottom of the VSCode workbench, in the Panel area,
 is a **REPL** view with a user input area at the bottom.
@@ -120,6 +104,22 @@ If one of them gets stuck in an infinite loop or something,
 it should be safe to terminate the thread using the remove icon
 (<img src="images/remove-icon.png" alt="remove icon"/>)
 on the appropriate thread entry in the **THREADS** view in the Lisp Tree View described below.
+
+### Inspection
+
+An inspector can be opened by clicking `Inspect` at the bottom of the hover text for a symbol, for example:
+
+<img src="images/view-inspector-goober.png" alt="edit icon"/>
+
+The same view can be opened by evaluating an expression in the **Inspector** view in the Lisp Tree View described below.
+In either case the same inspector view is opened in a panel
+on the right side of the workbench.
+
+At the bottom of each inspector view is a text field that can be used to evaluate expressions.
+The value in the inspector can be referenced with `*`.
+For example, `(format T "~A" *)` will print the current value in the REPL window.
+
+There is also an inspector for macros, using the Inspect Macro command. An inspector opens that shows one level of expansion for the macro at the current cursor position. It has a button to refresh the inspector or increment the level of expansion by one. When an expression is sent for evaluation, such as redefining the macro, the expansion is refreshed back to one level.
 
 ### Lisp Tree View
 
