@@ -84,6 +84,43 @@ The current idea is to use VSCode as the REPL, leveraging VSCode features to giv
 -   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
 -   History items can be re-run by using the up/down arrow keys in the REPL console, using the re-run action in the history tree view, or using "REPL History" from the command palette.
 
+### Inspection
+
+An inspector can be opened by clicking `Inspect` at the bottom of the hover text for a symbol, for example:
+
+<img src="images/view-inspector-goober.png" alt="edit icon"/>
+
+The same view can be opened by evaluating an expression in the **Inspector** view in the Lisp Tree View described below.
+In either case the same inspector view is opened in a panel
+on the right side of the workbench.
+
+At the bottom of each inspector view is a text field that can be used to evaluate expressions.
+The value in the inspector can be referenced with `*`.
+For example, `(format T "~A" *)` will print the current value in the REPL window.
+
+There is also an inspector for macros, using the Inspect Macro command. An inspector opens that shows one level of expansion for the macro at the current cursor position. It has a button to refresh the inspector or increment the level of expansion by one. When an expression is sent for evaluation, such as redefining the macro, the expansion is refreshed back to one level.
+
+### REPL Form Evaluation
+
+At the bottom of the VSCode workbench, in the Panel area,
+is a **REPL** view with a user input area at the bottom.
+Results of execution of any form by the REPL are shown in this panel.
+The user may also enter ad hoc forms in the user input area at the bottom of the view.
+
+For example:
+
+<img src="images/view-repl-hello-world.png" alt="REPL view"/>
+
+Forms entered by the user are also added to a history list.
+The up and down arrows can be used in the user intput area to choose a previous form to be (possibly edited and) reevaluated.
+The history list is also shown in the **REPL HISTORY** view in the Lisp Tree View described below.
+
+Forms sent for evaluation by the user are run in their own thread. The threads have names like `"N - $/alive/eval"` where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds.
+If one of them gets stuck in an infinite loop or something,
+it should be safe to terminate the thread using the remove icon
+(<img src="images/remove-icon.png" alt="remove icon"/>)
+on the appropriate thread entry in the **THREADS** view in the Lisp Tree View described below.
+
 ### Lisp Tree View
 
 The Lisp Tree View is invoked by clicking on the following icon in the Activty Bar on the left of the VSCode workbench:
@@ -119,6 +156,7 @@ Once the package is chosen, the next line is a user entry box
 into which any valid Common Lisp form may be entered.
 Variable names do not need to be quoted but function names do.
 More complex forms will be evaluated and the result inspected.
+If the result of the expression is not `nil`, a new inspector view will be opened with the value.
 
 For example:
 ```
@@ -164,29 +202,6 @@ of a thread shows up automatically in this view.
 Clicking on the remove icon
 (<img src="images/remove-icon.png" alt="remove icon"/>)
 to the right of a thread kills the thread.
-
-### Inspection
-
-An inspector can be opened by evaluating an expression in the inspector view described above or by clicking `Inspect` at the bottom of the hover text for a symbol.
-In either case the same inspector view is opened on the right.
-
-There is also an inspector for macros, using the Inspect Macro command. An inspector opens that shows one level of expansion for the macro at the current cursor position. It has a button to refresh the inspector or increment the level of expansion by one. When an expression is sent for evaluation, such as redefining the macro, the expansion is refreshed back to one level.
-
-At the bottom of each inspector view is a text field that can be used to evaluate expressions.
-The value in the inspector can be referenced with `*`. For example, `(format T "~A" *)` will print the current value in the REPL window.
-
-If the result of the expression is not `nil`, a new inspector view will be opened with the value.
-
-### REPL Form Evaluation
-
-At the bottom of the VSCode workbench, in the Panel area,
-is an addition **REPL** view with a user input area at the bottom.
-Results of execution of any form by the REPL are shown in this panel.
-The user may also enter ad hoc forms in the user input area.
-Forms entered by the user are added to the history list shown in
-**REPL HISTORY** view in the Lisp Tree View described above.
-
-Forms sent for evaluation by the user are run in their own thread. The threads have names like "N - $/alive/eval" where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds. If one of them gets stuck in an infinite loop or something, it should be safe to terminate the thread using the "X" action in the threads tree view.
 
 ## Commands
 
