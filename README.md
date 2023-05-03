@@ -111,7 +111,7 @@ An inspector can be opened by clicking `Inspect` at the bottom of the hover text
 
 <img src="images/view-inspector-goober.png" alt="edit icon"/>
 
-The same view can be opened by evaluating an expression in the **Inspector** view in the Lisp Tree View described below.
+The same view can be opened by evaluating an expression in the **INSPECTOR** view in the Lisp Tree View described below.
 In either case the same inspector view is opened in a panel
 on the right side of the workbench.
 
@@ -127,19 +127,19 @@ The Lisp Tree View is invoked by clicking on the following icon in the Activty B
 
 <img src="images/lisp-icon-sm.png" alt="alt text"/>
 
-There are a number of panels in the Lisp Tree View to display and
+There are a number of views in the Lisp Tree View to display and
 manipulate different aspects of your current Lisp REPL.
 
 #### REPL History
 
-The **REPL HISTORY** view displays all of the Lisp forms executed in the provided REPL.
-The remove icon (<img src="images/clear-all-icon.png" alt="clear all icon"/>) at the right of the title bar for this view clears the history.
+The **REPL HISTORY** view displays all of the Lisp forms evaluated manually by the user in the provided REPL panel described above.
+The clear all icon (<img src="images/clear-all-icon.png" alt="clear all icon"/>) at the right of the title bar for this view clears the history.
 
 Clicking on a form in the list shows the form's containing package on the next line.
 
 To the right of the form are three icons:
 
-|  |  |
+| Icon | Action |
 | :-: | - |
 | <img src="images/edit-icon.png" alt="edit icon"/> | Puts the form into the entry line below the REPL and leaves it there to be edited and executed. |
 | <img src="images/refresh-icon.png" alt="refresh icon"/> | Sends the form to the REPL to be executed again. |
