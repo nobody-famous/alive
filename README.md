@@ -96,15 +96,17 @@ manipulate different aspects of your current Lisp REPL.
 #### REPL History
 
 The **REPL HISTORY** view displays all of the Lisp forms executed in the provided REPL.
-The remove icon at the right of the title bar for this view clears the history.
+The remove icon (<img src="images/clear-all-icon.png" alt="clear all icon"/>) at the right of the title bar for this view clears the history.
 
-For each form in the list there are actions.
-Clicking on a form expands to show the form's containing package.
+Clicking on a form in the list shows the form's containing package on the next line.
+
 To the right of the form are three icons:
-* The pencil icon puts the form into the entry line below the REPL
-  and leaves it there to be edited and executed.
-* The circle arrow icon sends the form to the REPL to be executed again.
-* The minus icon removes the item from the history.
+
+|  |  |
+| :-: | - |
+| <img src="images/edit-icon.png" alt="edit icon"/> | Puts the form into the entry line below the REPL and leaves it there to be edited and executed. |
+| <img src="images/refresh-icon.png" alt="refresh icon"/> | Sends the form to the REPL to be executed again. |
+| <img src="images/remove-icon.png" alt="remove icon"/> | Removes the item from the history. |
 
 #### Inspector
 
@@ -113,44 +115,55 @@ Inspection is done in the context of a specific package.
 The line below the title bar displays the current package,
 clicking on that line brings up a menu of packages from which to choose.
 
-Once the package is chosen, the next line is user entry box
-for the name of the symbol to be inspected.
-Once a symbol is entered an inspect panel is generated on the right side of the workbench.
-By default unquoted symbols are variables in the chosen package.
-To inspect a function it is necessary to quote it by prepending the name with `'`.
+Once the package is chosen, the next line is a user entry box
+into which any valid Common Lisp form may be entered.
+Variable names do not need to be quoted but function names do.
+More complex forms will be evaluated and the result inspected.
+
+For example:
+```
+(concatenate 'string "Hello" " " "World" "!")
+```
+will display as:
+
+<img src="images/view-inspector-concatenate.png" alt="edit icon"/>
+
+Inspection is discussed in more detail in the **Inspection** section below.
 
 #### Packages
 
 The **PACKAGES** view shows all of the packages in the REPL.
-The circle arrow icon at the right of the title bar for this view
-updates the package list to be current with the REPL,
-this view is not automatically updated when packages are added.
+The refresh icon (<img src="images/refresh-icon.png" alt="refresh icon"/>)
+at the right of the title bar updates the package list to be current with the REPL.
+This view is not automatically updated when packages are added.
 
-For each package in the list there are actions.
-Clicking on the minus icon at the right removes the package.
-Clicking on the package itself expands to a list of symbols in that package.
+Clicking on a package in the list expands to show
+all of the symbols defined in that package below the package name.
+Clicking on the remove icon (<img src="images/remove-icon.png" alt="remove icon"/>)
+to the right of a symbol removes that symbol.
 
 #### ASDF Systems
 
 The **ASDF SYSTEMS** view shows all of the ASDF systems defined in the REPL.
-The circle arrow icon at the right of the title bar for this view
-updates the ASDF system list to be current with the REPL,
-this view is not automatically updated when systems are added.
+The refresh icon (<img src="images/refresh-icon.png" alt="refresh icon"/>)
+at the right of the title bar updates the ASDF system list to be current with the REPL.
+This view is not automatically updated when systems are added.
 
-For each ASDF system in the list,
-clicking on the plus icon at the right executes
-**Alive: Load ASDF System By Name** for that system.
+Clicking on the (<img src="images/add-icon.png" alt="add icon"/>)
+to the right of a system loads that system into the REPL
+by executing **Alive: Load ASDF System By Name** for that system.
 
 #### Threads
 
 The **THREADS** view shows all of the threads executing in the REPL.
-The circle arrow icon at the right of the title bar for this view
-updates the ASDF system list to be current with the REPL,
+The refresh icon (<img src="images/refresh-icon.png" alt="refresh icon"/>)
+at the right of the title bar updates the thread list to be current with the REPL.
 This may not be necessary as in at least some cases the addition
 of a thread shows up automatically in this view.
 
-For each thread in the list,
-clicking on the minus icon at the right kills the thread.
+Clicking on the remove icon
+(<img src="images/remove-icon.png" alt="remove icon"/>)
+to the right of a thread kills the thread.
 
 ### Inspection
 
