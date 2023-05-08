@@ -20,6 +20,7 @@ import {
     Thread,
 } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
+import { log, toLog } from '../Log'
 
 type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
 
