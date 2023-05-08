@@ -307,6 +307,7 @@ function initUI(deps: ExtensionDeps, state: ExtensionState) {
 
 function initLSP(deps: ExtensionDeps, state: ExtensionState) {
     deps.lsp.on('refreshPackages', () => cmds.refreshPackages(deps))
+    deps.lsp.on('refreshAsdfSystems', () => cmds.refreshAsdfSystems(deps))
     deps.lsp.on('refreshThreads', () => cmds.refreshThreads(deps))
     deps.lsp.on('refreshInspectors', () => deps.ui.refreshInspectors())
     deps.lsp.on('refreshDiagnostics', () => deps.ui.refreshDiagnostics())
