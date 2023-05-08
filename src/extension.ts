@@ -262,7 +262,7 @@ async function initThreadsTree(deps: ExtensionDeps) {
         const threads = await deps.lsp.listThreads()
         deps.ui.initThreadsTree(threads)
     } catch (err) {
-        console.log(`Failed to init threads tree: ${err}`)
+        log(`Failed to init threads tree: ${err}`)
     }
 }
 
@@ -271,7 +271,7 @@ async function initAsdfSystemsTree(deps: ExtensionDeps) {
         const systems = await deps.lsp.listAsdfSystems()
         deps.ui.initAsdfSystemsTree(systems)
     } catch (err) {
-        console.log(`Failed to init ASDF tree: ${err}`)
+        log(`Failed to init ASDF tree: ${err}`)
     }
 }
 
@@ -280,7 +280,7 @@ async function initPackagesTree(deps: ExtensionDeps) {
         const pkgs = await deps.lsp.listPackages()
         deps.ui.initPackagesTree(pkgs)
     } catch (err) {
-        console.log(`Failed to init packages tree: ${err}`)
+        log(`Failed to init packages tree: ${err}`)
     }
 }
 
