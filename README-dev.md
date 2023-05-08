@@ -123,6 +123,41 @@ that you can start from the Activity Bar on the left.
 When this is showing there will be a small green triangle outline at the top of the panel which launch the Extension Development Host
 the same as the `F5` key.
 
+#### Output Panel
+
+In addition to the more sophisticated debugging features available from VSCode
+it is possible to view various types of output data.
+
+Show the `Output` view at the bottom of the screen (`<ctrl-K><ctrl-H>` or
+the **Output: Focus on Output View** command) or just select the `Output` tab on the bottom panel.
+On the right part of the title bar there is a dropdown to choose output from different threads.
+
+For Alive development the following are available (from the extension host only):
+
+* `Alive LSP` shows the output of the SBCL process running the Alive-lsp server.
+* `Alive Log` shows the typescript logging statements.
+
+#### Log Statements
+
+In order to send log statements to the `Alive Log` it is necessary to use the logging
+mechanism defined in `vscode/Log.ts`.
+_The output of `console.log()` calls is lost_.
+
+Import the necessary package:
+```
+import { log, toLog } from './vscode/Log'
+```
+where the specific relative path varies depending on the calling file.
+
+Log statements are very simple:
+```
+console.log("Hello world!")
+```
+Insert variable(s) into the log statement using typescript template strings:
+```
+console.log(`Failed to init ASDF tree: ${err}`)
+```
+
 ## Submitting Pull Requests
 
 After your changes are working properly it is time to submit a PR from your development branch.
