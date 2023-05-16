@@ -2,48 +2,22 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Swank Tests",
-            "type": "shell",
-            "command": "npx",
-            "args": [
-                "ts-node",
-                "test/swank"
-            ],
-            "problemMatcher": [
-                "$tsc"
-            ],
-        },
-        {
-            "label": "Lisp Tests",
-            "type": "shell",
-            "command": "npx",
-            "args": [
-                "ts-node",
-                "test/lisp"
-            ],
-            "problemMatcher": [
-                "$tsc"
-            ],
-        },
-        {
             "type": "npm",
             "script": "compile",
             "problemMatcher": [
                 "$tsc"
             ],
             "group": "build",
-            "label": "npm: compile",
-            "detail": "tsc -p ./"
+            "label": "Compile"
         },
         {
             "type": "npm",
-            "script": "build",
+            "script": "watch",
             "problemMatcher": [
                 "$tsc"
             ],
             "group": "build",
-            "label": "npm: build",
-            "detail": "tsc -p ./tsconfig.build.json"
+            "label": "Watch Build"
         }
     ]
 }

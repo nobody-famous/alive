@@ -272,14 +272,24 @@
         "menus": {
             "editor/context": [
                 {
+                    "command": "alive.inlineEval",
+                    "when": "editorLangId == lisp",
+                    "group": "x_commands@1"
+                },
+                {
+                    "command": "alive.sendToRepl",
+                    "when": "editorLangId == lisp",
+                    "group": "x_commands@2"
+                },
+                {
                     "command": "alive.loadFile",
                     "when": "editorLangId == lisp",
-                    "group": "z_commands"
+                    "group": "x_commands@3"
                 },
                 {
                     "command": "alive.compileFile",
                     "when": "editorLangId == lisp",
-                    "group": "z_commands"
+                    "group": "x_commands@4"
                 }
             ],
             "view/title": [
