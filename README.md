@@ -80,27 +80,128 @@ Syntax highlighting is done using semantic tokens. This is mainly to avoid regex
 The current idea is to use VSCode as the REPL, leveraging VSCode features to give a visual insight into the running image.
 
 -   There is a REPL console that mimics the debug console.
--   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
 -   User input requested by the REPL is prompted with a text box.
+-   A Lisp tree view is added that shows the REPL history, threads, packages, and defined ASDF systems.
 -   History items can be re-run by using the up/down arrow keys in the REPL console, using the re-run action in the history tree view, or using "REPL History" from the command palette.
 
-## Inspector
+### Form Evaluation
 
-An inspector can be opened by evaluating an expression in the inspector view or by clicking `Inspect` at the bottom of the hover text for a symbol.
+At the bottom of the VSCode workbench, in the Panel area,
+is a **REPL** view with a user input area at the bottom.
+Results of execution of any form by the REPL are shown in this panel.
+The user may also enter ad hoc forms in the user input area at the bottom of the view.
+
+For example:
+
+<img src="images/view-repl-hello-world.png" alt="REPL view"/>
+
+Forms entered by the user are also added to a history list.
+The up and down arrows can be used in the user intput area to choose a previous form to be (possibly edited and) reevaluated.
+The history list is also shown in the **REPL HISTORY** view in the Lisp Tree View described below.
+
+Forms sent for evaluation by the user are run in their own thread. The threads have names like `"N - $/alive/eval"` where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds.
+If one of them gets stuck in an infinite loop or something,
+it should be safe to terminate the thread using the remove icon
+(<img src="images/remove-icon.png" alt="remove icon"/>)
+on the appropriate thread entry in the **THREADS** view in the Lisp Tree View described below.
+
+### Inspection
+
+An inspector can be opened by clicking `Inspect` at the bottom of the hover text for a symbol, for example:
+
+<img src="images/view-inspector-goober.png" alt="edit icon"/>
+
+The same view can be opened by evaluating an expression in the **INSPECTOR** view in the Lisp Tree View described below.
+In either case the same inspector view is opened in a panel
+on the right side of the workbench.
+
+At the bottom of each inspector view is a text field that can be used to evaluate expressions.
+The value in the inspector can be referenced with `*`.
+For example, `(format T "~A" *)` will print the current value in the REPL window.
 
 There is also an inspector for macros, using the Inspect Macro command. An inspector opens that shows one level of expansion for the macro at the current cursor position. It has a button to refresh the inspector or increment the level of expansion by one. When an expression is sent for evaluation, such as redefining the macro, the expansion is refreshed back to one level.
 
-### Eval Text
+### Lisp Tree View
 
-At the bottom of each inspector view is a text field that can be used to evaluate expressions.
+The Lisp Tree View is invoked by clicking on the following icon in the Activty Bar on the left of the VSCode workbench:
 
-The value in the inspector can be referenced with `*`. For example, `(format T "~A" *)` will print the current value in the REPL window.
+<img src="images/lisp-icon-sm.png" alt="alt text"/>
 
+There are a number of views in the Lisp Tree View to display and
+manipulate different aspects of your current Lisp REPL.
+
+#### REPL History
+
+The **REPL HISTORY** view displays all of the Lisp forms evaluated manually by the user in the provided REPL panel described above.
+The clear all icon (<img src="images/clear-all-icon.png" alt="clear all icon"/>) at the right of the title bar for this view clears the history.
+
+Clicking on a form in the list shows the form's containing package on the next line.
+
+To the right of the form are three icons:
+
+| Icon | Action |
+| :-: | - |
+| <img src="images/edit-icon.png" alt="edit icon"/> | Puts the form into the entry line below the REPL and leaves it there to be edited and executed. |
+| <img src="images/refresh-icon.png" alt="refresh icon"/> | Sends the form to the REPL to be executed again. |
+| <img src="images/remove-icon.png" alt="remove icon"/> | Removes the item from the history. |
+
+#### Inspector
+
+The **INSPECTOR** view can generate an inspect panel for a symbol.
+Inspection is done in the context of a specific package.
+The line below the title bar displays the current package,
+clicking on that line brings up a menu of packages from which to choose.
+
+Once the package is chosen, the next line is a user entry box
+into which any valid Common Lisp form may be entered.
+Variable names do not need to be quoted but function names do.
+More complex forms will be evaluated and the result inspected.
 If the result of the expression is not `nil`, a new inspector view will be opened with the value.
 
-## Threads
+For example:
+```
+(concatenate 'string "Hello" " " "World" "!")
+```
+will display as:
 
-Forms sent for evaluation by the user are run in their own thread. The threads have names like "N - $/alive/eval" where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds. If one of them gets stuck in an infinite loop or something, it should be safe to terminate the thread using the "X" action in the threads tree view.
+<img src="images/view-inspector-concatenate.png" alt="edit icon"/>
+
+Inspection is discussed in more detail in the **Inspection** section below.
+
+#### Packages
+
+The **PACKAGES** view shows all of the packages in the REPL.
+The refresh icon (<img src="images/refresh-icon.png" alt="refresh icon"/>)
+at the right of the title bar updates the package list to be current with the REPL.
+This view is not automatically updated when packages are added.
+
+Clicking on a package in the list expands to show
+all of the symbols defined in that package below the package name.
+Clicking on the remove icon (<img src="images/remove-icon.png" alt="remove icon"/>)
+to the right of a symbol removes that symbol.
+
+#### ASDF Systems
+
+The **ASDF SYSTEMS** view shows all of the ASDF systems defined in the REPL.
+The refresh icon (<img src="images/refresh-icon.png" alt="refresh icon"/>)
+at the right of the title bar updates the ASDF system list to be current with the REPL.
+This view is not automatically updated when systems are added.
+
+Clicking on the (<img src="images/add-icon.png" alt="add icon"/>)
+to the right of a system loads that system into the REPL
+by executing **Alive: Load ASDF System By Name** for that system.
+
+#### Threads
+
+The **THREADS** view shows all of the threads executing in the REPL.
+The refresh icon (<img src="images/refresh-icon.png" alt="refresh icon"/>)
+at the right of the title bar updates the thread list to be current with the REPL.
+This may not be necessary as in at least some cases the addition
+of a thread shows up automatically in this view.
+
+Clicking on the remove icon
+(<img src="images/remove-icon.png" alt="remove icon"/>)
+to the right of a thread kills the thread.
 
 ## Commands
 
