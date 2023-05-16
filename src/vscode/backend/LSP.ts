@@ -20,6 +20,7 @@ import {
     Thread,
 } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
+import { log, toLog } from '../Log'
 
 type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
 
@@ -711,7 +712,7 @@ export class LSP extends EventEmitter {
 
             return { name, package: pkgName }
         } catch (err) {
-            console.log('Failed to get symbol', err)
+            log(`Failed to get symbol: ${err}`)
         }
     }
 
@@ -736,7 +737,7 @@ export class LSP extends EventEmitter {
 
             return strToMarkdown(respObj.value)
         } catch (err) {
-            console.log('HOVER FAILED', err)
+            log(`Hover failed: ${err}`)
         }
 
         return ''

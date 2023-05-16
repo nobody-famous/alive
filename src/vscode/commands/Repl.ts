@@ -3,6 +3,7 @@ import * as vscode from 'vscode'
 import { TextEncoder } from 'util'
 import { ExtensionDeps, ExtensionState, LispSymbol } from '../Types'
 import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, updateDiagnostics, useEditor } from '../Utils'
+import { log, toLog } from '../Log'
 
 export function clearRepl(deps: ExtensionDeps) {
     deps.ui.clearRepl()
@@ -166,7 +167,7 @@ async function doMacroExpand(deps: ExtensionDeps, fn: (text: string, pkg: string
                 editor.edit((builder) => builder.replace(info.range, newText))
             }
         } catch (err) {
-            console.log(err)
+            log('Failed to expand macro: ${err}')
         }
     })
 }
