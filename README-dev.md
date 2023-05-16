@@ -157,7 +157,7 @@ Insert variable(s) into the log statement using javascript template strings:
 log(`Failed to init ASDF tree: ${err}`)
 ```
 
-[^1]. Using `console.log()` will work, but the output goes to a different place.
+[^1]: Using `console.log()` will work, but the output goes to a different place.
 Use the command **Developer: Toggle Developer Tools** and then switch to the `Console` tab.
 When running in debug mode it also goes to the debug console on the parent
 (as opposed to the extension host) window.
