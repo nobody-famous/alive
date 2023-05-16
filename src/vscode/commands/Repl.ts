@@ -102,9 +102,6 @@ export async function loadFile(deps: ExtensionDeps) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         await editor.document.save()
         await deps.lsp.loadFile(editor.document.uri.fsPath)
-
-        refreshPackages(deps)
-        refreshAsdfSystems(deps)
     })
 }
 

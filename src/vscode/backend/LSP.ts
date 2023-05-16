@@ -238,6 +238,7 @@ export class LSP extends EventEmitter {
     }
 
     private emitRefresh() {
+        this.emit('refreshPackages')
         this.emit('refreshAsdfSystems')
         this.emit('refreshThreads')
         this.emit('refreshInspectors')
