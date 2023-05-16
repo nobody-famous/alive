@@ -140,8 +140,7 @@ For Alive development the following are available (from the extension host only)
 #### Log Statements
 
 In order to send log statements to the `Alive Log` it is necessary to use the logging
-mechanism defined in `vscode/Log.ts`.
-_The output of `console.log()` calls is lost_.
+mechanism defined in `vscode/Log.ts`.[^1]
 
 Import the necessary package:
 ```
@@ -151,12 +150,18 @@ where the specific relative path varies depending on the calling file.
 
 Log statements are very simple:
 ```
-console.log("Hello world!")
+log("Hello world!")
 ```
-Insert variable(s) into the log statement using typescript template strings:
+Insert variable(s) into the log statement using javascript template strings:
 ```
-console.log(`Failed to init ASDF tree: ${err}`)
+log(`Failed to init ASDF tree: ${err}`)
 ```
+
+[^1]. Using `console.log()` will work, but the output goes to a different place.
+Use the command **Developer: Toggle Developer Tools** and then switch to the `Console` tab.
+When running in debug mode it also goes to the debug console on the parent
+(as opposed to the extension host) window.
+Using the `vscode/Log.ts` mechanism is preferred.
 
 ## Submitting Pull Requests
 
