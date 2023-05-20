@@ -7,12 +7,16 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     private view?: vscode.WebviewView
     private ctx: vscode.ExtensionContext
     private package: string
+    private pendingText: string
+    private updateTextId: NodeJS.Timeout | undefined
 
     constructor(ctx: vscode.ExtensionContext) {
         super()
 
         this.ctx = ctx
         this.package = 'cl-user'
+        this.pendingText = ''
+        this.updateTextId = undefined
     }
 
     resolveWebviewView(
@@ -84,10 +88,23 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     }
 
     addText(text: string) {
-        this.view?.webview.postMessage({
-            type: 'addText',
-            text: `${text}${os.EOL}`,
-        })
+        this.pendingText = `${this.pendingText}${text}${os.EOL}`
+
+        if (this.updateTextId !== undefined) {
+            return
+        }
+
+        this.updateTextId = setTimeout(() => {
+            const toSend = this.pendingText
+
+            this.pendingText = ''
+            this.updateTextId = undefined
+
+            this.view?.webview.postMessage({
+                type: 'addText',
+                text: toSend,
+            })
+        }, 150)
     }
 
     getUserInput() {
