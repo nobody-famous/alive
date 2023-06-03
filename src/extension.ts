@@ -22,7 +22,7 @@ import { getHoverProvider } from './vscode/providers/Hover'
 // Could also get() the default setting at load time and remove the hyphen
 // but it seems like a good idea to take control of this configuration item
 // in order to be independent of any future changes to the default setting.
-const wordSeparators = "`|;:'\",()"
+const wordSeparators = '`|;:\'",()'
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
     log(`Activating extension`)
@@ -31,13 +31,23 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
 
-    const aliveConfig = vscode.workspace.getConfiguration('alive')
-    const editorConfig = vscode.workspace.getConfiguration('editor')
-    await editorConfig.update('formatOnType', true, false, true)
-    const lispConfig = vscode.workspace.getConfiguration('', { languageId: COMMON_LISP_ID });
-    await lispConfig.update("editor.wordSeparators", wordSeparators, false, true)
+    let lspHost: string | undefined = undefined
+    let lspPort: number | undefined = undefined
 
-    log(`Format On Type: ${editorConfig.get('formatOnType')}`)
+    if (Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
+        const aliveConfig = vscode.workspace.getConfiguration('alive')
+
+        lspHost = typeof aliveConfig?.lsp.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
+        lspPort = typeof aliveConfig?.lsp.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
+
+        const editorConfig = vscode.workspace.getConfiguration('editor')
+        await editorConfig.update('formatOnType', true, false, true)
+
+        const lispConfig = vscode.workspace.getConfiguration('', { languageId: COMMON_LISP_ID })
+        await lispConfig.update('editor.wordSeparators', wordSeparators, false, true)
+
+        log(`Format On Type: ${editorConfig.get('formatOnType')}`)
+    }
 
     const state: ExtensionState = {
         hoverText: '',
@@ -55,8 +65,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         lsp: new LSP(state),
     }
 
-    let lspHost = typeof aliveConfig.lsp.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
-    let lspPort = typeof aliveConfig.lsp.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
     const useRemoteServer = lspHost !== undefined && lspPort !== undefined
 
     if (useRemoteServer) {
@@ -79,6 +87,11 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     initUI(deps, state)
     initLSP(deps, state)
+
+    if (lspHost === undefined || lspPort === undefined) {
+        vscode.window.showErrorMessage(`Cannot connect to ${lspHost}:${lspPort}`)
+        return
+    }
 
     await deps.lsp.connect({ host: lspHost, port: lspPort })
     await initTreeViews(deps, history)
