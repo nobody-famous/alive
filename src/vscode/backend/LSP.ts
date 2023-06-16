@@ -26,6 +26,7 @@ type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undef
 
 export declare interface LSP {
     on(event: 'refreshPackages', listener: () => void): this
+    on(event: 'refreshAsdfSystems', listener: () => void): this
     on(event: 'refreshThreads', listener: () => void): this
     on(event: 'refreshInspectors', listener: () => void): this
     on(event: 'refreshDiagnostics', listener: () => void): this
@@ -237,6 +238,8 @@ export class LSP extends EventEmitter {
     }
 
     private emitRefresh() {
+        this.emit('refreshPackages')
+        this.emit('refreshAsdfSystems')
         this.emit('refreshThreads')
         this.emit('refreshInspectors')
         this.emit('refreshDiagnostics')
