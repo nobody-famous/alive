@@ -239,6 +239,8 @@ function convertSeverity(sev: string): vscode.DiagnosticSeverity {
         case 'style_warning':
         case 'warning':
             return vscode.DiagnosticSeverity.Warning
+        case 'info':
+            return vscode.DiagnosticSeverity.Information
         default:
             return vscode.DiagnosticSeverity.Error
     }
