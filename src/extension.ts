@@ -299,7 +299,9 @@ async function initPackagesTree(deps: ExtensionDeps) {
 
 async function diagnosticsRefresh(deps: ExtensionDeps, state: ExtensionState, editors: vscode.TextEditor[]) {
     for (const editor of editors) {
-        await updateDiagnostics(deps, state, editor)
+        if (editor.document.languageId === COMMON_LISP_ID) {
+            await updateDiagnostics(deps, state, editor)
+        }
     }
 }
 
