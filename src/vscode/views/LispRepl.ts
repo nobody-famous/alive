@@ -7,7 +7,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     private view?: vscode.WebviewView
     private ctx: vscode.ExtensionContext
     private package: string
-    private pendingText: string
+    private replText: string
     private updateTextId: NodeJS.Timeout | undefined
 
     constructor(ctx: vscode.ExtensionContext) {
@@ -15,8 +15,8 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
 
         this.ctx = ctx
         this.package = 'cl-user'
-        this.pendingText = ''
         this.updateTextId = undefined
+        this.replText = ''
     }
 
     resolveWebviewView(
@@ -55,6 +55,8 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     }
 
     clear() {
+        this.replText = ''
+
         this.view?.webview.postMessage({
             type: 'clear',
         })
@@ -63,6 +65,11 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     restoreState() {
         this.view?.webview.postMessage({
             type: 'restoreState',
+        })
+
+        this.view?.webview.postMessage({
+            type: 'setText',
+            text: this.replText,
         })
     }
 
@@ -88,21 +95,18 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     }
 
     addText(text: string) {
-        this.pendingText = `${this.pendingText}${text}${os.EOL}`
+        this.replText = `${this.replText}${text}${os.EOL}`
 
         if (this.updateTextId !== undefined) {
             return
         }
 
         this.updateTextId = setTimeout(() => {
-            const toSend = this.pendingText
-
-            this.pendingText = ''
             this.updateTextId = undefined
 
             this.view?.webview.postMessage({
-                type: 'addText',
-                text: toSend,
+                type: 'setText',
+                text: this.replText,
             })
         }, 150)
     }
@@ -117,7 +121,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         if (text.trim().length != 0) {
             this.emit('eval', this.package, text)
         } else {
-            this.addText("")
+            this.addText('')
         }
     }
 
