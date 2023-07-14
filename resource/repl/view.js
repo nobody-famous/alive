@@ -24,8 +24,8 @@ window.addEventListener('message', (event) => {
     const data = event.data
 
     switch (data.type) {
-        case 'addText':
-            addText(data.text)
+        case 'setText':
+            setText(data.text)
             break
         case 'setInput':
             setInput(data.text)
@@ -89,10 +89,10 @@ function setInput(text) {
     input.value = text
 }
 
-function addText(text) {
+function setText(text) {
     const textArea = document.getElementById('repl-text')
 
-    textArea.value += text
+    textArea.value = text
     textArea.scrollTop = textArea.scrollHeight
 
     saveState()
