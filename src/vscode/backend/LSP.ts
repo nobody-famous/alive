@@ -21,6 +21,7 @@ import {
 } from '../Types'
 import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
 import { log, toLog } from '../Log'
+import { EOL } from 'os'
 
 type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
 
@@ -330,6 +331,8 @@ export class LSP extends EventEmitter {
     }
 
     eval = async (text: string, pkgName: string, storeResult?: boolean): Promise<void> => {
+        this.emit('output', `${EOL}${text}`)
+
         const result = await this.doEval(text, pkgName, storeResult)
 
         if (result !== undefined) {
@@ -713,7 +716,7 @@ export class LSP extends EventEmitter {
 
             return { name, package: pkgName }
         } catch (err) {
-            log(`Failed to get symbol: ${err}`)
+            log(`Failed to get symbol: ${toLog(err)}`)
         }
     }
 
@@ -738,7 +741,7 @@ export class LSP extends EventEmitter {
 
             return strToMarkdown(respObj.value)
         } catch (err) {
-            log(`Hover failed: ${err}`)
+            log(`Hover failed: ${toLog(err)}`)
         }
 
         return ''
