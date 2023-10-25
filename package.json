@@ -425,6 +425,10 @@
                     "type": "string",
                     "default": ""
                 },
+                "alive.enableDiagnostics": {
+                    "type": "boolean",
+                    "default": true
+                },
                 "alive.lsp.downloadUrl": {
                     "type": "string",
                     "description": "Https url from which to download alive-lsp release",

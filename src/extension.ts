@@ -5,7 +5,14 @@ import { promises as fs } from 'fs'
 import { PackageNode, ExportNode } from './vscode/views/PackagesTree'
 import { ThreadNode } from './vscode/views/ThreadsTree'
 import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
-import { COMMON_LISP_ID, getWorkspaceOrFilePath, hasValidLangId, startCompileTimer, updateDiagnostics } from './vscode/Utils'
+import {
+    COMMON_LISP_ID,
+    diagnosticsEnabled,
+    getWorkspaceOrFilePath,
+    hasValidLangId,
+    startCompileTimer,
+    updateDiagnostics,
+} from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
 import { HistoryNode } from './vscode/views/ReplHistory'
@@ -37,8 +44,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     if (Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
         const aliveConfig = vscode.workspace.getConfiguration('alive')
 
-        lspHost = typeof aliveConfig?.lsp.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
-        lspPort = typeof aliveConfig?.lsp.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
+        lspHost = typeof aliveConfig.lsp?.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
+        lspPort = typeof aliveConfig.lsp?.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
 
         const editorConfig = vscode.workspace.getConfiguration('editor')
         await editorConfig.update('formatOnType', true, false, true)
@@ -259,7 +266,9 @@ function openTextDocument(deps: ExtensionDeps, state: ExtensionState, doc: vscod
         return
     }
 
-    startCompileTimer(deps, state)
+    if (diagnosticsEnabled()) {
+        startCompileTimer(deps, state)
+    }
 }
 
 async function initTreeViews(deps: ExtensionDeps, history: HistoryItem[]) {

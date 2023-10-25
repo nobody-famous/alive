@@ -150,6 +150,11 @@ export async function createFolder(folder: vscode.Uri | undefined) {
     await vscode.workspace.fs.createDirectory(folder)
 }
 
+export function diagnosticsEnabled() {
+    const aliveConfig = vscode.workspace.getConfiguration('alive')
+    return typeof aliveConfig.enableDiagnostics === 'boolean' ? aliveConfig.enableDiagnostics : true
+}
+
 export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
     if (state.compileTimeoutID !== undefined) {
         clearTimeout(state.compileTimeoutID)
