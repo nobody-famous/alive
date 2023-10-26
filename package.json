@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -424,6 +424,10 @@
                 "alive.lsp.install.path": {
                     "type": "string",
                     "default": ""
+                },
+                "alive.enableDiagnostics": {
+                    "type": "boolean",
+                    "default": true
                 },
                 "alive.lsp.downloadUrl": {
                     "type": "string",

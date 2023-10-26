@@ -19,7 +19,7 @@ import {
     Package,
     Thread,
 } from '../Types'
-import { COMMON_LISP_ID, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
+import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
 import { log, toLog } from '../Log'
 import { EOL } from 'os'
 
@@ -463,7 +463,9 @@ export class LSP extends EventEmitter {
 
         this.state.hoverText = ''
 
-        this.emit('startCompileTimer')
+        if (diagnosticsEnabled()) {
+            this.emit('startCompileTimer')
+        }
     }
 
     editorChanged = (editor?: vscode.TextEditor): void => {
@@ -471,7 +473,9 @@ export class LSP extends EventEmitter {
             return
         }
 
-        this.emit('startCompileTimer')
+        if (diagnosticsEnabled()) {
+            this.emit('startCompileTimer')
+        }
     }
 
     compileFile = async (path: string): Promise<void> => {

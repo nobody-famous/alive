@@ -69,6 +69,7 @@ This extension contributes the following settings:
 -   `alive.format.indentWidth`: Default indentation width
 -   `alive.lsp.remote.host`: Host of the LSP server to connect to
 -   `alive.lsp.remote.port`: Port of the LSP server to connect to
+-   `alive.enableDiagnostics`: If true (the default), automatically update diagnostics. If false, compile file or load file need to be used.
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
