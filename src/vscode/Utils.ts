@@ -11,7 +11,7 @@ import { log, toLog } from '../vscode/Log'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
-export const COMMON_LISP_ID = 'lisp'
+export const COMMON_LISP_ID = 'commonlisp'
 
 export const parseToInt = (data: unknown): number | undefined => {
     if (typeof data !== 'string' && typeof data !== 'number') {

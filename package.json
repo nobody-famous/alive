@@ -8,14 +8,13 @@
         "url": "https://github.com/nobody-famous/alive"
     },
     "engines": {
-        "vscode": "^1.50.0"
+        "vscode": "^1.80.0"
     },
     "categories": [
         "Programming Languages"
     ],
     "main": "./out/src/extension.js",
     "activationEvents": [
-        "onLanguage:lisp",
         "workspaceContains:**/*.lisp",
         "workspaceContains:**/*.asd",
         "workspaceContains:**/*.asdf"
@@ -30,7 +29,7 @@
     "contributes": {
         "languages": [
             {
-                "id": "lisp",
+                "id": "commonlisp",
                 "aliases": [
                     "Common Lisp",
                     "common-lisp"
@@ -41,12 +40,16 @@
                     ".asd",
                     ".asdf"
                 ],
+                "icon": {
+                    "light": "images/lisp-icon.png",
+                    "dark": "images/lisp-icon.png"
+                },
                 "configuration": "./language-configuration.json"
             }
         ],
         "grammars": [
             {
-                "language": "lisp",
+                "language": "commonlisp",
                 "scopeName": "source.lisp",
                 "path": "./lisp.tmLanguage.json"
             }
@@ -115,7 +118,7 @@
         ],
         "snippets": [
             {
-                "language": "lisp",
+                "language": "commonlisp",
                 "path": "./snippets.json"
             }
         ],
@@ -273,22 +276,22 @@
             "editor/context": [
                 {
                     "command": "alive.inlineEval",
-                    "when": "editorLangId == lisp",
+                    "when": "editorLangId == commonlisp",
                     "group": "x_commands@1"
                 },
                 {
                     "command": "alive.sendToRepl",
-                    "when": "editorLangId == lisp",
+                    "when": "editorLangId == commonlisp",
                     "group": "x_commands@2"
                 },
                 {
                     "command": "alive.loadFile",
-                    "when": "editorLangId == lisp",
+                    "when": "editorLangId == commonlisp",
                     "group": "x_commands@3"
                 },
                 {
                     "command": "alive.compileFile",
-                    "when": "editorLangId == lisp",
+                    "when": "editorLangId == commonlisp",
                     "group": "x_commands@4"
                 }
             ],
@@ -362,50 +365,50 @@
                 },
                 {
                     "command": "alive.loadFile",
-                    "when": "editorLangId == lisp"
+                    "when": "editorLangId == commonlisp"
                 },
                 {
                     "command": "alive.sendToRepl",
-                    "when": "editorLangId == lisp"
+                    "when": "editorLangId == commonlisp"
                 },
                 {
                     "command": "alive.inlineEval",
-                    "when": "editorLangId == lisp"
+                    "when": "editorLangId == commonlisp"
                 },
                 {
                     "command": "alive.clearInlineResults",
-                    "when": "editorLangId == lisp"
+                    "when": "editorLangId == commonlisp"
                 },
                 {
                     "command": "alive.selectSexpr",
-                    "when": "editorLangId == lisp"
+                    "when": "editorLangId == commonlisp"
                 }
             ]
         },
         "keybindings": [
             {
                 "command": "alive.loadFile",
-                "when": "editorLangId == lisp",
+                "when": "editorLangId == commonlisp",
                 "key": "alt+shift+l"
             },
             {
                 "command": "alive.inlineEval",
-                "when": "editorLangId == lisp",
+                "when": "editorLangId == commonlisp",
                 "key": "alt+shift+e"
             },
             {
                 "command": "alive.clearInlineResults",
-                "when": "editorLangId == lisp",
+                "when": "editorLangId == commonlisp",
                 "key": "alt+shift+c"
             },
             {
                 "command": "alive.selectSexpr",
-                "when": "editorLangId == lisp",
+                "when": "editorLangId == commonlisp",
                 "key": "alt+shift+up"
             },
             {
                 "command": "alive.sendToRepl",
-                "when": "editorLangId == lisp",
+                "when": "editorLangId == commonlisp",
                 "key": "alt+shift+enter"
             },
             {
