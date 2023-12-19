@@ -135,7 +135,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
                     <link rel="stylesheet" href="${this.view?.webview.asWebviewUri(cssPath)}">
                 </head>
 
-                <body>
+                <body onfocus="setFocus()">
                     <textarea id="repl-text" class="repl-text" readonly></textarea>
                     <div class="repl-input-box">
                         <div class="repl-input-text-box" id="repl-user-input-box">

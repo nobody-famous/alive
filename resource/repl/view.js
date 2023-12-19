@@ -161,3 +161,8 @@ function restoreState() {
         pkg.innerHTML = state.pkg
     }
 }
+
+function setFocus() {
+    const input = document.getElementById('repl-input-text')
+    input?.focus()
+}
