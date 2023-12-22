@@ -12,6 +12,27 @@
         },
         {
             "type": "npm",
+            "script": "test",
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "label": "Test"
+        },
+        {
+            "label": "One Test",
+            "type": "shell",
+            "command": "npx",
+            "args": [
+                "mocha",
+                "-g",
+                "isPosition"
+            ],
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "type": "npm",
             "script": "watch",
             "problemMatcher": [
                 "$tsc"
