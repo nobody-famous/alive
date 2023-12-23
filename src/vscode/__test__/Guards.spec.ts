@@ -1,48 +1,74 @@
 import { strictEqual } from 'assert'
-import { isFiniteNumber, isObject, isPosition, isSourceLocation, isStackTrace, isString } from '../Guards'
+import {
+    isFiniteNumber,
+    isInspectResult,
+    isObject,
+    isPosition,
+    isRestartInfo,
+    isSourceLocation,
+    isStackTrace,
+    isString,
+} from '../Guards'
 
 describe('Type guard tests', () => {
     it('isString', () => {
-        strictEqual(true, isString(''))
-        strictEqual(true, isString('foo'))
-        strictEqual(false, isString(5))
-        strictEqual(false, isString({ foo: 'bar' }))
+        strictEqual(isString(''), true)
+        strictEqual(isString('foo'), true)
+        strictEqual(isString(5), false)
+        strictEqual(isString({ foo: 'bar' }), false)
     })
 
     it('isFiniteNumber', () => {
-        strictEqual(true, isFiniteNumber(5))
-        strictEqual(true, isFiniteNumber(1e9))
-        strictEqual(false, isFiniteNumber(NaN))
-        strictEqual(false, isFiniteNumber(1e1000))
-        strictEqual(false, isFiniteNumber('foo'))
+        strictEqual(isFiniteNumber(5), true)
+        strictEqual(isFiniteNumber(1e9), true)
+        strictEqual(isFiniteNumber(NaN), false)
+        strictEqual(isFiniteNumber(1e1000), false)
+        strictEqual(isFiniteNumber('foo'), false)
     })
 
     it('isObject', () => {
-        strictEqual(true, isObject({}))
-        strictEqual(true, isObject({ foo: 'bar' }))
-        strictEqual(false, isObject(NaN))
-        strictEqual(false, isObject(1e1000))
-        strictEqual(false, isObject('foo'))
+        strictEqual(isObject({}), true)
+        strictEqual(isObject({ foo: 'bar' }), true)
+        strictEqual(isObject(NaN), false)
+        strictEqual(isObject(1e1000), false)
+        strictEqual(isObject('foo'), false)
     })
 
     it('isPosition', () => {
-        strictEqual(true, isPosition({ line: 5, character: 10 }))
-        strictEqual(false, isPosition({ line: 'foo', character: 10 }))
-        strictEqual(false, isPosition({ line: 5, character: 'bar' }))
-        strictEqual(false, isPosition(5))
+        strictEqual(isPosition({ line: 5, character: 10 }), true)
+        strictEqual(isPosition({ line: 'foo', character: 10 }), false)
+        strictEqual(isPosition({ line: 5, character: 'bar' }), false)
+        strictEqual(isPosition(5), false)
     })
 
     it('isSourceLocation', () => {
-        strictEqual(true, isSourceLocation({ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }))
-        strictEqual(false, isSourceLocation({ function: 'foo', file: 'bar' }))
-        strictEqual(false, isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } }))
-        strictEqual(false, isSourceLocation({ file: 'bar', position: { line: 5, character: 10 } }))
+        strictEqual(isSourceLocation({ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }), true)
+        strictEqual(isSourceLocation({ function: 'foo', file: 'bar' }), false)
+        strictEqual(isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } }), false)
+        strictEqual(isSourceLocation({ file: 'bar', position: { line: 5, character: 10 } }), false)
     })
 
     it('isStackTrace', () => {
-        strictEqual(true, isStackTrace([{ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }]))
-        strictEqual(true, isStackTrace([]))
-        strictEqual(false, isStackTrace([{ function: 'foo', file: 'bar' }]))
-        strictEqual(false, isStackTrace({ file: 'bar', position: { line: 5, character: 10 } }))
+        strictEqual(isStackTrace([{ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }]), true)
+        strictEqual(isStackTrace([]), true)
+        strictEqual(isStackTrace([{ function: 'foo', file: 'bar' }]), false)
+        strictEqual(isStackTrace({ file: 'bar', position: { line: 5, character: 10 } }), false)
+    })
+
+    it('isRestartInfo', () => {
+        strictEqual(isRestartInfo({ name: 'foo', description: 'bar' }), true)
+        strictEqual(isRestartInfo({ name: 'foo' }), false)
+        strictEqual(isRestartInfo({ description: 'bar' }), false)
+        strictEqual(isRestartInfo(5), false)
+    })
+
+    it('isInspectResult', () => {
+        strictEqual(isInspectResult({ id: 5, resultType: 'foo', result: 'bar' }), true)
+        strictEqual(isInspectResult({ id: '5.9', resultType: 'foo', result: 'bar' }), false)
+        strictEqual(isInspectResult({ id: 5.9, resultType: 'foo', result: 'bar' }), false)
+        strictEqual(isInspectResult({ id: 5, resultType: 10, result: 'bar' }), false)
+        strictEqual(isInspectResult({ id: 5, result: 'bar' }), false)
+        strictEqual(isInspectResult({ id: 5, resultType: 'foo' }), false)
+        strictEqual(isInspectResult({ resultType: 'foo', result: 'bar' }), false)
     })
 })

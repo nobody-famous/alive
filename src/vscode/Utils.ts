@@ -18,9 +18,9 @@ export const parseToInt = (data: unknown): number | undefined => {
         return
     }
 
-    const int = typeof data === 'string' ? parseInt(data) : data
+    const int = typeof data === 'string' ? Number(data) : data
 
-    return Number.isFinite(int) ? int : undefined
+    return Number.isInteger(int) ? int : undefined
 }
 
 export async function getWorkspaceOrFilePath(): Promise<string> {

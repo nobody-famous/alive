@@ -19,14 +19,14 @@
             "label": "Test"
         },
         {
-            "label": "Run One Test",
+            "label": "One Test",
             "type": "shell",
             "command": "npx",
             "args": [
                 "jest",
                 "src/vscode/__test__/Guards.spec.ts",
                 "-t",
-                "Stack"
+                "inspect"
             ],
             "problemMatcher": [
                 "$tsc"

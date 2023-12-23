@@ -27,32 +27,9 @@ export function isStackTrace(item: unknown): item is SourceLocation[] {
 }
 
 export function isRestartInfo(item: unknown): item is RestartInfo {
-    if (typeof item !== 'object' || item === undefined) {
-        return false
-    }
-
-    const itemObj = item as { [index: string]: unknown }
-
-    if (typeof itemObj.name !== 'string' || typeof itemObj.description !== 'string') {
-        return false
-    }
-
-    return true
+    return isObject(item) && isString(item.name) && isString(item.description)
 }
 
 export function isInspectResult(data: unknown): data is InspectResult {
-    if (typeof data !== 'object' || data === null) {
-        return false
-    }
-
-    const obj = data as { [index: string]: unknown }
-    const id = parseToInt(obj.id)
-    const resultType = obj.resultType
-    const result = obj.result
-
-    if (!Number.isFinite(id) || typeof result === undefined || typeof resultType !== 'string') {
-        return false
-    }
-
-    return true
+    return isObject(data) && Number.isFinite(parseToInt(data.id)) && data.result !== undefined && isString(data.resultType)
 }
