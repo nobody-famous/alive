@@ -3,10 +3,9 @@ export const languages = {
 }
 
 export const window = {
-    createOutputChannel: jest.fn(),
+    createOutputChannel: () => ({ appendLine: () => {} }),
 }
 
-export const vscode = {
-    languages,
-    window,
+export const workspace = {
+    workspaceFolders: [],
 }

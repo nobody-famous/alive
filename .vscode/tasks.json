@@ -24,9 +24,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/Guards.spec.ts",
+                "src/vscode/__test__/Utils.spec.ts",
                 "-t",
-                "inspect"
+                "path"
             ],
             "problemMatcher": [
                 "$tsc"

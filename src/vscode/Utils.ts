@@ -8,6 +8,7 @@ import { homedir } from 'os'
 import { refreshPackages } from './commands'
 import { CompileFileNote, ExtensionDeps, ExtensionState } from './Types'
 import { log, toLog } from '../vscode/Log'
+import { isString } from './Guards'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
@@ -29,7 +30,8 @@ export async function getWorkspaceOrFilePath(): Promise<string> {
     if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
         log(`No workspace folders`)
 
-        const outPath = path.dirname(vscode.window.activeTextEditor?.document.fileName || homedir())
+        const file = vscode.window.activeTextEditor?.document.fileName
+        const outPath = isString(file) ? path.dirname(file) : homedir()
 
         log(`Using ${outPath}`)
 
