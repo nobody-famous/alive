@@ -1,5 +1,6 @@
 import { Position } from 'vscode'
-import { RestartInfo, SourceLocation } from './Types'
+import { InspectResult, RestartInfo, SourceLocation } from './Types'
+import { parseToInt } from './Utils'
 
 export function isString(data: unknown): data is string {
     return typeof data === 'string'
@@ -22,19 +23,7 @@ export function isSourceLocation(item: unknown): item is SourceLocation {
 }
 
 export function isStackTrace(item: unknown): item is SourceLocation[] {
-    if (!Array.isArray(item)) {
-        return false
-    }
-
-    const itemArray = item as unknown[]
-
-    for (const item of itemArray) {
-        if (!isSourceLocation(item)) {
-            return false
-        }
-    }
-
-    return true
+    return Array.isArray(item) && item.every(isSourceLocation)
 }
 
 export function isRestartInfo(item: unknown): item is RestartInfo {
@@ -45,6 +34,23 @@ export function isRestartInfo(item: unknown): item is RestartInfo {
     const itemObj = item as { [index: string]: unknown }
 
     if (typeof itemObj.name !== 'string' || typeof itemObj.description !== 'string') {
+        return false
+    }
+
+    return true
+}
+
+export function isInspectResult(data: unknown): data is InspectResult {
+    if (typeof data !== 'object' || data === null) {
+        return false
+    }
+
+    const obj = data as { [index: string]: unknown }
+    const id = parseToInt(obj.id)
+    const resultType = obj.resultType
+    const result = obj.result
+
+    if (!Number.isFinite(id) || typeof result === undefined || typeof resultType !== 'string') {
         return false
     }
 

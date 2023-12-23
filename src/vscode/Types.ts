@@ -99,23 +99,6 @@ export interface InspectResult {
     result: unknown
 }
 
-export function isInspectResult(data: unknown): data is InspectResult {
-    if (typeof data !== 'object' || data === null) {
-        return false
-    }
-
-    const obj = data as { [index: string]: unknown }
-    const id = parseToInt(obj.id)
-    const resultType = obj.resultType
-    const result = obj.result
-
-    if (!Number.isFinite(id) || typeof result === undefined || typeof resultType !== 'string') {
-        return false
-    }
-
-    return true
-}
-
 export interface InspectInfo extends InspectResult {
     text: string
     package: string

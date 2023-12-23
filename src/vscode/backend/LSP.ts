@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { isRestartInfo, isStackTrace } from '../Guards'
+import { isInspectResult, isRestartInfo, isStackTrace } from '../Guards'
 import {
     CompileFileNote,
     CompileFileResp,
@@ -13,7 +13,6 @@ import {
     HostPort,
     InspectInfo,
     InspectResult,
-    isInspectResult,
     LispSymbol,
     MacroInfo,
     Package,

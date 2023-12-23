@@ -1,5 +1,5 @@
 import { strictEqual } from 'assert'
-import { isFiniteNumber, isObject, isPosition, isSourceLocation, isString } from '../Guards'
+import { isFiniteNumber, isObject, isPosition, isSourceLocation, isStackTrace, isString } from '../Guards'
 
 describe('Type guard tests', () => {
     it('isString', () => {
@@ -37,5 +37,12 @@ describe('Type guard tests', () => {
         strictEqual(false, isSourceLocation({ function: 'foo', file: 'bar' }))
         strictEqual(false, isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } }))
         strictEqual(false, isSourceLocation({ file: 'bar', position: { line: 5, character: 10 } }))
+    })
+
+    it('isStackTrace', () => {
+        strictEqual(true, isStackTrace([{ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }]))
+        strictEqual(true, isStackTrace([]))
+        strictEqual(false, isStackTrace([{ function: 'foo', file: 'bar' }]))
+        strictEqual(false, isStackTrace({ file: 'bar', position: { line: 5, character: 10 } }))
     })
 })
