@@ -12,6 +12,11 @@ import { isString } from './Guards'
 
 const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
+type VscodeUri = Pick<vscode.Uri, 'fsPath'>
+interface VscodeFolder {
+    uri: VscodeUri
+}
+
 export const COMMON_LISP_ID = 'commonlisp'
 
 export const parseToInt = (data: unknown): number | undefined => {
@@ -48,31 +53,34 @@ export async function getWorkspaceOrFilePath(): Promise<string> {
     return folder.uri.fsPath
 }
 
-async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder> {
+export async function dirExists(dir: string): Promise<boolean> {
+    try {
+        await fs.access(dir)
+
+        return true
+    } catch (err) {
+        return false
+    }
+}
+
+export async function findSubFolders(folders: readonly VscodeFolder[], sub: string[]): Promise<VscodeFolder[]> {
+    const subs = []
+
+    for (const folder of folders) {
+        const subPath = path.join(folder.uri.fsPath, ...sub)
+        if (await dirExists(subPath)) {
+            subs.push(folder)
+        }
+    }
+
+    return subs
+}
+
+export async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder> {
     try {
         log(`Pick workspace folder`)
 
-        const dirExists = async (dir: string): Promise<boolean> => {
-            try {
-                await fs.access(dir)
-
-                return true
-            } catch (err) {
-                return false
-            }
-        }
-
-        const haveVscodeFolder: vscode.WorkspaceFolder[] = []
-
-        for (const folder of folders) {
-            const folderPath = folder.uri.fsPath
-            const vscodePath = path.join(folderPath, '.vscode')
-            const exists = await dirExists(vscodePath)
-
-            if (exists) {
-                haveVscodeFolder.push(folder)
-            }
-        }
+        const haveVscodeFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode'])
 
         log(`Have .vscode folder: ${toLog(haveVscodeFolder)}`)
 
@@ -82,17 +90,7 @@ async function pickWorkspaceFolder(folders: readonly vscode.WorkspaceFolder[]): 
             return folders[0]
         }
 
-        const haveAliveFolder: vscode.WorkspaceFolder[] = []
-
-        for (const folder of haveVscodeFolder) {
-            const folderPath = folder.uri.fsPath
-            const alivePath = path.join(folderPath, '.vscode', 'alive')
-            const exists = await dirExists(alivePath)
-
-            if (exists) {
-                haveAliveFolder.push(folder)
-            }
-        }
+        const haveAliveFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode', 'alive'])
 
         log(`Have .vscode/alive folder: ${toLog(haveAliveFolder)}`)
 
