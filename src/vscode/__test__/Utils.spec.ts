@@ -5,6 +5,7 @@ import {
     convertSeverity,
     dirExists,
     findSubFolders,
+    getFolderPath,
     getWorkspaceOrFilePath,
     parseToInt,
     updateCompilerDiagnostics,
@@ -24,7 +25,7 @@ jest.mock('vscode', () => ({
         Information: 2,
         Hint: 3,
     },
-    Uri: { file: () => {} },
+    Uri: { file: jest.fn() },
     Position: class {
         constructor() {}
     },
@@ -124,6 +125,8 @@ describe('Utils Tests', () => {
         it('One note', () => {
             const setFn = jest.fn()
 
+            vscodeMock.Uri.file.mockImplementationOnce((name: string) => name)
+
             updateCompilerDiagnostics({ set: setFn }, { foo: 'bar' }, [
                 {
                     message: 'Hello',
@@ -131,7 +134,13 @@ describe('Utils Tests', () => {
                     location: { file: 'a', start: new Position(1, 2), end: new Position(3, 4) },
                 },
             ])
-            expect(setFn).toHaveBeenCalled()
+
+            expect(vscodeMock.Uri.file).toHaveBeenCalledWith('a')
+            expect(setFn).toHaveBeenCalledWith('a', expect.anything())
         })
+    })
+
+    it('getFolderPath', () => {
+        expect(getFolderPath({ workspacePath: 'foo' }, 'bar')).toBe(path.join('foo', 'bar'))
     })
 })

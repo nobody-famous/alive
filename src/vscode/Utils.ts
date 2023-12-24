@@ -143,11 +143,7 @@ export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) =
     }
 }
 
-export async function createFolder(folder: vscode.Uri | undefined) {
-    if (folder === undefined) {
-        throw new Error('No folder to create')
-    }
-
+export async function createFolder(folder: vscode.Uri) {
     await vscode.workspace.fs.createDirectory(folder)
 }
 
@@ -190,18 +186,18 @@ export async function updateDiagnostics(deps: ExtensionDeps, state: ExtensionSta
     }
 }
 
-export function getFolderPath(state: ExtensionState, subdir: string) {
+export function getFolderPath(state: Pick<ExtensionState, 'workspacePath'>, subdir: string) {
     const dir = state.workspacePath
     return path.join(dir, subdir)
 }
 
-async function createTempFile(state: ExtensionState, doc: vscode.TextDocument) {
+async function createTempFile(state: Pick<ExtensionState, 'workspacePath'>, doc: vscode.TextDocument) {
     const subdir = path.join('.vscode', 'alive', 'fasl')
 
     return await createFile(state, subdir, 'tmp.lisp', doc.getText())
 }
 
-async function createFile(state: ExtensionState, subdir: string, name: string, content: string) {
+async function createFile(state: Pick<ExtensionState, 'workspacePath'>, subdir: string, name: string, content: string) {
     const folder = getFolderPath(state, subdir)
     const fileName = path.join(folder, name)
 
