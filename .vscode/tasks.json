@@ -26,7 +26,7 @@
                 "jest",
                 "src/vscode/__test__/Utils.spec.ts",
                 "-t",
-                "subfolders"
+                "convert"
             ],
             "problemMatcher": [
                 "$tsc"

@@ -234,7 +234,7 @@ async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, n
     }
 }
 
-function convertSeverity(sev: string): vscode.DiagnosticSeverity {
+export function convertSeverity(sev: string): vscode.DiagnosticSeverity {
     switch (sev) {
         case 'error':
         case 'read_error':

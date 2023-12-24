@@ -1,7 +1,7 @@
 import * as os from 'os'
 import * as path from 'path'
 
-import { dirExists, findSubFolders, getWorkspaceOrFilePath, parseToInt } from '../Utils'
+import { convertSeverity, dirExists, findSubFolders, getWorkspaceOrFilePath, parseToInt } from '../Utils'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
@@ -10,6 +10,12 @@ jest.mock('vscode', () => ({
         createDiagnosticCollection: jest.fn(),
     },
     workspace: { workspaceFolders: [] },
+    DiagnosticSeverity: {
+        Error: 0,
+        Warning: 1,
+        Information: 2,
+        Hint: 3,
+    },
 }))
 
 const fsMock = jest.requireMock('fs')
@@ -79,7 +85,13 @@ describe('Utils Tests', () => {
         })
     })
 
-    describe('pickWorkspaceFolder', () => {
-        it('checking', () => {})
+    it('convertSeverity', () => {
+        expect(convertSeverity('error')).toBe(vscodeMock.DiagnosticSeverity.Error)
+        expect(convertSeverity('read_error')).toBe(vscodeMock.DiagnosticSeverity.Error)
+        expect(convertSeverity('note')).toBe(vscodeMock.DiagnosticSeverity.Warning)
+        expect(convertSeverity('redefinition')).toBe(vscodeMock.DiagnosticSeverity.Warning)
+        expect(convertSeverity('style_warning')).toBe(vscodeMock.DiagnosticSeverity.Warning)
+        expect(convertSeverity('info')).toBe(vscodeMock.DiagnosticSeverity.Information)
+        expect(convertSeverity('foo')).toBe(vscodeMock.DiagnosticSeverity.Error)
     })
 })
