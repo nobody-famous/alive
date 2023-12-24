@@ -1,5 +1,5 @@
 import * as os from 'os'
-import * as fs from 'fs'
+import * as path from 'path'
 
 import { strictEqual } from 'assert'
 import { dirExists, findSubFolders, getWorkspaceOrFilePath, parseToInt } from '../Utils'
@@ -53,8 +53,8 @@ describe('Utils Tests', () => {
 
     describe('findSubFolders', () => {
         it('One level', async () => {
-            fsMock.promises.access.mockImplementation((path: string) => {
-                if (path !== 'foo/.vscode') {
+            fsMock.promises.access.mockImplementation((file: string) => {
+                if (file !== path.join('foo', '.vscode')) {
                     throw new Error('Failed, as requested')
                 }
             })
@@ -66,8 +66,8 @@ describe('Utils Tests', () => {
         })
 
         it('Two levels', async () => {
-            fsMock.promises.access.mockImplementation((path: string) => {
-                if (path !== 'foo/.vscode/alive') {
+            fsMock.promises.access.mockImplementation((file: string) => {
+                if (file !== path.join('foo', '.vscode', 'alive')) {
                     throw new Error('Failed, as requested')
                 }
             })
