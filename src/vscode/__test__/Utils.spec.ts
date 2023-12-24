@@ -1,7 +1,6 @@
 import * as os from 'os'
 import * as path from 'path'
 
-import { strictEqual } from 'assert'
 import { dirExists, findSubFolders, getWorkspaceOrFilePath, parseToInt } from '../Utils'
 
 const vscodeMock = jest.requireMock('vscode')
@@ -21,22 +20,22 @@ jest.mock('os', () => ({
 
 describe('Utils Tests', () => {
     it('parseToInt', () => {
-        strictEqual(parseToInt(5), 5)
-        strictEqual(parseToInt('5'), 5)
-        strictEqual(parseToInt('5.9'), undefined)
-        strictEqual(parseToInt(5.9), undefined)
-        strictEqual(parseToInt('foo'), undefined)
+        expect(parseToInt(5)).toBe(5)
+        expect(parseToInt('5')).toBe(5)
+        expect(parseToInt('5.9')).toBe(undefined)
+        expect(parseToInt(5.9)).toBe(undefined)
+        expect(parseToInt('foo')).toBe(undefined)
     })
 
     describe('getWorkspaceOrFilePath', () => {
         it('No folders', async () => {
             vscodeMock.workspace.workspaceFolders = []
-            strictEqual(await getWorkspaceOrFilePath(), '/test/home/dir')
+            expect(await getWorkspaceOrFilePath()).toBe('/test/home/dir')
         })
 
         it('Has folders', async () => {
             vscodeMock.workspace.workspaceFolders = [{ uri: { fsPath: 'foo' } }]
-            strictEqual(await getWorkspaceOrFilePath(), 'foo')
+            expect(await getWorkspaceOrFilePath()).toBe('foo')
         })
     })
 
@@ -47,8 +46,8 @@ describe('Utils Tests', () => {
             }
         })
 
-        strictEqual(await dirExists('.'), true)
-        strictEqual(await dirExists(os.homedir()), false)
+        expect(await dirExists('.')).toBe(true)
+        expect(await dirExists(os.homedir())).toBe(false)
     })
 
     describe('findSubFolders', () => {

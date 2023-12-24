@@ -1,4 +1,3 @@
-import { strictEqual } from 'assert'
 import {
     isFiniteNumber,
     isInspectResult,
@@ -12,63 +11,63 @@ import {
 
 describe('Type guard tests', () => {
     it('isString', () => {
-        strictEqual(isString(''), true)
-        strictEqual(isString('foo'), true)
-        strictEqual(isString(5), false)
-        strictEqual(isString({ foo: 'bar' }), false)
+        expect(isString('')).toBe(true)
+        expect(isString('foo')).toBe(true)
+        expect(isString(5)).toBe(false)
+        expect(isString({ foo: 'bar' })).toBe(false)
     })
 
     it('isFiniteNumber', () => {
-        strictEqual(isFiniteNumber(5), true)
-        strictEqual(isFiniteNumber(1e9), true)
-        strictEqual(isFiniteNumber(NaN), false)
-        strictEqual(isFiniteNumber(1e1000), false)
-        strictEqual(isFiniteNumber('foo'), false)
+        expect(isFiniteNumber(5)).toBe(true)
+        expect(isFiniteNumber(1e9)).toBe(true)
+        expect(isFiniteNumber(NaN)).toBe(false)
+        expect(isFiniteNumber(1e1000)).toBe(false)
+        expect(isFiniteNumber('foo')).toBe(false)
     })
 
     it('isObject', () => {
-        strictEqual(isObject({}), true)
-        strictEqual(isObject({ foo: 'bar' }), true)
-        strictEqual(isObject(NaN), false)
-        strictEqual(isObject(1e1000), false)
-        strictEqual(isObject('foo'), false)
+        expect(isObject({})).toBe(true)
+        expect(isObject({ foo: 'bar' })).toBe(true)
+        expect(isObject(NaN)).toBe(false)
+        expect(isObject(1e1000)).toBe(false)
+        expect(isObject('foo')).toBe(false)
     })
 
     it('isPosition', () => {
-        strictEqual(isPosition({ line: 5, character: 10 }), true)
-        strictEqual(isPosition({ line: 'foo', character: 10 }), false)
-        strictEqual(isPosition({ line: 5, character: 'bar' }), false)
-        strictEqual(isPosition(5), false)
+        expect(isPosition({ line: 5, character: 10 })).toBe(true)
+        expect(isPosition({ line: 'foo', character: 10 })).toBe(false)
+        expect(isPosition({ line: 5, character: 'bar' })).toBe(false)
+        expect(isPosition(5)).toBe(false)
     })
 
     it('isSourceLocation', () => {
-        strictEqual(isSourceLocation({ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }), true)
-        strictEqual(isSourceLocation({ function: 'foo', file: 'bar' }), false)
-        strictEqual(isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } }), false)
-        strictEqual(isSourceLocation({ file: 'bar', position: { line: 5, character: 10 } }), false)
+        expect(isSourceLocation({ function: 'foo', file: 'bar', position: { line: 5, character: 10 } })).toBe(true)
+        expect(isSourceLocation({ function: 'foo', file: 'bar' })).toBe(false)
+        expect(isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } })).toBe(false)
+        expect(isSourceLocation({ file: 'bar', position: { line: 5, character: 10 } })).toBe(false)
     })
 
     it('isStackTrace', () => {
-        strictEqual(isStackTrace([{ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }]), true)
-        strictEqual(isStackTrace([]), true)
-        strictEqual(isStackTrace([{ function: 'foo', file: 'bar' }]), false)
-        strictEqual(isStackTrace({ file: 'bar', position: { line: 5, character: 10 } }), false)
+        expect(isStackTrace([{ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }])).toBe(true)
+        expect(isStackTrace([])).toBe(true)
+        expect(isStackTrace([{ function: 'foo', file: 'bar' }])).toBe(false)
+        expect(isStackTrace({ file: 'bar', position: { line: 5, character: 10 } })).toBe(false)
     })
 
     it('isRestartInfo', () => {
-        strictEqual(isRestartInfo({ name: 'foo', description: 'bar' }), true)
-        strictEqual(isRestartInfo({ name: 'foo' }), false)
-        strictEqual(isRestartInfo({ description: 'bar' }), false)
-        strictEqual(isRestartInfo(5), false)
+        expect(isRestartInfo({ name: 'foo', description: 'bar' })).toBe(true)
+        expect(isRestartInfo({ name: 'foo' })).toBe(false)
+        expect(isRestartInfo({ description: 'bar' })).toBe(false)
+        expect(isRestartInfo(5)).toBe(false)
     })
 
     it('isInspectResult', () => {
-        strictEqual(isInspectResult({ id: 5, resultType: 'foo', result: 'bar' }), true)
-        strictEqual(isInspectResult({ id: '5.9', resultType: 'foo', result: 'bar' }), false)
-        strictEqual(isInspectResult({ id: 5.9, resultType: 'foo', result: 'bar' }), false)
-        strictEqual(isInspectResult({ id: 5, resultType: 10, result: 'bar' }), false)
-        strictEqual(isInspectResult({ id: 5, result: 'bar' }), false)
-        strictEqual(isInspectResult({ id: 5, resultType: 'foo' }), false)
-        strictEqual(isInspectResult({ resultType: 'foo', result: 'bar' }), false)
+        expect(isInspectResult({ id: 5, resultType: 'foo', result: 'bar' })).toBe(true)
+        expect(isInspectResult({ id: '5.9', resultType: 'foo', result: 'bar' })).toBe(false)
+        expect(isInspectResult({ id: 5.9, resultType: 'foo', result: 'bar' })).toBe(false)
+        expect(isInspectResult({ id: 5, resultType: 10, result: 'bar' })).toBe(false)
+        expect(isInspectResult({ id: 5, result: 'bar' })).toBe(false)
+        expect(isInspectResult({ id: 5, resultType: 'foo' })).toBe(false)
+        expect(isInspectResult({ resultType: 'foo', result: 'bar' })).toBe(false)
     })
 })
