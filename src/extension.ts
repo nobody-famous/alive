@@ -57,6 +57,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     }
 
     const state: ExtensionState = {
+        diagnostics: vscode.languages.createDiagnosticCollection('Compiler Diagnostics'),
         hoverText: '',
         compileRunning: false,
         compileTimeoutID: undefined,

@@ -1,13 +1,21 @@
 import * as os from 'os'
 import * as path from 'path'
 
-import { convertSeverity, dirExists, findSubFolders, getWorkspaceOrFilePath, parseToInt } from '../Utils'
+import {
+    convertSeverity,
+    dirExists,
+    findSubFolders,
+    getWorkspaceOrFilePath,
+    parseToInt,
+    updateCompilerDiagnostics,
+} from '../Utils'
+import { Position } from 'vscode'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
     window: { createOutputChannel: () => ({ appendLine: () => {} }) },
     languages: {
-        createDiagnosticCollection: jest.fn(),
+        createDiagnosticCollection: jest.fn().mockImplementationOnce(() => 5),
     },
     workspace: { workspaceFolders: [] },
     DiagnosticSeverity: {
@@ -15,6 +23,16 @@ jest.mock('vscode', () => ({
         Warning: 1,
         Information: 2,
         Hint: 3,
+    },
+    Uri: { file: () => {} },
+    Position: class {
+        constructor() {}
+    },
+    Range: class {
+        constructor() {}
+    },
+    Diagnostic: class {
+        constructor() {}
     },
 }))
 
@@ -93,5 +111,27 @@ describe('Utils Tests', () => {
         expect(convertSeverity('style_warning')).toBe(vscodeMock.DiagnosticSeverity.Warning)
         expect(convertSeverity('info')).toBe(vscodeMock.DiagnosticSeverity.Information)
         expect(convertSeverity('foo')).toBe(vscodeMock.DiagnosticSeverity.Error)
+    })
+
+    describe('updateCompilerDiagnostics', () => {
+        it('No notes', () => {
+            const setFn = jest.fn()
+
+            updateCompilerDiagnostics({ set: setFn }, { foo: 'bar' }, [])
+            expect(setFn).not.toHaveBeenCalled()
+        })
+
+        it('One note', () => {
+            const setFn = jest.fn()
+
+            updateCompilerDiagnostics({ set: setFn }, { foo: 'bar' }, [
+                {
+                    message: 'Hello',
+                    severity: 'info',
+                    location: { file: 'a', start: new Position(1, 2), end: new Position(3, 4) },
+                },
+            ])
+            expect(setFn).toHaveBeenCalled()
+        })
     })
 })

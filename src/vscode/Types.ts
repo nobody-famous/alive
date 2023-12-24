@@ -1,8 +1,7 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
-import { LSP } from './backend/LSP'
 import { UI } from './UI'
-import { parseToInt } from './Utils'
+import { LSP } from './backend/LSP'
 
 export interface ExtensionDeps {
     ui: UI
@@ -11,6 +10,7 @@ export interface ExtensionDeps {
 
 export interface ExtensionState {
     ctx: vscode.ExtensionContext
+    diagnostics: vscode.DiagnosticCollection
     lspInstallPath?: string
     child?: ChildProcess
     hoverText: string

@@ -10,8 +10,9 @@ import { CompileFileNote, ExtensionDeps, ExtensionState } from './Types'
 import { log, toLog } from '../vscode/Log'
 import { isString } from './Guards'
 
-const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
+// const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
+type VscodeDiags = Pick<vscode.DiagnosticCollection, 'set'>
 type VscodeUri = Pick<vscode.Uri, 'fsPath'>
 interface VscodeFolder {
     uri: VscodeUri
@@ -181,9 +182,9 @@ export async function updateDiagnostics(deps: ExtensionDeps, state: ExtensionSta
         const fileMap: { [index: string]: string } = {}
 
         fileMap[toCompile] = editor.document.fileName
-        compilerDiagnostics.set(vscode.Uri.file(editor.document.fileName), [])
+        state.diagnostics.set(vscode.Uri.file(editor.document.fileName), [])
 
-        updateCompilerDiagnostics(fileMap, resp.notes)
+        updateCompilerDiagnostics(state.diagnostics, fileMap, resp.notes)
     } finally {
         state.compileRunning = false
     }
@@ -210,14 +211,17 @@ async function createFile(state: ExtensionState, subdir: string, name: string, c
     return fileName
 }
 
-async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, notes: CompileFileNote[]) {
+export async function updateCompilerDiagnostics(
+    diagnostics: VscodeDiags,
+    fileMap: { [index: string]: string },
+    notes: CompileFileNote[]
+) {
     const diags: { [index: string]: vscode.Diagnostic[] } = {}
 
     for (const note of notes) {
         const notesFile = note.location.file.replace(/\//g, path.sep)
         const fileName = fileMap[notesFile] ?? note.location.file
 
-        const doc = await vscode.workspace.openTextDocument(fileName)
         const startPos = note.location.start
         const endPos = note.location.end
 
@@ -230,7 +234,7 @@ async function updateCompilerDiagnostics(fileMap: { [index: string]: string }, n
     }
 
     for (const [file, arr] of Object.entries(diags)) {
-        compilerDiagnostics.set(vscode.Uri.file(file), arr)
+        diagnostics.set(vscode.Uri.file(file), arr)
     }
 }
 

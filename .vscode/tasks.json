@@ -26,7 +26,7 @@
                 "jest",
                 "src/vscode/__test__/Utils.spec.ts",
                 "-t",
-                "convert"
+                "diag"
             ],
             "problemMatcher": [
                 "$tsc"
