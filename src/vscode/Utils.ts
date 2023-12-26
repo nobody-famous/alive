@@ -191,13 +191,13 @@ export function getFolderPath(state: Pick<ExtensionState, 'workspacePath'>, subd
     return path.join(dir, subdir)
 }
 
-async function createTempFile(state: Pick<ExtensionState, 'workspacePath'>, doc: vscode.TextDocument) {
+export async function createTempFile(state: Pick<ExtensionState, 'workspacePath'>, doc: Pick<vscode.TextDocument, 'getText'>) {
     const subdir = path.join('.vscode', 'alive', 'fasl')
 
     return await createFile(state, subdir, 'tmp.lisp', doc.getText())
 }
 
-async function createFile(state: Pick<ExtensionState, 'workspacePath'>, subdir: string, name: string, content: string) {
+export async function createFile(state: Pick<ExtensionState, 'workspacePath'>, subdir: string, name: string, content: string) {
     const folder = getFolderPath(state, subdir)
     const fileName = path.join(folder, name)
 

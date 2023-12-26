@@ -3,6 +3,8 @@ import * as path from 'path'
 
 import {
     convertSeverity,
+    createFile,
+    createTempFile,
     dirExists,
     findSubFolders,
     getFolderPath,
@@ -18,7 +20,7 @@ jest.mock('vscode', () => ({
     languages: {
         createDiagnosticCollection: jest.fn().mockImplementationOnce(() => 5),
     },
-    workspace: { workspaceFolders: [] },
+    workspace: { workspaceFolders: [], fs: { createDirectory: jest.fn(), writeFile: jest.fn() } },
     DiagnosticSeverity: {
         Error: 0,
         Warning: 1,
@@ -44,6 +46,10 @@ jest.mock('os', () => ({
 }))
 
 describe('Utils Tests', () => {
+    beforeEach(() => {
+        jest.resetAllMocks()
+    })
+
     it('parseToInt', () => {
         expect(parseToInt(5)).toBe(5)
         expect(parseToInt('5')).toBe(5)
@@ -142,5 +148,23 @@ describe('Utils Tests', () => {
 
     it('getFolderPath', () => {
         expect(getFolderPath({ workspacePath: 'foo' }, 'bar')).toBe(path.join('foo', 'bar'))
+    })
+
+    it('createFile', async () => {
+        vscodeMock.Uri.file.mockImplementation((name: string) => name)
+
+        expect(await createFile({ workspacePath: 'foo' }, 'bar', 'baz', 'stuff')).toBe(path.join('foo', 'bar', 'baz'))
+        expect(vscodeMock.workspace.fs.createDirectory).toHaveBeenCalled()
+        expect(vscodeMock.workspace.fs.writeFile).toHaveBeenCalledWith(path.join('foo', 'bar', 'baz'), expect.anything())
+    })
+
+    it('createTempFile', async () => {
+        const tmpFile = path.join('foo', '.vscode', 'alive', 'fasl', 'tmp.lisp')
+
+        vscodeMock.Uri.file.mockImplementation((name: string) => name)
+
+        expect(await createTempFile({ workspacePath: 'foo' }, { getText: () => '' })).toBe(tmpFile)
+        expect(vscodeMock.workspace.fs.createDirectory).toHaveBeenCalled()
+        expect(vscodeMock.workspace.fs.writeFile).toHaveBeenCalledWith(tmpFile, expect.anything())
     })
 })
