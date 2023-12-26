@@ -11,6 +11,7 @@ import {
     getWorkspaceOrFilePath,
     hasValidLangId,
     startCompileTimer,
+    tryCompile,
     updateDiagnostics,
 } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
@@ -310,7 +311,11 @@ async function initPackagesTree(deps: ExtensionDeps) {
 async function diagnosticsRefresh(deps: ExtensionDeps, state: ExtensionState, editors: vscode.TextEditor[]) {
     for (const editor of editors) {
         if (editor.document.languageId === COMMON_LISP_ID) {
-            await updateDiagnostics(deps, state, editor)
+            const resp = await tryCompile(state, deps.lsp, editor.document)
+
+            if (resp !== undefined) {
+                await updateDiagnostics(state, editor.document.fileName, resp.notes)
+            }
         }
     }
 }

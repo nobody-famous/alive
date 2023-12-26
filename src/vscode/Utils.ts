@@ -6,9 +6,10 @@ import { promises as fs } from 'fs'
 import { format } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
-import { CompileFileNote, ExtensionDeps, ExtensionState } from './Types'
+import { CompileFileNote, CompileFileResp, ExtensionDeps, ExtensionState } from './Types'
 import { log, toLog } from '../vscode/Log'
 import { isString } from './Guards'
+import { LSP } from './backend/LSP'
 
 // const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
@@ -164,26 +165,36 @@ export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
     }, 500)
 }
 
-export async function updateDiagnostics(deps: ExtensionDeps, state: ExtensionState, editor: vscode.TextEditor) {
+export async function tryCompile(
+    state: Pick<ExtensionState, 'compileRunning' | 'workspacePath'>,
+    lsp: Pick<LSP, 'tryCompileFile'>,
+    doc: Pick<vscode.TextDocument, 'fileName' | 'getText'>
+): Promise<CompileFileResp | void> {
+    if (state.compileRunning) {
+        return
+    }
+
     try {
         state.compileRunning = true
 
-        const toCompile = await createTempFile(state, editor.document)
-        const resp = await deps.lsp.tryCompileFile(toCompile)
+        const toCompile = await createTempFile(state, doc)
+        const resp = await lsp.tryCompileFile(toCompile)
 
-        if (resp === undefined) {
-            return
-        }
+        resp?.notes.forEach((note) => {
+            if (note.location.file === toCompile) {
+                note.location.file = doc.fileName
+            }
+        })
 
-        const fileMap: { [index: string]: string } = {}
-
-        fileMap[toCompile] = editor.document.fileName
-        state.diagnostics.set(vscode.Uri.file(editor.document.fileName), [])
-
-        updateCompilerDiagnostics(state.diagnostics, fileMap, resp.notes)
+        return resp
     } finally {
         state.compileRunning = false
     }
+}
+
+export async function updateDiagnostics(state: Pick<ExtensionState, 'diagnostics'>, fileName: string, notes: CompileFileNote[]) {
+    state.diagnostics.set(vscode.Uri.file(fileName), [])
+    updateCompilerDiagnostics(state.diagnostics, notes)
 }
 
 export function getFolderPath(state: Pick<ExtensionState, 'workspacePath'>, subdir: string) {
@@ -207,16 +218,11 @@ export async function createFile(state: Pick<ExtensionState, 'workspacePath'>, s
     return fileName
 }
 
-export async function updateCompilerDiagnostics(
-    diagnostics: VscodeDiags,
-    fileMap: { [index: string]: string },
-    notes: CompileFileNote[]
-) {
+export async function updateCompilerDiagnostics(diagnostics: VscodeDiags, notes: CompileFileNote[]) {
     const diags: { [index: string]: vscode.Diagnostic[] } = {}
 
     for (const note of notes) {
-        const notesFile = note.location.file.replace(/\//g, path.sep)
-        const fileName = fileMap[notesFile] ?? note.location.file
+        const fileName = note.location.file
 
         const startPos = note.location.start
         const endPos = note.location.end

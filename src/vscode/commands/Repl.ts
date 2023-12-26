@@ -2,7 +2,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { TextEncoder } from 'util'
 import { ExtensionDeps, ExtensionState, LispSymbol } from '../Types'
-import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, updateDiagnostics, useEditor } from '../Utils'
+import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, tryCompile, updateDiagnostics, useEditor } from '../Utils'
 import { log, toLog } from '../Log'
 
 export function clearRepl(deps: ExtensionDeps) {
@@ -124,11 +124,11 @@ export async function compileFile(deps: ExtensionDeps, state: ExtensionState) {
 
 export async function tryCompileFile(deps: ExtensionDeps, state: ExtensionState) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        if (state.compileRunning) {
-            return
-        }
+        const resp = await tryCompile(state, deps.lsp, editor.document)
 
-        await updateDiagnostics(deps, state, editor)
+        if (resp !== undefined) {
+            await updateDiagnostics(state, editor.document.fileName, resp.notes)
+        }
     })
 }
 
