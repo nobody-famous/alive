@@ -6,7 +6,7 @@ import { promises as fs } from 'fs'
 import { format } from 'util'
 import { homedir } from 'os'
 import { refreshPackages } from './commands'
-import { CompileFileNote, CompileFileResp, ExtensionDeps, ExtensionState } from './Types'
+import { CompileFileNote, CompileFileResp, CompileLocation, ExtensionDeps, ExtensionState } from './Types'
 import { log, toLog } from '../vscode/Log'
 import { isString } from './Guards'
 import { LSP } from './backend/LSP'
@@ -192,9 +192,9 @@ export async function tryCompile(
     }
 }
 
-export async function updateDiagnostics(state: Pick<ExtensionState, 'diagnostics'>, fileName: string, notes: CompileFileNote[]) {
-    state.diagnostics.set(vscode.Uri.file(fileName), [])
-    updateCompilerDiagnostics(state.diagnostics, notes)
+export async function updateDiagnostics(diags: VscodeDiags, fileName: string, notes: CompileFileNote[]) {
+    diags.set(vscode.Uri.file(fileName), [])
+    updateCompilerDiagnostics(diags, notes)
 }
 
 export function getFolderPath(state: Pick<ExtensionState, 'workspacePath'>, subdir: string) {
@@ -221,18 +221,18 @@ export async function createFile(state: Pick<ExtensionState, 'workspacePath'>, s
 export async function updateCompilerDiagnostics(diagnostics: VscodeDiags, notes: CompileFileNote[]) {
     const diags: { [index: string]: vscode.Diagnostic[] } = {}
 
+    const createDiag = (location: CompileLocation, severity: string, message: string) => {
+        return new vscode.Diagnostic(new vscode.Range(location.start, location.end), message, convertSeverity(severity))
+    }
+
     for (const note of notes) {
         const fileName = note.location.file
-
-        const startPos = note.location.start
-        const endPos = note.location.end
 
         if (diags[fileName] === undefined) {
             diags[fileName] = []
         }
 
-        const diag = new vscode.Diagnostic(new vscode.Range(startPos, endPos), note.message, convertSeverity(note.severity))
-        diags[fileName].push(diag)
+        diags[fileName].push(createDiag(note.location, note.severity, note.message))
     }
 
     for (const [file, arr] of Object.entries(diags)) {

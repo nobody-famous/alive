@@ -127,7 +127,7 @@ export async function tryCompileFile(deps: ExtensionDeps, state: ExtensionState)
         const resp = await tryCompile(state, deps.lsp, editor.document)
 
         if (resp !== undefined) {
-            await updateDiagnostics(state, editor.document.fileName, resp.notes)
+            await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
         }
     })
 }

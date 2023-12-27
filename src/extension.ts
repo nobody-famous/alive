@@ -314,7 +314,7 @@ async function diagnosticsRefresh(deps: ExtensionDeps, state: ExtensionState, ed
             const resp = await tryCompile(state, deps.lsp, editor.document)
 
             if (resp !== undefined) {
-                await updateDiagnostics(state, editor.document.fileName, resp.notes)
+                await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
             }
         }
     }
