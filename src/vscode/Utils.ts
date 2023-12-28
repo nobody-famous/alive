@@ -1,17 +1,15 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as cmds from './commands'
-import { TextEncoder } from 'util'
+
 import { promises as fs } from 'fs'
-import { format } from 'util'
 import { homedir } from 'os'
-import { refreshPackages } from './commands'
-import { CompileFileNote, CompileFileResp, CompileLocation, ExtensionDeps, ExtensionState } from './Types'
+import { TextEncoder, format } from 'util'
 import { log, toLog } from '../vscode/Log'
 import { isString } from './Guards'
+import { CompileFileNote, CompileFileResp, CompileLocation, ExtensionState } from './Types'
+import { UI } from './UI'
 import { LSP } from './backend/LSP'
-
-// const compilerDiagnostics = vscode.languages.createDiagnosticCollection('Compiler Diagnostics')
 
 type VscodeDiags = Pick<vscode.DiagnosticCollection, 'set'>
 type VscodeUri = Pick<vscode.Uri, 'fsPath'>
@@ -153,15 +151,26 @@ export function diagnosticsEnabled() {
     return typeof aliveConfig.enableDiagnostics === 'boolean' ? aliveConfig.enableDiagnostics : true
 }
 
-export function startCompileTimer(deps: ExtensionDeps, state: ExtensionState) {
+export function startCompileTimer(
+    deps: {
+        ui: Pick<UI, 'updatePackages'>
+        lsp: Pick<LSP, 'tryCompileFile' | 'listPackages'>
+    },
+    state: {
+        compileRunning: boolean
+        compileTimeoutID: NodeJS.Timeout | undefined
+        diagnostics: VscodeDiags
+        workspacePath: string
+    }
+) {
     if (state.compileTimeoutID !== undefined) {
         clearTimeout(state.compileTimeoutID)
         state.compileTimeoutID = undefined
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.tryCompileFile(deps, state)
-        refreshPackages(deps)
+        await cmds.tryCompileFile(deps.lsp, state)
+        cmds.refreshPackages(deps)
     }, 500)
 }
 

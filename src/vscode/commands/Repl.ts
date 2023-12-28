@@ -1,9 +1,11 @@
 import * as path from 'path'
-import * as vscode from 'vscode'
 import { TextEncoder } from 'util'
+import * as vscode from 'vscode'
+import { log } from '../Log'
 import { ExtensionDeps, ExtensionState, LispSymbol } from '../Types'
 import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, tryCompile, updateDiagnostics, useEditor } from '../Utils'
-import { log, toLog } from '../Log'
+import { LSP } from '../backend/LSP'
+import { UI } from '../UI'
 
 export function clearRepl(deps: ExtensionDeps) {
     deps.ui.clearRepl()
@@ -54,7 +56,7 @@ export async function selectSexpr(deps: ExtensionDeps) {
     editor.selection = new vscode.Selection(range?.start, range?.end)
 }
 
-export async function refreshPackages(deps: ExtensionDeps) {
+export async function refreshPackages(deps: { ui: Pick<UI, 'updatePackages'>; lsp: Pick<LSP, 'listPackages'> }) {
     const pkgs = await deps.lsp.listPackages()
 
     deps.ui.updatePackages(pkgs)
@@ -122,9 +124,16 @@ export async function compileFile(deps: ExtensionDeps, state: ExtensionState) {
     })
 }
 
-export async function tryCompileFile(deps: ExtensionDeps, state: ExtensionState) {
+export async function tryCompileFile(
+    lsp: Pick<LSP, 'tryCompileFile'>,
+    state: {
+        compileRunning: boolean
+        diagnostics: Pick<vscode.DiagnosticCollection, 'set'>
+        workspacePath: string
+    }
+) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        const resp = await tryCompile(state, deps.lsp, editor.document)
+        const resp = await tryCompile(state, lsp, editor.document)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)

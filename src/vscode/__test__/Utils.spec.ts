@@ -10,6 +10,7 @@ import {
     getFolderPath,
     getWorkspaceOrFilePath,
     parseToInt,
+    startCompileTimer,
     tryCompile,
     updateCompilerDiagnostics,
     updateDiagnostics,
@@ -46,6 +47,11 @@ jest.mock('fs', () => ({ promises: { access: jest.fn() } }))
 jest.mock('os', () => ({
     homedir: () => '/test/home/dir',
 }))
+
+const cmdsMock = jest.requireMock('../commands')
+jest.mock('../commands')
+
+jest.useFakeTimers()
 
 describe('Utils Tests', () => {
     beforeEach(() => {
@@ -227,5 +233,22 @@ describe('Utils Tests', () => {
             expect(notes[0].location.file).toBe('bar')
             expect(notes[1].location.file).toBe('bar')
         })
+    })
+
+    it('startCompileTimer', () => {
+        const timeout = {
+            hasRef: jest.fn(),
+            refresh: jest.fn(),
+            [Symbol.toPrimitive]: () => 5,
+            ref: () => timeout,
+            unref: () => timeout,
+        }
+
+        startCompileTimer(
+            { ui: { updatePackages: jest.fn() }, lsp: { tryCompileFile: jest.fn(), listPackages: jest.fn() } },
+            { compileTimeoutID: timeout, workspacePath: 'foo', compileRunning: false, diagnostics: { set: jest.fn() } }
+        )
+
+        jest.runAllTimers()
     })
 })
