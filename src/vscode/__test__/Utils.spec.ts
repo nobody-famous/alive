@@ -16,6 +16,7 @@ import {
     updateDiagnostics,
 } from '../Utils'
 import { Position } from 'vscode'
+import { isObject } from '../Guards'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
@@ -235,7 +236,7 @@ describe('Utils Tests', () => {
         })
     })
 
-    it('startCompileTimer', () => {
+    it('startCompileTimer', async () => {
         const timeout = {
             hasRef: jest.fn(),
             refresh: jest.fn(),
@@ -244,11 +245,19 @@ describe('Utils Tests', () => {
             unref: () => timeout,
         }
 
+        const spy = jest.spyOn(global, 'setTimeout')
+
         startCompileTimer(
             { ui: { updatePackages: jest.fn() }, lsp: { tryCompileFile: jest.fn(), listPackages: jest.fn() } },
             { compileTimeoutID: timeout, workspacePath: 'foo', compileRunning: false, diagnostics: { set: jest.fn() } }
         )
 
         jest.runAllTimers()
+
+        const fn = spy.mock.calls[0][0]
+        await fn()
+
+        expect(cmdsMock.tryCompileFile).toHaveBeenCalled()
+        expect(cmdsMock.refreshPackages).toHaveBeenCalled()
     })
 })

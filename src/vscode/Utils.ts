@@ -170,7 +170,7 @@ export function startCompileTimer(
 
     state.compileTimeoutID = setTimeout(async () => {
         await cmds.tryCompileFile(deps.lsp, state)
-        cmds.refreshPackages(deps)
+        await cmds.refreshPackages(deps)
     }, 500)
 }
 
