@@ -15,12 +15,17 @@ import {
     tryCompile,
     updateCompilerDiagnostics,
     updateDiagnostics,
+    useEditor,
 } from '../Utils'
 import { Position } from 'vscode'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
-    window: { createOutputChannel: () => ({ appendLine: () => {} }) },
+    window: {
+        createOutputChannel: () => ({ appendLine: () => {} }),
+        activeTextEditor: undefined,
+        showErrorMessage: jest.fn(),
+    },
     languages: {
         createDiagnosticCollection: jest.fn().mockImplementationOnce(() => 5),
     },
@@ -276,5 +281,34 @@ describe('Utils Tests', () => {
 
         vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => ({ enableDiagnostics: false }))
         expect(diagnosticsEnabled()).toBe(false)
+    })
+
+    describe('useEditor', () => {
+        it('No editor', () => {
+            const fn = jest.fn()
+
+            useEditor(['foo'], fn)
+            expect(fn).not.toHaveBeenCalled()
+
+            vscodeMock.window.activeTextEditor = { document: { languageId: 'bar' } }
+            useEditor(['foo'], fn)
+            expect(fn).not.toHaveBeenCalled()
+        })
+
+        it('Have editor', () => {
+            const fn = jest.fn()
+
+            vscodeMock.window.activeTextEditor = { document: { languageId: 'foo' } }
+            useEditor(['foo'], fn)
+            expect(fn).toHaveBeenCalled()
+        })
+
+        it('Error', () => {
+            useEditor(['foo'], () => {
+                throw new Error('Failed, as requested')
+            })
+
+            expect(vscodeMock.window.showErrorMessage).toHaveBeenCalled()
+        })
     })
 })
