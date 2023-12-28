@@ -10,6 +10,7 @@ import {
     getFolderPath,
     getWorkspaceOrFilePath,
     parseToInt,
+    tryCompile,
     updateCompilerDiagnostics,
     updateDiagnostics,
 } from '../Utils'
@@ -184,5 +185,47 @@ describe('Utils Tests', () => {
         expect(await createTempFile({ workspacePath: 'foo' }, { getText: () => '' })).toBe(tmpFile)
         expect(vscodeMock.workspace.fs.createDirectory).toHaveBeenCalled()
         expect(vscodeMock.workspace.fs.writeFile).toHaveBeenCalledWith(tmpFile, expect.anything())
+    })
+
+    describe('tryCompile', () => {
+        const lsp = { tryCompileFile: jest.fn() }
+        const doc = { getText: () => '', fileName: 'bar' }
+
+        it('compileRunning', async () => {
+            const resp = await tryCompile({ compileRunning: true, workspacePath: 'foo' }, lsp, doc)
+
+            expect(resp).toBeUndefined()
+        })
+
+        it('compileRunning task', async () => {
+            const state = { compileRunning: false, workspacePath: 'foo' }
+            const task = tryCompile(state, lsp, doc)
+
+            expect(state.compileRunning).toBe(true)
+
+            lsp.tryCompileFile.mockReturnValueOnce({ notes: [] })
+            expect(await tryCompile(state, lsp, doc)).toBeUndefined()
+            expect(await task).not.toBeUndefined()
+
+            expect(state.compileRunning).toBe(false)
+        })
+
+        it('notes', async () => {
+            const state = { compileRunning: false, workspacePath: 'foo' }
+            const notes = [
+                { message: 'test', severity: 'info', location: { file: 'bar' } },
+                {
+                    message: 'test',
+                    severity: 'info',
+                    location: { file: path.join('foo', '.vscode', 'alive', 'fasl', 'tmp.lisp') },
+                },
+            ]
+
+            lsp.tryCompileFile.mockReturnValueOnce({ notes })
+            await tryCompile(state, lsp, doc)
+
+            expect(notes[0].location.file).toBe('bar')
+            expect(notes[1].location.file).toBe('bar')
+        })
     })
 })
