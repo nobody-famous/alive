@@ -63,6 +63,8 @@ jest.mock('os', () => ({
 const cmdsMock = jest.requireMock('../commands')
 jest.mock('../commands')
 
+jest.mock('../Log')
+
 jest.useFakeTimers()
 
 describe('Utils Tests', () => {
