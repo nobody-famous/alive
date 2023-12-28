@@ -114,12 +114,7 @@ export function strToMarkdown(text: string): string {
 }
 
 export function strToHtml(str: string): string {
-    const html = str
-        .replace(/&/g, '&amp;')
-        .replace(/\</g, '&lt;')
-        .replace(/\>/g, '&gt;')
-        .replace(/ /g, '&nbsp;')
-        .replace(/\n/g, '<br>')
+    const html = str.replace(/&/g, '&amp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace(/\n/g, '<br>')
 
     return html
 }

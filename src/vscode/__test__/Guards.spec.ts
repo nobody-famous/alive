@@ -49,6 +49,8 @@ describe('Type guard tests', () => {
 
     it('isStackTrace', () => {
         expect(isStackTrace([{ function: 'foo', file: 'bar', position: { line: 5, character: 10 } }])).toBe(true)
+        expect(isStackTrace([{ function: 'foo', file: null, position: { line: 5, character: 10 } }])).toBe(true)
+        expect(isStackTrace([{ function: 'foo', file: 'bar', position: null }])).toBe(true)
         expect(isStackTrace([])).toBe(true)
         expect(isStackTrace([{ function: 'foo', file: 'bar' }])).toBe(false)
         expect(isStackTrace({ file: 'bar', position: { line: 5, character: 10 } })).toBe(false)

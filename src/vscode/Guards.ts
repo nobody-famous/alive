@@ -19,7 +19,12 @@ export function isPosition(item: unknown): item is Position {
 }
 
 export function isSourceLocation(item: unknown): item is SourceLocation {
-    return isObject(item) && isString(item.function) && isString(item.file) && isPosition(item.position)
+    return (
+        isObject(item) &&
+        isString(item.function) &&
+        (item.file === null || isString(item.file)) &&
+        (item.position === null || isPosition(item.position))
+    )
 }
 
 export function isStackTrace(item: unknown): item is SourceLocation[] {

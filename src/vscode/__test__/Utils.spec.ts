@@ -12,6 +12,8 @@ import {
     getWorkspaceOrFilePath,
     parseToInt,
     startCompileTimer,
+    strToHtml,
+    strToMarkdown,
     tryCompile,
     updateCompilerDiagnostics,
     updateDiagnostics,
@@ -310,5 +312,15 @@ describe('Utils Tests', () => {
 
             expect(vscodeMock.window.showErrorMessage).toHaveBeenCalled()
         })
+    })
+
+    it('strToHtml', () => {
+        expect(strToHtml('&')).toBe('&amp;')
+        expect(strToHtml('<foo>\n')).toBe('&lt;foo&gt;<br>')
+    })
+
+    it('strToMarkdown', () => {
+        expect(strToMarkdown(' ')).toBe('&nbsp;')
+        expect(strToMarkdown('<foo>\n')).toBe('<foo>  \n')
     })
 })
