@@ -5,6 +5,7 @@ import {
     convertSeverity,
     createFile,
     createTempFile,
+    diagnosticsEnabled,
     dirExists,
     findSubFolders,
     getFolderPath,
@@ -16,7 +17,6 @@ import {
     updateDiagnostics,
 } from '../Utils'
 import { Position } from 'vscode'
-import { isObject } from '../Guards'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
@@ -24,7 +24,11 @@ jest.mock('vscode', () => ({
     languages: {
         createDiagnosticCollection: jest.fn().mockImplementationOnce(() => 5),
     },
-    workspace: { workspaceFolders: [], fs: { createDirectory: jest.fn(), writeFile: jest.fn() } },
+    workspace: {
+        getConfiguration: jest.fn(),
+        workspaceFolders: [],
+        fs: { createDirectory: jest.fn(), writeFile: jest.fn() },
+    },
     DiagnosticSeverity: {
         Error: 0,
         Warning: 1,
@@ -259,5 +263,18 @@ describe('Utils Tests', () => {
 
         expect(cmdsMock.tryCompileFile).toHaveBeenCalled()
         expect(cmdsMock.refreshPackages).toHaveBeenCalled()
+    })
+
+    it('diagnosticsEnabled', () => {
+        expect(diagnosticsEnabled()).toBe(true)
+
+        vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => ({}))
+        expect(diagnosticsEnabled()).toBe(true)
+
+        vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => ({ enableDiagnostics: true }))
+        expect(diagnosticsEnabled()).toBe(true)
+
+        vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => ({ enableDiagnostics: false }))
+        expect(diagnosticsEnabled()).toBe(false)
     })
 })
