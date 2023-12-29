@@ -87,6 +87,12 @@ describe('Utils Tests', () => {
             expect(await getWorkspaceOrFilePath()).toBe('/test/home/dir')
         })
 
+        it('Has editor', async () => {
+            vscodeMock.window.activeTextEditor = { document: { fileName: path.join('foo', 'bar') } }
+            vscodeMock.workspace.workspaceFolders = []
+            expect(await getWorkspaceOrFilePath()).toBe('foo')
+        })
+
         it('Has folders', async () => {
             vscodeMock.workspace.workspaceFolders = [{ uri: { fsPath: 'foo' } }]
             expect(await getWorkspaceOrFilePath()).toBe('foo')
