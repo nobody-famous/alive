@@ -33,7 +33,7 @@ import { getHoverProvider } from './vscode/providers/Hover'
 const wordSeparators = '`|;:\'",()'
 
 export const activate = async (ctx: vscode.ExtensionContext) => {
-    log(`Activating extension`)
+    log('Activating extension')
 
     const workspacePath = await getWorkspaceOrFilePath()
 
@@ -128,8 +128,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         vscode.commands.registerCommand('alive.inspect', (symbol) => cmds.inspect(deps, symbol)),
         vscode.commands.registerCommand('alive.inspectMacro', () => cmds.inspectMacro(deps)),
         vscode.commands.registerCommand('alive.openScratchPad', () => cmds.openScratchPad(state)),
-        vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(deps, state)),
-        vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(deps, state)),
+        vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(deps)),
+        vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(deps)),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
             const item = await deps.ui.selectHistoryItem()

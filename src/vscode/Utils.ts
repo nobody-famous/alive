@@ -33,7 +33,7 @@ export async function getWorkspaceOrFilePath(): Promise<string> {
     log(`Get workspace path: ${toLog(vscode.workspace.workspaceFolders)}`)
 
     if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
-        log(`No workspace folders`)
+        log('No workspace folders')
 
         const file = vscode.window.activeTextEditor?.document.fileName
         const outPath = isString(file) ? path.dirname(file) : homedir()
@@ -76,9 +76,9 @@ export async function findSubFolders(folders: readonly VscodeFolder[], sub: stri
     return subs
 }
 
-export async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder> {
+export async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder | undefined> {
     try {
-        log(`Pick workspace folder`)
+        log('Pick workspace folder')
 
         const haveVscodeFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode'])
 
@@ -114,7 +114,7 @@ export function strToMarkdown(text: string): string {
 }
 
 export function strToHtml(str: string): string {
-    const html = str.replace(/&/g, '&amp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace(/\n/g, '<br>')
+    const html = str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
 
     return html
 }

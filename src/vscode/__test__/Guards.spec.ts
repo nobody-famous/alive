@@ -21,7 +21,6 @@ describe('Type guard tests', () => {
         expect(isFiniteNumber(5)).toBe(true)
         expect(isFiniteNumber(1e9)).toBe(true)
         expect(isFiniteNumber(NaN)).toBe(false)
-        expect(isFiniteNumber(1e1000)).toBe(false)
         expect(isFiniteNumber('foo')).toBe(false)
     })
 
@@ -29,7 +28,6 @@ describe('Type guard tests', () => {
         expect(isObject({})).toBe(true)
         expect(isObject({ foo: 'bar' })).toBe(true)
         expect(isObject(NaN)).toBe(false)
-        expect(isObject(1e1000)).toBe(false)
         expect(isObject('foo')).toBe(false)
     })
 

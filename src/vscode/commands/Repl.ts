@@ -178,11 +178,11 @@ async function doMacroExpand(deps: ExtensionDeps, fn: (text: string, pkg: string
     })
 }
 
-export async function macroexpand(deps: ExtensionDeps, state: ExtensionState) {
+export async function macroexpand(deps: ExtensionDeps) {
     await doMacroExpand(deps, deps.lsp.macroexpand)
 }
 
-export async function macroexpand1(deps: ExtensionDeps, state: ExtensionState) {
+export async function macroexpand1(deps: ExtensionDeps) {
     await doMacroExpand(deps, deps.lsp.macroexpand1)
 }
 

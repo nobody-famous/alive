@@ -30,7 +30,7 @@ export class ThreadsTreeProvider implements vscode.TreeDataProvider<vscode.TreeI
         return element
     }
 
-    getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
+    getChildren(): vscode.ProviderResult<vscode.TreeItem[]> {
         return this.threads.map((thread) => new ThreadNode(thread))
     }
 }

@@ -24,7 +24,7 @@ import { EOL } from 'os'
 
 type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
 
-export declare interface LSP {
+export declare interface LSPEvents {
     on(event: 'refreshPackages', listener: () => void): this
     on(event: 'refreshAsdfSystems', listener: () => void): this
     on(event: 'refreshThreads', listener: () => void): this
@@ -38,7 +38,7 @@ export declare interface LSP {
     on(event: 'inspectUpdate', listener: (result: InspectResult) => void): this
 }
 
-export class LSP extends EventEmitter {
+export class LSP extends EventEmitter implements LSPEvents {
     private state: ExtensionState
     private client: LanguageClient | undefined
 
@@ -82,7 +82,7 @@ export class LSP extends EventEmitter {
             this.sendOutput(params)
         })
 
-        this.client.onNotification('$/alive/refresh', (params: unknown) => {
+        this.client.onNotification('$/alive/refresh', () => {
             this.emitRefresh()
         })
 
@@ -93,7 +93,7 @@ export class LSP extends EventEmitter {
             }
 
             const requestIndex = () => {
-                return new Promise<number | undefined>((resolve, reject) => {
+                return new Promise<number | undefined>((resolve) => {
                     this.emit('getRestartIndex', info, (index: number | undefined) => resolve(index))
                 })
             }
@@ -105,7 +105,7 @@ export class LSP extends EventEmitter {
 
         this.client.onRequest('$/alive/userInput', async () => {
             const requestInput = () => {
-                return new Promise<string>((resolve, reject) => {
+                return new Promise<string>((resolve) => {
                     this.emit('getUserInput', (input: string) => resolve(input))
                 })
             }
@@ -416,7 +416,7 @@ export class LSP extends EventEmitter {
         return await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
     }
 
-    loadFile = async (path: string, showMsgs?: boolean): Promise<void> => {
+    loadFile = async (path: string): Promise<void> => {
         try {
             const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 

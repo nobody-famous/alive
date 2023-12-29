@@ -11,6 +11,7 @@ import {
     getFolderPath,
     getWorkspaceOrFilePath,
     parseToInt,
+    pickWorkspaceFolder,
     startCompileTimer,
     strToHtml,
     strToMarkdown,
@@ -324,5 +325,11 @@ describe('Utils Tests', () => {
     it('strToMarkdown', () => {
         expect(strToMarkdown(' ')).toBe('&nbsp;')
         expect(strToMarkdown('<foo>\n')).toBe('<foo>  \n')
+    })
+
+    describe('pickWorkspaceFolder', () => {
+        it('No folders', async () => {
+            expect(await pickWorkspaceFolder([])).toBeUndefined()
+        })
     })
 })

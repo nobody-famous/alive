@@ -19,11 +19,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
         this.replText = ''
     }
 
-    resolveWebviewView(
-        webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext<unknown>,
-        token: vscode.CancellationToken
-    ): void | Thenable<void> {
+    resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
         this.view = webviewView
 
         webviewView.webview.options = {
@@ -49,7 +45,7 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
             this.ctx.subscriptions
         )
 
-        webviewView.onDidChangeVisibility((e) => this.restoreState())
+        webviewView.onDidChangeVisibility(() => this.restoreState())
 
         webviewView.webview.html = this.getHtmlForView()
     }

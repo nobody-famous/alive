@@ -14,11 +14,7 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
         this.package = 'cl-user'
     }
 
-    resolveWebviewView(
-        webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext<unknown>,
-        token: vscode.CancellationToken
-    ): void | Thenable<void> {
+    resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
         this.view = webviewView
 
         webviewView.webview.options = {

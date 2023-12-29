@@ -10,7 +10,7 @@ import { DebugInfo, ExtensionState, HistoryItem, InspectInfo, InspectResult, Pac
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 
-export declare interface UI {
+export declare interface UIEvents {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
     on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
     on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
@@ -23,7 +23,7 @@ export declare interface UI {
     on(event: 'diagnosticsRefresh', listener: (editors: vscode.TextEditor[]) => void): this
 }
 
-export class UI extends EventEmitter {
+export class UI extends EventEmitter implements UIEvents {
     private state: ExtensionState
     private packageTree: PackagesTreeProvider | undefined
     private historyTree: ReplHistoryTreeProvider | undefined
@@ -83,13 +83,7 @@ export class UI extends EventEmitter {
                     typeof index === 'number'
                         ? index
                         : info.restarts?.reduce((acc: number | undefined, item, ndx) => {
-                              if (typeof acc === 'number') {
-                                  return acc
-                              } else if (item.name.toLowerCase() === 'abort') {
-                                  return ndx
-                              }
-
-                              return acc
+                              return typeof acc === 'number' || item.name.toLocaleUpperCase() !== 'abort' ? acc : ndx
                           }, undefined)
 
                 view.stop()
@@ -115,18 +109,22 @@ export class UI extends EventEmitter {
     }
 
     async getUserInput(): Promise<string> {
-        return new Promise<string>(async (resolve, reject) => {
-            await vscode.commands.executeCommand('lispRepl.focus')
+        const waitForInput = () => {
+            return new Promise<string>((resolve) => {
+                const recvInput = (text: string) => {
+                    this.replView?.off('userInput', recvInput)
+                    resolve(text)
+                }
 
-            this.replView?.getUserInput()
+                this.replView?.on('userInput', recvInput)
+            })
+        }
 
-            const recvInput = (text: string) => {
-                this.replView?.off('userInput', recvInput)
-                resolve(text)
-            }
+        await vscode.commands.executeCommand('lispRepl.focus')
 
-            this.replView?.on('userInput', recvInput)
-        })
+        this.replView?.getUserInput()
+
+        return waitForInput()
     }
 
     updateThreads(threads: Thread[]): void {
@@ -178,7 +176,7 @@ export class UI extends EventEmitter {
     }
 
     selectHistoryItem() {
-        return new Promise<HistoryItem>((resolve, reject) => {
+        return new Promise<HistoryItem>((resolve) => {
             const items = [...(this.historyTree?.items ?? [])]
             const qp = vscode.window.createQuickPick()
 
@@ -206,7 +204,7 @@ export class UI extends EventEmitter {
     }
 
     private requestPackages = () => {
-        return new Promise<Package[]>((resolve, reject) => {
+        return new Promise<Package[]>((resolve) => {
             this.emit('listPackages', (pkgs: Package[]) => {
                 resolve(pkgs)
             })
@@ -238,15 +236,15 @@ export class UI extends EventEmitter {
             this.emit('inspectClosed', info)
         })
         inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
-        inspector.on('inspector-refresh', (text: string) => this.emit('inspectRefresh', info))
-        inspector.on('inspector-refresh-macro', (text: string) => this.emit('inspectRefreshMacro', info))
-        inspector.on('inspector-macro-inc', (text: string) => this.emit('inspectMacroInc', info))
+        inspector.on('inspector-refresh', () => this.emit('inspectRefresh', info))
+        inspector.on('inspector-refresh-macro', () => this.emit('inspectRefreshMacro', info))
+        inspector.on('inspector-macro-inc', () => this.emit('inspectMacroInc', info))
 
         inspector.show()
     }
 
     refreshInspectors() {
-        for (const [_, insp] of this.inspectors) {
+        for (const [, insp] of this.inspectors) {
             this.emit('inspectRefresh', insp.info)
         }
     }

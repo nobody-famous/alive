@@ -12,6 +12,15 @@
         },
         {
             "type": "npm",
+            "script": "lint",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
+            "group": "build",
+            "label": "Lint"
+        },
+        {
+            "type": "npm",
             "script": "test",
             "problemMatcher": [
                 "$tsc"
@@ -26,7 +35,7 @@
                 "jest",
                 "src/vscode/__test__/Utils.spec.ts",
                 "-t",
-                "strtohtml"
+                "pick"
             ],
             "problemMatcher": [
                 "$tsc"
