@@ -94,11 +94,13 @@ describe('Utils Tests', () => {
     })
 
     it('dirExists', async () => {
-        fsMock.promises.access.mockImplementation((path: string) => {
+        const accessFunc = (path: string) => {
             if (path !== '.') {
                 throw new Error('Failed, as requested')
             }
-        })
+        }
+        fsMock.promises.access.mockImplementationOnce(accessFunc)
+        fsMock.promises.access.mockImplementationOnce(accessFunc)
 
         expect(await dirExists('.')).toBe(true)
         expect(await dirExists(os.homedir())).toBe(false)
@@ -106,11 +108,14 @@ describe('Utils Tests', () => {
 
     describe('findSubFolders', () => {
         it('One level', async () => {
-            fsMock.promises.access.mockImplementation((file: string) => {
+            const accessFunc = (file: string) => {
                 if (file !== path.join('foo', '.vscode')) {
                     throw new Error('Failed, as requested')
                 }
-            })
+            }
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
 
             expect(await findSubFolders([{ uri: { fsPath: 'foo' } }, { uri: { fsPath: 'bar' } }], ['.vscode'])).toMatchObject([
                 { uri: { fsPath: 'foo' } },
@@ -119,11 +124,16 @@ describe('Utils Tests', () => {
         })
 
         it('Two levels', async () => {
-            fsMock.promises.access.mockImplementation((file: string) => {
+            const accessFunc = (file: string) => {
                 if (file !== path.join('foo', '.vscode', 'alive')) {
                     throw new Error('Failed, as requested')
                 }
-            })
+            }
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
 
             expect(
                 await findSubFolders([{ uri: { fsPath: 'foo' } }, { uri: { fsPath: 'bar' } }], ['.vscode', 'alive'])
@@ -248,6 +258,11 @@ describe('Utils Tests', () => {
             expect(notes[0].location.file).toBe('bar')
             expect(notes[1].location.file).toBe('bar')
         })
+
+        it('No response', async () => {
+            lsp.tryCompileFile.mockReturnValueOnce(undefined)
+            expect(await tryCompile({ compileRunning: false, workspacePath: 'foo' }, lsp, doc)).toBeUndefined()
+        })
     })
 
     it('startCompileTimer', async () => {
@@ -330,6 +345,42 @@ describe('Utils Tests', () => {
     describe('pickWorkspaceFolder', () => {
         it('No folders', async () => {
             expect(await pickWorkspaceFolder([])).toBeUndefined()
+        })
+
+        it('No vscode folder', async () => {
+            const accessFunc = () => {
+                throw new Error('Failed, as requested')
+            }
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+
+            expect(await pickWorkspaceFolder([{ uri: { fsPath: 'foo' } }])).toMatchObject({ uri: { fsPath: 'foo' } })
+        })
+
+        it('No alive folder', async () => {
+            const accessFunc = (file: string) => {
+                if (file !== path.join('foo', '.vscode')) {
+                    throw new Error('Failed, as requested')
+                }
+            }
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+
+            expect(await pickWorkspaceFolder([{ uri: { fsPath: 'foo' } }])).toMatchObject({ uri: { fsPath: 'foo' } })
+        })
+
+        it('Has alive folder', async () => {
+            const accessFunc = (file: string) => {
+                if (!file.startsWith('foo')) {
+                    throw new Error('Failed, as requested')
+                }
+            }
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+            fsMock.promises.access.mockImplementationOnce(accessFunc)
+
+            expect(await pickWorkspaceFolder([{ uri: { fsPath: 'bar' } }, { uri: { fsPath: 'foo' } }])).toMatchObject({
+                uri: { fsPath: 'foo' },
+            })
         })
     })
 })

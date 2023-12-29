@@ -43,7 +43,7 @@ export async function getWorkspaceOrFilePath(): Promise<string> {
         return outPath
     }
 
-    const folder =
+    const folder: VscodeFolder =
         vscode.workspace.workspaceFolders.length > 1
             ? await pickWorkspaceFolder(vscode.workspace.workspaceFolders)
             : vscode.workspace.workspaceFolders[0]
@@ -76,37 +76,32 @@ export async function findSubFolders(folders: readonly VscodeFolder[], sub: stri
     return subs
 }
 
-export async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder | undefined> {
-    try {
-        log('Pick workspace folder')
+export async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder> {
+    log('Pick workspace folder')
 
-        const haveVscodeFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode'])
+    const haveVscodeFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode'])
 
-        log(`Have .vscode folder: ${toLog(haveVscodeFolder)}`)
+    log(`Have .vscode folder: ${toLog(haveVscodeFolder)}`)
 
-        if (haveVscodeFolder.length === 0) {
-            log(`No .vscode folder found, returning ${toLog(folders[0])}`)
+    if (haveVscodeFolder.length === 0) {
+        log(`No .vscode folder found, returning ${toLog(folders[0])}`)
 
-            return folders[0]
-        }
-
-        const haveAliveFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode', 'alive'])
-
-        log(`Have .vscode/alive folder: ${toLog(haveAliveFolder)}`)
-
-        if (haveAliveFolder.length === 0) {
-            log(`No .vscode/alive folder, retuning ${toLog(haveVscodeFolder[0])}`)
-
-            return haveVscodeFolder[0]
-        }
-
-        log(`Found .vscode/alive folder at ${toLog(haveAliveFolder[0])}`)
-
-        return haveAliveFolder[0]
-    } catch (err) {
-        log(`Failed to pick folder: ${err}`)
-        throw err
+        return folders[0]
     }
+
+    const haveAliveFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode', 'alive'])
+
+    log(`Have .vscode/alive folder: ${toLog(haveAliveFolder)}`)
+
+    if (haveAliveFolder.length === 0) {
+        log(`No .vscode/alive folder, retuning ${toLog(haveVscodeFolder[0])}`)
+
+        return haveVscodeFolder[0]
+    }
+
+    log(`Found .vscode/alive folder at ${toLog(haveAliveFolder[0])}`)
+
+    return haveAliveFolder[0]
 }
 
 export function strToMarkdown(text: string): string {

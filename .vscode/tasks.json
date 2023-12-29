@@ -35,7 +35,7 @@
                 "jest",
                 "src/vscode/__test__/Utils.spec.ts",
                 "-t",
-                "pick"
+                "has alive"
             ],
             "problemMatcher": [
                 "$tsc"
