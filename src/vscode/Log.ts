@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { isObject } from './Guards'
 
 const logOutputChannel = vscode.window.createOutputChannel('Alive Log')
 
@@ -7,7 +8,7 @@ export const log = (message: string) => {
 }
 
 export const toLog = (obj: unknown): string => {
-    if (typeof obj === 'object') {
+    if (isObject(obj)) {
         return JSON.stringify(obj)
     }
 

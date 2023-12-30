@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/Utils.spec.ts",
-                "-t",
-                "filepath"
+                "src/vscode/__test__/Log.spec.ts",
+                // "-t",
+                // "filepath"
             ],
             "problemMatcher": [
                 "$tsc"
