@@ -6,7 +6,7 @@ import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
 import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
-import { DebugInfo, ExtensionState, HistoryItem, InspectInfo, InspectResult, Package, Thread } from './Types'
+import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Package, Thread } from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 
@@ -23,8 +23,13 @@ export declare interface UIEvents {
     on(event: 'diagnosticsRefresh', listener: (editors: vscode.TextEditor[]) => void): this
 }
 
+interface UIState {
+    ctx: AliveContext
+    historyNdx: number
+}
+
 export class UI extends EventEmitter implements UIEvents {
-    private state: ExtensionState
+    private state: UIState
     private packageTree: PackagesTreeProvider | undefined
     private historyTree: ReplHistoryTreeProvider | undefined
     private asdfTree: AsdfSystemsTreeProvider | undefined
@@ -33,7 +38,7 @@ export class UI extends EventEmitter implements UIEvents {
     private inspectorPanel: InspectorPanel
     private inspectors: Map<number, Inspector>
 
-    constructor(state: ExtensionState) {
+    constructor(state: UIState) {
         super()
 
         this.state = state

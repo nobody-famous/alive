@@ -1,18 +1,18 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { EventEmitter } from 'events'
-import { InspectInfo, InspectResult } from '../Types'
+import { AliveContext, InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
 
 export class Inspector extends EventEmitter {
-    ctx: vscode.ExtensionContext
+    ctx: AliveContext
     viewCol: vscode.ViewColumn
     info: InspectInfo
     panel?: vscode.WebviewPanel
 
     title?: string
 
-    constructor(ctx: vscode.ExtensionContext, viewCol: vscode.ViewColumn, result: InspectInfo) {
+    constructor(ctx: AliveContext, viewCol: vscode.ViewColumn, result: InspectInfo) {
         super()
 
         this.ctx = ctx

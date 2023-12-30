@@ -2,15 +2,16 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as os from 'os'
 import EventEmitter = require('events')
+import { AliveContext } from '../Types'
 
 export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView
-    private ctx: vscode.ExtensionContext
+    private ctx: AliveContext
     private package: string
     private replText: string
     private updateTextId: NodeJS.Timeout | undefined
 
-    constructor(ctx: vscode.ExtensionContext) {
+    constructor(ctx: AliveContext) {
         super()
 
         this.ctx = ctx

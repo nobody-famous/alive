@@ -8,8 +8,13 @@ export interface ExtensionDeps {
     lsp: LSP
 }
 
+export interface AliveContext {
+    subscriptions: { dispose: () => unknown }[]
+    extensionPath: string
+}
+
 export interface ExtensionState {
-    ctx: vscode.ExtensionContext
+    ctx: AliveContext
     diagnostics: vscode.DiagnosticCollection
     lspInstallPath?: string
     child?: ChildProcess

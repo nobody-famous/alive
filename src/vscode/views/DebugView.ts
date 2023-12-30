@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { DebugInfo, RestartInfo } from '../Types'
+import { AliveContext, DebugInfo, RestartInfo } from '../Types'
 import { strToHtml } from '../Utils'
 
 interface jsMessage {
@@ -10,7 +10,7 @@ interface jsMessage {
 }
 
 export class DebugView extends EventEmitter {
-    ctx: vscode.ExtensionContext
+    ctx: AliveContext
     title: string
     panel?: vscode.WebviewPanel
     info: DebugInfo
@@ -19,7 +19,7 @@ export class DebugView extends EventEmitter {
     frameInput: { [index: number]: string | undefined } = {}
     viewCol: vscode.ViewColumn
 
-    constructor(ctx: vscode.ExtensionContext, title: string, viewCol: vscode.ViewColumn, info: DebugInfo) {
+    constructor(ctx: AliveContext, title: string, viewCol: vscode.ViewColumn, info: DebugInfo) {
         super()
 
         this.ctx = ctx
@@ -94,8 +94,7 @@ export class DebugView extends EventEmitter {
         this.renderHtml()
     }
 
-    private inspectCondCommand() {
-    }
+    private inspectCondCommand() {}
 
     private frameRestartCommand(msg: jsMessage) {
         if (typeof msg.number === 'number') {
