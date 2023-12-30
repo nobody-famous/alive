@@ -96,6 +96,9 @@ describe('Utils Tests', () => {
         it('Has folders', async () => {
             vscodeMock.workspace.workspaceFolders = [{ uri: { fsPath: 'foo' } }]
             expect(await getWorkspaceOrFilePath()).toBe('foo')
+
+            vscodeMock.workspace.workspaceFolders = [{ uri: { fsPath: 'foo' } }, { uri: { fsPath: 'bar' } }]
+            expect(await getWorkspaceOrFilePath()).toBe('foo')
         })
     })
 
