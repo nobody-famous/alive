@@ -1,6 +1,5 @@
 import { UI, UIState } from '../UI'
 
-const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
     window: {
         createOutputChannel: () => ({ appendLine: () => {} }),
@@ -9,12 +8,12 @@ jest.mock('vscode', () => ({
     TreeItem: class {},
 }))
 
-const replModk = jest.requireMock('../views/LispRepl')
+const replObj = {
+    on: jest.fn(),
+    clear: jest.fn(),
+}
 jest.mock('../views/LispRepl', () => ({
-    LispRepl: jest.fn().mockImplementation(() => ({
-        on: jest.fn(),
-        clear: jest.fn(),
-    })),
+    LispRepl: jest.fn().mockImplementation(() => replObj),
 }))
 
 const createState = (): UIState => {
@@ -29,18 +28,46 @@ const createState = (): UIState => {
 describe('UI tests', () => {
     beforeEach(() => jest.clearAllMocks())
 
-    it('Constructor', () => {
-        const state = createState()
-        new UI(state)
-
-        expect(replModk.LispRepl).toHaveBeenCalled()
-        expect(vscodeMock.window.registerWebviewViewProvider).toHaveBeenCalled()
-    })
-
     it('clearRepl', () => {
         const state = createState()
         const ui = new UI(state)
 
         ui.clearRepl()
+    })
+
+    describe('replView', () => {
+        const getReplFn = (ui: UI, name: string): ((...args: unknown[]) => void) | undefined => {
+            let evalFn = undefined
+
+            replObj.on.mockImplementationOnce((label: string, fn: (...args: unknown[]) => void) => {
+                if (name === label) {
+                    evalFn = fn
+                }
+            })
+
+            ui.initRepl()
+
+            return evalFn
+        }
+
+        describe('eval', () => {
+            it('No history', () => {
+                const ui = new UI(createState())
+                const evalFn = getReplFn(ui, 'eval')
+                let evalPkg: string | undefined
+                let evalText: string | undefined
+
+                ui.on('eval', (pkg: string, text: string) => {
+                    evalPkg = pkg
+                    evalText = text
+                })
+
+                expect(evalFn).not.toBeUndefined()
+                evalFn?.('foo', 'bar')
+
+                expect(evalPkg).toBe('bar')
+                expect(evalText).toBe('foo')
+            })
+        })
     })
 })

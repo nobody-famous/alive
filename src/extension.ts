@@ -69,8 +69,13 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
             workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'alive', 'repl-history.json') : 'repl-history.json',
     }
 
+    const ui = new UI(state)
+
+    ui.init()
+    ui.registerProviders()
+
     const deps: ExtensionDeps = {
-        ui: new UI(state),
+        ui: ui,
         lsp: new LSP(state),
     }
 

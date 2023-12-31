@@ -45,10 +45,14 @@ export class UI extends EventEmitter implements UIEvents {
         this.replView = new LispRepl(state.ctx)
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
+    }
 
+    init() {
         this.initRepl()
         this.initInspectorPanel()
+    }
 
+    registerProviders() {
         vscode.window.registerWebviewViewProvider('lispRepl', this.replView)
     }
 
