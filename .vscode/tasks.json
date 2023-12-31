@@ -33,7 +33,7 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/Log.spec.ts",
+                "src/vscode/__test__/UI.spec.ts",
                 // "-t",
                 // "filepath"
             ],

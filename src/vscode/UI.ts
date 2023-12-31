@@ -23,7 +23,7 @@ export declare interface UIEvents {
     on(event: 'diagnosticsRefresh', listener: (editors: vscode.TextEditor[]) => void): this
 }
 
-interface UIState {
+export interface UIState {
     ctx: AliveContext
     historyNdx: number
 }
