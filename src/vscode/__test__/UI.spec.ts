@@ -38,12 +38,15 @@ describe('UI tests', () => {
     describe('replView', () => {
         const getReplFn = (ui: UI, name: string): ((...args: unknown[]) => void) | undefined => {
             let evalFn = undefined
-
-            replObj.on.mockImplementationOnce((label: string, fn: (...args: unknown[]) => void) => {
+            const onFn = (label: string, fn: (...args: unknown[]) => void) => {
                 if (name === label) {
                     evalFn = fn
                 }
-            })
+            }
+
+            for (let mockCount = 0; mockCount < 4; mockCount++) {
+                replObj.on.mockImplementationOnce(onFn)
+            }
 
             ui.initRepl()
 
@@ -54,6 +57,7 @@ describe('UI tests', () => {
             it('No history', () => {
                 const ui = new UI(createState())
                 const evalFn = getReplFn(ui, 'eval')
+
                 let evalPkg: string | undefined
                 let evalText: string | undefined
 
