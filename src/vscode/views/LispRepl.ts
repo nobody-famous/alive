@@ -14,7 +14,6 @@ export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider
     constructor(ctx: AliveContext) {
         super()
 
-        console.log('LISP REPL CALLED')
         this.ctx = ctx
         this.package = 'cl-user'
         this.updateTextId = undefined
