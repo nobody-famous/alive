@@ -14,12 +14,22 @@ const replObj = {
     on: jest.fn(),
     clear: jest.fn(),
     clearInput: jest.fn(),
+    addText: jest.fn(),
+    setPackage: jest.fn(),
+    setInput: jest.fn(),
 }
 jest.mock('../views/LispRepl', () => ({
     LispRepl: jest.fn().mockImplementation(() => replObj),
 }))
 
-jest.mock('../views/ReplHistory')
+jest.mock('../views/ReplHistory', () => ({
+    ReplHistoryTreeProvider: class {
+        private items: unknown[]
+        constructor(items: unknown[]) {
+            this.items = items
+        }
+    },
+}))
 
 const createState = (): UIState => {
     const state: UIState = {
@@ -89,7 +99,7 @@ describe('UI tests', () => {
                 expect(state.historyNdx).toBe(-1)
             })
 
-            it('With tree', () => {
+            it('Empty history', () => {
                 const state = createState()
                 const ui = new UI(state)
                 const fn = getReplFn(ui, 'historyDown')
@@ -99,7 +109,53 @@ describe('UI tests', () => {
 
                 expect(state.historyNdx).toBe(-1)
                 expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
+                expect(replObj.clearInput).toHaveBeenCalled()
+            })
+
+            it('One history', () => {
+                const state = createState()
+                const ui = new UI(state)
+                const fn = getReplFn(ui, 'historyDown')
+
+                ui.initHistoryTree([{ pkgName: 'foo', text: 'bar' }])
+                state.historyNdx = 0
+                fn?.()
+
+                expect(state.historyNdx).toBe(-1)
+                expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
+                expect(replObj.setPackage).not.toHaveBeenCalled()
+                expect(replObj.setInput).not.toHaveBeenCalled()
+                expect(replObj.clearInput).toHaveBeenCalled()
+            })
+
+            it('Multiple history', () => {
+                const state = createState()
+                const ui = new UI(state)
+                const fn = getReplFn(ui, 'historyDown')
+
+                ui.initHistoryTree([
+                    { pkgName: 'foo', text: 'bar' },
+                    { pkgName: 'foo1', text: 'bar1' },
+                ])
+                state.historyNdx = 1
+                fn?.()
+
+                expect(state.historyNdx).toBe(0)
+                expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
+                expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+                expect(replObj.setInput).toHaveBeenCalledWith('bar')
+                expect(replObj.clearInput).not.toHaveBeenCalled()
             })
         })
+    })
+
+    it('addReplText', () => {
+        const ui = new UI(createState())
+        let text = ''
+
+        replObj.addText.mockImplementationOnce((str: string) => (text = str))
+        ui.addReplText('foo')
+
+        expect(text).toBe('foo')
     })
 })
