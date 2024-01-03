@@ -1,9 +1,11 @@
 import { UI, UIState } from '../UI'
 
+const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
     window: {
         createOutputChannel: () => ({ appendLine: () => {} }),
         registerWebviewViewProvider: jest.fn(),
+        registerTreeDataProvider: jest.fn(),
     },
     TreeItem: class {},
 }))
@@ -11,15 +13,18 @@ jest.mock('vscode', () => ({
 const replObj = {
     on: jest.fn(),
     clear: jest.fn(),
+    clearInput: jest.fn(),
 }
 jest.mock('../views/LispRepl', () => ({
     LispRepl: jest.fn().mockImplementation(() => replObj),
 }))
 
+jest.mock('../views/ReplHistory')
+
 const createState = (): UIState => {
     const state: UIState = {
         ctx: { subscriptions: [], extensionPath: 'foo' },
-        historyNdx: 0,
+        historyNdx: -1,
     }
 
     return state
@@ -71,6 +76,29 @@ describe('UI tests', () => {
 
                 expect(evalPkg).toBe('bar')
                 expect(evalText).toBe('foo')
+            })
+        })
+
+        describe('historyDown', () => {
+            it('No tree', () => {
+                const state = createState()
+                const ui = new UI(state)
+                const fn = getReplFn(ui, 'historyDown')
+
+                fn?.()
+                expect(state.historyNdx).toBe(-1)
+            })
+
+            it('With tree', () => {
+                const state = createState()
+                const ui = new UI(state)
+                const fn = getReplFn(ui, 'historyDown')
+
+                ui.initHistoryTree([])
+                fn?.()
+
+                expect(state.historyNdx).toBe(-1)
+                expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
             })
         })
     })

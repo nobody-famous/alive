@@ -286,19 +286,9 @@ export class UI extends EventEmitter implements UIEvents {
 
     async initRepl() {
         this.replView.on('eval', async (pkg: string, text: string) => {
-            const itemsCount = this.historyTree?.items.length ?? 0
-
-            for (let ndx = 0; ndx < itemsCount; ndx += 1) {
-                const item = this.historyTree?.items[ndx]
-
-                if (item !== undefined && item.pkgName === pkg && item.text === text) {
-                    this.historyTree?.removeItem(ndx)
-                }
-            }
-
-            this.historyTree?.addItem(pkg, text)
-
             if (this.historyTree !== undefined) {
+                this.historyTree.removeItem(pkg, text)
+                this.historyTree.addItem(pkg, text)
                 this.emit('saveReplHistory', this.historyTree.items)
             }
 
@@ -334,7 +324,7 @@ export class UI extends EventEmitter implements UIEvents {
                 return
             }
 
-            if (this.state.historyNdx < this.historyTree?.items.length - 1) {
+            if (this.state.historyNdx < this.historyTree.items.length - 1) {
                 this.state.historyNdx += 1
             }
 
