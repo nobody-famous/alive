@@ -30,10 +30,10 @@ export interface UIState {
 
 export class UI extends EventEmitter implements UIEvents {
     private state: UIState
-    private packageTree: PackagesTreeProvider | undefined
-    private historyTree: ReplHistoryTreeProvider | undefined
-    private asdfTree: AsdfSystemsTreeProvider | undefined
-    private threadsTree: ThreadsTreeProvider | undefined
+    private historyTree: ReplHistoryTreeProvider
+    private packageTree: PackagesTreeProvider
+    private asdfTree: AsdfSystemsTreeProvider
+    private threadsTree: ThreadsTreeProvider
     private replView: LispRepl
     private inspectorPanel: InspectorPanel
     private inspectors: Map<number, Inspector>
@@ -42,6 +42,10 @@ export class UI extends EventEmitter implements UIEvents {
         super()
 
         this.state = state
+        this.historyTree = new ReplHistoryTreeProvider([])
+        this.packageTree = new PackagesTreeProvider([])
+        this.asdfTree = new AsdfSystemsTreeProvider([])
+        this.threadsTree = new ThreadsTreeProvider([])
         this.replView = new LispRepl(state.ctx)
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
@@ -61,7 +65,7 @@ export class UI extends EventEmitter implements UIEvents {
     }
 
     clearReplHistory() {
-        this.historyTree?.clear()
+        this.historyTree.clear()
     }
 
     setReplPackage(pkg: string) {
@@ -137,15 +141,15 @@ export class UI extends EventEmitter implements UIEvents {
     }
 
     updateThreads(threads: Thread[]): void {
-        this.threadsTree?.update(threads)
+        this.threadsTree.update(threads)
     }
 
     updateAsdfSystems(systems: string[]): void {
-        this.asdfTree?.update(systems)
+        this.asdfTree.update(systems)
     }
 
     updatePackages(pkgs: Package[]): void {
-        this.packageTree?.update(pkgs)
+        this.packageTree.update(pkgs)
     }
 
     initInspector(): void {
@@ -153,40 +157,40 @@ export class UI extends EventEmitter implements UIEvents {
     }
 
     initPackagesTree(pkgs: Package[]): void {
-        this.packageTree = new PackagesTreeProvider(pkgs)
+        this.packageTree.update(pkgs)
         vscode.window.registerTreeDataProvider('lispPackages', this.packageTree)
     }
 
     initHistoryTree(history: HistoryItem[]): void {
-        this.historyTree = new ReplHistoryTreeProvider(history)
+        this.historyTree.update(history)
         vscode.window.registerTreeDataProvider('replHistory', this.historyTree)
     }
 
     initAsdfSystemsTree(systems: string[]): void {
-        this.asdfTree = new AsdfSystemsTreeProvider(systems)
+        this.asdfTree.update(systems)
         vscode.window.registerTreeDataProvider('asdfSystems', this.asdfTree)
     }
 
     initThreadsTree(threads: Thread[]): void {
-        this.threadsTree = new ThreadsTreeProvider(threads)
+        this.threadsTree.update(threads)
         vscode.window.registerTreeDataProvider('lispThreads', this.threadsTree)
     }
 
     getHistoryItems(): HistoryItem[] {
-        return this.historyTree?.items ?? []
+        return this.historyTree.items
     }
 
     removeHistoryNode(node: HistoryNode) {
-        this.historyTree?.removeNode(node)
+        this.historyTree.removeNode(node)
     }
 
     moveHistoryNodeToTop(node: HistoryNode) {
-        this.historyTree?.moveToTop(node)
+        this.historyTree.moveToTop(node)
     }
 
     selectHistoryItem() {
         return new Promise<HistoryItem>((resolve) => {
-            const items = [...(this.historyTree?.items ?? [])]
+            const items = [...this.historyTree.items]
             const qp = vscode.window.createQuickPick()
 
             qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
@@ -200,7 +204,7 @@ export class UI extends EventEmitter implements UIEvents {
 
                 const historyItem = { text: item.label, pkgName: item.description ?? '' }
 
-                this.historyTree?.moveItemToTop(historyItem)
+                this.historyTree.moveItemToTop(historyItem)
 
                 resolve(historyItem)
 
@@ -286,11 +290,9 @@ export class UI extends EventEmitter implements UIEvents {
 
     async initRepl() {
         this.replView.on('eval', async (pkg: string, text: string) => {
-            if (this.historyTree !== undefined) {
-                this.historyTree.removeItem(pkg, text)
-                this.historyTree.addItem(pkg, text)
-                this.emit('saveReplHistory', this.historyTree.items)
-            }
+            this.historyTree.removeItem(pkg, text)
+            this.historyTree.addItem(pkg, text)
+            this.emit('saveReplHistory', this.historyTree.items)
 
             this.state.historyNdx = -1
             this.emit('eval', text, pkg, true)
@@ -305,10 +307,6 @@ export class UI extends EventEmitter implements UIEvents {
         })
 
         const updateReplInput = () => {
-            if (this.historyTree === undefined) {
-                return
-            }
-
             if (this.state.historyNdx >= 0) {
                 const item = this.historyTree.items[this.state.historyNdx]
 
@@ -320,10 +318,6 @@ export class UI extends EventEmitter implements UIEvents {
         }
 
         this.replView.on('historyUp', () => {
-            if (this.historyTree === undefined) {
-                return
-            }
-
             if (this.state.historyNdx < this.historyTree.items.length - 1) {
                 this.state.historyNdx += 1
             }
@@ -332,10 +326,6 @@ export class UI extends EventEmitter implements UIEvents {
         })
 
         this.replView.on('historyDown', () => {
-            if (this.historyTree === undefined) {
-                return
-            }
-
             if (this.state.historyNdx >= 0) {
                 this.state.historyNdx -= 1
             }

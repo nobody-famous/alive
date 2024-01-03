@@ -29,6 +29,36 @@ jest.mock('../views/ReplHistory', () => ({
         constructor(items: unknown[]) {
             this.items = items
         }
+        removeItem = jest.fn()
+        addItem = jest.fn()
+        update = jest.fn((items) => (this.items = items))
+    },
+}))
+
+jest.mock('../views/PackagesTree', () => ({
+    PackagesTreeProvider: class {
+        private pkgs: unknown[]
+        constructor(pkgs: unknown[]) {
+            this.pkgs = pkgs
+        }
+    },
+}))
+
+jest.mock('../views/AsdfSystemsTree', () => ({
+    AsdfSystemsTreeProvider: class {
+        private systems: unknown[]
+        constructor(systems: unknown[]) {
+            this.systems = systems
+        }
+    },
+}))
+
+jest.mock('../views/ThreadsTree', () => ({
+    ThreadsTreeProvider: class {
+        private threads: unknown[]
+        constructor(threads: unknown[]) {
+            this.threads = threads
+        }
     },
 }))
 
@@ -90,30 +120,35 @@ describe('UI tests', () => {
             })
         })
 
-        describe('historyDown', () => {
-            const runTest = (treeItems: HistoryItem[] | undefined, index: number, validate: (state: UIState) => void) => {
-                const state = createState()
-                const ui = new UI(state)
-                const fn = getReplFn(ui, 'historyDown')
+        const runHistoryTest = (
+            fnName: string,
+            treeItems: HistoryItem[] | undefined,
+            index: number,
+            validate: (state: UIState) => void
+        ) => {
+            const state = createState()
+            const ui = new UI(state)
+            const fn = getReplFn(ui, fnName)
 
-                state.historyNdx = index
+            state.historyNdx = index
 
-                if (treeItems !== undefined) {
-                    ui.initHistoryTree(treeItems)
-                }
-
-                fn?.()
-                validate(state)
+            if (treeItems !== undefined) {
+                ui.initHistoryTree(treeItems)
             }
 
+            fn?.()
+            validate(state)
+        }
+
+        describe('historyDown', () => {
             it('No tree', () => {
-                runTest(undefined, -1, (state: UIState) => {
+                runHistoryTest('historyDown', undefined, -1, (state: UIState) => {
                     expect(state.historyNdx).toBe(-1)
                 })
             })
 
             it('Empty history', () => {
-                runTest([], -1, (state: UIState) => {
+                runHistoryTest('historyDown', [], -1, (state: UIState) => {
                     expect(state.historyNdx).toBe(-1)
                     expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
                     expect(replObj.clearInput).toHaveBeenCalled()
@@ -121,7 +156,7 @@ describe('UI tests', () => {
             })
 
             it('One history', () => {
-                runTest([{ pkgName: 'foo', text: 'bar' }], 0, (state: UIState) => {
+                runHistoryTest('historyDown', [{ pkgName: 'foo', text: 'bar' }], 0, (state: UIState) => {
                     expect(state.historyNdx).toBe(-1)
                     expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
                     expect(replObj.setPackage).not.toHaveBeenCalled()
@@ -131,7 +166,8 @@ describe('UI tests', () => {
             })
 
             it('Multiple history', () => {
-                runTest(
+                runHistoryTest(
+                    'historyDown',
                     [
                         { pkgName: 'foo', text: 'bar' },
                         { pkgName: 'foo1', text: 'bar1' },
@@ -142,6 +178,58 @@ describe('UI tests', () => {
                         expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
                         expect(replObj.setPackage).toHaveBeenCalledWith('foo')
                         expect(replObj.setInput).toHaveBeenCalledWith('bar')
+                        expect(replObj.clearInput).not.toHaveBeenCalled()
+                    }
+                )
+            })
+        })
+
+        describe('historyUp', () => {
+            it('No tree', () => {
+                runHistoryTest('historyUp', undefined, -1, (state: UIState) => {
+                    expect(state.historyNdx).toBe(-1)
+                })
+            })
+
+            it('Empty history', () => {
+                runHistoryTest('historyUp', [], -1, (state: UIState) => {
+                    expect(state.historyNdx).toBe(-1)
+                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
+                    expect(replObj.clearInput).toHaveBeenCalled()
+                })
+            })
+
+            it('One history', () => {
+                runHistoryTest('historyUp', [{ pkgName: 'foo', text: 'bar' }], 0, (state: UIState) => {
+                    expect(state.historyNdx).toBe(0)
+                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
+                    expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+                    expect(replObj.setInput).toHaveBeenCalledWith('bar')
+                    expect(replObj.clearInput).not.toHaveBeenCalled()
+                })
+
+                runHistoryTest('historyUp', [{ pkgName: 'foo', text: 'bar' }], -1, (state: UIState) => {
+                    expect(state.historyNdx).toBe(0)
+                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
+                    expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+                    expect(replObj.setInput).toHaveBeenCalledWith('bar')
+                    expect(replObj.clearInput).not.toHaveBeenCalled()
+                })
+            })
+
+            it('Multiple history', () => {
+                runHistoryTest(
+                    'historyUp',
+                    [
+                        { pkgName: 'foo', text: 'bar' },
+                        { pkgName: 'foo1', text: 'bar1' },
+                    ],
+                    0,
+                    (state: UIState) => {
+                        expect(state.historyNdx).toBe(1)
+                        expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
+                        expect(replObj.setPackage).toHaveBeenCalledWith('foo1')
+                        expect(replObj.setInput).toHaveBeenCalledWith('bar1')
                         expect(replObj.clearInput).not.toHaveBeenCalled()
                     }
                 )
