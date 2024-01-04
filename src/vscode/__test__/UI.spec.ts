@@ -7,6 +7,7 @@ jest.mock('vscode', () => ({
         createOutputChannel: () => ({ appendLine: () => {} }),
         registerWebviewViewProvider: jest.fn(),
         registerTreeDataProvider: jest.fn(),
+        showQuickPick: jest.fn(),
     },
     TreeItem: class {},
 }))
@@ -81,7 +82,7 @@ describe('UI tests', () => {
         ui.clearRepl()
     })
 
-    describe('replView', () => {
+    describe('initRepl', () => {
         const getReplFn = (ui: UI, name: string): ((...args: unknown[]) => void) | undefined => {
             let evalFn = undefined
             const onFn = (label: string, fn: (...args: unknown[]) => void) => {
@@ -233,6 +234,35 @@ describe('UI tests', () => {
                         expect(replObj.clearInput).not.toHaveBeenCalled()
                     }
                 )
+            })
+        })
+
+        describe('requestPackage', () => {
+            it('No packages', async () => {
+                const state = createState()
+                const ui = new UI(state)
+                const fn = getReplFn(ui, 'requestPackage')
+
+                ui.on('listPackages', async (fn) => fn([]))
+
+                await fn?.()
+                expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
+                expect(replObj.setPackage).not.toHaveBeenCalled()
+            })
+
+            it('One package', async () => {
+                const state = createState()
+                const ui = new UI(state)
+                const fn = getReplFn(ui, 'requestPackage')
+
+                ui.on('listPackages', async (fn) => fn([{ name: 'foo', nicknames: [] }]))
+
+                vscodeMock.window.showQuickPick.mockImplementationOnce((names: string[]) => names[0])
+
+                await fn?.()
+
+                expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['foo'], expect.anything())
+                expect(replObj.setPackage).toHaveBeenCalledWith('foo')
             })
         })
     })
