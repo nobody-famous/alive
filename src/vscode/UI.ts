@@ -224,6 +224,14 @@ export class UI extends EventEmitter implements UIEvents {
         })
     }
 
+    private requestPackage = async (obj: { setPackage: (pick: string) => void }) => {
+        const pick = await this.selectPackage()
+
+        if (pick !== undefined) {
+            obj.setPackage(pick)
+        }
+    }
+
     private selectPackage = async () => {
         const pkgs = await this.requestPackages()
         const names: string[] = []
@@ -276,15 +284,11 @@ export class UI extends EventEmitter implements UIEvents {
         inspector.update(result)
     }
 
-    async initInspectorPanel() {
+    initInspectorPanel() {
         this.inspectorPanel.on('inspect', async (pkg: string, text: string) => this.emit('inspect', text, pkg))
 
         this.inspectorPanel.on('requestPackage', async () => {
-            const pick = await this.selectPackage()
-
-            if (pick !== undefined) {
-                this.inspectorPanel.setPackage(pick)
-            }
+            await this.requestPackage(this.inspectorPanel)
         })
     }
 
@@ -299,11 +303,7 @@ export class UI extends EventEmitter implements UIEvents {
         })
 
         this.replView.on('requestPackage', async () => {
-            const pick = await this.selectPackage()
-
-            if (pick !== undefined) {
-                this.replView.setPackage(pick)
-            }
+            await this.requestPackage(this.replView)
         })
 
         const updateReplInput = () => {

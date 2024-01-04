@@ -35,7 +35,7 @@
                 "jest",
                 "src/vscode/__test__/UI.spec.ts",
                 "-t",
-                "package"
+                "inspector"
             ],
             "problemMatcher": [
                 "$tsc"

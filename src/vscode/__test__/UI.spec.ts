@@ -24,6 +24,13 @@ jest.mock('../views/LispRepl', () => ({
     LispRepl: jest.fn().mockImplementation(() => replObj),
 }))
 
+const inspectorPanelObj = {
+    on: jest.fn(),
+}
+jest.mock('../views/InspectorPanel', () => ({
+    InspectorPanel: jest.fn().mockImplementation(() => inspectorPanelObj),
+}))
+
 jest.mock('../views/ReplHistory', () => ({
     ReplHistoryTreeProvider: class {
         private items: unknown[]
@@ -72,6 +79,28 @@ const createState = (): UIState => {
     return state
 }
 
+const getCallback = (
+    obj: { on: jest.Mock },
+    mockCount: number,
+    initFn: () => void,
+    name: string
+): ((...args: unknown[]) => void) | undefined => {
+    let callback = undefined
+    const onFn = (label: string, fn: (...args: unknown[]) => void) => {
+        if (name === label) {
+            callback = fn
+        }
+    }
+
+    for (let count = 0; count < mockCount; count++) {
+        obj.on.mockImplementationOnce(onFn)
+    }
+
+    initFn()
+
+    return callback
+}
+
 describe('UI tests', () => {
     beforeEach(() => jest.clearAllMocks())
 
@@ -83,27 +112,10 @@ describe('UI tests', () => {
     })
 
     describe('initRepl', () => {
-        const getReplFn = (ui: UI, name: string): ((...args: unknown[]) => void) | undefined => {
-            let evalFn = undefined
-            const onFn = (label: string, fn: (...args: unknown[]) => void) => {
-                if (name === label) {
-                    evalFn = fn
-                }
-            }
-
-            for (let mockCount = 0; mockCount < 4; mockCount++) {
-                replObj.on.mockImplementationOnce(onFn)
-            }
-
-            ui.initRepl()
-
-            return evalFn
-        }
-
         describe('eval', () => {
             it('No history', () => {
                 const ui = new UI(createState())
-                const evalFn = getReplFn(ui, 'eval')
+                const evalFn = getCallback(replObj, 4, () => ui.initRepl(), 'eval')
 
                 let evalPkg: string | undefined
                 let evalText: string | undefined
@@ -129,7 +141,7 @@ describe('UI tests', () => {
         ) => {
             const state = createState()
             const ui = new UI(state)
-            const fn = getReplFn(ui, fnName)
+            const fn = getCallback(replObj, 4, () => ui.initRepl(), fnName)
 
             state.historyNdx = index
 
@@ -241,7 +253,7 @@ describe('UI tests', () => {
             it('No packages', async () => {
                 const state = createState()
                 const ui = new UI(state)
-                const fn = getReplFn(ui, 'requestPackage')
+                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'requestPackage')
 
                 ui.on('listPackages', async (fn) => fn([]))
 
@@ -253,7 +265,7 @@ describe('UI tests', () => {
             it('One package', async () => {
                 const state = createState()
                 const ui = new UI(state)
-                const fn = getReplFn(ui, 'requestPackage')
+                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'requestPackage')
 
                 ui.on('listPackages', async (fn) => fn([{ name: 'foo', nicknames: [] }]))
 
@@ -264,6 +276,37 @@ describe('UI tests', () => {
                 expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['foo'], expect.anything())
                 expect(replObj.setPackage).toHaveBeenCalledWith('foo')
             })
+        })
+    })
+
+    describe('initInspectorPanel', () => {
+        it('inspect', async () => {
+            const ui = new UI(createState())
+            const fn = getCallback(inspectorPanelObj, 2, () => ui.initInspectorPanel(), 'inspect')
+
+            let pkg: string = ''
+            let text: string = ''
+
+            ui.on('inspect', (p, t) => {
+                pkg = p
+                text = t
+            })
+
+            await fn?.('foo', 'bar')
+
+            expect(pkg).toBe('bar')
+            expect(text).toBe('foo')
+        })
+
+        it('Inspector requestPackage', async () => {
+            const ui = new UI(createState())
+            const fn = getCallback(inspectorPanelObj, 2, () => ui.initInspectorPanel(), 'requestPackage')
+
+            ui.on('listPackages', (fn) => fn([]))
+
+            await fn?.()
+
+            expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
         })
     })
 
