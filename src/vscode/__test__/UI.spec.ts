@@ -8,6 +8,7 @@ jest.mock('vscode', () => ({
         registerTreeDataProvider: jest.fn(),
         showQuickPick: jest.fn(),
     },
+    ViewColumn: { Two: 2 },
     TreeItem: class {},
 }))
 
@@ -28,6 +29,15 @@ const inspectorPanelObj = {
 }
 jest.mock('../views/InspectorPanel', () => ({
     InspectorPanel: jest.fn().mockImplementation(() => inspectorPanelObj),
+}))
+
+const inspectorObj = {
+    on: jest.fn(),
+    show: jest.fn(),
+    update: jest.fn(),
+}
+jest.mock('../views/Inspector', () => ({
+    Inspector: jest.fn().mockImplementationOnce(() => inspectorObj),
 }))
 
 const historyObj = {
@@ -243,6 +253,18 @@ describe('UI tests', () => {
 
             expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
         })
+    })
+
+    it('updateInspector', () => {
+        const ui = new UI(createState())
+        const info = { id: 5, resultType: 'foo', result: 'bar' }
+
+        ui.updateInspector(info)
+        expect(inspectorObj.show).not.toHaveBeenCalled()
+
+        ui.newInspector({ ...info, text: 'bar', package: 'foo' })
+        ui.updateInspector(info)
+        expect(inspectorObj.show).toHaveBeenCalled()
     })
 
     it('addReplText', () => {
