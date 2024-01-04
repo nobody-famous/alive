@@ -62,7 +62,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
         hoverText: '',
         compileRunning: false,
         compileTimeoutID: undefined,
-        historyNdx: -1,
         ctx,
         workspacePath,
         replHistoryFile:

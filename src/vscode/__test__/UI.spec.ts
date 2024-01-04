@@ -1,4 +1,3 @@
-import { HistoryItem } from '../Types'
 import { UI, UIState } from '../UI'
 
 const vscodeMock = jest.requireMock('vscode')
@@ -31,16 +30,17 @@ jest.mock('../views/InspectorPanel', () => ({
     InspectorPanel: jest.fn().mockImplementation(() => inspectorPanelObj),
 }))
 
+const historyObj = {
+    clearIndex: jest.fn(),
+    incrementIndex: jest.fn(),
+    decrementIndex: jest.fn(),
+    getCurrentItem: jest.fn(),
+    removeItem: jest.fn(),
+    addItem: jest.fn(),
+    update: jest.fn(),
+}
 jest.mock('../views/ReplHistory', () => ({
-    ReplHistoryTreeProvider: class {
-        private items: unknown[]
-        constructor(items: unknown[]) {
-            this.items = items
-        }
-        removeItem = jest.fn()
-        addItem = jest.fn()
-        update = jest.fn((items) => (this.items = items))
-    },
+    ReplHistoryTreeProvider: jest.fn().mockImplementation(() => historyObj),
 }))
 
 jest.mock('../views/PackagesTree', () => ({
@@ -73,7 +73,6 @@ jest.mock('../views/ThreadsTree', () => ({
 const createState = (): UIState => {
     const state: UIState = {
         ctx: { subscriptions: [], extensionPath: 'foo' },
-        historyNdx: -1,
     }
 
     return state
@@ -133,119 +132,55 @@ describe('UI tests', () => {
             })
         })
 
-        const runHistoryTest = (
-            fnName: string,
-            treeItems: HistoryItem[] | undefined,
-            index: number,
-            validate: (state: UIState) => void
-        ) => {
-            const state = createState()
-            const ui = new UI(state)
-            const fn = getCallback(replObj, 4, () => ui.initRepl(), fnName)
+        describe('historyUp', () => {
+            it('No history', () => {
+                const ui = new UI(createState())
+                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyUp')
 
-            state.historyNdx = index
+                fn?.()
 
-            if (treeItems !== undefined) {
-                ui.initHistoryTree(treeItems)
-            }
-
-            fn?.()
-            validate(state)
-        }
-
-        describe('historyDown', () => {
-            it('No tree', () => {
-                runHistoryTest('historyDown', undefined, -1, (state: UIState) => {
-                    expect(state.historyNdx).toBe(-1)
-                })
+                expect(historyObj.incrementIndex).toHaveBeenCalled()
+                expect(replObj.clearInput).toHaveBeenCalled()
             })
 
-            it('Empty history', () => {
-                runHistoryTest('historyDown', [], -1, (state: UIState) => {
-                    expect(state.historyNdx).toBe(-1)
-                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
-                    expect(replObj.clearInput).toHaveBeenCalled()
-                })
-            })
+            it('Have history', () => {
+                const ui = new UI(createState())
+                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyUp')
 
-            it('One history', () => {
-                runHistoryTest('historyDown', [{ pkgName: 'foo', text: 'bar' }], 0, (state: UIState) => {
-                    expect(state.historyNdx).toBe(-1)
-                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
-                    expect(replObj.setPackage).not.toHaveBeenCalled()
-                    expect(replObj.setInput).not.toHaveBeenCalled()
-                    expect(replObj.clearInput).toHaveBeenCalled()
-                })
-            })
+                historyObj.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
-            it('Multiple history', () => {
-                runHistoryTest(
-                    'historyDown',
-                    [
-                        { pkgName: 'foo', text: 'bar' },
-                        { pkgName: 'foo1', text: 'bar1' },
-                    ],
-                    1,
-                    (state: UIState) => {
-                        expect(state.historyNdx).toBe(0)
-                        expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
-                        expect(replObj.setPackage).toHaveBeenCalledWith('foo')
-                        expect(replObj.setInput).toHaveBeenCalledWith('bar')
-                        expect(replObj.clearInput).not.toHaveBeenCalled()
-                    }
-                )
+                fn?.()
+
+                expect(historyObj.incrementIndex).toHaveBeenCalled()
+                expect(replObj.clearInput).not.toHaveBeenCalled()
+                expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+                expect(replObj.setInput).toHaveBeenCalledWith('bar')
             })
         })
 
-        describe('historyUp', () => {
-            it('No tree', () => {
-                runHistoryTest('historyUp', undefined, -1, (state: UIState) => {
-                    expect(state.historyNdx).toBe(-1)
-                })
+        describe('historyDown', () => {
+            it('No history', () => {
+                const ui = new UI(createState())
+                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyDown')
+
+                fn?.()
+
+                expect(historyObj.decrementIndex).toHaveBeenCalled()
+                expect(replObj.clearInput).toHaveBeenCalled()
             })
 
-            it('Empty history', () => {
-                runHistoryTest('historyUp', [], -1, (state: UIState) => {
-                    expect(state.historyNdx).toBe(-1)
-                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
-                    expect(replObj.clearInput).toHaveBeenCalled()
-                })
-            })
+            it('Have history', () => {
+                const ui = new UI(createState())
+                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyDown')
 
-            it('One history', () => {
-                runHistoryTest('historyUp', [{ pkgName: 'foo', text: 'bar' }], 0, (state: UIState) => {
-                    expect(state.historyNdx).toBe(0)
-                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
-                    expect(replObj.setPackage).toHaveBeenCalledWith('foo')
-                    expect(replObj.setInput).toHaveBeenCalledWith('bar')
-                    expect(replObj.clearInput).not.toHaveBeenCalled()
-                })
+                historyObj.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
-                runHistoryTest('historyUp', [{ pkgName: 'foo', text: 'bar' }], -1, (state: UIState) => {
-                    expect(state.historyNdx).toBe(0)
-                    expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
-                    expect(replObj.setPackage).toHaveBeenCalledWith('foo')
-                    expect(replObj.setInput).toHaveBeenCalledWith('bar')
-                    expect(replObj.clearInput).not.toHaveBeenCalled()
-                })
-            })
+                fn?.()
 
-            it('Multiple history', () => {
-                runHistoryTest(
-                    'historyUp',
-                    [
-                        { pkgName: 'foo', text: 'bar' },
-                        { pkgName: 'foo1', text: 'bar1' },
-                    ],
-                    0,
-                    (state: UIState) => {
-                        expect(state.historyNdx).toBe(1)
-                        expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalled()
-                        expect(replObj.setPackage).toHaveBeenCalledWith('foo1')
-                        expect(replObj.setInput).toHaveBeenCalledWith('bar1')
-                        expect(replObj.clearInput).not.toHaveBeenCalled()
-                    }
-                )
+                expect(historyObj.decrementIndex).toHaveBeenCalled()
+                expect(replObj.clearInput).not.toHaveBeenCalled()
+                expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+                expect(replObj.setInput).toHaveBeenCalledWith('bar')
             })
         })
 

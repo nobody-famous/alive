@@ -25,7 +25,6 @@ export declare interface UIEvents {
 
 export interface UIState {
     ctx: AliveContext
-    historyNdx: number
 }
 
 export class UI extends EventEmitter implements UIEvents {
@@ -298,7 +297,7 @@ export class UI extends EventEmitter implements UIEvents {
             this.historyTree.addItem(pkg, text)
             this.emit('saveReplHistory', this.historyTree.items)
 
-            this.state.historyNdx = -1
+            this.historyTree.clearIndex()
             this.emit('eval', text, pkg, true)
         })
 
@@ -307,9 +306,9 @@ export class UI extends EventEmitter implements UIEvents {
         })
 
         const updateReplInput = () => {
-            if (this.state.historyNdx >= 0) {
-                const item = this.historyTree.items[this.state.historyNdx]
+            const item = this.historyTree.getCurrentItem()
 
+            if (item !== undefined) {
                 this.replView.setPackage(item.pkgName)
                 this.replView.setInput(item.text)
             } else {
@@ -318,18 +317,12 @@ export class UI extends EventEmitter implements UIEvents {
         }
 
         this.replView.on('historyUp', () => {
-            if (this.state.historyNdx < this.historyTree.items.length - 1) {
-                this.state.historyNdx += 1
-            }
-
+            this.historyTree.incrementIndex()
             updateReplInput()
         })
 
         this.replView.on('historyDown', () => {
-            if (this.state.historyNdx >= 0) {
-                this.state.historyNdx -= 1
-            }
-
+            this.historyTree.decrementIndex()
             updateReplInput()
         })
     }

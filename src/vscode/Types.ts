@@ -22,7 +22,6 @@ export interface ExtensionState {
     compileRunning: boolean
     compileTimeoutID: NodeJS.Timeout | undefined
     replHistoryFile: string
-    historyNdx: number
     workspacePath: string
 }
 

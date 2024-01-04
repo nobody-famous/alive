@@ -24,12 +24,14 @@ export class HistoryPkgNode extends vscode.TreeItem {
 
 export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     public items: Array<HistoryItem>
+    private currentIndex: number
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
     constructor(items: Array<HistoryItem>) {
         this.items = items
+        this.currentIndex = -1
     }
 
     update(items: HistoryItem[]) {
@@ -37,8 +39,29 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
         this.event.fire()
     }
 
+    getCurrentItem(): HistoryItem | undefined {
+        return this.items.length > 0 && this.currentIndex >= 0 ? this.items[this.currentIndex] : undefined
+    }
+
+    incrementIndex() {
+        if (this.currentIndex < this.items.length - 1) {
+            this.currentIndex += 1
+        }
+    }
+
+    decrementIndex() {
+        if (this.currentIndex >= 0) {
+            this.currentIndex -= 1
+        }
+    }
+
+    clearIndex() {
+        this.currentIndex = -1
+    }
+
     clear() {
         this.update([])
+        this.clearIndex()
     }
 
     addItem(pkgName: string, text: string) {
