@@ -36,6 +36,7 @@ const inspectorObj = {
     show: jest.fn(),
     update: jest.fn(),
 }
+const inspectorModuleMock = jest.requireMock('../views/Inspector')
 jest.mock('../views/Inspector', () => ({
     Inspector: jest.fn().mockImplementationOnce(() => inspectorObj),
 }))
@@ -265,6 +266,36 @@ describe('UI tests', () => {
         ui.newInspector({ ...info, text: 'bar', package: 'foo' })
         ui.updateInspector(info)
         expect(inspectorObj.show).toHaveBeenCalled()
+    })
+
+    it('refreshInspectors', () => {
+        const ui = new UI(createState())
+        const cb = jest.fn()
+        const fake = { on: jest.fn(), show: jest.fn() }
+        const count = 3
+
+        for (let n = 0; n < count; n++) {
+            inspectorModuleMock.Inspector.mockImplementationOnce(() => ({ ...fake }))
+        }
+
+        for (let n = 0; n < count; n++) {
+            ui.newInspector({ id: 5 + n, resultType: 'foo', result: 'bar', text: 'bar', package: 'foo' })
+        }
+
+        ui.on('inspectRefresh', cb)
+
+        ui.refreshInspectors()
+        expect(cb).toHaveBeenCalledTimes(3)
+    })
+
+    it('refreshDiagnostics', () => {
+        const ui = new UI(createState())
+        const cb = jest.fn()
+
+        ui.on('diagnosticsRefresh', cb)
+
+        ui.refreshDiagnostics()
+        expect(cb).toHaveBeenCalled()
     })
 
     it('addReplText', () => {
