@@ -271,14 +271,17 @@ describe('UI tests', () => {
     it('refreshInspectors', () => {
         const ui = new UI(createState())
         const cb = jest.fn()
-        const fake = { on: jest.fn(), show: jest.fn() }
-        const count = 3
+        const fakes = [
+            { on: jest.fn(), show: jest.fn() },
+            { on: jest.fn(), show: jest.fn() },
+            { on: jest.fn(), show: jest.fn() },
+        ]
 
-        for (let n = 0; n < count; n++) {
-            inspectorModuleMock.Inspector.mockImplementationOnce(() => ({ ...fake }))
+        for (let n = 0; n < fakes.length; n++) {
+            inspectorModuleMock.Inspector.mockImplementationOnce(() => fakes[n])
         }
 
-        for (let n = 0; n < count; n++) {
+        for (let n = 0; n < fakes.length; n++) {
             ui.newInspector({ id: 5 + n, resultType: 'foo', result: 'bar', text: 'bar', package: 'foo' })
         }
 
@@ -286,6 +289,28 @@ describe('UI tests', () => {
 
         ui.refreshInspectors()
         expect(cb).toHaveBeenCalledTimes(3)
+    })
+
+    describe('newInspector', () => {
+        it('inspectorClosed', () => {
+            const ui = new UI(createState())
+            const cb = jest.fn()
+            const fake = { on: jest.fn(), show: jest.fn() }
+
+            inspectorModuleMock.Inspector.mockImplementationOnce(() => fake)
+
+            const fn = getCallback(
+                fake,
+                5,
+                () => ui.newInspector({ id: 5, resultType: 'foo', result: 'bar', text: 'bar', package: 'foo' }),
+                'inspectorClosed'
+            )
+
+            ui.on('inspectClosed', cb)
+            fn?.()
+
+            expect(cb).toHaveBeenCalled()
+        })
     })
 
     it('refreshDiagnostics', () => {
