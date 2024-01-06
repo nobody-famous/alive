@@ -50,11 +50,15 @@ const historyObj = {
     decrementIndex: jest.fn(),
     getCurrentItem: jest.fn(),
     moveItemToTop: jest.fn(),
+    moveToTop: jest.fn(),
     removeItem: jest.fn(),
+    removeNode: jest.fn(),
     addItem: jest.fn(),
     update: jest.fn(),
 }
+const replHistory = jest.requireMock('../views/ReplHistory')
 jest.mock('../views/ReplHistory', () => ({
+    HistoryNode: jest.fn(),
     ReplHistoryTreeProvider: jest.fn().mockImplementation(() => historyObj),
 }))
 
@@ -403,5 +407,26 @@ describe('UI tests', () => {
             expect(item.text).toBe('foo')
             expect(item.pkgName).toBe('')
         })
+    })
+
+    it('moveHistoryNodeToTop', () => {
+        const ui = new UI(createState())
+
+        ui.moveHistoryNodeToTop(new replHistory.HistoryNode({}))
+        expect(historyObj.moveToTop).toHaveBeenCalled()
+    })
+
+    it('removeHistoryNode', () => {
+        const ui = new UI(createState())
+
+        ui.removeHistoryNode(new replHistory.HistoryNode({}))
+        expect(historyObj.removeNode).toHaveBeenCalled()
+    })
+
+    it('getHistoryItems', () => {
+        const ui = new UI(createState())
+
+        const items = ui.getHistoryItems()
+        expect(items).toMatchObject([])
     })
 })
