@@ -196,31 +196,41 @@ describe('UI tests', () => {
         })
 
         describe('requestPackage', () => {
-            it('No packages', async () => {
+            const runTest = async (pkgs: unknown[], validate: () => void) => {
                 const state = createState()
                 const ui = new UI(state)
                 const fn = getCallback(replObj, 4, () => ui.initRepl(), 'requestPackage')
 
-                ui.on('listPackages', async (fn) => fn([]))
+                ui.on('listPackages', async (fn) => fn(pkgs))
 
                 await fn?.()
-                expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
-                expect(replObj.setPackage).not.toHaveBeenCalled()
+
+                validate()
+            }
+
+            it('No packages', async () => {
+                await runTest([], () => {
+                    expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
+                    expect(replObj.setPackage).not.toHaveBeenCalled()
+                })
             })
 
             it('One package', async () => {
-                const state = createState()
-                const ui = new UI(state)
-                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'requestPackage')
-
-                ui.on('listPackages', async (fn) => fn([{ name: 'foo', nicknames: [] }]))
-
                 vscodeMock.window.showQuickPick.mockImplementationOnce((names: string[]) => names[0])
 
-                await fn?.()
+                await runTest([{ name: 'foo', nicknames: [] }], () => {
+                    expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['foo'], expect.anything())
+                    expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+                })
+            })
 
-                expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['foo'], expect.anything())
-                expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+            it('One package nickname', async () => {
+                vscodeMock.window.showQuickPick.mockImplementationOnce((names: string[]) => names[0])
+
+                await runTest([{ name: 'foo', nicknames: ['bar'] }], () => {
+                    expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['bar', 'foo'], expect.anything())
+                    expect(replObj.setPackage).toHaveBeenCalledWith('bar')
+                })
             })
         })
     })
