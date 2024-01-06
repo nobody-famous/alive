@@ -194,7 +194,7 @@ export class UI extends EventEmitter implements UIEvents {
 
             qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
 
-            qp.onDidChangeSelection(async (e) => {
+            qp.onDidChangeSelection((e) => {
                 const item = e[0]
 
                 if (item === undefined) {

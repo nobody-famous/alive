@@ -1,3 +1,4 @@
+import { HistoryItem } from '../Types'
 import { UI, UIState } from '../UI'
 
 const vscodeMock = jest.requireMock('vscode')
@@ -6,6 +7,7 @@ jest.mock('vscode', () => ({
         createOutputChannel: () => ({ appendLine: () => {} }),
         registerWebviewViewProvider: jest.fn(),
         registerTreeDataProvider: jest.fn(),
+        createQuickPick: jest.fn(),
         showQuickPick: jest.fn(),
     },
     ViewColumn: { Two: 2 },
@@ -42,10 +44,12 @@ jest.mock('../views/Inspector', () => ({
 }))
 
 const historyObj = {
+    items: [],
     clearIndex: jest.fn(),
     incrementIndex: jest.fn(),
     decrementIndex: jest.fn(),
     getCurrentItem: jest.fn(),
+    moveItemToTop: jest.fn(),
     removeItem: jest.fn(),
     addItem: jest.fn(),
     update: jest.fn(),
@@ -341,5 +345,63 @@ describe('UI tests', () => {
         ui.addReplText('foo')
 
         expect(text).toBe('foo')
+    })
+
+    describe('selectHistoryItem', () => {
+        interface QP {
+            items: string[]
+            onDidChangeSelection: jest.Mock
+            onDidHide: jest.Mock
+            show: jest.Mock
+        }
+
+        interface QPItem {
+            label: string
+            description?: string
+        }
+
+        interface ChangeFnResult {
+            task: Promise<HistoryItem>
+            fn: ((e: QPItem[]) => void) | undefined
+        }
+
+        const getChangeFn = (ui: UI, qp: QP): ChangeFnResult => {
+            let changeFn = undefined
+
+            qp.onDidChangeSelection.mockImplementationOnce((fn) => (changeFn = fn))
+            vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
+
+            const task = ui.selectHistoryItem()
+
+            return { task, fn: changeFn }
+        }
+
+        it('One item', async () => {
+            const ui = new UI(createState())
+
+            const qp = {
+                items: [],
+                onDidChangeSelection: jest.fn(),
+                onDidHide: jest.fn(),
+                hide: jest.fn(),
+                show: jest.fn(),
+            }
+
+            vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
+
+            const { task, fn } = getChangeFn(ui, qp)
+
+            fn?.([])
+            expect(qp.show).toHaveBeenCalled()
+            expect(qp.hide).not.toHaveBeenCalled()
+
+            fn?.([{ label: 'foo' }])
+            expect(qp.hide).toHaveBeenCalled()
+            expect(historyObj.moveItemToTop).toHaveBeenCalled()
+
+            const item = await task
+            expect(item.text).toBe('foo')
+            expect(item.pkgName).toBe('')
+        })
     })
 })
