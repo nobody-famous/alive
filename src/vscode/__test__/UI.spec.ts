@@ -62,31 +62,25 @@ jest.mock('../views/ReplHistory', () => ({
     ReplHistoryTreeProvider: jest.fn().mockImplementation(() => historyObj),
 }))
 
+const packagesObj = {
+    update: jest.fn(),
+}
 jest.mock('../views/PackagesTree', () => ({
-    PackagesTreeProvider: class {
-        private pkgs: unknown[]
-        constructor(pkgs: unknown[]) {
-            this.pkgs = pkgs
-        }
-    },
+    PackagesTreeProvider: jest.fn().mockImplementation(() => packagesObj),
 }))
 
+const asdfObj = {
+    update: jest.fn(),
+}
 jest.mock('../views/AsdfSystemsTree', () => ({
-    AsdfSystemsTreeProvider: class {
-        private systems: unknown[]
-        constructor(systems: unknown[]) {
-            this.systems = systems
-        }
-    },
+    AsdfSystemsTreeProvider: jest.fn().mockImplementation(() => asdfObj),
 }))
 
+const threadsObj = {
+    update: jest.fn(),
+}
 jest.mock('../views/ThreadsTree', () => ({
-    ThreadsTreeProvider: class {
-        private threads: unknown[]
-        constructor(threads: unknown[]) {
-            this.threads = threads
-        }
-    },
+    ThreadsTreeProvider: jest.fn().mockImplementation(() => threadsObj),
 }))
 
 const createState = (): UIState => {
@@ -428,5 +422,57 @@ describe('UI tests', () => {
 
         const items = ui.getHistoryItems()
         expect(items).toMatchObject([])
+    })
+
+    const initTreeTest = (name: string, initFn: (ui: UI) => void, obj: { update: jest.Mock }) => {
+        const ui = new UI(createState())
+
+        initFn(ui)
+
+        expect(vscodeMock.window.registerTreeDataProvider).toHaveBeenCalledWith(name, expect.anything())
+        expect(obj.update).toHaveBeenCalled()
+    }
+
+    it('initThreadsTree', () => {
+        initTreeTest('lispThreads', (ui) => ui.initThreadsTree([]), threadsObj)
+    })
+
+    it('initAsdfSystemsTree', () => {
+        initTreeTest('asdfSystems', (ui) => ui.initAsdfSystemsTree([]), asdfObj)
+    })
+
+    it('initHistoryTree', () => {
+        initTreeTest('replHistory', (ui) => ui.initHistoryTree([]), historyObj)
+    })
+
+    it('initPackagesTree', () => {
+        initTreeTest('lispPackages', (ui) => ui.initPackagesTree([]), packagesObj)
+    })
+
+    it('initInspector', () => {
+        const ui = new UI(createState())
+
+        ui.initInspector()
+        expect(vscodeMock.window.registerWebviewViewProvider).toHaveBeenCalledWith('lispInspector', expect.anything())
+    })
+
+    const updateTreeTest = (initFn: (ui: UI) => void, obj: { update: jest.Mock }) => {
+        const ui = new UI(createState())
+
+        initFn(ui)
+
+        expect(obj.update).toHaveBeenCalled()
+    }
+
+    it('updatePackages', () => {
+        updateTreeTest((ui) => ui.updatePackages([]), packagesObj)
+    })
+
+    it('updateAsdfSystems', () => {
+        updateTreeTest((ui) => ui.updateAsdfSystems([]), asdfObj)
+    })
+
+    it('updateThreads', () => {
+        updateTreeTest((ui) => ui.updateThreads([]), threadsObj)
     })
 })

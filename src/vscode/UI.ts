@@ -124,17 +124,17 @@ export class UI extends EventEmitter implements UIEvents {
         const waitForInput = () => {
             return new Promise<string>((resolve) => {
                 const recvInput = (text: string) => {
-                    this.replView?.off('userInput', recvInput)
+                    this.replView.off('userInput', recvInput)
                     resolve(text)
                 }
 
-                this.replView?.on('userInput', recvInput)
+                this.replView.on('userInput', recvInput)
             })
         }
 
         await vscode.commands.executeCommand('lispRepl.focus')
 
-        this.replView?.getUserInput()
+        this.replView.getUserInput()
 
         return waitForInput()
     }
