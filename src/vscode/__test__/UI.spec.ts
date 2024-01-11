@@ -10,17 +10,22 @@ jest.mock('vscode', () => ({
         createQuickPick: jest.fn(),
         showQuickPick: jest.fn(),
     },
+    commands: {
+        executeCommand: jest.fn(),
+    },
     ViewColumn: { Two: 2 },
     TreeItem: class {},
 }))
 
 const replObj = {
     on: jest.fn(),
+    off: jest.fn(),
     clear: jest.fn(),
     clearInput: jest.fn(),
     addText: jest.fn(),
     setPackage: jest.fn(),
     setInput: jest.fn(),
+    getUserInput: jest.fn(),
 }
 jest.mock('../views/LispRepl', () => ({
     LispRepl: jest.fn().mockImplementation(() => replObj),
@@ -474,5 +479,27 @@ describe('UI tests', () => {
 
     it('updateThreads', () => {
         updateTreeTest((ui) => ui.updateThreads([]), threadsObj)
+    })
+
+    it('getUserInput', async () => {
+        const ui = new UI(createState())
+        let onName: string | undefined = undefined
+
+        const callFn = async () => {
+            replObj.on.mockImplementationOnce((name: string, fn: (text: string) => void) => {
+                onName = name
+                fn('foo')
+            })
+
+            return await ui.getUserInput()
+        }
+
+        const text = await callFn()
+
+        expect(onName).toBe('userInput')
+        expect(text).toBe('foo')
+        expect(replObj.getUserInput).toHaveBeenCalled()
+        expect(replObj.off).toHaveBeenCalledWith('userInput', expect.anything())
+        expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
     })
 })
