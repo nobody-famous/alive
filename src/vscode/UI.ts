@@ -9,6 +9,7 @@ import { DebugView } from './views/DebugView'
 import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Package, Thread } from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
+import { isFiniteNumber } from './Guards'
 
 export declare interface UIEvents {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
@@ -79,10 +80,6 @@ export class UI extends EventEmitter implements UIEvents {
         let index: number | undefined = undefined
 
         return new Promise<number>((resolve, reject) => {
-            if (this.state.ctx === undefined) {
-                return reject('Debugger: No extension context')
-            }
-
             const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
 
             view.on('restart', (num: number) => {
@@ -91,16 +88,15 @@ export class UI extends EventEmitter implements UIEvents {
             })
 
             view.on('debugClosed', () => {
-                const num =
-                    typeof index === 'number'
-                        ? index
-                        : info.restarts?.reduce((acc: number | undefined, item, ndx) => {
-                              return typeof acc === 'number' || item.name.toLocaleUpperCase() !== 'abort' ? acc : ndx
-                          }, undefined)
+                const num = isFiniteNumber(index)
+                    ? index
+                    : info.restarts?.reduce((acc: number | undefined, item, ndx) => {
+                          return typeof acc === 'number' || item.name.toLocaleUpperCase() !== 'abort' ? acc : ndx
+                      }, undefined)
 
                 view.stop()
 
-                typeof num === 'number' ? resolve(num) : reject('Failed to abort debugger')
+                isFiniteNumber(num) ? resolve(num) : reject('Failed to abort debugger')
             })
 
             view.on('jump-to', async (file: string, line: number, char: number) => {

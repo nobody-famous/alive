@@ -31,6 +31,15 @@ jest.mock('../views/LispRepl', () => ({
     LispRepl: jest.fn().mockImplementation(() => replObj),
 }))
 
+const debugObj = {
+    on: jest.fn(),
+    run: jest.fn(),
+    stop: jest.fn(),
+}
+jest.mock('../views/DebugView', () => ({
+    DebugView: jest.fn().mockImplementation(() => debugObj),
+}))
+
 const inspectorPanelObj = {
     on: jest.fn(),
 }
@@ -116,6 +125,24 @@ const getCallback = (
     initFn()
 
     return callback
+}
+const getAllCallbacks = (
+    obj: { on: jest.Mock },
+    mockCount: number,
+    initFn: () => void
+): { [index: string]: (...args: unknown[]) => void } => {
+    const callbacks: { [index: string]: (...args: unknown[]) => void } = {}
+    const onFn = (label: string, fn: (...args: unknown[]) => void) => {
+        callbacks[label] = fn
+    }
+
+    for (let count = 0; count < mockCount; count++) {
+        obj.on.mockImplementationOnce(onFn)
+    }
+
+    initFn()
+
+    return callbacks
 }
 
 describe('UI tests', () => {
@@ -501,5 +528,23 @@ describe('UI tests', () => {
         expect(replObj.getUserInput).toHaveBeenCalled()
         expect(replObj.off).toHaveBeenCalledWith('userInput', expect.anything())
         expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
+    })
+
+    describe('getRestartIndex', () => {
+        it('restart index', async () => {
+            const ui = new UI(createState())
+            const info = { message: 'foo', restarts: [], stackTrace: [] }
+            let task: Promise<number | undefined> | undefined = undefined
+            const fns = getAllCallbacks(debugObj, 3, () => (task = ui.getRestartIndex(info)))
+
+            fns['restart'](5)
+            fns['debugClosed']()
+
+            const index = await task
+
+            expect(index).toBe(5)
+            expect(debugObj.run).toHaveBeenCalled()
+            expect(debugObj.stop).toHaveBeenCalled()
+        })
     })
 })
