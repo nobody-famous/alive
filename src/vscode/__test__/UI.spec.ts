@@ -9,12 +9,22 @@ jest.mock('vscode', () => ({
         registerTreeDataProvider: jest.fn(),
         createQuickPick: jest.fn(),
         showQuickPick: jest.fn(),
+        showTextDocument: jest.fn().mockImplementation(() => ({
+            selection: {},
+            revealRange: jest.fn(),
+        })),
+    },
+    workspace: {
+        openTextDocument: jest.fn(),
     },
     commands: {
         executeCommand: jest.fn(),
     },
     ViewColumn: { Two: 2 },
     TreeItem: class {},
+    Position: class {},
+    Range: class {},
+    Selection: class {},
 }))
 
 const replObj = {
@@ -537,12 +547,38 @@ describe('UI tests', () => {
             let task: Promise<number | undefined> | undefined = undefined
             const fns = getAllCallbacks(debugObj, 3, () => (task = ui.getRestartIndex(info)))
 
+            fns['jump-to']('bar', 5, 10)
             fns['restart'](5)
             fns['debugClosed']()
 
             const index = await task
 
             expect(index).toBe(5)
+            expect(vscodeMock.workspace.openTextDocument).toHaveBeenCalledWith('bar')
+            expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+            expect(debugObj.run).toHaveBeenCalled()
+            expect(debugObj.stop).toHaveBeenCalled()
+        })
+
+        it('debugClosed', async () => {
+            const ui = new UI(createState())
+            const info = {
+                message: 'foo',
+                restarts: [
+                    { name: 'foo', description: '' },
+                    { name: 'abort', description: '' },
+                    { name: 'bar', description: '' },
+                ],
+                stackTrace: [],
+            }
+            let task: Promise<number | undefined> | undefined = undefined
+            const fns = getAllCallbacks(debugObj, 3, () => (task = ui.getRestartIndex(info)))
+
+            fns['debugClosed']()
+
+            const index = await task
+
+            expect(index).toBe(1)
             expect(debugObj.run).toHaveBeenCalled()
             expect(debugObj.stop).toHaveBeenCalled()
         })

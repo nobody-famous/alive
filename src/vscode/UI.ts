@@ -90,9 +90,11 @@ export class UI extends EventEmitter implements UIEvents {
             view.on('debugClosed', () => {
                 const num = isFiniteNumber(index)
                     ? index
-                    : info.restarts?.reduce((acc: number | undefined, item, ndx) => {
-                          return typeof acc === 'number' || item.name.toLocaleUpperCase() !== 'abort' ? acc : ndx
-                      }, undefined)
+                    : info.restarts?.reduce(
+                          (acc: number | undefined, item, ndx) =>
+                              typeof acc === 'number' || item.name.toLocaleLowerCase() !== 'abort' ? acc : ndx,
+                          undefined
+                      )
 
                 view.stop()
 
