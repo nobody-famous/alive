@@ -1,4 +1,4 @@
-import { HistoryItem } from '../Types'
+import { HistoryItem, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
 
 const vscodeMock = jest.requireMock('vscode')
@@ -69,6 +69,7 @@ jest.mock('../views/Inspector', () => ({
 
 const historyObj = {
     items: [],
+    clear: jest.fn(),
     clearIndex: jest.fn(),
     incrementIndex: jest.fn(),
     decrementIndex: jest.fn(),
@@ -439,6 +440,10 @@ describe('UI tests', () => {
             expect(qp.hide).toHaveBeenCalled()
             expect(historyObj.moveItemToTop).toHaveBeenCalled()
 
+            fn?.([{ label: 'foo', description: 'bar' }])
+            expect(qp.hide).toHaveBeenCalled()
+            expect(historyObj.moveItemToTop).toHaveBeenCalled()
+
             const item = await task
             expect(item.text).toBe('foo')
             expect(item.pkgName).toBe('')
@@ -560,15 +565,11 @@ describe('UI tests', () => {
             expect(debugObj.stop).toHaveBeenCalled()
         })
 
-        it('debugClosed', async () => {
+        const closedTest = async (restarts: RestartInfo[], expectIndex: number | undefined) => {
             const ui = new UI(createState())
             const info = {
                 message: 'foo',
-                restarts: [
-                    { name: 'foo', description: '' },
-                    { name: 'abort', description: '' },
-                    { name: 'bar', description: '' },
-                ],
+                restarts,
                 stackTrace: [],
             }
             let task: Promise<number | undefined> | undefined = undefined
@@ -578,9 +579,58 @@ describe('UI tests', () => {
 
             const index = await task
 
-            expect(index).toBe(1)
+            expect(index).toBe(expectIndex)
             expect(debugObj.run).toHaveBeenCalled()
             expect(debugObj.stop).toHaveBeenCalled()
+        }
+
+        it('debugClosed', async () => {
+            await closedTest(
+                [
+                    { name: 'foo', description: '' },
+                    { name: 'abort', description: '' },
+                    { name: 'bar', description: '' },
+                ],
+                1
+            )
         })
+
+        it('debugClosed fail', async () => {
+            await closedTest([], undefined)
+        })
+    })
+
+    it('setReplInput', () => {
+        const ui = new UI(createState())
+
+        ui.setReplInput('foo')
+        expect(replObj.setInput).toHaveBeenCalledWith('foo')
+    })
+
+    it('setReplPackage', () => {
+        const ui = new UI(createState())
+
+        ui.setReplPackage('foo')
+        expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+    })
+
+    it('clearReplHistory', () => {
+        const ui = new UI(createState())
+
+        ui.clearReplHistory()
+        expect(historyObj.clear).toHaveBeenCalled()
+    })
+
+    it('registerProviders', () => {
+        const ui = new UI(createState())
+
+        ui.registerProviders()
+        expect(vscodeMock.window.registerWebviewViewProvider).toHaveBeenCalledWith('lispRepl', expect.anything())
+    })
+
+    it('init', () => {
+        const ui = new UI(createState())
+
+        ui.init()
     })
 })

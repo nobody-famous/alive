@@ -79,7 +79,7 @@ export class UI extends EventEmitter implements UIEvents {
     async getRestartIndex(info: DebugInfo): Promise<number | undefined> {
         let index: number | undefined = undefined
 
-        return new Promise<number>((resolve, reject) => {
+        return new Promise<number | undefined>((resolve) => {
             const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
 
             view.on('restart', (num: number) => {
@@ -90,7 +90,7 @@ export class UI extends EventEmitter implements UIEvents {
             view.on('debugClosed', () => {
                 const num = isFiniteNumber(index)
                     ? index
-                    : info.restarts?.reduce(
+                    : info.restarts.reduce(
                           (acc: number | undefined, item, ndx) =>
                               typeof acc === 'number' || item.name.toLocaleLowerCase() !== 'abort' ? acc : ndx,
                           undefined
@@ -98,7 +98,7 @@ export class UI extends EventEmitter implements UIEvents {
 
                 view.stop()
 
-                isFiniteNumber(num) ? resolve(num) : reject('Failed to abort debugger')
+                resolve(isFiniteNumber(num) ? num : undefined)
             })
 
             view.on('jump-to', async (file: string, line: number, char: number) => {
