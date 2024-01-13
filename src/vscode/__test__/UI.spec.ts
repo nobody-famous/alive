@@ -67,7 +67,20 @@ jest.mock('../views/Inspector', () => ({
     Inspector: jest.fn().mockImplementation(() => inspectorObj),
 }))
 
-const historyObj = {
+const historyObj: {
+    items: HistoryItem[]
+    clear: jest.Mock
+    clearIndex: jest.Mock
+    incrementIndex: jest.Mock
+    decrementIndex: jest.Mock
+    getCurrentItem: jest.Mock
+    moveItemToTop: jest.Mock
+    moveToTop: jest.Mock
+    removeItem: jest.Mock
+    removeNode: jest.Mock
+    addItem: jest.Mock
+    update: jest.Mock
+} = {
     items: [],
     clear: jest.fn(),
     clearIndex: jest.fn(),
@@ -414,7 +427,7 @@ describe('UI tests', () => {
 
     describe('selectHistoryItem', () => {
         interface QP {
-            items: string[]
+            items: HistoryItem[]
             onDidChangeSelection: jest.Mock
             onDidHide: jest.Mock
             show: jest.Mock
@@ -445,32 +458,39 @@ describe('UI tests', () => {
             const ui = new UI(createState())
 
             const qp = {
-                items: [],
+                items: [{ text: '', pkgName: '' }],
                 onDidChangeSelection: jest.fn(),
-                onDidHide: jest.fn(),
+                onDidHide: jest.fn().mockImplementation((fn: () => void) => fn()),
                 hide: jest.fn(),
                 show: jest.fn(),
+                dispose: jest.fn(),
             }
 
-            vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
+            try {
+                historyObj.items = [{ text: '', pkgName: '' }]
+                vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
 
-            const { task, fn } = getChangeFn(ui, qp)
+                const { task, fn } = getChangeFn(ui, qp)
 
-            fn?.([])
-            expect(qp.show).toHaveBeenCalled()
-            expect(qp.hide).not.toHaveBeenCalled()
+                fn?.([])
+                expect(qp.show).toHaveBeenCalled()
+                expect(qp.hide).not.toHaveBeenCalled()
+                expect(qp.dispose).toHaveBeenCalled()
 
-            fn?.([{ label: 'foo' }])
-            expect(qp.hide).toHaveBeenCalled()
-            expect(historyObj.moveItemToTop).toHaveBeenCalled()
+                fn?.([{ label: 'foo' }])
+                expect(qp.hide).toHaveBeenCalled()
+                expect(historyObj.moveItemToTop).toHaveBeenCalled()
 
-            fn?.([{ label: 'foo', description: 'bar' }])
-            expect(qp.hide).toHaveBeenCalled()
-            expect(historyObj.moveItemToTop).toHaveBeenCalled()
+                fn?.([{ label: 'foo', description: 'bar' }])
+                expect(qp.hide).toHaveBeenCalled()
+                expect(historyObj.moveItemToTop).toHaveBeenCalled()
 
-            const item = await task
-            expect(item.text).toBe('foo')
-            expect(item.pkgName).toBe('')
+                const item = await task
+                expect(item.text).toBe('foo')
+                expect(item.pkgName).toBe('')
+            } finally {
+                historyObj.items = []
+            }
         })
     })
 
