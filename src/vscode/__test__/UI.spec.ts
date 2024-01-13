@@ -64,7 +64,7 @@ const inspectorObj = {
 }
 const inspectorModuleMock = jest.requireMock('../views/Inspector')
 jest.mock('../views/Inspector', () => ({
-    Inspector: jest.fn().mockImplementationOnce(() => inspectorObj),
+    Inspector: jest.fn().mockImplementation(() => inspectorObj),
 }))
 
 const historyObj = {
@@ -347,24 +347,48 @@ describe('UI tests', () => {
     })
 
     describe('newInspector', () => {
+        const info = { id: 5, resultType: 'foo', result: 'bar', text: 'bar', package: 'foo' }
+
         it('inspectorClosed', () => {
             const ui = new UI(createState())
             const cb = jest.fn()
-            const fake = { on: jest.fn(), show: jest.fn() }
+            const fake = { on: jest.fn().mockImplementation(() => console.log('ON CALLED')), show: jest.fn() }
 
             inspectorModuleMock.Inspector.mockImplementationOnce(() => fake)
 
-            const fn = getCallback(
-                fake,
-                5,
-                () => ui.newInspector({ id: 5, resultType: 'foo', result: 'bar', text: 'bar', package: 'foo' }),
-                'inspectorClosed'
-            )
+            const fn = getCallback(fake, 5, () => ui.newInspector(info), 'inspectorClosed')
 
             ui.on('inspectClosed', cb)
             fn?.()
 
             expect(cb).toHaveBeenCalled()
+        })
+
+        it('callbacks', () => {
+            const ui = new UI(createState())
+            const fns = getAllCallbacks(inspectorObj, 54, () => ui.newInspector(info))
+            const called: { [index: string]: boolean } = {
+                inspectEval: false,
+                inspectRefresh: false,
+                inspectRefreshMacro: false,
+                inspectMacroInc: false,
+            }
+
+            for (const name of Object.keys(called)) {
+                ui.on(name, () => (called[name] = true))
+            }
+
+            fns['inspector-eval']('foo')
+            expect(called['inspectEval']).toBe(true)
+
+            fns['inspector-refresh']()
+            expect(called['inspectRefresh']).toBe(true)
+
+            fns['inspector-refresh-macro']()
+            expect(called['inspectRefreshMacro']).toBe(true)
+
+            fns['inspector-macro-inc']()
+            expect(called['inspectMacroInc']).toBe(true)
         })
     })
 
