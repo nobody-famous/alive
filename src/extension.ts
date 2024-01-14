@@ -32,7 +32,7 @@ import { getHoverProvider } from './vscode/providers/Hover'
 // in order to be independent of any future changes to the default setting.
 const wordSeparators = '`|;:\'",()'
 
-export const activate = async (ctx: vscode.ExtensionContext) => {
+export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
 
     const workspacePath = await getWorkspaceOrFilePath()
@@ -44,6 +44,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     if (Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
         const aliveConfig = vscode.workspace.getConfiguration('alive')
+
+        console.log('CONFIG', aliveConfig)
 
         lspHost = typeof aliveConfig.lsp?.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
         lspPort = typeof aliveConfig.lsp?.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
