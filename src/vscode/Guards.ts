@@ -6,6 +6,14 @@ export function isString(data: unknown): data is string {
     return typeof data === 'string'
 }
 
+export function isArray<T>(data: unknown, validate: (item: unknown) => item is T): data is Array<T> {
+    return Array.isArray(data) && data.every(validate)
+}
+
+export function isBoolean(data: unknown): data is boolean {
+    return typeof data === 'boolean'
+}
+
 export function isFiniteNumber(data: unknown): data is number {
     return Number.isFinite(data)
 }

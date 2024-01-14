@@ -20,6 +20,7 @@ import { HistoryNode } from './vscode/views/ReplHistory'
 import { UI } from './vscode/UI'
 import { log, toLog } from './vscode/Log'
 import { getHoverProvider } from './vscode/providers/Hover'
+import { initialize as initCfg } from './config'
 
 // Word separator characters for CommonLisp.
 // These determine how a double-click will extend over a symbol.
@@ -35,19 +36,12 @@ const wordSeparators = '`|;:\'",()'
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
 
+    const aliveCfg = initCfg()
     const workspacePath = await getWorkspaceOrFilePath()
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
 
-    let lspHost: string | undefined = undefined
-    let lspPort: number | undefined = undefined
-
     if (Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
-        const aliveConfig = vscode.workspace.getConfiguration('alive')
-
-        lspHost = typeof aliveConfig.lsp?.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
-        lspPort = typeof aliveConfig.lsp?.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
-
         const editorConfig = vscode.workspace.getConfiguration('editor')
         await editorConfig.update('formatOnType', true, false, true)
 
@@ -78,7 +72,12 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         lsp: new LSP(state),
     }
 
-    const useRemoteServer = lspHost !== undefined && lspPort !== undefined
+    const remoteCfg = { ...aliveCfg.lsp.remote }
+    const useRemoteServer = remoteCfg.host !== null && remoteCfg.port !== null
+
+    if (remoteCfg.host === null || remoteCfg.port === null) {
+        // Download and connect to local server
+    }
 
     if (useRemoteServer) {
         log(`Using remote server ${toLog(lspHost)} ${toLog(lspPort)}`)

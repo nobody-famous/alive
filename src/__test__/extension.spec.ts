@@ -69,7 +69,8 @@ const uiObj = {
     init: jest.fn(),
     registerProviders: jest.fn(),
 }
-const uiMod = jest.requireMock('../vscode/UI')
+
+// const uiMod = jest.requireMock('../vscode/UI')
 jest.mock('../vscode/UI', () => ({
     UI: jest.fn().mockImplementation(() => uiObj),
 }))
