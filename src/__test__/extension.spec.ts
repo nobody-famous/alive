@@ -61,6 +61,19 @@ jest.mock('../vscode/backend/LSP', () => ({
     LSP: jest.fn(),
 }))
 
+jest.mock('../vscode/Utils', () => ({
+    getWorkspaceOrFilePath: jest.fn(),
+}))
+
+const uiObj = {
+    init: jest.fn(),
+    registerProviders: jest.fn(),
+}
+const uiMod = jest.requireMock('../vscode/UI')
+jest.mock('../vscode/UI', () => ({
+    UI: jest.fn().mockImplementation(() => uiObj),
+}))
+
 describe('Extension tests', () => {
     it('Activate', async () => {
         const ctx = {

@@ -45,8 +45,6 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     if (Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
         const aliveConfig = vscode.workspace.getConfiguration('alive')
 
-        console.log('CONFIG', aliveConfig)
-
         lspHost = typeof aliveConfig.lsp?.remote.host === 'string' ? aliveConfig.lsp.remote.host : undefined
         lspPort = typeof aliveConfig.lsp?.remote.port === 'number' ? aliveConfig.lsp.remote.port : undefined
 
