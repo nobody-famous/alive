@@ -1,10 +1,11 @@
-import * as vscode from 'vscode'
-import * as cmds from './vscode/commands'
-import * as path from 'path'
 import { promises as fs } from 'fs'
-import { PackageNode, ExportNode } from './vscode/views/PackagesTree'
-import { ThreadNode } from './vscode/views/ThreadsTree'
+import * as path from 'path'
+import * as vscode from 'vscode'
+import { RemoteConfig, initialize as initCfg } from './config'
+import { isFiniteNumber, isString } from './vscode/Guards'
+import { log, toLog } from './vscode/Log'
 import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
+import { UI } from './vscode/UI'
 import {
     COMMON_LISP_ID,
     diagnosticsEnabled,
@@ -16,11 +17,11 @@ import {
 } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
-import { HistoryNode } from './vscode/views/ReplHistory'
-import { UI } from './vscode/UI'
-import { log, toLog } from './vscode/Log'
+import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
-import { initialize as initCfg } from './config'
+import { ExportNode, PackageNode } from './vscode/views/PackagesTree'
+import { HistoryNode } from './vscode/views/ReplHistory'
+import { ThreadNode } from './vscode/views/ThreadsTree'
 
 // Word separator characters for CommonLisp.
 // These determine how a double-click will extend over a symbol.
@@ -73,26 +74,15 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     }
 
     const remoteCfg = { ...aliveCfg.lsp.remote }
-    const useRemoteServer = remoteCfg.host !== null && remoteCfg.port !== null
 
     if (remoteCfg.host === null || remoteCfg.port === null) {
-        // Download and connect to local server
-    }
-
-    if (useRemoteServer) {
-        log(`Using remote server ${toLog(lspHost)} ${toLog(lspPort)}`)
-    } else {
-        try {
-            state.lspInstallPath = await downloadLspServer()
-            log(`LSP install path: ${toLog(state.lspInstallPath)}`)
-        } catch (err) {
-            vscode.window.showErrorMessage(`Failed to download LSP server: ${err}`)
+        if (!startLocalServer(state, remoteCfg)) {
             return
         }
 
-        lspHost = '127.0.0.1'
-        lspPort = await startLspServer(state)
-        log(`Server port ${toLog(lspPort)}`)
+        log(`Server port ${toLog(remoteCfg.port)}`)
+    } else {
+        log(`Using remote server ${toLog(remoteCfg.host)} ${toLog(remoteCfg.port)}`)
     }
 
     const history = await readReplHistory(state.replHistoryFile)
@@ -100,12 +90,12 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     initUI(deps, state)
     initLSP(deps, state)
 
-    if (lspHost === undefined || lspPort === undefined) {
-        vscode.window.showErrorMessage(`Cannot connect to ${lspHost}:${lspPort}`)
+    if (remoteCfg.host === null || remoteCfg.port === null) {
+        vscode.window.showErrorMessage(`Cannot connect to ${remoteCfg.host}:${remoteCfg.port}`)
         return
     }
 
-    await deps.lsp.connect({ host: lspHost, port: lspPort })
+    await deps.lsp.connect({ host: remoteCfg.host, port: remoteCfg.port })
     await initTreeViews(deps, history)
 
     const activeDoc = vscode.window.activeTextEditor?.document
@@ -219,6 +209,22 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     if (activeDoc !== undefined) {
         vscode.window.showTextDocument(activeDoc)
     }
+}
+
+async function startLocalServer(state: ExtensionState, remoteCfg: RemoteConfig): Promise<boolean> {
+    state.lspInstallPath = await downloadLspServer()
+    if (!isString(state.lspInstallPath)) {
+        return false
+    }
+
+    remoteCfg.host = '127.0.0.1'
+    remoteCfg.port = await startLspServer(state)
+
+    if (!isFiniteNumber(remoteCfg.port)) {
+        return false
+    }
+
+    return true
 }
 
 function setWorkspaceEventHandlers(deps: ExtensionDeps, state: ExtensionState) {
