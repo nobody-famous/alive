@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { RemoteConfig, initialize as initCfg } from './config'
+import { RemoteConfig, readAliveConfig } from './config'
 import { isFiniteNumber, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
 import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
@@ -37,20 +37,12 @@ const wordSeparators = '`|;:\'",()'
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
 
-    const aliveCfg = initCfg()
+    const aliveCfg = readAliveConfig()
     const workspacePath = await getWorkspaceOrFilePath()
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
 
-    if (Array.isArray(vscode.workspace.workspaceFolders) && vscode.workspace.workspaceFolders.length > 0) {
-        const editorConfig = vscode.workspace.getConfiguration('editor')
-        await editorConfig.update('formatOnType', true, false, true)
-
-        const lispConfig = vscode.workspace.getConfiguration('', { languageId: COMMON_LISP_ID })
-        await lispConfig.update('editor.wordSeparators', wordSeparators, false, true)
-
-        log(`Format On Type: ${editorConfig.get('formatOnType')}`)
-    }
+    await updateEditorConfig()
 
     const state: ExtensionState = {
         diagnostics: vscode.languages.createDiagnosticCollection('Compiler Diagnostics'),
@@ -209,6 +201,20 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     if (activeDoc !== undefined) {
         vscode.window.showTextDocument(activeDoc)
     }
+}
+
+async function updateEditorConfig() {
+    if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
+        return
+    }
+
+    const editorConfig = vscode.workspace.getConfiguration('editor')
+    await editorConfig.update('formatOnType', true, false, true)
+
+    const lispConfig = vscode.workspace.getConfiguration('', { languageId: COMMON_LISP_ID })
+    await lispConfig.update('editor.wordSeparators', wordSeparators, false, true)
+
+    log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 }
 
 async function startLocalServer(state: ExtensionState, remoteCfg: RemoteConfig): Promise<boolean> {

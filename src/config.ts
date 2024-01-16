@@ -27,7 +27,7 @@ export interface AliveConfig {
     lsp: LSPConfig
 }
 
-export const initialize = (): AliveConfig => {
+export const readAliveConfig = (): AliveConfig => {
     const cfg: AliveConfig = {
         enableDiagnostics: true,
         format: {
