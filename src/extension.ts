@@ -108,15 +108,15 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(deps)),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
-            const item = await deps.ui.selectHistoryItem()
+            const item = await ui.selectHistoryItem()
 
-            await saveReplHistory(state.replHistoryFile, deps.ui.getHistoryItems())
+            await saveReplHistory(state.replHistoryFile, ui.getHistoryItems())
 
-            deps.lsp.eval(item.text, item.pkgName)
+            lsp.eval(item.text, item.pkgName)
         }),
 
         vscode.commands.registerCommand('alive.clearReplHistory', () => {
-            deps.ui.clearReplHistory()
+            ui.clearReplHistory()
 
             saveReplHistory(state.replHistoryFile, [])
         }),
@@ -126,14 +126,14 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
                 return
             }
 
-            deps.lsp.removePackage(node.label)
+            lsp.removePackage(node.label)
         }),
         vscode.commands.registerCommand('alive.removeExport', (node) => {
             if (!(node instanceof ExportNode) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
-            deps.lsp.removeExport(node.pkg, node.label)
+            lsp.removeExport(node.pkg, node.label)
         }),
         vscode.commands.registerCommand('alive.loadAsdfByName', async (node) => {
             if (typeof node.label !== 'string' || node.label === '') {
@@ -142,49 +142,49 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
             await vscode.workspace.saveAll()
 
-            deps.ui.addReplText(`Loading ASDF System ${node.label}`)
+            ui.addReplText(`Loading ASDF System ${node.label}`)
 
-            await deps.lsp.loadAsdfSystem(node.label)
+            await lsp.loadAsdfSystem(node.label)
 
-            deps.ui.addReplText(`Done Loading ASDF System ${node.label}`)
+            ui.addReplText(`Done Loading ASDF System ${node.label}`)
         }),
         vscode.commands.registerCommand('alive.killThread', (node) => {
             if (!(node instanceof ThreadNode) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
-            deps.lsp.killThread(node.thread)
+            lsp.killThread(node.thread)
         }),
         vscode.commands.registerCommand('alive.evalHistory', (node) => {
             if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
-            deps.ui.moveHistoryNodeToTop(node)
-            deps.lsp.eval(node.item.text, node.item.pkgName)
+            ui.moveHistoryNodeToTop(node)
+            lsp.eval(node.item.text, node.item.pkgName)
         }),
         vscode.commands.registerCommand('alive.editHistory', (node) => {
             if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
-            deps.ui.setReplPackage(node.item.pkgName)
-            deps.ui.setReplInput(node.item.text)
+            ui.setReplPackage(node.item.pkgName)
+            ui.setReplInput(node.item.text)
         }),
         vscode.commands.registerCommand('alive.removeHistory', (node) => {
             if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
-            deps.ui.removeHistoryNode(node)
+            ui.removeHistoryNode(node)
 
-            saveReplHistory(state.replHistoryFile, deps.ui.getHistoryItems())
+            saveReplHistory(state.replHistoryFile, ui.getHistoryItems())
         })
     )
 
     setWorkspaceEventHandlers(ui, lsp, state)
 
-    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state, deps.lsp))
+    vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state, lsp))
 
     await vscode.commands.executeCommand('replHistory.focus')
     await vscode.commands.executeCommand('lispRepl.focus')
