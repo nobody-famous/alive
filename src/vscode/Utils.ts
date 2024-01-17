@@ -142,10 +142,8 @@ export function diagnosticsEnabled() {
 }
 
 export function startCompileTimer(
-    deps: {
-        ui: Pick<UI, 'updatePackages'>
-        lsp: Pick<LSP, 'tryCompileFile' | 'listPackages'>
-    },
+    ui: Pick<UI, 'updatePackages'>,
+    lsp: Pick<LSP, 'tryCompileFile' | 'listPackages'>,
     state: {
         compileRunning: boolean
         compileTimeoutID: NodeJS.Timeout | undefined
@@ -159,8 +157,8 @@ export function startCompileTimer(
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.tryCompileFile(deps.lsp, state)
-        await cmds.refreshPackages(deps)
+        await cmds.tryCompileFile(lsp, state)
+        await cmds.refreshPackages(ui, lsp)
     }, 500)
 }
 

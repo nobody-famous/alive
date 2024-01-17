@@ -11,13 +11,13 @@ export function clearRepl(deps: ExtensionDeps) {
     deps.ui.clearRepl()
 }
 
-export async function sendToRepl(deps: ExtensionDeps) {
+export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'eval'>) {
     const editor = vscode.window.activeTextEditor
-    const info = await deps.lsp.getEvalInfo(editor)
+    const info = await lsp.getEvalInfo(editor)
 
     if (info !== undefined) {
         await vscode.workspace.saveAll()
-        await deps.lsp.eval(info.text, info.package)
+        await lsp.eval(info.text, info.package)
     }
 }
 
@@ -40,14 +40,14 @@ export async function inlineEval(deps: ExtensionDeps, state: ExtensionState): Pr
     vscode.commands.executeCommand('editor.action.showHover')
 }
 
-export async function selectSexpr(deps: ExtensionDeps) {
+export async function selectSexpr(lsp: Pick<LSP, 'getTopExprRange'>) {
     const editor = vscode.window.activeTextEditor
 
     if (editor?.document === undefined) {
         return
     }
 
-    const range = await deps.lsp.getTopExprRange(editor)
+    const range = await lsp.getTopExprRange(editor)
 
     if (range === undefined) {
         return
@@ -56,22 +56,22 @@ export async function selectSexpr(deps: ExtensionDeps) {
     editor.selection = new vscode.Selection(range?.start, range?.end)
 }
 
-export async function refreshPackages(deps: { ui: Pick<UI, 'updatePackages'>; lsp: Pick<LSP, 'listPackages'> }) {
-    const pkgs = await deps.lsp.listPackages()
+export async function refreshPackages(ui: Pick<UI, 'updatePackages'>, lsp: Pick<LSP, 'listPackages'>) {
+    const pkgs = await lsp.listPackages()
 
-    deps.ui.updatePackages(pkgs)
+    ui.updatePackages(pkgs)
 }
 
-export async function refreshAsdfSystems(deps: ExtensionDeps) {
-    const systems = await deps.lsp.listAsdfSystems()
+export async function refreshAsdfSystems(ui: Pick<UI, 'updateAsdfSystems'>, lsp: Pick<LSP, 'listAsdfSystems'>) {
+    const systems = await lsp.listAsdfSystems()
 
-    deps.ui.updateAsdfSystems(systems)
+    ui.updateAsdfSystems(systems)
 }
 
-export async function refreshThreads(deps: ExtensionDeps) {
-    const threads = await deps.lsp.listThreads()
+export async function refreshThreads(ui: Pick<UI, 'updateThreads'>, lsp: Pick<LSP, 'listThreads'>) {
+    const threads = await lsp.listThreads()
 
-    deps.ui.updateThreads(threads)
+    ui.updateThreads(threads)
 }
 
 export async function loadAsdfSystem(deps: ExtensionDeps) {

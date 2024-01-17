@@ -4,7 +4,7 @@ import * as vscode from 'vscode'
 import { RemoteConfig, readAliveConfig } from './config'
 import { isFiniteNumber, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
-import { ExtensionDeps, ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
+import { ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
 import { UI } from './vscode/UI'
 import {
     COMMON_LISP_ID,
@@ -51,21 +51,15 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         compileTimeoutID: undefined,
         ctx,
         workspacePath,
-        replHistoryFile:
-            workspacePath !== undefined ? path.join(workspacePath, '.vscode', 'alive', 'repl-history.json') : 'repl-history.json',
+        replHistoryFile: path.join(workspacePath, '.vscode', 'alive', 'repl-history.json'),
     }
 
-    const ui = new UI(state)
-
-    ui.init()
-    ui.registerProviders()
-
-    const deps: ExtensionDeps = {
-        ui: ui,
-        lsp: new LSP(state),
-    }
-
+    const ui = createUI(state)
+    const lsp = new LSP(state)
     const remoteCfg = { ...aliveCfg.lsp.remote }
+
+    registerUIEvents(ui, lsp, state)
+    registerLSPEvents(ui, lsp, state)
 
     if (remoteCfg.host === null || remoteCfg.port === null) {
         if (!startLocalServer(state, remoteCfg)) {
@@ -79,33 +73,30 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
     const history = await readReplHistory(state.replHistoryFile)
 
-    initUI(deps, state)
-    initLSP(deps, state)
-
     if (remoteCfg.host === null || remoteCfg.port === null) {
         vscode.window.showErrorMessage(`Cannot connect to ${remoteCfg.host}:${remoteCfg.port}`)
         return
     }
 
-    await deps.lsp.connect({ host: remoteCfg.host, port: remoteCfg.port })
-    await initTreeViews(deps, history)
+    await lsp.connect({ host: remoteCfg.host, port: remoteCfg.port })
+    await initTreeViews(ui, lsp, history)
 
     const activeDoc = vscode.window.activeTextEditor?.document
 
     if (activeDoc !== undefined && hasValidLangId(activeDoc, [COMMON_LISP_ID])) {
-        deps.lsp.editorChanged(vscode.window.activeTextEditor)
+        lsp.editorChanged(vscode.window.activeTextEditor)
     }
 
     ctx.subscriptions.push(
-        vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr(deps)),
-        vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(deps)),
+        vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr(lsp)),
+        vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(lsp)),
         vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(deps)),
         vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(deps, state)),
 
-        vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(deps)),
+        vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(ui, lsp)),
 
-        vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(deps)),
-        vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(deps)),
+        vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp)),
+        vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(ui, lsp)),
         vscode.commands.registerCommand('alive.clearRepl', () => cmds.clearRepl(deps)),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
         vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(deps, state)),
@@ -191,7 +182,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         })
     )
 
-    setWorkspaceEventHandlers(deps, state)
+    setWorkspaceEventHandlers(ui, lsp, state)
 
     vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state, deps.lsp))
 
@@ -201,6 +192,16 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     if (activeDoc !== undefined) {
         vscode.window.showTextDocument(activeDoc)
     }
+}
+
+function createUI(state: ExtensionState) {
+    const ui = new UI(state)
+
+    ui.init()
+    ui.registerProviders()
+    ui.initInspector()
+
+    return ui
 }
 
 async function updateEditorConfig() {
@@ -233,17 +234,17 @@ async function startLocalServer(state: ExtensionState, remoteCfg: RemoteConfig):
     return true
 }
 
-function setWorkspaceEventHandlers(deps: ExtensionDeps, state: ExtensionState) {
-    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(deps, state, doc))
+function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
+    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(ui, lsp, state, doc))
 
     vscode.workspace.onDidChangeTextDocument(
-        (event: vscode.TextDocumentChangeEvent) => deps.lsp.textDocumentChanged(event),
+        (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event),
         null,
         state.ctx.subscriptions
     )
 
     vscode.window.onDidChangeActiveTextEditor(
-        (editor?: vscode.TextEditor) => deps.lsp.editorChanged(editor),
+        (editor?: vscode.TextEditor) => lsp.editorChanged(editor),
         null,
         state.ctx.subscriptions
     )
@@ -278,55 +279,59 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
     }
 }
 
-function openTextDocument(deps: ExtensionDeps, state: ExtensionState, doc: vscode.TextDocument) {
+function openTextDocument(ui: UI, lsp: LSP, state: ExtensionState, doc: vscode.TextDocument) {
     if (!hasValidLangId(doc, [COMMON_LISP_ID])) {
         return
     }
 
     if (diagnosticsEnabled()) {
-        startCompileTimer(deps, state)
+        startCompileTimer(ui, lsp, state)
     }
 }
 
-async function initTreeViews(deps: ExtensionDeps, history: HistoryItem[]) {
-    const tasks = [initThreadsTree(deps), initAsdfSystemsTree(deps), initPackagesTree(deps)]
+async function initTreeViews(
+    ui: Pick<UI, 'initHistoryTree' | 'initThreadsTree' | 'initAsdfSystemsTree' | 'initPackagesTree'>,
+    lsp: Pick<LSP, 'listThreads' | 'listAsdfSystems' | 'listPackages'>,
+    history: HistoryItem[]
+) {
+    const tasks = [initThreadsTree(ui, lsp), initAsdfSystemsTree(ui, lsp), initPackagesTree(ui, lsp)]
 
     await Promise.allSettled(tasks)
 
-    deps.ui.initHistoryTree(history)
+    ui.initHistoryTree(history)
 }
 
-async function initThreadsTree(deps: ExtensionDeps) {
+async function initThreadsTree(ui: Pick<UI, 'initThreadsTree'>, lsp: Pick<LSP, 'listThreads'>) {
     try {
-        const threads = await deps.lsp.listThreads()
-        deps.ui.initThreadsTree(threads)
+        const threads = await lsp.listThreads()
+        ui.initThreadsTree(threads)
     } catch (err) {
         log(`Failed to init threads tree: ${err}`)
     }
 }
 
-async function initAsdfSystemsTree(deps: ExtensionDeps) {
+async function initAsdfSystemsTree(ui: Pick<UI, 'initAsdfSystemsTree'>, lsp: Pick<LSP, 'listAsdfSystems'>) {
     try {
-        const systems = await deps.lsp.listAsdfSystems()
-        deps.ui.initAsdfSystemsTree(systems)
+        const systems = await lsp.listAsdfSystems()
+        ui.initAsdfSystemsTree(systems)
     } catch (err) {
         log(`Failed to init ASDF tree: ${err}`)
     }
 }
 
-async function initPackagesTree(deps: ExtensionDeps) {
+async function initPackagesTree(ui: Pick<UI, 'initPackagesTree'>, lsp: Pick<LSP, 'listPackages'>) {
     try {
-        const pkgs = await deps.lsp.listPackages()
-        deps.ui.initPackagesTree(pkgs)
+        const pkgs = await lsp.listPackages()
+        ui.initPackagesTree(pkgs)
     } catch (err) {
         log(`Failed to init packages tree: ${err}`)
     }
 }
 
-async function diagnosticsRefresh(deps: ExtensionDeps, state: ExtensionState, editors: vscode.TextEditor[]) {
+async function diagnosticsRefresh(lsp: LSP, state: ExtensionState, editors: vscode.TextEditor[]) {
     for (const editor of editors) {
         if (editor.document.languageId === COMMON_LISP_ID) {
-            const resp = await tryCompile(state, deps.lsp, editor.document)
+            const resp = await tryCompile(state, lsp, editor.document)
 
             if (resp !== undefined) {
                 await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
@@ -335,31 +340,29 @@ async function diagnosticsRefresh(deps: ExtensionDeps, state: ExtensionState, ed
     }
 }
 
-function initUI(deps: ExtensionDeps, state: ExtensionState) {
-    deps.ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
-    deps.ui.on('listPackages', async (fn) => fn(await deps.lsp.listPackages()))
-    deps.ui.on('eval', (text, pkgName, storeResult) => deps.lsp.eval(text, pkgName, storeResult))
-    deps.ui.on('inspect', (text, pkgName) => deps.lsp.inspect(text, pkgName))
-    deps.ui.on('inspectClosed', (info) => deps.lsp.inspectClosed(info))
-    deps.ui.on('inspectEval', (info, text) => deps.lsp.inspectEval(info, text))
-    deps.ui.on('inspectRefresh', (info) => deps.lsp.inspectRefresh(info))
-    deps.ui.on('inspectRefreshMacro', (info) => deps.lsp.inspectRefreshMacro(info))
-    deps.ui.on('inspectMacroInc', (info) => deps.lsp.inspectMacroInc(info))
-    deps.ui.on('diagnosticsRefresh', (editors) => diagnosticsRefresh(deps, state, editors))
-
-    deps.ui.initInspector()
+function registerUIEvents(ui: UI, lsp: LSP, state: ExtensionState) {
+    ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
+    ui.on('listPackages', async (fn) => fn(await lsp.listPackages()))
+    ui.on('eval', (text, pkgName, storeResult) => lsp.eval(text, pkgName, storeResult))
+    ui.on('inspect', (text, pkgName) => lsp.inspect(text, pkgName))
+    ui.on('inspectClosed', (info) => lsp.inspectClosed(info))
+    ui.on('inspectEval', (info, text) => lsp.inspectEval(info, text))
+    ui.on('inspectRefresh', (info) => lsp.inspectRefresh(info))
+    ui.on('inspectRefreshMacro', (info) => lsp.inspectRefreshMacro(info))
+    ui.on('inspectMacroInc', (info) => lsp.inspectMacroInc(info))
+    ui.on('diagnosticsRefresh', (editors) => diagnosticsRefresh(lsp, state, editors))
 }
 
-function initLSP(deps: ExtensionDeps, state: ExtensionState) {
-    deps.lsp.on('refreshPackages', () => cmds.refreshPackages(deps))
-    deps.lsp.on('refreshAsdfSystems', () => cmds.refreshAsdfSystems(deps))
-    deps.lsp.on('refreshThreads', () => cmds.refreshThreads(deps))
-    deps.lsp.on('refreshInspectors', () => deps.ui.refreshInspectors())
-    deps.lsp.on('refreshDiagnostics', () => deps.ui.refreshDiagnostics())
-    deps.lsp.on('startCompileTimer', () => startCompileTimer(deps, state))
-    deps.lsp.on('output', (str) => deps.ui.addReplText(str))
-    deps.lsp.on('getRestartIndex', async (info, fn) => fn(await deps.ui.getRestartIndex(info)))
-    deps.lsp.on('getUserInput', async (fn) => fn(await deps.ui.getUserInput()))
-    deps.lsp.on('inspectResult', (result: InspectInfo) => deps.ui.newInspector(result))
-    deps.lsp.on('inspectUpdate', (result: InspectResult) => deps.ui.updateInspector(result))
+function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
+    lsp.on('refreshPackages', () => cmds.refreshPackages(ui, lsp))
+    lsp.on('refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp))
+    lsp.on('refreshThreads', () => cmds.refreshThreads(ui, lsp))
+    lsp.on('refreshInspectors', () => ui.refreshInspectors())
+    lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
+    lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state))
+    lsp.on('output', (str) => ui.addReplText(str))
+    lsp.on('getRestartIndex', async (info, fn) => fn(await ui.getRestartIndex(info)))
+    lsp.on('getUserInput', async (fn) => fn(await ui.getUserInput()))
+    lsp.on('inspectResult', (result: InspectInfo) => ui.newInspector(result))
+    lsp.on('inspectUpdate', (result: InspectResult) => ui.updateInspector(result))
 }
