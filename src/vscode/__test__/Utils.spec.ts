@@ -286,7 +286,8 @@ describe('Utils Tests', () => {
         const spy = jest.spyOn(global, 'setTimeout')
 
         startCompileTimer(
-            { ui: { updatePackages: jest.fn() }, lsp: { tryCompileFile: jest.fn(), listPackages: jest.fn() } },
+            { updatePackages: jest.fn() },
+            { tryCompileFile: jest.fn(), listPackages: jest.fn() },
             { compileTimeoutID: timeout, workspacePath: 'foo', compileRunning: false, diagnostics: { set: jest.fn() } }
         )
 

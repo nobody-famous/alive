@@ -90,22 +90,22 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     ctx.subscriptions.push(
         vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr(lsp)),
         vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(lsp)),
-        vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(deps)),
-        vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(deps, state)),
+        vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(lsp)),
+        vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(lsp, state)),
 
         vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(ui, lsp)),
 
         vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp)),
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(ui, lsp)),
-        vscode.commands.registerCommand('alive.clearRepl', () => cmds.clearRepl(deps)),
+        vscode.commands.registerCommand('alive.clearRepl', () => cmds.clearRepl(ui)),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
-        vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(deps, state)),
-        vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(deps)),
-        vscode.commands.registerCommand('alive.inspect', (symbol) => cmds.inspect(deps, symbol)),
-        vscode.commands.registerCommand('alive.inspectMacro', () => cmds.inspectMacro(deps)),
+        vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(lsp, state)),
+        vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(lsp)),
+        vscode.commands.registerCommand('alive.inspect', (symbol) => cmds.inspect(lsp, symbol)),
+        vscode.commands.registerCommand('alive.inspectMacro', () => cmds.inspectMacro(lsp)),
         vscode.commands.registerCommand('alive.openScratchPad', () => cmds.openScratchPad(state)),
-        vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(deps)),
-        vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(deps)),
+        vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(lsp)),
+        vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(lsp)),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
             const item = await ui.selectHistoryItem()

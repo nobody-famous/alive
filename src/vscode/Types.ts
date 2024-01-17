@@ -1,12 +1,5 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
-import { UI } from './UI'
-import { LSP } from './backend/LSP'
-
-export interface ExtensionDeps {
-    ui: UI
-    lsp: LSP
-}
 
 export interface AliveContext {
     subscriptions: { dispose: () => unknown }[]

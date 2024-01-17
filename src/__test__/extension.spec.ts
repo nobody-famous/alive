@@ -1,5 +1,6 @@
 import { activate } from '../extension'
 
+const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode', () => ({
     window: {
         createOutputChannel: () => ({ appendLine: () => {} }),
@@ -15,14 +16,15 @@ jest.mock('vscode', () => ({
     },
     workspace: {
         workspaceFolders: [],
+        getConfiguration: jest.fn(),
         // openTextDocument: jest.fn(),
     },
     languages: {
         createDiagnosticCollection: jest.fn(),
     },
-    // commands: {
-    //     executeCommand: jest.fn(),
-    // },
+    commands: {
+        executeCommand: jest.fn(),
+    },
     // ViewColumn: { Two: 2 },
     // TreeItem: class {},
     // Position: class {},
@@ -61,21 +63,44 @@ jest.mock('../vscode/backend/LSP', () => ({
     LSP: jest.fn(),
 }))
 
-jest.mock('../vscode/Utils', () => ({
-    getWorkspaceOrFilePath: jest.fn(),
-}))
+const utilsMock = jest.requireMock('../vscode/Utils')
+jest.mock('../vscode/Utils')
+// jest.mock('../vscode/Utils', () => ({
+//     getWorkspaceOrFilePath: jest.fn().mockImplementation(() => '/fake/path'),
+// }))
 
 const uiObj = {
+    on: jest.fn(),
     init: jest.fn(),
     registerProviders: jest.fn(),
+    initInspector: jest.fn(),
 }
-
 // const uiMod = jest.requireMock('../vscode/UI')
 jest.mock('../vscode/UI', () => ({
     UI: jest.fn().mockImplementation(() => uiObj),
 }))
 
+const lspObj = {
+    on: jest.fn(),
+}
+jest.mock('../vscode/backend/LSP', () => ({
+    LSP: jest.fn().mockImplementation(() => lspObj),
+}))
+
+const configMock = jest.requireMock('../config')
+jest.mock('../config')
+
 describe('Extension tests', () => {
+    beforeEach(() => {
+        jest.resetAllMocks()
+
+        vscodeMock.window.showErrorMessage.mockImplementation((msg: unknown) => console.log('SHOW ERROR MESSAGE', msg))
+        utilsMock.getWorkspaceOrFilePath.mockImplementation(() => '/fake/path')
+        configMock.readAliveConfig.mockImplementation(() => ({
+            lsp: {},
+        }))
+    })
+
     it('Activate', async () => {
         const ctx = {
             subscriptions: [],
@@ -83,5 +108,9 @@ describe('Extension tests', () => {
         }
 
         await activate(ctx)
+
+        expect(configMock.readAliveConfig).toHaveBeenCalled()
+        // expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('replHistory.focus')
+        // expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('listRepl.focus')
     })
 })
