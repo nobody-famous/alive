@@ -4,19 +4,8 @@ import { UI, UIState } from '../UI'
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
 
-const replObj = {
-    on: jest.fn(),
-    off: jest.fn(),
-    clear: jest.fn(),
-    clearInput: jest.fn(),
-    addText: jest.fn(),
-    setPackage: jest.fn(),
-    setInput: jest.fn(),
-    getUserInput: jest.fn(),
-}
-jest.mock('../views/LispRepl', () => ({
-    LispRepl: jest.fn().mockImplementation(() => replObj),
-}))
+const replMock = jest.requireMock('../views/LispRepl')
+jest.mock('../views/LispRepl')
 
 const debugObj = {
     on: jest.fn(),
@@ -107,7 +96,7 @@ const createState = (): UIState => {
 }
 
 const getCallback = (
-    obj: { on: jest.Mock },
+    toMock: jest.Mock,
     mockCount: number,
     initFn: () => void,
     name: string
@@ -120,7 +109,7 @@ const getCallback = (
     }
 
     for (let count = 0; count < mockCount; count++) {
-        obj.on.mockImplementationOnce(onFn)
+        toMock.mockImplementation(onFn)
     }
 
     initFn()
@@ -167,7 +156,7 @@ describe('UI tests', () => {
         describe('eval', () => {
             it('No history', () => {
                 const ui = new UI(createState())
-                const evalFn = getCallback(replObj, 4, () => ui.initRepl(), 'eval')
+                const evalFn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'eval')
 
                 let evalPkg: string | undefined
                 let evalText: string | undefined
@@ -188,52 +177,52 @@ describe('UI tests', () => {
         describe('historyUp', () => {
             it('No history', () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyUp')
+                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
 
                 fn?.()
 
                 expect(historyObj.incrementIndex).toHaveBeenCalled()
-                expect(replObj.clearInput).toHaveBeenCalled()
+                expect(replMock.replClearInput).toHaveBeenCalled()
             })
 
             it('Have history', () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyUp')
+                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
 
                 historyObj.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
                 fn?.()
 
                 expect(historyObj.incrementIndex).toHaveBeenCalled()
-                expect(replObj.clearInput).not.toHaveBeenCalled()
-                expect(replObj.setPackage).toHaveBeenCalledWith('foo')
-                expect(replObj.setInput).toHaveBeenCalledWith('bar')
+                expect(replMock.replClearInput).not.toHaveBeenCalled()
+                expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
+                expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
             })
         })
 
         describe('historyDown', () => {
             it('No history', () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyDown')
+                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
 
                 fn?.()
 
                 expect(historyObj.decrementIndex).toHaveBeenCalled()
-                expect(replObj.clearInput).toHaveBeenCalled()
+                expect(replMock.replClearInput).toHaveBeenCalled()
             })
 
             it('Have history', () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'historyDown')
+                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
 
                 historyObj.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
                 fn?.()
 
                 expect(historyObj.decrementIndex).toHaveBeenCalled()
-                expect(replObj.clearInput).not.toHaveBeenCalled()
-                expect(replObj.setPackage).toHaveBeenCalledWith('foo')
-                expect(replObj.setInput).toHaveBeenCalledWith('bar')
+                expect(replMock.replClearInput).not.toHaveBeenCalled()
+                expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
+                expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
             })
         })
 
@@ -241,7 +230,7 @@ describe('UI tests', () => {
             const runTest = async (pkgs: unknown[], validate: () => void) => {
                 const state = createState()
                 const ui = new UI(state)
-                const fn = getCallback(replObj, 4, () => ui.initRepl(), 'requestPackage')
+                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'requestPackage')
 
                 ui.on('listPackages', async (fn) => fn(pkgs))
 
@@ -253,7 +242,7 @@ describe('UI tests', () => {
             it('No packages', async () => {
                 await runTest([], () => {
                     expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
-                    expect(replObj.setPackage).not.toHaveBeenCalled()
+                    expect(replMock.replSetPackage).not.toHaveBeenCalled()
                 })
             })
 
@@ -262,7 +251,7 @@ describe('UI tests', () => {
 
                 await runTest([{ name: 'foo', nicknames: [] }], () => {
                     expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['foo'], expect.anything())
-                    expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+                    expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 })
             })
 
@@ -271,7 +260,7 @@ describe('UI tests', () => {
 
                 await runTest([{ name: 'foo', nicknames: ['bar'] }], () => {
                     expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['bar', 'foo'], expect.anything())
-                    expect(replObj.setPackage).toHaveBeenCalledWith('bar')
+                    expect(replMock.replSetPackage).toHaveBeenCalledWith('bar')
                 })
             })
         })
@@ -280,7 +269,7 @@ describe('UI tests', () => {
     describe('initInspectorPanel', () => {
         it('inspect', async () => {
             const ui = new UI(createState())
-            const fn = getCallback(inspectorPanelObj, 2, () => ui.initInspectorPanel(), 'inspect')
+            const fn = getCallback(inspectorPanelObj.on, 2, () => ui.initInspectorPanel(), 'inspect')
 
             let pkg: string = ''
             let text: string = ''
@@ -298,7 +287,7 @@ describe('UI tests', () => {
 
         it('Inspector requestPackage', async () => {
             const ui = new UI(createState())
-            const fn = getCallback(inspectorPanelObj, 2, () => ui.initInspectorPanel(), 'requestPackage')
+            const fn = getCallback(inspectorPanelObj.on, 2, () => ui.initInspectorPanel(), 'requestPackage')
 
             ui.on('listPackages', (fn) => fn([]))
 
@@ -353,7 +342,7 @@ describe('UI tests', () => {
 
             inspectorModuleMock.Inspector.mockImplementationOnce(() => fake)
 
-            const fn = getCallback(fake, 5, () => ui.newInspector(info), 'inspectorClosed')
+            const fn = getCallback(fake.on, 5, () => ui.newInspector(info), 'inspectorClosed')
 
             ui.on('inspectClosed', cb)
             fn?.()
@@ -403,7 +392,7 @@ describe('UI tests', () => {
         const ui = new UI(createState())
         let text = ''
 
-        replObj.addText.mockImplementationOnce((str: string) => (text = str))
+        replMock.replAddText.mockImplementationOnce((str: string) => (text = str))
         ui.addReplText('foo')
 
         expect(text).toBe('foo')
@@ -556,7 +545,7 @@ describe('UI tests', () => {
         let onName: string | undefined = undefined
 
         const callFn = async () => {
-            replObj.on.mockImplementationOnce((name: string, fn: (text: string) => void) => {
+            replMock.replOn.mockImplementationOnce((name: string, fn: (text: string) => void) => {
                 onName = name
                 fn('foo')
             })
@@ -568,8 +557,8 @@ describe('UI tests', () => {
 
         expect(onName).toBe('userInput')
         expect(text).toBe('foo')
-        expect(replObj.getUserInput).toHaveBeenCalled()
-        expect(replObj.off).toHaveBeenCalledWith('userInput', expect.anything())
+        expect(replMock.replGetUserInput).toHaveBeenCalled()
+        expect(replMock.replOff).toHaveBeenCalledWith('userInput', expect.anything())
         expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
     })
 
@@ -632,14 +621,14 @@ describe('UI tests', () => {
         const ui = new UI(createState())
 
         ui.setReplInput('foo')
-        expect(replObj.setInput).toHaveBeenCalledWith('foo')
+        expect(replMock.replSetInput).toHaveBeenCalledWith('foo')
     })
 
     it('setReplPackage', () => {
         const ui = new UI(createState())
 
         ui.setReplPackage('foo')
-        expect(replObj.setPackage).toHaveBeenCalledWith('foo')
+        expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
     })
 
     it('clearReplHistory', () => {
