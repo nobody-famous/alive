@@ -7,14 +7,8 @@ jest.mock('vscode')
 const replMock = jest.requireMock('../views/LispRepl')
 jest.mock('../views/LispRepl')
 
-const debugObj = {
-    on: jest.fn(),
-    run: jest.fn(),
-    stop: jest.fn(),
-}
-jest.mock('../views/DebugView', () => ({
-    DebugView: jest.fn().mockImplementation(() => debugObj),
-}))
+const debugMock = jest.requireMock('../views/DebugView')
+jest.mock('../views/DebugView')
 
 const inspectorPanelObj = {
     on: jest.fn(),
@@ -117,7 +111,7 @@ const getCallback = (
     return callback
 }
 const getAllCallbacks = (
-    obj: { on: jest.Mock },
+    toMock: jest.Mock,
     mockCount: number,
     initFn: () => void
 ): { [index: string]: (...args: unknown[]) => void } => {
@@ -127,7 +121,7 @@ const getAllCallbacks = (
     }
 
     for (let count = 0; count < mockCount; count++) {
-        obj.on.mockImplementationOnce(onFn)
+        toMock.mockImplementationOnce(onFn)
     }
 
     initFn()
@@ -352,7 +346,7 @@ describe('UI tests', () => {
 
         it('callbacks', () => {
             const ui = new UI(createState())
-            const fns = getAllCallbacks(inspectorObj, 54, () => ui.newInspector(info))
+            const fns = getAllCallbacks(inspectorObj.on, 54, () => ui.newInspector(info))
             const called: { [index: string]: boolean } = {
                 inspectEval: false,
                 inspectRefresh: false,
@@ -567,7 +561,7 @@ describe('UI tests', () => {
             const ui = new UI(createState())
             const info = { message: 'foo', restarts: [], stackTrace: [] }
             let task: Promise<number | undefined> | undefined = undefined
-            const fns = getAllCallbacks(debugObj, 3, () => (task = ui.getRestartIndex(info)))
+            const fns = getAllCallbacks(debugMock.debugOn, 3, () => (task = ui.getRestartIndex(info)))
 
             fns['jump-to']('bar', 5, 10)
             fns['restart'](5)
@@ -578,8 +572,8 @@ describe('UI tests', () => {
             expect(index).toBe(5)
             expect(vscodeMock.workspace.openTextDocument).toHaveBeenCalledWith('bar')
             expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
-            expect(debugObj.run).toHaveBeenCalled()
-            expect(debugObj.stop).toHaveBeenCalled()
+            expect(debugMock.debugRun).toHaveBeenCalled()
+            expect(debugMock.debugStop).toHaveBeenCalled()
         })
 
         const closedTest = async (restarts: RestartInfo[], expectIndex: number | undefined) => {
@@ -590,15 +584,15 @@ describe('UI tests', () => {
                 stackTrace: [],
             }
             let task: Promise<number | undefined> | undefined = undefined
-            const fns = getAllCallbacks(debugObj, 3, () => (task = ui.getRestartIndex(info)))
+            const fns = getAllCallbacks(debugMock.debugOn, 3, () => (task = ui.getRestartIndex(info)))
 
             fns['debugClosed']()
 
             const index = await task
 
             expect(index).toBe(expectIndex)
-            expect(debugObj.run).toHaveBeenCalled()
-            expect(debugObj.stop).toHaveBeenCalled()
+            expect(debugMock.debugRun).toHaveBeenCalled()
+            expect(debugMock.debugStop).toHaveBeenCalled()
         }
 
         it('debugClosed', async () => {
