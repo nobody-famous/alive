@@ -33,7 +33,7 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/UI.spec.ts",
+                "src/vscode/__test__/Utils.spec.ts",
                 // "-t",
                 // "newInspector"
             ],

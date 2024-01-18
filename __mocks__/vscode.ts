@@ -9,6 +9,10 @@ export enum ViewColumn {
     Two = 2,
 }
 
+export const Uri = {
+    file: jest.fn(),
+}
+
 export const languages = {
     createDiagnosticCollection: jest.fn(),
     registerHoverProvider: jest.fn(),
@@ -26,10 +30,16 @@ export const window = {
 }
 
 export const workspace = {
+    fs: {
+        createDirectory: jest.fn(),
+        writeFile: jest.fn(),
+    },
+
     workspaceFolders: [],
     openTextDocument: jest.fn(),
     onDidOpenTextDocument: jest.fn(),
     onDidChangeTextDocument: jest.fn(),
+    getConfiguration: jest.fn(),
 }
 
 export const commands = {
@@ -40,3 +50,4 @@ export const commands = {
 export class Position {}
 export class Range {}
 export class Selection {}
+export class Diagnostic {}

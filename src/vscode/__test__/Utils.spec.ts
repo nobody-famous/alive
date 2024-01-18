@@ -23,37 +23,7 @@ import {
 import { Position } from 'vscode'
 
 const vscodeMock = jest.requireMock('vscode')
-jest.mock('vscode', () => ({
-    window: {
-        createOutputChannel: () => ({ appendLine: () => {} }),
-        activeTextEditor: undefined,
-        showErrorMessage: jest.fn(),
-    },
-    languages: {
-        createDiagnosticCollection: jest.fn().mockImplementationOnce(() => 5),
-    },
-    workspace: {
-        getConfiguration: jest.fn(),
-        workspaceFolders: [],
-        fs: { createDirectory: jest.fn(), writeFile: jest.fn() },
-    },
-    DiagnosticSeverity: {
-        Error: 0,
-        Warning: 1,
-        Information: 2,
-        Hint: 3,
-    },
-    Uri: { file: jest.fn() },
-    Position: class {
-        constructor() {}
-    },
-    Range: class {
-        constructor() {}
-    },
-    Diagnostic: class {
-        constructor() {}
-    },
-}))
+jest.mock('vscode')
 
 const fsMock = jest.requireMock('fs')
 jest.mock('fs', () => ({ promises: { access: jest.fn() } }))
