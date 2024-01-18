@@ -2,30 +2,7 @@ import { HistoryItem, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
 
 const vscodeMock = jest.requireMock('vscode')
-jest.mock('vscode', () => ({
-    window: {
-        createOutputChannel: () => ({ appendLine: () => {} }),
-        registerWebviewViewProvider: jest.fn(),
-        registerTreeDataProvider: jest.fn(),
-        createQuickPick: jest.fn(),
-        showQuickPick: jest.fn(),
-        showTextDocument: jest.fn().mockImplementation(() => ({
-            selection: {},
-            revealRange: jest.fn(),
-        })),
-    },
-    workspace: {
-        openTextDocument: jest.fn(),
-    },
-    commands: {
-        executeCommand: jest.fn(),
-    },
-    ViewColumn: { Two: 2 },
-    TreeItem: class {},
-    Position: class {},
-    Range: class {},
-    Selection: class {},
-}))
+jest.mock('vscode')
 
 const replObj = {
     on: jest.fn(),
@@ -170,7 +147,14 @@ const getAllCallbacks = (
 }
 
 describe('UI tests', () => {
-    beforeEach(() => jest.clearAllMocks())
+    beforeEach(() => {
+        jest.clearAllMocks()
+
+        vscodeMock.window.showTextDocument.mockImplementation(() => ({
+            selection: {},
+            revealRange: jest.fn(),
+        }))
+    })
 
     it('clearRepl', () => {
         const state = createState()

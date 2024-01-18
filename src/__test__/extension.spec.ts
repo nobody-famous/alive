@@ -1,36 +1,7 @@
 import { activate } from '../extension'
 
 const vscodeMock = jest.requireMock('vscode')
-jest.mock('vscode', () => ({
-    window: {
-        createOutputChannel: () => ({ appendLine: () => {} }),
-        registerWebviewViewProvider: jest.fn(),
-        // registerTreeDataProvider: jest.fn(),
-        // createQuickPick: jest.fn(),
-        showErrorMessage: jest.fn(),
-        // showQuickPick: jest.fn(),
-        // showTextDocument: jest.fn().mockImplementation(() => ({
-        //     selection: {},
-        //     revealRange: jest.fn(),
-        // })),
-    },
-    workspace: {
-        workspaceFolders: [],
-        getConfiguration: jest.fn(),
-        // openTextDocument: jest.fn(),
-    },
-    languages: {
-        createDiagnosticCollection: jest.fn(),
-    },
-    commands: {
-        executeCommand: jest.fn(),
-    },
-    // ViewColumn: { Two: 2 },
-    // TreeItem: class {},
-    // Position: class {},
-    // Range: class {},
-    // Selection: class {},
-}))
+jest.mock('vscode')
 
 const packagesObj = {
     update: jest.fn(),
@@ -65,27 +36,12 @@ jest.mock('../vscode/backend/LSP', () => ({
 
 const utilsMock = jest.requireMock('../vscode/Utils')
 jest.mock('../vscode/Utils')
-// jest.mock('../vscode/Utils', () => ({
-//     getWorkspaceOrFilePath: jest.fn().mockImplementation(() => '/fake/path'),
-// }))
 
-const uiObj = {
-    on: jest.fn(),
-    init: jest.fn(),
-    registerProviders: jest.fn(),
-    initInspector: jest.fn(),
-}
-// const uiMod = jest.requireMock('../vscode/UI')
-jest.mock('../vscode/UI', () => ({
-    UI: jest.fn().mockImplementation(() => uiObj),
-}))
+const uiMock = jest.requireMock('../vscode/UI')
+jest.mock('../vscode/UI')
 
-const lspObj = {
-    on: jest.fn(),
-}
-jest.mock('../vscode/backend/LSP', () => ({
-    LSP: jest.fn().mockImplementation(() => lspObj),
-}))
+const lspMock = jest.requireMock('../vscode/backend/LSP')
+jest.mock('../vscode/backend/LSP')
 
 const configMock = jest.requireMock('../config')
 jest.mock('../config')
@@ -94,10 +50,15 @@ describe('Extension tests', () => {
     beforeEach(() => {
         jest.resetAllMocks()
 
-        vscodeMock.window.showErrorMessage.mockImplementation((msg: unknown) => console.log('SHOW ERROR MESSAGE', msg))
         utilsMock.getWorkspaceOrFilePath.mockImplementation(() => '/fake/path')
+
         configMock.readAliveConfig.mockImplementation(() => ({
             lsp: {},
+        }))
+
+        lspMock.LSP.mockImplementation(() => ({
+            on: jest.fn(),
+            connect: jest.fn(),
         }))
     })
 
@@ -110,7 +71,7 @@ describe('Extension tests', () => {
         await activate(ctx)
 
         expect(configMock.readAliveConfig).toHaveBeenCalled()
-        // expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('replHistory.focus')
-        // expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('listRepl.focus')
+        expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('replHistory.focus')
+        expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('lispRepl.focus')
     })
 })
