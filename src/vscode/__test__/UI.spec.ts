@@ -22,12 +22,8 @@ jest.mock('../views/ReplHistory')
 const packagesMock = jest.requireMock('../views/PackagesTree')
 jest.mock('../views/PackagesTree')
 
-const asdfObj = {
-    update: jest.fn(),
-}
-jest.mock('../views/AsdfSystemsTree', () => ({
-    AsdfSystemsTreeProvider: jest.fn().mockImplementation(() => asdfObj),
-}))
+const asdfMock = jest.requireMock('../views/AsdfSystemsTree')
+jest.mock('../views/AsdfSystemsTree')
 
 const threadsObj = {
     update: jest.fn(),
@@ -389,7 +385,7 @@ describe('UI tests', () => {
             }
 
             try {
-                historyMock.items = [{ text: '', pkgName: '' }]
+                historyMock.getItems.mockImplementationOnce(() => [{ text: '', pkgName: '' }])
                 vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
 
                 const { task, fn } = getChangeFn(ui, qp)
@@ -433,8 +429,8 @@ describe('UI tests', () => {
     it('getHistoryItems', () => {
         const ui = new UI(createState())
 
-        const items = ui.getHistoryItems()
-        expect(items).toMatchObject([])
+        historyMock.getItems.mockImplementationOnce(() => [])
+        expect(ui.getHistoryItems()).toMatchObject([])
     })
 
     const initTreeTest = (name: string, initFn: (ui: UI) => void, obj: { update: jest.Mock }) => {
@@ -451,7 +447,7 @@ describe('UI tests', () => {
     })
 
     it('initAsdfSystemsTree', () => {
-        initTreeTest('asdfSystems', (ui) => ui.initAsdfSystemsTree([]), asdfObj)
+        initTreeTest('asdfSystems', (ui) => ui.initAsdfSystemsTree([]), asdfMock)
     })
 
     it('initHistoryTree', () => {
@@ -482,7 +478,7 @@ describe('UI tests', () => {
     })
 
     it('updateAsdfSystems', () => {
-        updateTreeTest((ui) => ui.updateAsdfSystems([]), asdfObj)
+        updateTreeTest((ui) => ui.updateAsdfSystems([]), asdfMock)
     })
 
     it('updateThreads', () => {

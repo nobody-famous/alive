@@ -174,7 +174,7 @@ export class UI extends EventEmitter implements UIEvents {
     }
 
     getHistoryItems(): HistoryItem[] {
-        return this.historyTree.items
+        return this.historyTree.getItems()
     }
 
     removeHistoryNode(node: HistoryNode) {
@@ -187,7 +187,7 @@ export class UI extends EventEmitter implements UIEvents {
 
     selectHistoryItem() {
         return new Promise<HistoryItem>((resolve) => {
-            const items = [...this.historyTree.items]
+            const items = [...this.historyTree.getItems()]
             const qp = vscode.window.createQuickPick()
 
             qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
@@ -293,7 +293,7 @@ export class UI extends EventEmitter implements UIEvents {
         this.replView.on('eval', async (pkg: string, text: string) => {
             this.historyTree.removeItem(pkg, text)
             this.historyTree.addItem(pkg, text)
-            this.emit('saveReplHistory', this.historyTree.items)
+            this.emit('saveReplHistory', this.historyTree.getItems())
 
             this.historyTree.clearIndex()
             this.emit('eval', text, pkg, true)
