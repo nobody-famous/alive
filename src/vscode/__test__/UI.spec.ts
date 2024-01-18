@@ -16,38 +16,8 @@ jest.mock('../views/InspectorPanel')
 const inspectorMock = jest.requireMock('../views/Inspector')
 jest.mock('../views/Inspector')
 
-const historyObj: {
-    items: HistoryItem[]
-    clear: jest.Mock
-    clearIndex: jest.Mock
-    incrementIndex: jest.Mock
-    decrementIndex: jest.Mock
-    getCurrentItem: jest.Mock
-    moveItemToTop: jest.Mock
-    moveToTop: jest.Mock
-    removeItem: jest.Mock
-    removeNode: jest.Mock
-    addItem: jest.Mock
-    update: jest.Mock
-} = {
-    items: [],
-    clear: jest.fn(),
-    clearIndex: jest.fn(),
-    incrementIndex: jest.fn(),
-    decrementIndex: jest.fn(),
-    getCurrentItem: jest.fn(),
-    moveItemToTop: jest.fn(),
-    moveToTop: jest.fn(),
-    removeItem: jest.fn(),
-    removeNode: jest.fn(),
-    addItem: jest.fn(),
-    update: jest.fn(),
-}
-const replHistory = jest.requireMock('../views/ReplHistory')
-jest.mock('../views/ReplHistory', () => ({
-    HistoryNode: jest.fn(),
-    ReplHistoryTreeProvider: jest.fn().mockImplementation(() => historyObj),
-}))
+const historyMock = jest.requireMock('../views/ReplHistory')
+jest.mock('../views/ReplHistory')
 
 const packagesObj = {
     update: jest.fn(),
@@ -164,7 +134,7 @@ describe('UI tests', () => {
 
                 fn?.()
 
-                expect(historyObj.incrementIndex).toHaveBeenCalled()
+                expect(historyMock.getCurrentItem).toHaveBeenCalled()
                 expect(replMock.replClearInput).toHaveBeenCalled()
             })
 
@@ -172,11 +142,11 @@ describe('UI tests', () => {
                 const ui = new UI(createState())
                 const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
 
-                historyObj.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
+                historyMock.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
                 fn?.()
 
-                expect(historyObj.incrementIndex).toHaveBeenCalled()
+                expect(historyMock.incrementIndex).toHaveBeenCalled()
                 expect(replMock.replClearInput).not.toHaveBeenCalled()
                 expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
@@ -190,7 +160,7 @@ describe('UI tests', () => {
 
                 fn?.()
 
-                expect(historyObj.decrementIndex).toHaveBeenCalled()
+                expect(historyMock.decrementIndex).toHaveBeenCalled()
                 expect(replMock.replClearInput).toHaveBeenCalled()
             })
 
@@ -198,11 +168,11 @@ describe('UI tests', () => {
                 const ui = new UI(createState())
                 const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
 
-                historyObj.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
+                historyMock.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
                 fn?.()
 
-                expect(historyObj.decrementIndex).toHaveBeenCalled()
+                expect(historyMock.decrementIndex).toHaveBeenCalled()
                 expect(replMock.replClearInput).not.toHaveBeenCalled()
                 expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
@@ -423,7 +393,7 @@ describe('UI tests', () => {
             }
 
             try {
-                historyObj.items = [{ text: '', pkgName: '' }]
+                historyMock.items = [{ text: '', pkgName: '' }]
                 vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
 
                 const { task, fn } = getChangeFn(ui, qp)
@@ -435,17 +405,17 @@ describe('UI tests', () => {
 
                 fn?.([{ label: 'foo' }])
                 expect(qp.hide).toHaveBeenCalled()
-                expect(historyObj.moveItemToTop).toHaveBeenCalled()
+                expect(historyMock.moveItemToTop).toHaveBeenCalled()
 
                 fn?.([{ label: 'foo', description: 'bar' }])
                 expect(qp.hide).toHaveBeenCalled()
-                expect(historyObj.moveItemToTop).toHaveBeenCalled()
+                expect(historyMock.moveItemToTop).toHaveBeenCalled()
 
                 const item = await task
                 expect(item.text).toBe('foo')
                 expect(item.pkgName).toBe('')
             } finally {
-                historyObj.items = []
+                historyMock.items = []
             }
         })
     })
@@ -453,15 +423,15 @@ describe('UI tests', () => {
     it('moveHistoryNodeToTop', () => {
         const ui = new UI(createState())
 
-        ui.moveHistoryNodeToTop(new replHistory.HistoryNode({}))
-        expect(historyObj.moveToTop).toHaveBeenCalled()
+        ui.moveHistoryNodeToTop(new historyMock.HistoryNode({}))
+        expect(historyMock.moveToTop).toHaveBeenCalled()
     })
 
     it('removeHistoryNode', () => {
         const ui = new UI(createState())
 
-        ui.removeHistoryNode(new replHistory.HistoryNode({}))
-        expect(historyObj.removeNode).toHaveBeenCalled()
+        ui.removeHistoryNode(new historyMock.HistoryNode({}))
+        expect(historyMock.removeNode).toHaveBeenCalled()
     })
 
     it('getHistoryItems', () => {
@@ -489,7 +459,7 @@ describe('UI tests', () => {
     })
 
     it('initHistoryTree', () => {
-        initTreeTest('replHistory', (ui) => ui.initHistoryTree([]), historyObj)
+        initTreeTest('replHistory', (ui) => ui.initHistoryTree([]), historyMock)
     })
 
     it('initPackagesTree', () => {
@@ -618,7 +588,7 @@ describe('UI tests', () => {
         const ui = new UI(createState())
 
         ui.clearReplHistory()
-        expect(historyObj.clear).toHaveBeenCalled()
+        expect(historyMock.clear).toHaveBeenCalled()
     })
 
     it('registerProviders', () => {
