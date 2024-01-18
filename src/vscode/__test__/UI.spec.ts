@@ -19,12 +19,8 @@ jest.mock('../views/Inspector')
 const historyMock = jest.requireMock('../views/ReplHistory')
 jest.mock('../views/ReplHistory')
 
-const packagesObj = {
-    update: jest.fn(),
-}
-jest.mock('../views/PackagesTree', () => ({
-    PackagesTreeProvider: jest.fn().mockImplementation(() => packagesObj),
-}))
+const packagesMock = jest.requireMock('../views/PackagesTree')
+jest.mock('../views/PackagesTree')
 
 const asdfObj = {
     update: jest.fn(),
@@ -463,7 +459,7 @@ describe('UI tests', () => {
     })
 
     it('initPackagesTree', () => {
-        initTreeTest('lispPackages', (ui) => ui.initPackagesTree([]), packagesObj)
+        initTreeTest('lispPackages', (ui) => ui.initPackagesTree([]), packagesMock)
     })
 
     it('initInspector', () => {
@@ -482,7 +478,7 @@ describe('UI tests', () => {
     }
 
     it('updatePackages', () => {
-        updateTreeTest((ui) => ui.updatePackages([]), packagesObj)
+        updateTreeTest((ui) => ui.updatePackages([]), packagesMock)
     })
 
     it('updateAsdfSystems', () => {
