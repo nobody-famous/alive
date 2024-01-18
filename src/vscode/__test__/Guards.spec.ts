@@ -1,4 +1,6 @@
 import {
+    isArray,
+    isBoolean,
     isFiniteNumber,
     isInspectResult,
     isObject,
@@ -15,6 +17,16 @@ describe('Type guard tests', () => {
         expect(isString('foo')).toBe(true)
         expect(isString(5)).toBe(false)
         expect(isString({ foo: 'bar' })).toBe(false)
+    })
+
+    it('isArray', () => {
+        expect(isArray([], isString)).toBe(true)
+        expect(isArray([5], isString)).toBe(false)
+    })
+
+    it('isBoolean', () => {
+        expect(isBoolean(true)).toBe(true)
+        expect(isBoolean(5)).toBe(false)
     })
 
     it('isFiniteNumber', () => {
