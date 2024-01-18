@@ -25,12 +25,8 @@ jest.mock('../views/PackagesTree')
 const asdfMock = jest.requireMock('../views/AsdfSystemsTree')
 jest.mock('../views/AsdfSystemsTree')
 
-const threadsObj = {
-    update: jest.fn(),
-}
-jest.mock('../views/ThreadsTree', () => ({
-    ThreadsTreeProvider: jest.fn().mockImplementation(() => threadsObj),
-}))
+const threadsMock = jest.requireMock('../views/ThreadsTree')
+jest.mock('../views/ThreadsTree')
 
 const createState = (): UIState => {
     const state: UIState = {
@@ -443,7 +439,7 @@ describe('UI tests', () => {
     }
 
     it('initThreadsTree', () => {
-        initTreeTest('lispThreads', (ui) => ui.initThreadsTree([]), threadsObj)
+        initTreeTest('lispThreads', (ui) => ui.initThreadsTree([]), threadsMock)
     })
 
     it('initAsdfSystemsTree', () => {
@@ -482,7 +478,7 @@ describe('UI tests', () => {
     })
 
     it('updateThreads', () => {
-        updateTreeTest((ui) => ui.updateThreads([]), threadsObj)
+        updateTreeTest((ui) => ui.updateThreads([]), threadsMock)
     })
 
     it('getUserInput', async () => {
