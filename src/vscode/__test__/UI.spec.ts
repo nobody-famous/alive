@@ -10,22 +10,11 @@ jest.mock('../views/LispRepl')
 const debugMock = jest.requireMock('../views/DebugView')
 jest.mock('../views/DebugView')
 
-const inspectorPanelObj = {
-    on: jest.fn(),
-}
-jest.mock('../views/InspectorPanel', () => ({
-    InspectorPanel: jest.fn().mockImplementation(() => inspectorPanelObj),
-}))
+const inspectorPanelMock = jest.requireMock('../views/InspectorPanel')
+jest.mock('../views/InspectorPanel')
 
-const inspectorObj = {
-    on: jest.fn(),
-    show: jest.fn(),
-    update: jest.fn(),
-}
-const inspectorModuleMock = jest.requireMock('../views/Inspector')
-jest.mock('../views/Inspector', () => ({
-    Inspector: jest.fn().mockImplementation(() => inspectorObj),
-}))
+const inspectorMock = jest.requireMock('../views/Inspector')
+jest.mock('../views/Inspector')
 
 const historyObj: {
     items: HistoryItem[]
@@ -263,7 +252,7 @@ describe('UI tests', () => {
     describe('initInspectorPanel', () => {
         it('inspect', async () => {
             const ui = new UI(createState())
-            const fn = getCallback(inspectorPanelObj.on, 2, () => ui.initInspectorPanel(), 'inspect')
+            const fn = getCallback(inspectorPanelMock.inspectPanelOn, 2, () => ui.initInspectorPanel(), 'inspect')
 
             let pkg: string = ''
             let text: string = ''
@@ -281,7 +270,7 @@ describe('UI tests', () => {
 
         it('Inspector requestPackage', async () => {
             const ui = new UI(createState())
-            const fn = getCallback(inspectorPanelObj.on, 2, () => ui.initInspectorPanel(), 'requestPackage')
+            const fn = getCallback(inspectorPanelMock.inspectPanelOn, 2, () => ui.initInspectorPanel(), 'requestPackage')
 
             ui.on('listPackages', (fn) => fn([]))
 
@@ -296,11 +285,11 @@ describe('UI tests', () => {
         const info = { id: 5, resultType: 'foo', result: 'bar' }
 
         ui.updateInspector(info)
-        expect(inspectorObj.show).not.toHaveBeenCalled()
+        expect(inspectorMock.inspectorShow).not.toHaveBeenCalled()
 
         ui.newInspector({ ...info, text: 'bar', package: 'foo' })
         ui.updateInspector(info)
-        expect(inspectorObj.show).toHaveBeenCalled()
+        expect(inspectorMock.inspectorShow).toHaveBeenCalled()
     })
 
     it('refreshInspectors', () => {
@@ -313,7 +302,7 @@ describe('UI tests', () => {
         ]
 
         for (let n = 0; n < fakes.length; n++) {
-            inspectorModuleMock.Inspector.mockImplementationOnce(() => fakes[n])
+            inspectorMock.Inspector.mockImplementationOnce(() => fakes[n])
         }
 
         for (let n = 0; n < fakes.length; n++) {
@@ -334,7 +323,7 @@ describe('UI tests', () => {
             const cb = jest.fn()
             const fake = { on: jest.fn().mockImplementation(() => console.log('ON CALLED')), show: jest.fn() }
 
-            inspectorModuleMock.Inspector.mockImplementationOnce(() => fake)
+            inspectorMock.Inspector.mockImplementationOnce(() => fake)
 
             const fn = getCallback(fake.on, 5, () => ui.newInspector(info), 'inspectorClosed')
 
@@ -346,7 +335,7 @@ describe('UI tests', () => {
 
         it('callbacks', () => {
             const ui = new UI(createState())
-            const fns = getAllCallbacks(inspectorObj.on, 54, () => ui.newInspector(info))
+            const fns = getAllCallbacks(inspectorMock.inspectorOn, 54, () => ui.newInspector(info))
             const called: { [index: string]: boolean } = {
                 inspectEval: false,
                 inspectRefresh: false,

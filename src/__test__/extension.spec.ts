@@ -37,7 +37,7 @@ jest.mock('../vscode/backend/LSP', () => ({
 const utilsMock = jest.requireMock('../vscode/Utils')
 jest.mock('../vscode/Utils')
 
-const uiMock = jest.requireMock('../vscode/UI')
+// const uiMock = jest.requireMock('../vscode/UI')
 jest.mock('../vscode/UI')
 
 const lspMock = jest.requireMock('../vscode/backend/LSP')

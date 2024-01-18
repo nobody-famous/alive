@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/__test__/UI.spec.ts",
-                // "-t",
-                // "eval"
+                "-t",
+                "inspector"
             ],
             "problemMatcher": [
                 "$tsc"
