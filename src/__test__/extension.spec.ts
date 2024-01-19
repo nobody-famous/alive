@@ -61,11 +61,34 @@ describe('Extension tests', () => {
     })
 
     describe('UI events', () => {
-        it('diagnosticsRefresh', async () => {
+        const refreshTest = async (validate: () => void) => {
             const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
-            const editors = [{ document: { languageId: 'foo' } }, { document: { languageId: COMMON_LISP_ID } }]
+            const editors = [
+                { document: { languageId: 'foo' } },
+                { document: { languageId: COMMON_LISP_ID } },
+                { document: { languageId: COMMON_LISP_ID } },
+            ]
 
-            fns.diagnosticsRefresh(editors)
+            await fns.diagnosticsRefresh(editors)
+
+            validate()
+        }
+
+        it('diagnosticsRefresh', async () => {
+            await refreshTest(() => {
+                expect(utilsMock.tryCompile).toHaveBeenCalledTimes(2)
+                expect(utilsMock.updateDiagnostics).not.toHaveBeenCalled()
+            })
+        })
+
+        it('diagnosticsRefresh with compile resp', async () => {
+            utilsMock.tryCompile.mockReset()
+            utilsMock.tryCompile.mockImplementation(() => ({ notes: [] }))
+
+            await refreshTest(() => {
+                expect(utilsMock.tryCompile).toHaveBeenCalledTimes(2)
+                expect(utilsMock.updateDiagnostics).toHaveBeenCalledTimes(2)
+            })
         })
     })
 })
