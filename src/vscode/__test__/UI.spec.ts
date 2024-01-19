@@ -1,3 +1,4 @@
+import { getAllCallbacks, getCallback } from '../../../TestHelpers'
 import { HistoryItem, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
 
@@ -36,46 +37,6 @@ const createState = (): UIState => {
     return state
 }
 
-const getCallback = (
-    toMock: jest.Mock,
-    mockCount: number,
-    initFn: () => void,
-    name: string
-): ((...args: unknown[]) => void) | undefined => {
-    let callback = undefined
-    const onFn = (label: string, fn: (...args: unknown[]) => void) => {
-        if (name === label) {
-            callback = fn
-        }
-    }
-
-    for (let count = 0; count < mockCount; count++) {
-        toMock.mockImplementation(onFn)
-    }
-
-    initFn()
-
-    return callback
-}
-const getAllCallbacks = (
-    toMock: jest.Mock,
-    mockCount: number,
-    initFn: () => void
-): { [index: string]: (...args: unknown[]) => void } => {
-    const callbacks: { [index: string]: (...args: unknown[]) => void } = {}
-    const onFn = (label: string, fn: (...args: unknown[]) => void) => {
-        callbacks[label] = fn
-    }
-
-    for (let count = 0; count < mockCount; count++) {
-        toMock.mockImplementationOnce(onFn)
-    }
-
-    initFn()
-
-    return callbacks
-}
-
 describe('UI tests', () => {
     beforeEach(() => {
         jest.clearAllMocks()
@@ -95,9 +56,9 @@ describe('UI tests', () => {
 
     describe('initRepl', () => {
         describe('eval', () => {
-            it('No history', () => {
+            it('No history', async () => {
                 const ui = new UI(createState())
-                const evalFn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'eval')
+                const evalFn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'eval')
 
                 let evalPkg: string | undefined
                 let evalText: string | undefined
@@ -116,9 +77,9 @@ describe('UI tests', () => {
         })
 
         describe('historyUp', () => {
-            it('No history', () => {
+            it('No history', async () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
+                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
 
                 fn?.()
 
@@ -126,9 +87,9 @@ describe('UI tests', () => {
                 expect(replMock.replClearInput).toHaveBeenCalled()
             })
 
-            it('Have history', () => {
+            it('Have history', async () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
+                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
 
                 historyMock.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
@@ -142,9 +103,9 @@ describe('UI tests', () => {
         })
 
         describe('historyDown', () => {
-            it('No history', () => {
+            it('No history', async () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
+                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
 
                 fn?.()
 
@@ -152,9 +113,9 @@ describe('UI tests', () => {
                 expect(replMock.replClearInput).toHaveBeenCalled()
             })
 
-            it('Have history', () => {
+            it('Have history', async () => {
                 const ui = new UI(createState())
-                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
+                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
 
                 historyMock.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
@@ -171,7 +132,7 @@ describe('UI tests', () => {
             const runTest = async (pkgs: unknown[], validate: () => void) => {
                 const state = createState()
                 const ui = new UI(state)
-                const fn = getCallback(replMock.replOn, 4, () => ui.initRepl(), 'requestPackage')
+                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'requestPackage')
 
                 ui.on('listPackages', async (fn) => fn(pkgs))
 
@@ -210,7 +171,7 @@ describe('UI tests', () => {
     describe('initInspectorPanel', () => {
         it('inspect', async () => {
             const ui = new UI(createState())
-            const fn = getCallback(inspectorPanelMock.inspectPanelOn, 2, () => ui.initInspectorPanel(), 'inspect')
+            const fn = await getCallback(inspectorPanelMock.inspectPanelOn, 2, async () => ui.initInspectorPanel(), 'inspect')
 
             let pkg: string = ''
             let text: string = ''
@@ -228,7 +189,12 @@ describe('UI tests', () => {
 
         it('Inspector requestPackage', async () => {
             const ui = new UI(createState())
-            const fn = getCallback(inspectorPanelMock.inspectPanelOn, 2, () => ui.initInspectorPanel(), 'requestPackage')
+            const fn = await getCallback(
+                inspectorPanelMock.inspectPanelOn,
+                2,
+                async () => ui.initInspectorPanel(),
+                'requestPackage'
+            )
 
             ui.on('listPackages', (fn) => fn([]))
 
@@ -276,14 +242,14 @@ describe('UI tests', () => {
     describe('newInspector', () => {
         const info = { id: 5, resultType: 'foo', result: 'bar', text: 'bar', package: 'foo' }
 
-        it('inspectorClosed', () => {
+        it('inspectorClosed', async () => {
             const ui = new UI(createState())
             const cb = jest.fn()
             const fake = { on: jest.fn().mockImplementation(() => console.log('ON CALLED')), show: jest.fn() }
 
             inspectorMock.Inspector.mockImplementationOnce(() => fake)
 
-            const fn = getCallback(fake.on, 5, () => ui.newInspector(info), 'inspectorClosed')
+            const fn = await getCallback(fake.on, 5, async () => ui.newInspector(info), 'inspectorClosed')
 
             ui.on('inspectClosed', cb)
             fn?.()
@@ -291,9 +257,9 @@ describe('UI tests', () => {
             expect(cb).toHaveBeenCalled()
         })
 
-        it('callbacks', () => {
+        it('callbacks', async () => {
             const ui = new UI(createState())
-            const fns = getAllCallbacks(inspectorMock.inspectorOn, 54, () => ui.newInspector(info))
+            const fns = await getAllCallbacks(inspectorMock.inspectorOn, 54, async () => ui.newInspector(info))
             const called: { [index: string]: boolean } = {
                 inspectEval: false,
                 inspectRefresh: false,
@@ -508,7 +474,9 @@ describe('UI tests', () => {
             const ui = new UI(createState())
             const info = { message: 'foo', restarts: [], stackTrace: [] }
             let task: Promise<number | undefined> | undefined = undefined
-            const fns = getAllCallbacks(debugMock.debugOn, 3, () => (task = ui.getRestartIndex(info)))
+            const fns = await getAllCallbacks(debugMock.debugOn, 3, async () => {
+                task = ui.getRestartIndex(info)
+            })
 
             fns['jump-to']('bar', 5, 10)
             fns['restart'](5)
@@ -531,7 +499,9 @@ describe('UI tests', () => {
                 stackTrace: [],
             }
             let task: Promise<number | undefined> | undefined = undefined
-            const fns = getAllCallbacks(debugMock.debugOn, 3, () => (task = ui.getRestartIndex(info)))
+            const fns = await getAllCallbacks(debugMock.debugOn, 3, async () => {
+                task = ui.getRestartIndex(info)
+            })
 
             fns['debugClosed']()
 

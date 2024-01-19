@@ -1,4 +1,6 @@
+import { getAllCallbacks } from '../../TestHelpers'
 import { activate } from '../extension'
+import { COMMON_LISP_ID } from '../vscode/Utils'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -60,8 +62,10 @@ describe('Extension tests', () => {
 
     describe('UI events', () => {
         it('diagnosticsRefresh', async () => {
-            uiMock.on.mockImplementation((name: string, fn: () => void) => console.log('UI ON', name, fn))
-            await activate(ctx)
+            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+            const editors = [{ document: { languageId: 'foo' } }, { document: { languageId: COMMON_LISP_ID } }]
+
+            fns.diagnosticsRefresh(editors)
         })
     })
 })
