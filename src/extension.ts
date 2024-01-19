@@ -328,14 +328,16 @@ async function initPackagesTree(ui: Pick<UI, 'initPackagesTree'>, lsp: Pick<LSP,
     }
 }
 
-async function diagnosticsRefresh(lsp: LSP, state: ExtensionState, editors: vscode.TextEditor[]) {
+async function diagnosticsRefresh(lsp: Pick<LSP, 'tryCompileFile'>, state: ExtensionState, editors: vscode.TextEditor[]) {
     for (const editor of editors) {
-        if (editor.document.languageId === COMMON_LISP_ID) {
-            const resp = await tryCompile(state, lsp, editor.document)
+        if (editor.document.languageId !== COMMON_LISP_ID) {
+            continue
+        }
 
-            if (resp !== undefined) {
-                await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
-            }
+        const resp = await tryCompile(state, lsp, editor.document)
+
+        if (resp !== undefined) {
+            await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
         }
     }
 }
