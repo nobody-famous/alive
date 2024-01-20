@@ -23,7 +23,7 @@ jest.mock('../vscode/Utils')
 const uiMock = jest.requireMock('../vscode/UI')
 jest.mock('../vscode/UI')
 
-// const lspMock = jest.requireMock('../vscode/backend/LSP')
+const lspMock = jest.requireMock('../vscode/backend/LSP')
 jest.mock('../vscode/backend/LSP')
 
 const configMock = jest.requireMock('../config')
@@ -58,6 +58,28 @@ describe('Extension tests', () => {
         expect(configMock.readAliveConfig).toHaveBeenCalled()
         expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('replHistory.focus')
         expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('lispRepl.focus')
+    })
+
+    it('Tree fails', async () => {
+        uiMock.initPackagesTree.mockReset()
+        uiMock.initAsdfSystemsTree.mockReset()
+        uiMock.initThreadsTree.mockReset()
+
+        lspMock.listPackages.mockImplementation(() => {
+            throw new Error('Failed, as requested')
+        })
+        lspMock.listAsdfSystems.mockImplementation(() => {
+            throw new Error('Failed, as requested')
+        })
+        lspMock.listThreads.mockImplementation(() => {
+            throw new Error('Failed, as requested')
+        })
+
+        await activate(ctx)
+
+        expect(uiMock.initPackagesTree).not.toHaveBeenCalled()
+        expect(uiMock.initAsdfSystemsTree).not.toHaveBeenCalled()
+        expect(uiMock.initThreadsTree).not.toHaveBeenCalled()
     })
 
     describe('UI events', () => {
