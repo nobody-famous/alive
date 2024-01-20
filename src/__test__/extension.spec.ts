@@ -113,4 +113,22 @@ describe('Extension tests', () => {
             })
         })
     })
+
+    describe('setWorkspaceEventHandlers', () => {
+        const getHandler = async (toMock: jest.Mock): Promise<(() => void) | undefined> => {
+            let handler: (() => void) | undefined = undefined
+
+            toMock.mockImplementation((fn) => (handler = fn))
+
+            await activate(ctx)
+
+            return handler
+        }
+
+        it('onDidOpenTextDocument', async () => {
+            const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
+
+            fn?.()
+        })
+    })
 })

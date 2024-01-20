@@ -280,6 +280,7 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
 }
 
 function openTextDocument(ui: UI, lsp: LSP, state: ExtensionState, doc: vscode.TextDocument) {
+    console.log('OPEN TEXT DOCUMENT')
     if (!hasValidLangId(doc, [COMMON_LISP_ID])) {
         return
     }
