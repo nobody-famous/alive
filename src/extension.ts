@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { RemoteConfig, readAliveConfig } from './config'
-import { isFiniteNumber, isString } from './vscode/Guards'
+import { isFiniteNumber, isHistoryItem, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
 import { ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
 import { UI } from './vscode/UI'
@@ -266,7 +266,7 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
         const history: HistoryItem[] = []
 
         for (const item of data) {
-            if (item.pkgName === undefined || item.text === undefined) {
+            if (!isHistoryItem(item)) {
                 continue
             }
 

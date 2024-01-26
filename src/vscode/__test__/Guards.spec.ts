@@ -2,6 +2,7 @@ import {
     isArray,
     isBoolean,
     isFiniteNumber,
+    isHistoryItem,
     isInspectResult,
     isObject,
     isPosition,
@@ -81,5 +82,12 @@ describe('Type guard tests', () => {
         expect(isInspectResult({ id: 5, result: 'bar' })).toBe(false)
         expect(isInspectResult({ id: 5, resultType: 'foo' })).toBe(false)
         expect(isInspectResult({ resultType: 'foo', result: 'bar' })).toBe(false)
+    })
+
+    it('isHistoryItem', () => {
+        expect(isHistoryItem({ pkgName: 'foo', text: 'bar' })).toBe(true)
+        expect(isHistoryItem({ pkgName: 'foo' })).toBe(false)
+        expect(isHistoryItem({ text: 'bar' })).toBe(false)
+        expect(isHistoryItem({ resultType: 'foo', result: 'bar' })).toBe(false)
     })
 })

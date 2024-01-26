@@ -1,5 +1,5 @@
 import { Position } from 'vscode'
-import { InspectResult, RestartInfo, SourceLocation } from './Types'
+import { HistoryItem, InspectResult, RestartInfo, SourceLocation } from './Types'
 import { parseToInt } from './Utils'
 
 export function isString(data: unknown): data is string {
@@ -45,4 +45,8 @@ export function isRestartInfo(item: unknown): item is RestartInfo {
 
 export function isInspectResult(data: unknown): data is InspectResult {
     return isObject(data) && Number.isFinite(parseToInt(data.id)) && data.result !== undefined && isString(data.resultType)
+}
+
+export function isHistoryItem(data: unknown): data is HistoryItem {
+    return isObject(data) && isString(data.pkgName) && isString(data.text)
 }
