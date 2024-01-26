@@ -5,6 +5,9 @@ import { COMMON_LISP_ID } from '../vscode/Utils'
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
 
+const fsMock = jest.requireMock('fs')
+jest.mock('fs')
+
 // const packagesMock = jest.requireMock('../vscode/views/PackagesTree')
 jest.mock('../vscode/views/PackagesTree')
 
@@ -111,6 +114,15 @@ describe('Extension tests', () => {
                 expect(utilsMock.tryCompile).toHaveBeenCalledTimes(2)
                 expect(utilsMock.updateDiagnostics).toHaveBeenCalledTimes(2)
             })
+        })
+
+        it('saveReplHistory', async () => {
+            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+
+            fsMock.promises = { writeFile: jest.fn() }
+            await fns.saveReplHistory()
+
+            expect(fsMock.promises.writeFile).toHaveBeenCalled()
         })
     })
 
