@@ -76,34 +76,6 @@ export async function findSubFolders(folders: readonly VscodeFolder[], sub: stri
     return subs
 }
 
-export async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder> {
-    log('Pick workspace folder')
-
-    const haveVscodeFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode'])
-
-    log(`Have .vscode folder: ${toLog(haveVscodeFolder)}`)
-
-    if (haveVscodeFolder.length === 0) {
-        log(`No .vscode folder found, returning ${toLog(folders[0])}`)
-
-        return folders[0]
-    }
-
-    const haveAliveFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode', 'alive'])
-
-    log(`Have .vscode/alive folder: ${toLog(haveAliveFolder)}`)
-
-    if (haveAliveFolder.length === 0) {
-        log(`No .vscode/alive folder, retuning ${toLog(haveVscodeFolder[0])}`)
-
-        return haveVscodeFolder[0]
-    }
-
-    log(`Found .vscode/alive folder at ${toLog(haveAliveFolder[0])}`)
-
-    return haveAliveFolder[0]
-}
-
 export function strToMarkdown(text: string): string {
     return text.replace(/ /g, '&nbsp;').replace(/\n/g, '  \n')
 }
@@ -199,13 +171,58 @@ export function getFolderPath(state: Pick<ExtensionState, 'workspacePath'>, subd
     return path.join(dir, subdir)
 }
 
-export async function createTempFile(state: Pick<ExtensionState, 'workspacePath'>, doc: Pick<vscode.TextDocument, 'getText'>) {
+export function convertSeverity(sev: string): vscode.DiagnosticSeverity {
+    switch (sev) {
+        case 'error':
+        case 'read_error':
+            return vscode.DiagnosticSeverity.Error
+        case 'note':
+        case 'redefinition':
+        case 'style_warning':
+        case 'warning':
+            return vscode.DiagnosticSeverity.Warning
+        case 'info':
+            return vscode.DiagnosticSeverity.Information
+        default:
+            return vscode.DiagnosticSeverity.Error
+    }
+}
+
+async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder> {
+    log('Pick workspace folder')
+
+    const haveVscodeFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode'])
+
+    log(`Have .vscode folder: ${toLog(haveVscodeFolder)}`)
+
+    if (haveVscodeFolder.length === 0) {
+        log(`No .vscode folder found, returning ${toLog(folders[0])}`)
+
+        return folders[0]
+    }
+
+    const haveAliveFolder: VscodeFolder[] = await findSubFolders(folders, ['.vscode', 'alive'])
+
+    log(`Have .vscode/alive folder: ${toLog(haveAliveFolder)}`)
+
+    if (haveAliveFolder.length === 0) {
+        log(`No .vscode/alive folder, retuning ${toLog(haveVscodeFolder[0])}`)
+
+        return haveVscodeFolder[0]
+    }
+
+    log(`Found .vscode/alive folder at ${toLog(haveAliveFolder[0])}`)
+
+    return haveAliveFolder[0]
+}
+
+async function createTempFile(state: Pick<ExtensionState, 'workspacePath'>, doc: Pick<vscode.TextDocument, 'getText'>) {
     const subdir = path.join('.vscode', 'alive', 'fasl')
 
     return await createFile(state, subdir, 'tmp.lisp', doc.getText())
 }
 
-export async function createFile(state: Pick<ExtensionState, 'workspacePath'>, subdir: string, name: string, content: string) {
+async function createFile(state: Pick<ExtensionState, 'workspacePath'>, subdir: string, name: string, content: string) {
     const folder = getFolderPath(state, subdir)
     const fileName = path.join(folder, name)
 
@@ -215,7 +232,7 @@ export async function createFile(state: Pick<ExtensionState, 'workspacePath'>, s
     return fileName
 }
 
-export async function updateCompilerDiagnostics(diagnostics: VscodeDiags, notes: CompileFileNote[]) {
+async function updateCompilerDiagnostics(diagnostics: VscodeDiags, notes: CompileFileNote[]) {
     const diags: { [index: string]: vscode.Diagnostic[] } = {}
 
     const createDiag = (location: CompileLocation, severity: string, message: string) => {
@@ -234,22 +251,5 @@ export async function updateCompilerDiagnostics(diagnostics: VscodeDiags, notes:
 
     for (const [file, arr] of Object.entries(diags)) {
         diagnostics.set(vscode.Uri.file(file), arr)
-    }
-}
-
-export function convertSeverity(sev: string): vscode.DiagnosticSeverity {
-    switch (sev) {
-        case 'error':
-        case 'read_error':
-            return vscode.DiagnosticSeverity.Error
-        case 'note':
-        case 'redefinition':
-        case 'style_warning':
-        case 'warning':
-            return vscode.DiagnosticSeverity.Warning
-        case 'info':
-            return vscode.DiagnosticSeverity.Information
-        default:
-            return vscode.DiagnosticSeverity.Error
     }
 }

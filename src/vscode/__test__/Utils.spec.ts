@@ -1,26 +1,22 @@
 import * as os from 'os'
 import * as path from 'path'
 
+import { Position } from 'vscode'
 import {
     convertSeverity,
-    createFile,
-    createTempFile,
     diagnosticsEnabled,
     dirExists,
     findSubFolders,
     getFolderPath,
     getWorkspaceOrFilePath,
     parseToInt,
-    pickWorkspaceFolder,
     startCompileTimer,
     strToHtml,
     strToMarkdown,
     tryCompile,
-    updateCompilerDiagnostics,
     updateDiagnostics,
     useEditor,
 } from '../Utils'
-import { Position } from 'vscode'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -69,6 +65,38 @@ describe('Utils Tests', () => {
 
             vscodeMock.workspace.workspaceFolders = [{ uri: { fsPath: 'foo' } }, { uri: { fsPath: 'bar' } }]
             expect(await getWorkspaceOrFilePath()).toBe('foo')
+        })
+
+        describe('pickWorkspaceFolder', () => {
+            it('No vscode folder', async () => {
+                const accessFunc = () => {
+                    throw new Error('Failed, as requested')
+                }
+
+                for (let count = 0; count < 2; count++) {
+                    fsMock.promises.access.mockImplementationOnce(accessFunc)
+                }
+
+                vscodeMock.workspace.workspaceFolders = [{ uri: { fsPath: 'foo' } }, { uri: { fsPath: 'bar' } }]
+
+                expect(await getWorkspaceOrFilePath()).toBe('foo')
+            })
+
+            it('No alive folder', async () => {
+                const accessFunc = (file: string) => {
+                    if (file !== path.join('foo', '.vscode')) {
+                        throw new Error('Failed, as requested')
+                    }
+                }
+
+                for (let count = 0; count < 4; count++) {
+                    fsMock.promises.access.mockImplementationOnce(accessFunc)
+                }
+
+                vscodeMock.workspace.workspaceFolders = [{ uri: { fsPath: 'foo' } }, { uri: { fsPath: 'bar' } }]
+
+                expect(await getWorkspaceOrFilePath()).toBe('foo')
+            })
         })
     })
 
@@ -136,16 +164,20 @@ describe('Utils Tests', () => {
         it('No notes', () => {
             const setFn = jest.fn()
 
-            updateCompilerDiagnostics({ set: setFn }, [])
-            expect(setFn).not.toHaveBeenCalled()
+            vscodeMock.Uri.file.mockReturnValueOnce('foo')
+            updateDiagnostics({ set: setFn }, 'foo', [])
+
+            expect(setFn).toHaveBeenCalledWith(expect.anything(), [])
         })
 
         it('One note', () => {
             const setFn = jest.fn()
 
-            vscodeMock.Uri.file.mockImplementationOnce((name: string) => name)
+            for (let count = 0; count < 2; count++) {
+                vscodeMock.Uri.file.mockImplementationOnce((name: string) => name)
+            }
 
-            updateCompilerDiagnostics({ set: setFn }, [
+            updateDiagnostics({ set: setFn }, 'foo', [
                 {
                     message: 'Hello',
                     severity: 'info',
@@ -177,24 +209,6 @@ describe('Utils Tests', () => {
 
     it('getFolderPath', () => {
         expect(getFolderPath({ workspacePath: 'foo' }, 'bar')).toBe(path.join('foo', 'bar'))
-    })
-
-    it('createFile', async () => {
-        vscodeMock.Uri.file.mockImplementation((name: string) => name)
-
-        expect(await createFile({ workspacePath: 'foo' }, 'bar', 'baz', 'stuff')).toBe(path.join('foo', 'bar', 'baz'))
-        expect(vscodeMock.workspace.fs.createDirectory).toHaveBeenCalled()
-        expect(vscodeMock.workspace.fs.writeFile).toHaveBeenCalledWith(path.join('foo', 'bar', 'baz'), expect.anything())
-    })
-
-    it('createTempFile', async () => {
-        const tmpFile = path.join('foo', '.vscode', 'alive', 'fasl', 'tmp.lisp')
-
-        vscodeMock.Uri.file.mockImplementation((name: string) => name)
-
-        expect(await createTempFile({ workspacePath: 'foo' }, { getText: () => '' })).toBe(tmpFile)
-        expect(vscodeMock.workspace.fs.createDirectory).toHaveBeenCalled()
-        expect(vscodeMock.workspace.fs.writeFile).toHaveBeenCalledWith(tmpFile, expect.anything())
     })
 
     describe('tryCompile', () => {
@@ -320,47 +334,5 @@ describe('Utils Tests', () => {
     it('strToMarkdown', () => {
         expect(strToMarkdown(' ')).toBe('&nbsp;')
         expect(strToMarkdown('<foo>\n')).toBe('<foo>  \n')
-    })
-
-    describe('pickWorkspaceFolder', () => {
-        it('No folders', async () => {
-            expect(await pickWorkspaceFolder([])).toBeUndefined()
-        })
-
-        it('No vscode folder', async () => {
-            const accessFunc = () => {
-                throw new Error('Failed, as requested')
-            }
-            fsMock.promises.access.mockImplementationOnce(accessFunc)
-
-            expect(await pickWorkspaceFolder([{ uri: { fsPath: 'foo' } }])).toMatchObject({ uri: { fsPath: 'foo' } })
-        })
-
-        it('No alive folder', async () => {
-            const accessFunc = (file: string) => {
-                if (file !== path.join('foo', '.vscode')) {
-                    throw new Error('Failed, as requested')
-                }
-            }
-            fsMock.promises.access.mockImplementationOnce(accessFunc)
-            fsMock.promises.access.mockImplementationOnce(accessFunc)
-
-            expect(await pickWorkspaceFolder([{ uri: { fsPath: 'foo' } }])).toMatchObject({ uri: { fsPath: 'foo' } })
-        })
-
-        it('Has alive folder', async () => {
-            const accessFunc = (file: string) => {
-                if (!file.startsWith('foo')) {
-                    throw new Error('Failed, as requested')
-                }
-            }
-            fsMock.promises.access.mockImplementationOnce(accessFunc)
-            fsMock.promises.access.mockImplementationOnce(accessFunc)
-            fsMock.promises.access.mockImplementationOnce(accessFunc)
-
-            expect(await pickWorkspaceFolder([{ uri: { fsPath: 'bar' } }, { uri: { fsPath: 'foo' } }])).toMatchObject({
-                uri: { fsPath: 'foo' },
-            })
-        })
     })
 })
