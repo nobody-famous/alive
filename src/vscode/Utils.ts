@@ -114,7 +114,7 @@ export function strToHtml(str: string): string {
     return html
 }
 
-export function hasValidLangId(doc: vscode.TextDocument, ids: string[]): boolean {
+export function hasValidLangId(doc: Pick<vscode.TextDocument, 'languageId'>, ids: string[]): boolean {
     return ids.includes(doc.languageId)
 }
 

@@ -115,7 +115,7 @@ describe('Extension tests', () => {
     })
 
     describe('setWorkspaceEventHandlers', () => {
-        const getHandler = async (toMock: jest.Mock): Promise<(() => void) | undefined> => {
+        const getHandler = async (toMock: jest.Mock): Promise<((...args: unknown[]) => void) | undefined> => {
             let handler: (() => void) | undefined = undefined
 
             toMock.mockImplementation((fn) => (handler = fn))
@@ -125,10 +125,40 @@ describe('Extension tests', () => {
             return handler
         }
 
-        it('onDidOpenTextDocument', async () => {
-            const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
+        describe('onDidOpenTextDocument', () => {
+            beforeEach(() => {
+                utilsMock.diagnosticsEnabled.mockReset()
+                utilsMock.startCompileTimer.mockReset()
+            })
 
-            fn?.()
+            it('Valid ID, have diagnostics', async () => {
+                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
+
+                utilsMock.hasValidLangId.mockImplementationOnce(() => true)
+                utilsMock.diagnosticsEnabled.mockImplementationOnce(() => true)
+                fn?.()
+
+                expect(utilsMock.startCompileTimer).toHaveBeenCalled()
+            })
+
+            it('Valid ID, without diagnostics', async () => {
+                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
+
+                utilsMock.hasValidLangId.mockImplementationOnce(() => true)
+                utilsMock.diagnosticsEnabled.mockImplementationOnce(() => false)
+                fn?.()
+
+                expect(utilsMock.startCompileTimer).not.toHaveBeenCalled()
+            })
+
+            it('Invalid ID', async () => {
+                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
+
+                utilsMock.hasValidLangId.mockImplementationOnce(() => false)
+                fn?.()
+
+                expect(utilsMock.diagnosticsEnabled).not.toHaveBeenCalled()
+            })
         })
     })
 })
