@@ -1,6 +1,8 @@
+import { Buffer } from 'buffer'
 import { getAllCallbacks } from '../../TestHelpers'
 import { activate } from '../extension'
 import { COMMON_LISP_ID } from '../vscode/Utils'
+import { HistoryItem } from '../vscode/Types'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -61,6 +63,40 @@ describe('Extension tests', () => {
         expect(configMock.readAliveConfig).toHaveBeenCalled()
         expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('replHistory.focus')
         expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('lispRepl.focus')
+    })
+
+    describe('readReplHistory', () => {
+        const historyTest = async (json: string, expectedHistory: HistoryItem[]) => {
+            uiMock.initHistoryTree.mockReset()
+
+            fsMock.promises = {
+                readFile: jest.fn().mockImplementation(async () => Buffer.from(json)),
+            }
+
+            await activate(ctx)
+
+            expect(uiMock.initHistoryTree).toHaveBeenCalledWith(expectedHistory)
+        }
+
+        it('Empty array', async () => {
+            await historyTest('[]', [])
+        })
+
+        it('One item', async () => {
+            await historyTest('[{"pkgName":"foo","text":"bar"}]', [{ pkgName: 'foo', text: 'bar' }])
+        })
+
+        it('Invalid item', async () => {
+            await historyTest('[5,{"pkgName":"foo","text":"bar"},"baz"]', [{ pkgName: 'foo', text: 'bar' }])
+        })
+
+        it('Not array', async () => {
+            await historyTest('{"foo":"bar"}', [])
+        })
+
+        it('Invalid json', async () => {
+            await historyTest('foo', [])
+        })
     })
 
     it('Tree fails', async () => {
