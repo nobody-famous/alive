@@ -31,6 +31,9 @@ jest.mock('../vscode/UI')
 const lspMock = jest.requireMock('../vscode/backend/LSP')
 jest.mock('../vscode/backend/LSP')
 
+const lspProcMock = jest.requireMock('../vscode/backend/LspProcess')
+jest.mock('../vscode/backend/LspProcess')
+
 const configMock = jest.requireMock('../config')
 jest.mock('../config')
 
@@ -53,7 +56,12 @@ describe('Extension tests', () => {
         utilsMock.getWorkspaceOrFilePath.mockImplementation(() => '/fake/path')
 
         configMock.readAliveConfig.mockImplementation(() => ({
-            lsp: {},
+            lsp: {
+                remote: {
+                    host: 'foo',
+                    port: 1234,
+                },
+            },
         }))
     })
 
@@ -223,6 +231,50 @@ describe('Extension tests', () => {
 
                 expect(utilsMock.diagnosticsEnabled).not.toHaveBeenCalled()
             })
+        })
+    })
+
+    describe('startLocalServer', () => {
+        beforeEach(() => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {},
+            }))
+
+            lspMock.connect.mockReset()
+            lspProcMock.downloadLspServer.mockReset()
+            lspProcMock.startLspServer.mockReset()
+        })
+
+        it('Start OK', async () => {
+            lspProcMock.downloadLspServer.mockImplementationOnce(() => 'foo')
+            lspProcMock.startLspServer.mockImplementationOnce(() => 1234)
+
+            await activate(ctx)
+
+            expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
+            expect(lspProcMock.startLspServer).toHaveBeenCalled()
+            expect(lspMock.connect).toHaveBeenCalled()
+        })
+
+        it('Start Invalid Port', async () => {
+            lspProcMock.downloadLspServer.mockImplementationOnce(() => 'foo')
+            lspProcMock.startLspServer.mockImplementationOnce(() => NaN)
+
+            await activate(ctx)
+
+            expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
+            expect(lspProcMock.startLspServer).toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('Start Invalid Path', async () => {
+            lspProcMock.downloadLspServer.mockImplementationOnce(() => 5)
+
+            await activate(ctx)
+
+            expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
+            expect(lspProcMock.startLspServer).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
         })
     })
 })

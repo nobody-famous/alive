@@ -61,8 +61,8 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     registerUIEvents(ui, lsp, state)
     registerLSPEvents(ui, lsp, state)
 
-    if (remoteCfg.host === null || remoteCfg.port === null) {
-        if (!startLocalServer(state, remoteCfg)) {
+    if (remoteCfg.host == null || remoteCfg.port == null) {
+        if (!(await startLocalServer(state, remoteCfg))) {
             return
         }
 
