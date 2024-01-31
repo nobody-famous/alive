@@ -173,6 +173,22 @@ describe('Extension tests', () => {
             return handler
         }
 
+        it('onDidChangeTextDocument', async () => {
+            const fn = await getHandler(vscodeMock.workspace.onDidChangeTextDocument)
+
+            fn?.()
+
+            expect(lspMock.textDocumentChanged).toHaveBeenCalled()
+        })
+
+        it('onDidChangeActiveTextEditor', async () => {
+            const fn = await getHandler(vscodeMock.window.onDidChangeActiveTextEditor)
+
+            fn?.()
+
+            expect(lspMock.editorChanged).toHaveBeenCalled()
+        })
+
         describe('onDidOpenTextDocument', () => {
             beforeEach(() => {
                 utilsMock.diagnosticsEnabled.mockReset()
