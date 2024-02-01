@@ -65,12 +65,22 @@ describe('Extension tests', () => {
         }))
     })
 
-    it('Activate', async () => {
-        await activate(ctx)
+    describe('Activate', () => {
+        it('No document', async () => {
+            await activate(ctx)
 
-        expect(configMock.readAliveConfig).toHaveBeenCalled()
-        expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('replHistory.focus')
-        expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('lispRepl.focus')
+            expect(configMock.readAliveConfig).toHaveBeenCalled()
+            expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('replHistory.focus')
+            expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('lispRepl.focus')
+        })
+
+        it('Have document', async () => {
+            vscodeMock.window.activeTextEditor = { document: 'foo' }
+
+            await activate(ctx)
+
+            expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+        })
     })
 
     describe('readReplHistory', () => {
@@ -275,6 +285,42 @@ describe('Extension tests', () => {
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
             expect(lspProcMock.startLspServer).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('updateEditorConfig', () => {
+        afterEach(() => {
+            vscodeMock.workspace.workspaceFolders = []
+        })
+
+        it('No folders', async () => {
+            await activate(ctx)
+            expect(vscodeMock.workspace.getConfiguration).not.toHaveBeenCalled()
+        })
+
+        it('Have folders', async () => {
+            const fakeEditorCfg = { update: jest.fn(), get: jest.fn() }
+            const fakeLispCfg = { update: jest.fn() }
+
+            vscodeMock.workspace.workspaceFolders = ['foo', 'bar']
+            vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => fakeEditorCfg)
+            vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => fakeLispCfg)
+
+            await activate(ctx)
+
+            expect(vscodeMock.workspace.getConfiguration).toHaveBeenCalled()
+            expect(fakeEditorCfg.update).toHaveBeenCalledWith(
+                'formatOnType',
+                expect.anything(),
+                expect.anything(),
+                expect.anything()
+            )
+            expect(fakeLispCfg.update).toHaveBeenCalledWith(
+                'editor.wordSeparators',
+                expect.anything(),
+                expect.anything(),
+                expect.anything()
+            )
         })
     })
 })

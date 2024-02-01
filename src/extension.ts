@@ -73,7 +73,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
     const history = await readReplHistory(state.replHistoryFile)
 
-    if (remoteCfg.host === null || remoteCfg.port === null) {
+    if (remoteCfg.host == null || remoteCfg.port == null) {
         vscode.window.showErrorMessage(`Cannot connect to ${remoteCfg.host}:${remoteCfg.port}`)
         return
     }
