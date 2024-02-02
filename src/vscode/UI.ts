@@ -186,7 +186,7 @@ export class UI extends EventEmitter implements UIEvents {
     }
 
     selectHistoryItem() {
-        return new Promise<HistoryItem>((resolve) => {
+        return new Promise<HistoryItem | undefined>((resolve) => {
             const items = [...this.historyTree.getItems()]
             const qp = vscode.window.createQuickPick()
 
@@ -208,7 +208,11 @@ export class UI extends EventEmitter implements UIEvents {
                 qp.hide()
             })
 
-            qp.onDidHide(() => qp.dispose())
+            qp.onDidHide(() => {
+                qp.dispose()
+                resolve(undefined)
+            })
+
             qp.show()
         })
     }

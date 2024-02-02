@@ -110,6 +110,10 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.replHistory', async () => {
             const item = await ui.selectHistoryItem()
 
+            if (item === undefined) {
+                return
+            }
+
             await saveReplHistory(state.replHistoryFile, ui.getHistoryItems())
 
             lsp.eval(item.text, item.pkgName)

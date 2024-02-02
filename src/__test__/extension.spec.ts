@@ -336,8 +336,6 @@ describe('Extension tests', () => {
 
             const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
 
-            await activate(ctx)
-
             checkCallback('alive.selectSexpr', cmdsMock.selectSexpr)
             checkCallback('alive.sendToRepl', cmdsMock.sendToRepl)
             checkCallback('alive.loadAsdfSystem', cmdsMock.loadAsdfSystem)
@@ -354,6 +352,22 @@ describe('Extension tests', () => {
             checkCallback('alive.openScratchPad', cmdsMock.openScratchPad)
             checkCallback('alive.macroexpand', cmdsMock.macroexpand)
             checkCallback('alive.macroexpand1', cmdsMock.macroexpand1)
+        })
+
+        describe('replHistory', () => {
+            beforeEach(() => {
+                fsMock.promises = {
+                    writeFile: jest.fn(),
+                }
+            })
+
+            it('No items', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+
+                await fns['alive.replHistory']()
+
+                expect(uiMock.selectHistoryItem).toHaveBeenCalled()
+            })
         })
     })
 })

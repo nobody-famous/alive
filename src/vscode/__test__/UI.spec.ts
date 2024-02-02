@@ -319,8 +319,13 @@ describe('UI tests', () => {
         }
 
         interface ChangeFnResult {
-            task: Promise<HistoryItem>
+            task: Promise<HistoryItem | undefined>
             fn: ((e: QPItem[]) => void) | undefined
+        }
+
+        interface HideFnResult {
+            task: Promise<HistoryItem | undefined>
+            fn: (() => void) | undefined
         }
 
         const getChangeFn = (ui: UI, qp: QP): ChangeFnResult => {
@@ -340,13 +345,14 @@ describe('UI tests', () => {
             const qp = {
                 items: [{ text: '', pkgName: '' }],
                 onDidChangeSelection: jest.fn(),
-                onDidHide: jest.fn().mockImplementation((fn: () => void) => fn()),
+                onDidHide: jest.fn(),
                 hide: jest.fn(),
                 show: jest.fn(),
                 dispose: jest.fn(),
             }
 
             try {
+                vscodeMock.window.createQuickPick.mockReset()
                 historyMock.getItems.mockImplementationOnce(() => [{ text: '', pkgName: '' }])
                 vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
 
@@ -355,7 +361,6 @@ describe('UI tests', () => {
                 fn?.([])
                 expect(qp.show).toHaveBeenCalled()
                 expect(qp.hide).not.toHaveBeenCalled()
-                expect(qp.dispose).toHaveBeenCalled()
 
                 fn?.([{ label: 'foo' }])
                 expect(qp.hide).toHaveBeenCalled()
@@ -366,11 +371,42 @@ describe('UI tests', () => {
                 expect(historyMock.moveItemToTop).toHaveBeenCalled()
 
                 const item = await task
-                expect(item.text).toBe('foo')
-                expect(item.pkgName).toBe('')
+                expect(item?.text).toBe('foo')
+                expect(item?.pkgName).toBe('')
             } finally {
                 historyMock.items = []
             }
+        })
+
+        const getHideFn = async (): Promise<HideFnResult> => {
+            let hideFn = undefined
+            const ui = new UI(createState())
+            const qp = {
+                items: [],
+                onDidChangeSelection: jest.fn(),
+                onDidHide: jest.fn((fn) => (hideFn = fn)),
+                dispose: jest.fn(),
+                show: jest.fn(),
+            }
+
+            vscodeMock.window.createQuickPick.mockReset()
+            historyMock.getItems.mockImplementationOnce(() => [{ text: '', pkgName: '' }])
+            vscodeMock.window.createQuickPick.mockImplementationOnce(() => qp)
+
+            const task = ui.selectHistoryItem()
+
+            return { task, fn: hideFn }
+        }
+
+        it('Hide quickpick', async () => {
+
+            const { task, fn } = await getHideFn()
+
+            fn?.()
+
+            const result = await task
+
+            expect(result).toBeUndefined()
         })
     })
 
