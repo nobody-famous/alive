@@ -368,6 +368,26 @@ describe('Extension tests', () => {
 
                 expect(uiMock.selectHistoryItem).toHaveBeenCalled()
             })
+
+            it('One item', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+
+                uiMock.selectHistoryItem.mockReturnValueOnce({ text: 'foo', pkgName: 'bar' })
+
+                await fns['alive.replHistory']()
+
+                expect(uiMock.selectHistoryItem).toHaveBeenCalled()
+                expect(uiMock.getHistoryItems).toHaveBeenCalled()
+                expect(lspMock.evalFn).toHaveBeenCalled()
+            })
+        })
+
+        it('clearReplHistory', async () => {
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+
+            fns['alive.clearReplHistory']?.()
+
+            expect(uiMock.clearReplHistory).toHaveBeenCalled()
         })
     })
 })

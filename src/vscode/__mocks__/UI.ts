@@ -1,4 +1,5 @@
 export const on = jest.fn()
+export const clearReplHistory = jest.fn()
 export const getHistoryItems = jest.fn()
 export const init = jest.fn()
 export const initAsdfSystemsTree = jest.fn()
@@ -11,6 +12,7 @@ export const selectHistoryItem = jest.fn()
 
 export const UI = jest.fn().mockImplementation(() => ({
     on,
+    clearReplHistory,
     getHistoryItems,
     init,
     initAsdfSystemsTree,
