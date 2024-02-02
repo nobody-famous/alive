@@ -4,11 +4,14 @@ import { activate } from '../extension'
 import { COMMON_LISP_ID } from '../vscode/Utils'
 import { HistoryItem } from '../vscode/Types'
 
+const fsMock = jest.requireMock('fs')
+jest.mock('fs')
+
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
 
-const fsMock = jest.requireMock('fs')
-jest.mock('fs')
+const cmdsMock = jest.requireMock('../vscode/commands')
+jest.mock('../vscode/commands')
 
 // const packagesMock = jest.requireMock('../vscode/views/PackagesTree')
 jest.mock('../vscode/views/PackagesTree')
@@ -321,6 +324,36 @@ describe('Extension tests', () => {
                 expect.anything(),
                 expect.anything()
             )
+        })
+    })
+
+    describe('Commands', () => {
+        it('Simple redirects', async () => {
+            const checkCallback = (name: string, mockFn: jest.Mock) => {
+                fns[name]()
+                expect(mockFn).toHaveBeenCalled()
+            }
+
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+
+            await activate(ctx)
+
+            checkCallback('alive.selectSexpr', cmdsMock.selectSexpr)
+            checkCallback('alive.sendToRepl', cmdsMock.sendToRepl)
+            checkCallback('alive.loadAsdfSystem', cmdsMock.loadAsdfSystem)
+            checkCallback('alive.compileFile', cmdsMock.compileFile)
+            checkCallback('alive.refreshPackages', cmdsMock.refreshPackages)
+            checkCallback('alive.refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
+            checkCallback('alive.refreshThreads', cmdsMock.refreshThreads)
+            checkCallback('alive.clearRepl', cmdsMock.clearRepl)
+            checkCallback('alive.clearInlineResults', cmdsMock.clearInlineResults)
+            checkCallback('alive.inlineEval', cmdsMock.inlineEval)
+            checkCallback('alive.loadFile', cmdsMock.loadFile)
+            checkCallback('alive.inspect', cmdsMock.inspect)
+            checkCallback('alive.inspectMacro', cmdsMock.inspectMacro)
+            checkCallback('alive.openScratchPad', cmdsMock.openScratchPad)
+            checkCallback('alive.macroexpand', cmdsMock.macroexpand)
+            checkCallback('alive.macroexpand1', cmdsMock.macroexpand1)
         })
     })
 })
