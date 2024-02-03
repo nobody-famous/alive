@@ -7,8 +7,12 @@ export const initHistoryTree = jest.fn()
 export const initInspector = jest.fn()
 export const initPackagesTree = jest.fn()
 export const initThreadsTree = jest.fn()
+export const moveHistoryNodeToTop = jest.fn()
 export const registerProviders = jest.fn()
+export const removeHistoryNode = jest.fn()
 export const selectHistoryItem = jest.fn()
+export const setReplInput = jest.fn()
+export const setReplPackage = jest.fn()
 
 export const UI = jest.fn().mockImplementation(() => ({
     on,
@@ -20,6 +24,10 @@ export const UI = jest.fn().mockImplementation(() => ({
     initInspector,
     initPackagesTree,
     initThreadsTree,
+    moveHistoryNodeToTop,
     registerProviders,
+    removeHistoryNode,
     selectHistoryItem,
+    setReplInput,
+    setReplPackage,
 }))

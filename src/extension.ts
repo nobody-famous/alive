@@ -19,9 +19,9 @@ import { LSP } from './vscode/backend/LSP'
 import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
 import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
-import { ExportNode, PackageNode } from './vscode/views/PackagesTree'
-import { HistoryNode } from './vscode/views/ReplHistory'
-import { ThreadNode } from './vscode/views/ThreadsTree'
+import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
+import { isHistoryNode } from './vscode/views/ReplHistory'
+import { isThreadNode } from './vscode/views/ThreadsTree'
 
 // Word separator characters for CommonLisp.
 // These determine how a double-click will extend over a symbol.
@@ -126,19 +126,21 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         }),
 
         vscode.commands.registerCommand('alive.removePackage', (node) => {
-            if (!(node instanceof PackageNode) || typeof node.label !== 'string' || node.label === '') {
+            if (!isPackageNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
             lsp.removePackage(node.label)
         }),
+
         vscode.commands.registerCommand('alive.removeExport', (node) => {
-            if (!(node instanceof ExportNode) || typeof node.label !== 'string' || node.label === '') {
+            if (!isExportNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
             lsp.removeExport(node.pkg, node.label)
         }),
+
         vscode.commands.registerCommand('alive.loadAsdfByName', async (node) => {
             if (typeof node.label !== 'string' || node.label === '') {
                 return
@@ -152,31 +154,35 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
             ui.addReplText(`Done Loading ASDF System ${node.label}`)
         }),
+
         vscode.commands.registerCommand('alive.killThread', (node) => {
-            if (!(node instanceof ThreadNode) || typeof node.label !== 'string' || node.label === '') {
+            if (!isThreadNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
             lsp.killThread(node.thread)
         }),
+
         vscode.commands.registerCommand('alive.evalHistory', (node) => {
-            if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
+            if (!isHistoryNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
             ui.moveHistoryNodeToTop(node)
             lsp.eval(node.item.text, node.item.pkgName)
         }),
+
         vscode.commands.registerCommand('alive.editHistory', (node) => {
-            if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
+            if (!isHistoryNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
             ui.setReplPackage(node.item.pkgName)
             ui.setReplInput(node.item.text)
         }),
+
         vscode.commands.registerCommand('alive.removeHistory', (node) => {
-            if (!(node instanceof HistoryNode) || typeof node.label !== 'string' || node.label === '') {
+            if (!isHistoryNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 

@@ -2,6 +2,7 @@ export const addItem = jest.fn()
 export const removeItem = jest.fn()
 export const decrementIndex = jest.fn()
 export const incrementIndex = jest.fn()
+export const isHistoryNode = jest.fn()
 export const getItems = jest.fn()
 export const getCurrentItem = jest.fn()
 export const moveToTop = jest.fn()
@@ -21,6 +22,7 @@ export const ReplHistoryTreeProvider = jest.fn().mockImplementation(() => ({
     clear,
     clearIndex,
     incrementIndex,
+    isHistoryNode,
     decrementIndex,
     getItems,
     getCurrentItem,

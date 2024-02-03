@@ -12,6 +12,10 @@ export class HistoryNode extends vscode.TreeItem {
     }
 }
 
+export function isHistoryNode(data: unknown): data is HistoryNode {
+    return data instanceof HistoryNode
+}
+
 export class HistoryPkgNode extends vscode.TreeItem {
     public pkg: string
 

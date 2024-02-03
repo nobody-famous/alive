@@ -11,6 +11,10 @@ export class ThreadNode extends vscode.TreeItem {
     }
 }
 
+export function isThreadNode(data: unknown): data is ThreadNode {
+    return data instanceof ThreadNode
+}
+
 export class ThreadsTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private threads: Array<Thread>
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()

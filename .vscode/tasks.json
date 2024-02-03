@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/UI.spec.ts",
+                "src/__test__/extension.spec.ts",
                 "-t",
-                "selectHistory"
+                "editHistory"
             ],
             "problemMatcher": [
                 "$tsc"

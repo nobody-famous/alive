@@ -13,13 +13,13 @@ jest.mock('vscode')
 const cmdsMock = jest.requireMock('../vscode/commands')
 jest.mock('../vscode/commands')
 
-// const packagesMock = jest.requireMock('../vscode/views/PackagesTree')
+const packagesMock = jest.requireMock('../vscode/views/PackagesTree')
 jest.mock('../vscode/views/PackagesTree')
 
-// const threadsMock = jest.requireMock('../vscode/views/ThreadsTree')
+const threadsMock = jest.requireMock('../vscode/views/ThreadsTree')
 jest.mock('../vscode/views/ThreadsTree')
 
-// const historyMock = jest.requireMock('../vscode/views/ReplHistory')
+const historyMock = jest.requireMock('../vscode/views/ReplHistory')
 jest.mock('../vscode/views/ReplHistory')
 
 // const asdfMock = jest.requireMock('../vscode/views/AsdfSystemsTree')
@@ -388,6 +388,90 @@ describe('Extension tests', () => {
             fns['alive.clearReplHistory']?.()
 
             expect(uiMock.clearReplHistory).toHaveBeenCalled()
+        })
+
+        const nodeTest = async (
+            label: string,
+            cbName: string,
+            toMock: jest.Mock,
+            value: boolean,
+            fnData: unknown,
+            toCall: jest.Mock
+        ) => {
+            it(label, async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+
+                toMock.mockReturnValue(value)
+                toCall.mockReset()
+
+                fns[cbName]?.(fnData)
+
+                value ? expect(toCall).toHaveBeenCalled() : expect(toCall).not.toHaveBeenCalled()
+            })
+        }
+
+        describe('removePackage', () => {
+            packagesMock.isPackageNode = jest.fn()
+
+            nodeTest('Invalid node', 'alive.removePackage', packagesMock.isPackageNode, false, {}, lspMock.removePackage)
+            nodeTest(
+                'Valid node',
+                'alive.removePackage',
+                packagesMock.isPackageNode,
+                true,
+                { label: 'foo' },
+                lspMock.removePackage
+            )
+        })
+
+        describe('removeExport', () => {
+            packagesMock.isExportNode = jest.fn()
+
+            nodeTest('Invalid node', 'alive.removeExport', packagesMock.isExportNode, false, {}, lspMock.removeExport)
+            nodeTest('Valid node', 'alive.removeExport', packagesMock.isExportNode, true, { label: 'foo' }, lspMock.removeExport)
+        })
+
+        describe('killThread', () => {
+            threadsMock.isThreadNode = jest.fn()
+
+            nodeTest('Invalid node', 'alive.killThread', threadsMock.isThreadNode, false, {}, lspMock.killThread)
+            nodeTest('Valid node', 'alive.killThread', threadsMock.isThreadNode, true, { label: 'foo' }, lspMock.killThread)
+        })
+
+        describe('evalHistory', () => {
+            nodeTest('Invalid node', 'alive.evalHistory', historyMock.isHistoryNode, false, {}, lspMock.evalFn)
+            nodeTest(
+                'Valid node',
+                'alive.evalHistory',
+                historyMock.isHistoryNode,
+                true,
+                { label: 'foo', item: { text: '', pkgName: '' } },
+                lspMock.evalFn
+            )
+        })
+
+        describe('editHistory', () => {
+            nodeTest('Invalid node', 'alive.editHistory', historyMock.isHistoryNode, false, {}, uiMock.setReplInput)
+            nodeTest(
+                'Valid node',
+                'alive.editHistory',
+                historyMock.isHistoryNode,
+                true,
+                { label: 'foo', item: { text: '', pkgName: '' } },
+                uiMock.setReplInput
+            )
+        })
+
+        describe('removeHistory', () => {
+            nodeTest('Invalid node', 'alive.removeHistory', historyMock.isHistoryNode, false, {}, uiMock.removeHistoryNode)
+            nodeTest(
+                'Valid node',
+                'alive.removeHistory',
+                historyMock.isHistoryNode,
+                true,
+                { label: 'foo', item: { text: '', pkgName: '' } },
+                uiMock.removeHistoryNode
+            )
         })
     })
 })
