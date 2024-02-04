@@ -134,13 +134,13 @@ describe('Extension tests', () => {
         uiMock.initAsdfSystemsTree.mockReset()
         uiMock.initThreadsTree.mockReset()
 
-        lspMock.listPackages.mockImplementation(() => {
+        lspMock.listPackages.mockImplementationOnce(() => {
             throw new Error('Failed, as requested')
         })
-        lspMock.listAsdfSystems.mockImplementation(() => {
+        lspMock.listAsdfSystems.mockImplementationOnce(() => {
             throw new Error('Failed, as requested')
         })
-        lspMock.listThreads.mockImplementation(() => {
+        lspMock.listThreads.mockImplementationOnce(() => {
             throw new Error('Failed, as requested')
         })
 
@@ -151,7 +151,32 @@ describe('Extension tests', () => {
         expect(uiMock.initThreadsTree).not.toHaveBeenCalled()
     })
 
+    const checkCallback = (fns: { [index: string]: () => void }, name: string, mockFn: jest.Mock) => {
+        fns[name]()
+        expect(mockFn).toHaveBeenCalled()
+    }
+
     describe('UI events', () => {
+        it('Simple redirects', async () => {
+            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+
+            checkCallback(fns, 'eval', lspMock.evalFn)
+            checkCallback(fns, 'inspect', lspMock.inspect)
+            checkCallback(fns, 'inspectClosed', lspMock.inspectClosed)
+            checkCallback(fns, 'inspectEval', lspMock.inspectEval)
+            checkCallback(fns, 'inspectRefresh', lspMock.inspectRefresh)
+            checkCallback(fns, 'inspectRefreshMacro', lspMock.inspectRefreshMacro)
+            checkCallback(fns, 'inspectMacroInc', lspMock.inspectMacroInc)
+        })
+
+        it('listPackages', async () => {
+            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+
+            await fns['listPackages'](() => {})
+
+            expect(lspMock.listPackages).toHaveBeenCalled()
+        })
+
         const refreshTest = async (validate: () => void) => {
             const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
             const editors = [
@@ -189,6 +214,45 @@ describe('Extension tests', () => {
             await fns.saveReplHistory()
 
             expect(fsMock.promises.writeFile).toHaveBeenCalled()
+        })
+    })
+
+    describe('LSP events', () => {
+        it('Simple redirects', async () => {
+            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+
+            checkCallback(fns, 'refreshPackages', cmdsMock.refreshPackages)
+            checkCallback(fns, 'refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
+            checkCallback(fns, 'refreshThreads', cmdsMock.refreshThreads)
+            checkCallback(fns, 'refreshInspectors', uiMock.refreshInspectors)
+            checkCallback(fns, 'refreshDiagnostics', uiMock.refreshDiagnostics)
+            checkCallback(fns, 'output', uiMock.addReplText)
+            checkCallback(fns, 'inspectResult', uiMock.newInspector)
+            checkCallback(fns, 'inspectUpdate', uiMock.updateInspector)
+        })
+
+        it('startCompileTimer', async () => {
+            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+
+            fns['startCompileTimer']()
+
+            expect(utilsMock.startCompileTimer).toHaveBeenCalled()
+        })
+
+        it('getRestartIndex', async () => {
+            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+
+            await fns['getRestartIndex']({}, () => {})
+
+            expect(uiMock.getRestartIndex).toHaveBeenCalled()
+        })
+
+        it('getUserInput', async () => {
+            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+
+            await fns['getUserInput'](() => {})
+
+            expect(uiMock.getUserInput).toHaveBeenCalled()
         })
     })
 
@@ -338,29 +402,24 @@ describe('Extension tests', () => {
 
     describe('Commands', () => {
         it('Simple redirects', async () => {
-            const checkCallback = (name: string, mockFn: jest.Mock) => {
-                fns[name]()
-                expect(mockFn).toHaveBeenCalled()
-            }
-
             const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
 
-            checkCallback('alive.selectSexpr', cmdsMock.selectSexpr)
-            checkCallback('alive.sendToRepl', cmdsMock.sendToRepl)
-            checkCallback('alive.loadAsdfSystem', cmdsMock.loadAsdfSystem)
-            checkCallback('alive.compileFile', cmdsMock.compileFile)
-            checkCallback('alive.refreshPackages', cmdsMock.refreshPackages)
-            checkCallback('alive.refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
-            checkCallback('alive.refreshThreads', cmdsMock.refreshThreads)
-            checkCallback('alive.clearRepl', cmdsMock.clearRepl)
-            checkCallback('alive.clearInlineResults', cmdsMock.clearInlineResults)
-            checkCallback('alive.inlineEval', cmdsMock.inlineEval)
-            checkCallback('alive.loadFile', cmdsMock.loadFile)
-            checkCallback('alive.inspect', cmdsMock.inspect)
-            checkCallback('alive.inspectMacro', cmdsMock.inspectMacro)
-            checkCallback('alive.openScratchPad', cmdsMock.openScratchPad)
-            checkCallback('alive.macroexpand', cmdsMock.macroexpand)
-            checkCallback('alive.macroexpand1', cmdsMock.macroexpand1)
+            checkCallback(fns, 'alive.selectSexpr', cmdsMock.selectSexpr)
+            checkCallback(fns, 'alive.sendToRepl', cmdsMock.sendToRepl)
+            checkCallback(fns, 'alive.loadAsdfSystem', cmdsMock.loadAsdfSystem)
+            checkCallback(fns, 'alive.compileFile', cmdsMock.compileFile)
+            checkCallback(fns, 'alive.refreshPackages', cmdsMock.refreshPackages)
+            checkCallback(fns, 'alive.refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
+            checkCallback(fns, 'alive.refreshThreads', cmdsMock.refreshThreads)
+            checkCallback(fns, 'alive.clearRepl', cmdsMock.clearRepl)
+            checkCallback(fns, 'alive.clearInlineResults', cmdsMock.clearInlineResults)
+            checkCallback(fns, 'alive.inlineEval', cmdsMock.inlineEval)
+            checkCallback(fns, 'alive.loadFile', cmdsMock.loadFile)
+            checkCallback(fns, 'alive.inspect', cmdsMock.inspect)
+            checkCallback(fns, 'alive.inspectMacro', cmdsMock.inspectMacro)
+            checkCallback(fns, 'alive.openScratchPad', cmdsMock.openScratchPad)
+            checkCallback(fns, 'alive.macroexpand', cmdsMock.macroexpand)
+            checkCallback(fns, 'alive.macroexpand1', cmdsMock.macroexpand1)
         })
 
         describe('replHistory', () => {
