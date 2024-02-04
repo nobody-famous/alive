@@ -40,6 +40,7 @@ export const workspace = {
     onDidOpenTextDocument: jest.fn(),
     onDidChangeTextDocument: jest.fn(),
     getConfiguration: jest.fn(),
+    saveAll: jest.fn(),
 }
 
 export const commands = {

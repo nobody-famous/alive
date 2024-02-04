@@ -1,4 +1,5 @@
 export const on = jest.fn()
+export const addReplText = jest.fn()
 export const clearReplHistory = jest.fn()
 export const getHistoryItems = jest.fn()
 export const init = jest.fn()
@@ -16,6 +17,7 @@ export const setReplPackage = jest.fn()
 
 export const UI = jest.fn().mockImplementation(() => ({
     on,
+    addReplText,
     clearReplHistory,
     getHistoryItems,
     init,

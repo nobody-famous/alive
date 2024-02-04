@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { RemoteConfig, readAliveConfig } from './config'
+import { readAliveConfig } from './config'
 import { isFiniteNumber, isHistoryItem, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
 import { ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
@@ -57,14 +57,20 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     const ui = createUI(state)
     const lsp = new LSP(state)
     const remoteCfg = { ...aliveCfg.lsp.remote }
+    const hostPort = { host: '', port: 0 }
 
     registerUIEvents(ui, lsp, state)
     registerLSPEvents(ui, lsp, state)
 
     if (remoteCfg.host == null || remoteCfg.port == null) {
-        if (!(await startLocalServer(state, remoteCfg))) {
+        const srvPort = await startLocalServer(state)
+
+        if (srvPort === undefined) {
             return
         }
+
+        hostPort.host = '127.0.0.1'
+        hostPort.port = srvPort
 
         log(`Server port ${toLog(remoteCfg.port)}`)
     } else {
@@ -73,12 +79,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
     const history = await readReplHistory(state.replHistoryFile)
 
-    if (remoteCfg.host == null || remoteCfg.port == null) {
-        vscode.window.showErrorMessage(`Cannot connect to ${remoteCfg.host}:${remoteCfg.port}`)
-        return
-    }
-
-    await lsp.connect({ host: remoteCfg.host, port: remoteCfg.port })
+    await lsp.connect(hostPort)
     await initTreeViews(ui, lsp, history)
 
     const activeDoc = vscode.window.activeTextEditor?.document
@@ -228,20 +229,15 @@ async function updateEditorConfig() {
     log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 }
 
-async function startLocalServer(state: ExtensionState, remoteCfg: RemoteConfig): Promise<boolean> {
+async function startLocalServer(state: ExtensionState): Promise<number | undefined> {
     state.lspInstallPath = await downloadLspServer()
     if (!isString(state.lspInstallPath)) {
-        return false
+        return
     }
 
-    remoteCfg.host = '127.0.0.1'
-    remoteCfg.port = await startLspServer(state)
+    const port = await startLspServer(state)
 
-    if (!isFiniteNumber(remoteCfg.port)) {
-        return false
-    }
-
-    return true
+    return isFiniteNumber(port) ? port : undefined
 }
 
 function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {

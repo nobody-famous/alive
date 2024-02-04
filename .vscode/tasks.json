@@ -35,7 +35,7 @@
                 "jest",
                 "src/__test__/extension.spec.ts",
                 "-t",
-                "editHistory"
+                "loadAsdfByName"
             ],
             "problemMatcher": [
                 "$tsc"

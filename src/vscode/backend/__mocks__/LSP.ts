@@ -6,6 +6,7 @@ export const killThread = jest.fn()
 export const listAsdfSystems = jest.fn()
 export const listPackages = jest.fn()
 export const listThreads = jest.fn()
+export const loadAsdfSystem = jest.fn()
 export const removeExport = jest.fn()
 export const removePackage = jest.fn()
 export const textDocumentChanged = jest.fn()
@@ -19,6 +20,7 @@ export const LSP = jest.fn().mockImplementation(() => ({
     listAsdfSystems,
     listPackages,
     listThreads,
+    loadAsdfSystem,
     removeExport,
     removePackage,
     textDocumentChanged,

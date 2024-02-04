@@ -77,11 +77,20 @@ describe('Extension tests', () => {
             expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('lispRepl.focus')
         })
 
-        it('Have document', async () => {
+        it('Have document, not lisp', async () => {
             vscodeMock.window.activeTextEditor = { document: 'foo' }
 
             await activate(ctx)
 
+            expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+        })
+
+        it('Have document, is lisp', async () => {
+            utilsMock.hasValidLangId.mockReturnValueOnce(true)
+
+            await activate(ctx)
+
+            expect(lspMock.editorChanged).toHaveBeenCalled()
             expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
         })
     })
@@ -472,6 +481,26 @@ describe('Extension tests', () => {
                 { label: 'foo', item: { text: '', pkgName: '' } },
                 uiMock.removeHistoryNode
             )
+        })
+
+        describe('loadAsdfByName', () => {
+            it('Invalid node', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+
+                await fns['alive.loadAsdfByName']({})
+
+                expect(vscodeMock.workspace.saveAll).not.toHaveBeenCalled()
+                expect(lspMock.loadAsdfSystem).not.toHaveBeenCalled()
+            })
+
+            it('Valid node', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+
+                await fns['alive.loadAsdfByName']({ label: 'foo' })
+
+                expect(vscodeMock.workspace.saveAll).toHaveBeenCalled()
+                expect(lspMock.loadAsdfSystem).toHaveBeenCalled()
+            })
         })
     })
 })
