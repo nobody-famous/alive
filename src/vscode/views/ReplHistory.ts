@@ -12,6 +12,10 @@ export class HistoryNode extends vscode.TreeItem {
     }
 }
 
+export function isHistoryNode(data: unknown): data is HistoryNode {
+    return data instanceof HistoryNode
+}
+
 export class HistoryPkgNode extends vscode.TreeItem {
     public pkg: string
 
@@ -23,13 +27,15 @@ export class HistoryPkgNode extends vscode.TreeItem {
 }
 
 export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-    public items: Array<HistoryItem>
+    private items: Array<HistoryItem>
+    private currentIndex: number
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
     constructor(items: Array<HistoryItem>) {
         this.items = items
+        this.currentIndex = -1
     }
 
     update(items: HistoryItem[]) {
@@ -37,8 +43,33 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
         this.event.fire()
     }
 
+    getItems(): Array<HistoryItem> {
+        return this.items
+    }
+
+    getCurrentItem(): HistoryItem | undefined {
+        return this.items.length > 0 && this.currentIndex >= 0 ? this.items[this.currentIndex] : undefined
+    }
+
+    incrementIndex() {
+        if (this.currentIndex < this.items.length - 1) {
+            this.currentIndex += 1
+        }
+    }
+
+    decrementIndex() {
+        if (this.currentIndex >= 0) {
+            this.currentIndex -= 1
+        }
+    }
+
+    clearIndex() {
+        this.currentIndex = -1
+    }
+
     clear() {
         this.update([])
+        this.clearIndex()
     }
 
     addItem(pkgName: string, text: string) {
@@ -48,7 +79,17 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
         this.update(newItems)
     }
 
-    removeItem(ndx: number) {
+    removeItem(pkg: string, text: string) {
+        for (let ndx = 0; ndx < this.items.length; ndx += 1) {
+            const item = this.items[ndx]
+
+            if (item !== undefined && item.pkgName === pkg && item.text === text) {
+                this.removeItemAtIndex(ndx)
+            }
+        }
+    }
+
+    removeItemAtIndex(ndx: number) {
         this.items.splice(ndx, 1)
         this.update(this.items)
     }
@@ -60,7 +101,7 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
             ndx += 1
         }
 
-        this.removeItem(ndx)
+        this.removeItemAtIndex(ndx)
     }
 
     moveToTop(node: HistoryNode) {

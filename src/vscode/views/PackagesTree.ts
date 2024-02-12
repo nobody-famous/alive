@@ -9,6 +9,10 @@ export class PackageNode extends vscode.TreeItem {
     }
 }
 
+export function isPackageNode(data: unknown): data is PackageNode {
+    return data instanceof PackageNode
+}
+
 export class ExportNode extends vscode.TreeItem {
     public pkg: string
 
@@ -18,6 +22,10 @@ export class ExportNode extends vscode.TreeItem {
         this.pkg = pkg
         this.contextValue = 'export'
     }
+}
+
+export function isExportNode(data: unknown): data is ExportNode {
+    return data instanceof ExportNode
 }
 
 export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {

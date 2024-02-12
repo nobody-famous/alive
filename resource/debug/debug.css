@@ -33,6 +33,7 @@ body.vscode-light .list-box {
 
 .list-item {
     display: flex;
+    overflow: auto;
     flex-direction: row;
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;

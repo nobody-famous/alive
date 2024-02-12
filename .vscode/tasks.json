@@ -12,6 +12,37 @@
         },
         {
             "type": "npm",
+            "script": "lint",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
+            "group": "build",
+            "label": "Lint"
+        },
+        {
+            "type": "npm",
+            "script": "test",
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "label": "Test"
+        },
+        {
+            "label": "One Test",
+            "type": "shell",
+            "command": "npx",
+            "args": [
+                "jest",
+                "src/__test__/extension.spec.ts",
+                "-t",
+                "lsp events"
+            ],
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "type": "npm",
             "script": "watch",
             "problemMatcher": [
                 "$tsc"

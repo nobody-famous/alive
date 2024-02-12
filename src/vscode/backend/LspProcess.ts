@@ -1,46 +1,18 @@
-import * as vscode from 'vscode'
-import * as path from 'path'
-import * as fs from 'fs'
-import { spawn } from 'child_process'
-import { AliveLspVersion, ExtensionState } from '../Types'
-import { getWorkspaceOrFilePath } from '../Utils'
-import { log, toLog } from '../Log'
 import axios, { AxiosResponse } from 'axios'
+import { ChildProcess, spawn } from 'child_process'
+import * as fs from 'fs'
+import * as path from 'path'
+import * as vscode from 'vscode'
+import { isObject } from '../Guards'
+import { log, toLog } from '../Log'
+import { AliveLspVersion, ExtensionState } from '../Types'
 import StreamZip = require('node-stream-zip')
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
-export async function startLspServer(state: ExtensionState): Promise<number> {
-    return new Promise<number>(async (resolve, reject) => {
-        try {
-            log(`Start LSP server`)
-
-            if (typeof state.lspInstallPath !== 'string') {
-                log(`Invalid install path: ${toLog(state.lspInstallPath)}`)
-                return reject('No LSP server install path')
-            }
-
-            const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
-
-            log(`LSP config: ${toLog(lspConfig)}`)
-
-            const cmd = lspConfig.get('startCommand')
-
-            log(`Command: ${toLog(cmd)}`)
-
-            const env = getClSourceRegistryEnv(state.lspInstallPath, process.env)
-
-            log(`ENV: ${toLog(env)}`)
-
-            const cwd = state.workspacePath
-
-            log(`CWD: ${toLog(cwd)}`)
-
-            if (!Array.isArray(cmd)) {
-                log(`Invalid command: ${toLog(cmd)}`)
-                return reject('No command defined, cannot start LSP server')
-            }
-
+export async function startLspServer(state: ExtensionState): Promise<number | null> {
+    const startChild = (cmd: unknown[], child: ChildProcess) => {
+        return new Promise<number>((resolve, reject) => {
             const handleDisconnect = (state: ExtensionState) => async (code: number, signal: string) => {
                 log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
 
@@ -57,13 +29,7 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
 
             let connected = false
 
-            log(`Spawning child: ${toLog(cmd[0])}`)
-
-            state.child = spawn(cmd[0], cmd.slice(1), { cwd, env })
-
-            log(`Spawned: ${toLog(cmd[0])}`)
-
-            state.child.stdout?.setEncoding('utf-8').on('data', (data) => {
+            child.stdout?.setEncoding('utf-8').on('data', (data) => {
                 appendOutputData(data)
 
                 if (typeof data !== 'string' || connected) {
@@ -91,13 +57,13 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
                 resolve(port)
             })
 
-            state.child.stderr?.setEncoding('utf-8').on('data', (data) => {
+            child.stderr?.setEncoding('utf-8').on('data', (data) => {
                 log(`${toLog(cmd[0])} ERROR: ${toLog(data)}`)
 
                 appendOutputData(data)
             })
 
-            state.child
+            child
                 .on('exit', handleDisconnect(state))
                 .on('disconnect', handleDisconnect(state))
                 .on('error', (err: Error) => {
@@ -106,56 +72,98 @@ export async function startLspServer(state: ExtensionState): Promise<number> {
                     timer.cancel()
                     reject(`Couldn't spawn server: ${err.message}`)
                 })
-        } catch (err) {
-            log(`Failed to start LSP server: ${err}`)
+        })
+    }
 
-            reject(err)
+    log('Start LSP server')
+
+    try {
+        if (typeof state.lspInstallPath !== 'string') {
+            log(`Invalid install path: ${toLog(state.lspInstallPath)}`)
+            throw new Error('No LSP server install path')
         }
-    })
+
+        const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
+
+        log(`LSP config: ${toLog(lspConfig)}`)
+
+        const cmd = lspConfig.get('startCommand')
+
+        log(`Command: ${toLog(cmd)}`)
+
+        const env = getClSourceRegistryEnv(state.lspInstallPath, process.env)
+
+        log(`ENV: ${toLog(env)}`)
+
+        const cwd = state.workspacePath
+
+        log(`CWD: ${toLog(cwd)}`)
+
+        if (!Array.isArray(cmd)) {
+            log(`Invalid command: ${toLog(cmd)}`)
+            throw new Error('No command defined, cannot start LSP server')
+        }
+
+        log(`Spawning child: ${toLog(cmd[0])}`)
+
+        state.child = spawn(cmd[0], cmd.slice(1), { cwd, env })
+
+        log(`Spawned: ${toLog(cmd[0])}`)
+
+        return await startChild(cmd, state.child)
+    } catch (err) {
+        vscode.window.showErrorMessage(`Failed to start LSP server: ${err}`)
+        return null
+    }
 }
 
 export async function downloadLspServer(): Promise<string | undefined> {
-    log(`Download LSP server`)
+    try {
+        log('Download LSP server')
 
-    const config = vscode.workspace.getConfiguration('alive.lsp')
+        const config = vscode.workspace.getConfiguration('alive.lsp')
 
-    log(`LSP config: ${toLog(config)}`)
+        log(`LSP config: ${toLog(config)}`)
 
-    const cfgInstallPath = config.get('install.path')
+        const cfgInstallPath = config.get('install.path')
 
-    log(`Config install path: ${toLog(cfgInstallPath)}`)
+        log(`Config install path: ${toLog(cfgInstallPath)}`)
 
-    if (typeof cfgInstallPath === 'string' && cfgInstallPath !== '') {
-        log(`Found ${toLog(cfgInstallPath)}, returning`)
-        return cfgInstallPath
-    }
-
-    const basePath = getLspBasePath()
-
-    log(`Base path: ${toLog(basePath)}`)
-
-    const latestVersion = await getLatestVersion()
-
-    log(`Latest version: ${toLog(latestVersion)}`)
-
-    const installedVersion = await getInstalledVersion(basePath)
-
-    log(`Installed version: ${toLog(installedVersion)}`)
-
-    if (installedVersion === undefined) {
-        if (latestVersion === undefined) {
-            throw new Error(`Could not find latest LSP server version`)
+        if (typeof cfgInstallPath === 'string' && cfgInstallPath !== '') {
+            log(`Found ${toLog(cfgInstallPath)}, returning`)
+            return cfgInstallPath
         }
 
-        return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
-    } else if (latestVersion === undefined) {
-        return getUnzippedPath(path.join(basePath, installedVersion))
-    } else if (installedVersion !== latestVersion.tagName) {
-        await nukeInstalledVersion(basePath)
+        const basePath = getLspBasePath()
 
-        return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
-    } else {
-        return getUnzippedPath(path.join(basePath, installedVersion))
+        log(`Base path: ${toLog(basePath)}`)
+
+        const latestVersion = await getLatestVersion()
+
+        log(`Latest version: ${toLog(latestVersion)}`)
+
+        const installedVersion = await getInstalledVersion(basePath)
+
+        log(`Installed version: ${toLog(installedVersion)}`)
+
+        if (installedVersion === undefined) {
+            if (latestVersion === undefined) {
+                throw new Error('Could not find latest LSP server version')
+            }
+
+            return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
+        } else if (latestVersion === undefined) {
+            return getUnzippedPath(path.join(basePath, installedVersion))
+        } else if (installedVersion !== latestVersion.tagName) {
+            await nukeInstalledVersion(basePath)
+
+            return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
+        } else {
+            return getUnzippedPath(path.join(basePath, installedVersion))
+        }
+    } catch (err) {
+        vscode.window.showErrorMessage(`Failed to download LSP server: ${err}`)
+        return undefined
     }
 }
 
@@ -201,16 +209,20 @@ async function unzipFile(basePath: string, file: string) {
     await zip.close()
 }
 
-async function readZipFile(file: string, resp: AxiosResponse<any>) {
+async function readZipFile(file: string, resp: AxiosResponse<unknown>) {
     const writer = fs.createWriteStream(file)
 
     return new Promise((resolve, reject) => {
-        resp.data.pipe(writer).on('finish', resolve).on('close', resolve).on('error', reject)
+        if (isObject(resp?.data) && typeof resp.data.pipe === 'function') {
+            resp.data.pipe(writer).on('finish', resolve).on('close', resolve).on('error', reject)
+        } else {
+            reject('Invalid response object')
+        }
     })
 }
 
 async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
-    log(`Get latest version`)
+    log('Get latest version')
 
     const config = vscode.workspace.getConfiguration('alive')
     const url = config.lsp?.downloadUrl
@@ -333,7 +345,7 @@ function getLspBasePath(): string {
 function setupFailedStartupWarningTimer() {
     const timeoutInMs = 10000
     const displayWarning = () => {
-        vscode.window.showWarningMessage(`LSP start is taking an unexpectedly long time`)
+        vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
         lspOutputChannel.show()
     }
 
@@ -356,12 +368,12 @@ function setupFailedStartupWarningTimer() {
 
 async function disconnectAndClearChild(state: ExtensionState): Promise<boolean> {
     if ((state.child?.exitCode !== 0 && state.child?.exitCode !== null) || state.child?.signalCode !== null) {
-        log(`Child exited`)
+        log('Child exited')
         state.child = undefined
         return false
     }
 
-    log(`Killing child`)
+    log('Killing child')
 
     state.child?.kill()
 
@@ -377,7 +389,7 @@ async function disconnectAndClearChild(state: ExtensionState): Promise<boolean> 
         vscode.window.showWarningMessage('Failed to kill child process after 5 seconds')
     }
 
-    log(`Killed child`)
+    log('Killed child')
 
     state.child = undefined
 

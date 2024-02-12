@@ -1,24 +1,21 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import EventEmitter = require('events')
+import { AliveContext } from '../Types'
 
 export class InspectorPanel extends EventEmitter implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView
-    private ctx: vscode.ExtensionContext
+    private ctx: AliveContext
     private package: string
 
-    constructor(ctx: vscode.ExtensionContext) {
+    constructor(ctx: AliveContext) {
         super()
 
         this.ctx = ctx
         this.package = 'cl-user'
     }
 
-    resolveWebviewView(
-        webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext<unknown>,
-        token: vscode.CancellationToken
-    ): void | Thenable<void> {
+    resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
         this.view = webviewView
 
         webviewView.webview.options = {

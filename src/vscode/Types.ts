@@ -1,23 +1,20 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
-import { LSP } from './backend/LSP'
-import { UI } from './UI'
-import { parseToInt } from './Utils'
 
-export interface ExtensionDeps {
-    ui: UI
-    lsp: LSP
+export interface AliveContext {
+    subscriptions: { dispose: () => unknown }[]
+    extensionPath: string
 }
 
 export interface ExtensionState {
-    ctx: vscode.ExtensionContext
+    ctx: AliveContext
+    diagnostics: vscode.DiagnosticCollection
     lspInstallPath?: string
     child?: ChildProcess
     hoverText: string
     compileRunning: boolean
     compileTimeoutID: NodeJS.Timeout | undefined
     replHistoryFile: string
-    historyNdx: number
     workspacePath: string
 }
 
@@ -97,23 +94,6 @@ export interface InspectResult {
     id: number
     resultType: string
     result: unknown
-}
-
-export function isInspectResult(data: unknown): data is InspectResult {
-    if (typeof data !== 'object' || data === null) {
-        return false
-    }
-
-    const obj = data as { [index: string]: unknown }
-    const id = parseToInt(obj.id)
-    const resultType = obj.resultType
-    const result = obj.result
-
-    if (!Number.isFinite(id) || typeof result === undefined || typeof resultType !== 'string') {
-        return false
-    }
-
-    return true
 }
 
 export interface InspectInfo extends InspectResult {

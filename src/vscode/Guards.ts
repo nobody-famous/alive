@@ -1,68 +1,52 @@
 import { Position } from 'vscode'
-import { RestartInfo, SourceLocation } from './Types'
+import { HistoryItem, InspectResult, RestartInfo, SourceLocation } from './Types'
+import { parseToInt } from './Utils'
+
+export function isString(data: unknown): data is string {
+    return typeof data === 'string'
+}
+
+export function isArray<T>(data: unknown, validate: (item: unknown) => item is T): data is Array<T> {
+    return Array.isArray(data) && data.every(validate)
+}
+
+export function isBoolean(data: unknown): data is boolean {
+    return typeof data === 'boolean'
+}
+
+export function isFiniteNumber(data: unknown): data is number {
+    return Number.isFinite(data)
+}
+
+export function isObject(data: unknown): data is Record<string, unknown> {
+    return typeof data === 'object' && data !== null && Object.keys(data).every(isString)
+}
 
 export function isPosition(item: unknown): item is Position {
-    if (typeof item !== 'object' || item === undefined) {
-        return false
-    }
-
-    const itemObj = item as { [index: string]: unknown }
-
-    if (typeof itemObj.line !== 'number' || typeof itemObj.character !== 'number') {
-        return false
-    }
-
-    return true
+    return isObject(item) && isFiniteNumber(item.line) && isFiniteNumber(item.character)
 }
 
 export function isSourceLocation(item: unknown): item is SourceLocation {
-    if (typeof item !== 'object' || item === undefined) {
-        return false
-    }
-
-    const itemObj = item as { [index: string]: unknown }
-
-    if (typeof itemObj.function !== 'string') {
-        return false
-    }
-
-    if (itemObj.file !== null && typeof itemObj.file !== 'string') {
-        return false
-    }
-
-    if (itemObj.position !== null && !isPosition(itemObj.position)) {
-        return false
-    }
-
-    return true
+    return (
+        isObject(item) &&
+        isString(item.function) &&
+        (item.file === null || isString(item.file)) &&
+        (item.position === null || isPosition(item.position))
+    )
 }
 
 export function isStackTrace(item: unknown): item is SourceLocation[] {
-    if (!Array.isArray(item)) {
-        return false
-    }
-
-    const itemArray = item as unknown[]
-
-    for (const item of itemArray) {
-        if (!isSourceLocation(item)) {
-            return false
-        }
-    }
-
-    return true
+    return Array.isArray(item) && item.every(isSourceLocation)
 }
 
 export function isRestartInfo(item: unknown): item is RestartInfo {
-    if (typeof item !== 'object' || item === undefined) {
-        return false
-    }
+    return isObject(item) && isString(item.name) && isString(item.description)
+}
 
-    const itemObj = item as { [index: string]: unknown }
+export function isInspectResult(data: unknown): data is InspectResult {
+    return isObject(data) && Number.isFinite(parseToInt(data.id)) && data.result !== undefined && isString(data.resultType)
+}
 
-    if (typeof itemObj.name !== 'string' || typeof itemObj.description !== 'string') {
-        return false
-    }
-
-    return true
+export function isHistoryItem(data: unknown): data is HistoryItem {
+    return isObject(data) && isString(data.pkgName) && isString(data.text)
 }

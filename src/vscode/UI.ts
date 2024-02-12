@@ -6,11 +6,12 @@ import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
 import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
-import { DebugInfo, ExtensionState, HistoryItem, InspectInfo, InspectResult, Package, Thread } from './Types'
+import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Package, Thread } from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
+import { isFiniteNumber } from './Guards'
 
-export declare interface UI {
+export declare interface UIEvents {
     on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
     on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
     on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
@@ -23,27 +24,39 @@ export declare interface UI {
     on(event: 'diagnosticsRefresh', listener: (editors: vscode.TextEditor[]) => void): this
 }
 
-export class UI extends EventEmitter {
-    private state: ExtensionState
-    private packageTree: PackagesTreeProvider | undefined
-    private historyTree: ReplHistoryTreeProvider | undefined
-    private asdfTree: AsdfSystemsTreeProvider | undefined
-    private threadsTree: ThreadsTreeProvider | undefined
+export interface UIState {
+    ctx: AliveContext
+}
+
+export class UI extends EventEmitter implements UIEvents {
+    private state: UIState
+    private historyTree: ReplHistoryTreeProvider
+    private packageTree: PackagesTreeProvider
+    private asdfTree: AsdfSystemsTreeProvider
+    private threadsTree: ThreadsTreeProvider
     private replView: LispRepl
     private inspectorPanel: InspectorPanel
     private inspectors: Map<number, Inspector>
 
-    constructor(state: ExtensionState) {
+    constructor(state: UIState) {
         super()
 
         this.state = state
+        this.historyTree = new ReplHistoryTreeProvider([])
+        this.packageTree = new PackagesTreeProvider([])
+        this.asdfTree = new AsdfSystemsTreeProvider([])
+        this.threadsTree = new ThreadsTreeProvider([])
         this.replView = new LispRepl(state.ctx)
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
+    }
 
+    init() {
         this.initRepl()
         this.initInspectorPanel()
+    }
 
+    registerProviders() {
         vscode.window.registerWebviewViewProvider('lispRepl', this.replView)
     }
 
@@ -52,7 +65,7 @@ export class UI extends EventEmitter {
     }
 
     clearReplHistory() {
-        this.historyTree?.clear()
+        this.historyTree.clear()
     }
 
     setReplPackage(pkg: string) {
@@ -66,11 +79,7 @@ export class UI extends EventEmitter {
     async getRestartIndex(info: DebugInfo): Promise<number | undefined> {
         let index: number | undefined = undefined
 
-        return new Promise<number>((resolve, reject) => {
-            if (this.state.ctx === undefined) {
-                return reject('Debugger: No extension context')
-            }
-
+        return new Promise<number | undefined>((resolve) => {
             const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
 
             view.on('restart', (num: number) => {
@@ -79,22 +88,17 @@ export class UI extends EventEmitter {
             })
 
             view.on('debugClosed', () => {
-                const num =
-                    typeof index === 'number'
-                        ? index
-                        : info.restarts?.reduce((acc: number | undefined, item, ndx) => {
-                              if (typeof acc === 'number') {
-                                  return acc
-                              } else if (item.name.toLowerCase() === 'abort') {
-                                  return ndx
-                              }
-
-                              return acc
-                          }, undefined)
+                const num = isFiniteNumber(index)
+                    ? index
+                    : info.restarts.reduce(
+                          (acc: number | undefined, item, ndx) =>
+                              typeof acc === 'number' || item.name.toLocaleLowerCase() !== 'abort' ? acc : ndx,
+                          undefined
+                      )
 
                 view.stop()
 
-                typeof num === 'number' ? resolve(num) : reject('Failed to abort debugger')
+                resolve(isFiniteNumber(num) ? num : undefined)
             })
 
             view.on('jump-to', async (file: string, line: number, char: number) => {
@@ -115,30 +119,34 @@ export class UI extends EventEmitter {
     }
 
     async getUserInput(): Promise<string> {
-        return new Promise<string>(async (resolve, reject) => {
-            await vscode.commands.executeCommand('lispRepl.focus')
+        const waitForInput = () => {
+            return new Promise<string>((resolve) => {
+                const recvInput = (text: string) => {
+                    this.replView.off('userInput', recvInput)
+                    resolve(text)
+                }
 
-            this.replView?.getUserInput()
+                this.replView.on('userInput', recvInput)
+            })
+        }
 
-            const recvInput = (text: string) => {
-                this.replView?.off('userInput', recvInput)
-                resolve(text)
-            }
+        await vscode.commands.executeCommand('lispRepl.focus')
 
-            this.replView?.on('userInput', recvInput)
-        })
+        this.replView.getUserInput()
+
+        return waitForInput()
     }
 
     updateThreads(threads: Thread[]): void {
-        this.threadsTree?.update(threads)
+        this.threadsTree.update(threads)
     }
 
     updateAsdfSystems(systems: string[]): void {
-        this.asdfTree?.update(systems)
+        this.asdfTree.update(systems)
     }
 
     updatePackages(pkgs: Package[]): void {
-        this.packageTree?.update(pkgs)
+        this.packageTree.update(pkgs)
     }
 
     initInspector(): void {
@@ -146,45 +154,45 @@ export class UI extends EventEmitter {
     }
 
     initPackagesTree(pkgs: Package[]): void {
-        this.packageTree = new PackagesTreeProvider(pkgs)
+        this.packageTree.update(pkgs)
         vscode.window.registerTreeDataProvider('lispPackages', this.packageTree)
     }
 
     initHistoryTree(history: HistoryItem[]): void {
-        this.historyTree = new ReplHistoryTreeProvider(history)
+        this.historyTree.update(history)
         vscode.window.registerTreeDataProvider('replHistory', this.historyTree)
     }
 
     initAsdfSystemsTree(systems: string[]): void {
-        this.asdfTree = new AsdfSystemsTreeProvider(systems)
+        this.asdfTree.update(systems)
         vscode.window.registerTreeDataProvider('asdfSystems', this.asdfTree)
     }
 
     initThreadsTree(threads: Thread[]): void {
-        this.threadsTree = new ThreadsTreeProvider(threads)
+        this.threadsTree.update(threads)
         vscode.window.registerTreeDataProvider('lispThreads', this.threadsTree)
     }
 
     getHistoryItems(): HistoryItem[] {
-        return this.historyTree?.items ?? []
+        return this.historyTree.getItems()
     }
 
     removeHistoryNode(node: HistoryNode) {
-        this.historyTree?.removeNode(node)
+        this.historyTree.removeNode(node)
     }
 
     moveHistoryNodeToTop(node: HistoryNode) {
-        this.historyTree?.moveToTop(node)
+        this.historyTree.moveToTop(node)
     }
 
     selectHistoryItem() {
-        return new Promise<HistoryItem>((resolve, reject) => {
-            const items = [...(this.historyTree?.items ?? [])]
+        return new Promise<HistoryItem | undefined>((resolve) => {
+            const items = [...this.historyTree.getItems()]
             const qp = vscode.window.createQuickPick()
 
             qp.items = items.map<vscode.QuickPickItem>((i) => ({ label: i.text, description: i.pkgName }))
 
-            qp.onDidChangeSelection(async (e) => {
+            qp.onDidChangeSelection((e) => {
                 const item = e[0]
 
                 if (item === undefined) {
@@ -193,24 +201,36 @@ export class UI extends EventEmitter {
 
                 const historyItem = { text: item.label, pkgName: item.description ?? '' }
 
-                this.historyTree?.moveItemToTop(historyItem)
+                this.historyTree.moveItemToTop(historyItem)
 
                 resolve(historyItem)
 
                 qp.hide()
             })
 
-            qp.onDidHide(() => qp.dispose())
+            qp.onDidHide(() => {
+                qp.dispose()
+                resolve(undefined)
+            })
+
             qp.show()
         })
     }
 
     private requestPackages = () => {
-        return new Promise<Package[]>((resolve, reject) => {
+        return new Promise<Package[]>((resolve) => {
             this.emit('listPackages', (pkgs: Package[]) => {
                 resolve(pkgs)
             })
         })
+    }
+
+    private requestPackage = async (obj: { setPackage: (pick: string) => void }) => {
+        const pick = await this.selectPackage()
+
+        if (pick !== undefined) {
+            obj.setPackage(pick)
+        }
     }
 
     private selectPackage = async () => {
@@ -238,15 +258,15 @@ export class UI extends EventEmitter {
             this.emit('inspectClosed', info)
         })
         inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
-        inspector.on('inspector-refresh', (text: string) => this.emit('inspectRefresh', info))
-        inspector.on('inspector-refresh-macro', (text: string) => this.emit('inspectRefreshMacro', info))
-        inspector.on('inspector-macro-inc', (text: string) => this.emit('inspectMacroInc', info))
+        inspector.on('inspector-refresh', () => this.emit('inspectRefresh', info))
+        inspector.on('inspector-refresh-macro', () => this.emit('inspectRefreshMacro', info))
+        inspector.on('inspector-macro-inc', () => this.emit('inspectMacroInc', info))
 
         inspector.show()
     }
 
     refreshInspectors() {
-        for (const [_, insp] of this.inspectors) {
+        for (const [, insp] of this.inspectors) {
             this.emit('inspectRefresh', insp.info)
         }
     }
@@ -265,56 +285,32 @@ export class UI extends EventEmitter {
         inspector.update(result)
     }
 
-    async initInspectorPanel() {
+    initInspectorPanel() {
         this.inspectorPanel.on('inspect', async (pkg: string, text: string) => this.emit('inspect', text, pkg))
 
         this.inspectorPanel.on('requestPackage', async () => {
-            const pick = await this.selectPackage()
-
-            if (pick !== undefined) {
-                this.inspectorPanel.setPackage(pick)
-            }
+            await this.requestPackage(this.inspectorPanel)
         })
     }
 
     async initRepl() {
         this.replView.on('eval', async (pkg: string, text: string) => {
-            const itemsCount = this.historyTree?.items.length ?? 0
+            this.historyTree.removeItem(pkg, text)
+            this.historyTree.addItem(pkg, text)
+            this.emit('saveReplHistory', this.historyTree.getItems())
 
-            for (let ndx = 0; ndx < itemsCount; ndx += 1) {
-                const item = this.historyTree?.items[ndx]
-
-                if (item !== undefined && item.pkgName === pkg && item.text === text) {
-                    this.historyTree?.removeItem(ndx)
-                }
-            }
-
-            this.historyTree?.addItem(pkg, text)
-
-            if (this.historyTree !== undefined) {
-                this.emit('saveReplHistory', this.historyTree.items)
-            }
-
-            this.state.historyNdx = -1
+            this.historyTree.clearIndex()
             this.emit('eval', text, pkg, true)
         })
 
         this.replView.on('requestPackage', async () => {
-            const pick = await this.selectPackage()
-
-            if (pick !== undefined) {
-                this.replView.setPackage(pick)
-            }
+            await this.requestPackage(this.replView)
         })
 
         const updateReplInput = () => {
-            if (this.historyTree === undefined) {
-                return
-            }
+            const item = this.historyTree.getCurrentItem()
 
-            if (this.state.historyNdx >= 0) {
-                const item = this.historyTree.items[this.state.historyNdx]
-
+            if (item !== undefined) {
                 this.replView.setPackage(item.pkgName)
                 this.replView.setInput(item.text)
             } else {
@@ -323,26 +319,12 @@ export class UI extends EventEmitter {
         }
 
         this.replView.on('historyUp', () => {
-            if (this.historyTree === undefined) {
-                return
-            }
-
-            if (this.state.historyNdx < this.historyTree?.items.length - 1) {
-                this.state.historyNdx += 1
-            }
-
+            this.historyTree.incrementIndex()
             updateReplInput()
         })
 
         this.replView.on('historyDown', () => {
-            if (this.historyTree === undefined) {
-                return
-            }
-
-            if (this.state.historyNdx >= 0) {
-                this.state.historyNdx -= 1
-            }
-
+            this.historyTree.decrementIndex()
             updateReplInput()
         })
     }
