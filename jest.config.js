@@ -2,9 +2,9 @@
 module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
-    testMatch: ['**/__test__/*.spec.{js,jsx,ts,tsx}', '!**/out/**'],
+    testMatch: ['**/src/**/__test__/*.spec.{js,jsx,ts,tsx}', '!**/out/**'],
     collectCoverageFrom: [
-        '**/*.{js,jsx,ts,tsx}',
+        '**/src/**/*.{js,jsx,ts,tsx}',
         '!**/node_modules/**',
         '!**/out/**',
         '!**/coverage/**',
