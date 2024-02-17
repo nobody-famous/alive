@@ -39,10 +39,10 @@ export declare interface LSPEvents {
 }
 
 export class LSP extends EventEmitter implements LSPEvents {
-    private state: ExtensionState
+    private state: Pick<ExtensionState, 'hoverText'>
     private client: LanguageClient | undefined
 
-    constructor(state: ExtensionState) {
+    constructor(state: Pick<ExtensionState, 'hoverText'>) {
         super()
 
         this.state = state
@@ -723,11 +723,11 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    getHoverText = async (fileUri: vscode.Uri, pos: vscode.Position): Promise<string> => {
+    getHoverText = async (fileUri: string, pos: vscode.Position): Promise<string> => {
         try {
             const resp = await this.client?.sendRequest('textDocument/hover', {
                 textDocument: {
-                    uri: fileUri.toString(),
+                    uri: fileUri,
                 },
                 position: pos,
             })
