@@ -66,13 +66,14 @@ describe('LSP tests', () => {
         it('Valid response', async () => {
             utilsMock.strToMarkdown.mockImplementationOnce((v: string) => v)
 
-            const { lsp } = await doConnect({
+            const { lsp, clientMock } = await doConnect({
                 sendRequest: jest.fn().mockImplementation(() => ({
                     value: 'foo',
                 })),
             })
 
             expect(await lsp.getHoverText('/some/file', new vscodeMock.Position())).toBe('foo')
+            expect(clientMock.sendRequest).toHaveBeenCalledWith('textDocument/hover', expect.anything())
         })
 
         it('Request fail', async () => {
