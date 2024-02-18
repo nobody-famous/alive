@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { isInspectResult, isRestartInfo, isStackTrace } from '../Guards'
+import { isInspectResult, isObject, isRestartInfo, isStackTrace, isString } from '../Guards'
 import {
     CompileFileNote,
     CompileFileResp,
@@ -732,22 +732,15 @@ export class LSP extends EventEmitter implements LSPEvents {
                 position: pos,
             })
 
-            if (typeof resp !== 'object' || resp === null) {
+            if (!isObject(resp) || !isString(resp.value)) {
                 return ''
             }
 
-            const respObj = resp as { [index: string]: unknown }
-
-            if (typeof respObj.value !== 'string') {
-                return ''
-            }
-
-            return strToMarkdown(respObj.value)
+            return strToMarkdown(resp.value)
         } catch (err) {
             log(`Hover failed: ${toLog(err)}`)
+            return ''
         }
-
-        return ''
     }
 }
 
