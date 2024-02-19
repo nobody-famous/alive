@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { isInspectResult, isObject, isRestartInfo, isStackTrace, isString } from '../Guards'
+import { isArray, isInspectResult, isObject, isRestartInfo, isStackTrace, isString } from '../Guards'
 import {
     CompileFileNote,
     CompileFileResp,
@@ -696,26 +696,20 @@ export class LSP extends EventEmitter implements LSPEvents {
         return await this.getExprRange(editor, '$/alive/topFormBounds')
     }
 
-    getSymbol = async (fileUri: vscode.Uri, pos: vscode.Position): Promise<LispSymbol | undefined> => {
+    getSymbol = async (fileUri: string, pos: vscode.Position): Promise<LispSymbol | undefined> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/symbol', {
                 textDocument: {
-                    uri: fileUri.toString(),
+                    uri: fileUri,
                 },
                 position: pos,
             })
 
-            if (typeof resp !== 'object') {
+            if (!isObject(resp) || !isArray(resp.value, isString) || resp.value.length !== 2) {
                 return
             }
 
-            const respObj = resp as { [index: string]: unknown }
-
-            if (!Array.isArray(respObj.value)) {
-                return
-            }
-
-            const [name, pkgName] = respObj.value
+            const [name, pkgName] = resp.value
 
             return { name, package: pkgName }
         } catch (err) {

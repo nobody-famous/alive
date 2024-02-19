@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/backend/__test__/LSP.spec.ts",
-                // "-t",
-                // "lsp events"
+                "-t",
+                "getsymbol"
             ],
             "problemMatcher": [
                 "$tsc"

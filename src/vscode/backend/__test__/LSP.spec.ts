@@ -86,4 +86,42 @@ describe('LSP tests', () => {
             expect(await lsp.getHoverText('/some/file', new vscodeMock.Position())).toBe('')
         })
     })
+
+    describe('getSymbol', () => {
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            expect(await lsp.getSymbol('/some/file', new vscodeMock.Position())).toBeUndefined()
+        })
+
+        it('Valid response', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({
+                    value: ['foo', 'bar'],
+                })),
+            })
+
+            expect(await lsp.getSymbol('/some/file', new vscodeMock.Position())).toMatchObject({ name: 'foo', package: 'bar' })
+        })
+
+        it('Invalid response', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({
+                    value: ['foo'],
+                })),
+            })
+
+            expect(await lsp.getSymbol('/some/file', new vscodeMock.Position())).toBeUndefined()
+        })
+
+        it('Request fail', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            expect(await lsp.getSymbol('/some/file', new vscodeMock.Position())).toBeUndefined()
+        })
+    })
 })
