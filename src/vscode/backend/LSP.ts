@@ -659,11 +659,7 @@ export class LSP extends EventEmitter implements LSPEvents {
         this.emit('refreshPackages')
     }
 
-    getExprRange = async (editor: vscode.TextEditor | undefined, method: string): Promise<vscode.Range | undefined> => {
-        if (editor?.document === undefined) {
-            return
-        }
-
+    getExprRange = async (editor: vscode.TextEditor, method: string): Promise<vscode.Range | undefined> => {
         const doc = editor.document
 
         const resp = await this.client?.sendRequest(method, {
@@ -689,11 +685,11 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     getSurroundingExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
-        return await this.getExprRange(editor, '$/alive/surroundingFormBounds')
+        return editor !== undefined ? await this.getExprRange(editor, '$/alive/surroundingFormBounds') : undefined
     }
 
     getTopExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
-        return await this.getExprRange(editor, '$/alive/topFormBounds')
+        return editor !== undefined ? await this.getExprRange(editor, '$/alive/topFormBounds') : undefined
     }
 
     getSymbol = async (fileUri: string, pos: vscode.Position): Promise<LispSymbol | undefined> => {
