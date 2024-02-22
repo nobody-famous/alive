@@ -660,12 +660,20 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     removeExport = async (pkg: string, name: string): Promise<void> => {
-        await this.client?.sendRequest('$/alive/unexportSymbol', {
-            package: pkg,
-            symbol: name,
-        })
+        try {
+            if (this.client === undefined) {
+                return
+            }
 
-        this.emit('refreshPackages')
+            await this.client.sendRequest('$/alive/unexportSymbol', {
+                package: pkg,
+                symbol: name,
+            })
+
+            this.emit('refreshPackages')
+        } catch (err) {
+            log(`Failed to remove export: ${toLog(err)}`)
+        }
     }
 
     getExprRange = async (editor: SelectionEditor, method: string): Promise<vscode.Range | undefined> => {

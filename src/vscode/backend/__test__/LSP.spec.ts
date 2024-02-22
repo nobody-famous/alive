@@ -190,4 +190,44 @@ describe('LSP tests', () => {
             expect(await lsp.getExprRange(fakeEditor, 'bar')).toBeUndefined()
         })
     })
+
+    describe('removeExport', () => {
+        const runTest = async (expCalled: boolean, fns?: Record<string, jest.Mock>) => {
+            const { lsp } = await doConnect(fns)
+            let eventCalled = false
+
+            lsp.on('refreshPackages', () => {
+                eventCalled = true
+            })
+
+            await lsp.removeExport('foo', 'bar')
+
+            expect(eventCalled).toBe(expCalled)
+        }
+
+        it('Success', async () => {
+            await runTest(true)
+        })
+
+        it('Fail', async () => {
+            await runTest(false, {
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+        })
+
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+            let eventCalled = false
+
+            lsp.on('refreshPackages', () => {
+                eventCalled = true
+            })
+
+            await lsp.removeExport('foo', 'bar')
+
+            expect(eventCalled).toBe(false)
+        })
+    })
 })
