@@ -16,6 +16,7 @@ describe('LSP tests', () => {
             onReady: jest.fn(),
             onNotification: jest.fn(),
             onRequest: jest.fn(),
+            sendRequest: jest.fn(),
         }
         nodeMock.LanguageClient.mockImplementationOnce(() => clientMock)
 
@@ -122,6 +123,71 @@ describe('LSP tests', () => {
             })
 
             expect(await lsp.getSymbol('/some/file', new vscodeMock.Position())).toBeUndefined()
+        })
+    })
+
+    describe('getExprRange', () => {
+        const fakeEditor = {
+            document: { uri: { toString: () => 'foo' } },
+            selection: { active: new vscodeMock.Position() },
+        }
+
+        it('getSurroundingExprRange', async () => {
+            const { lsp, clientMock } = await doConnect()
+
+            await lsp.getSurroundingExprRange(fakeEditor)
+
+            expect(clientMock.sendRequest).toHaveBeenCalledWith('$/alive/surroundingFormBounds', expect.anything())
+        })
+
+        it('getTopExprRange', async () => {
+            const { lsp, clientMock } = await doConnect()
+
+            await lsp.getTopExprRange(fakeEditor)
+
+            expect(clientMock.sendRequest).toHaveBeenCalledWith('$/alive/topFormBounds', expect.anything())
+        })
+
+        it('Valid response', async () => {
+            const fakePos = { line: 1, character: 5 }
+
+            // Mock start position
+            utilsMock.parseToInt.mockImplementationOnce(() => 1)
+            utilsMock.parseToInt.mockImplementationOnce(() => 5)
+
+            // Mock end position
+            utilsMock.parseToInt.mockImplementationOnce(() => 1)
+            utilsMock.parseToInt.mockImplementationOnce(() => 5)
+
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: fakePos })),
+            })
+
+            expect(await lsp.getExprRange(fakeEditor, 'bar')).not.toBeUndefined()
+        })
+
+        it('Invalid response, parse pos fail', async () => {
+            const fakePos = { line: 1, character: 5 }
+
+            // Mock start position
+            utilsMock.parseToInt.mockImplementationOnce(() => 1)
+            utilsMock.parseToInt.mockImplementationOnce(() => 5)
+
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: fakePos })),
+            })
+
+            expect(await lsp.getExprRange(fakeEditor, 'bar')).toBeUndefined()
+        })
+
+        it('Request failed', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            expect(await lsp.getExprRange(fakeEditor, 'bar')).toBeUndefined()
         })
     })
 })

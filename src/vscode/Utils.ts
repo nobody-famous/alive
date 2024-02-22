@@ -6,7 +6,7 @@ import { promises as fs } from 'fs'
 import { homedir } from 'os'
 import { TextEncoder, format } from 'util'
 import { log, toLog } from '../vscode/Log'
-import { isString } from './Guards'
+import { isFiniteNumber, isString } from './Guards'
 import { CompileFileNote, CompileFileResp, CompileLocation, ExtensionState } from './Types'
 import { UI } from './UI'
 import { LSP } from './backend/LSP'
@@ -20,7 +20,7 @@ interface VscodeFolder {
 export const COMMON_LISP_ID = 'commonlisp'
 
 export const parseToInt = (data: unknown): number | undefined => {
-    if (typeof data !== 'string' && typeof data !== 'number') {
+    if (!isString(data) && !isFiniteNumber(data)) {
         return
     }
 

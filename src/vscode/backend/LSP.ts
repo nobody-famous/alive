@@ -22,6 +22,15 @@ import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseToInt, strToMa
 import { log, toLog } from '../Log'
 import { EOL } from 'os'
 
+interface StringAble {
+    toString: () => string
+}
+
+interface SelectionEditor {
+    document: { uri: StringAble }
+    selection: { active: vscode.Position }
+}
+
 type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
 
 export declare interface LSPEvents {
@@ -659,36 +668,37 @@ export class LSP extends EventEmitter implements LSPEvents {
         this.emit('refreshPackages')
     }
 
-    getExprRange = async (editor: vscode.TextEditor, method: string): Promise<vscode.Range | undefined> => {
-        const doc = editor.document
+    getExprRange = async (editor: SelectionEditor, method: string): Promise<vscode.Range | undefined> => {
+        try {
+            const resp = await this.client?.sendRequest(method, {
+                textDocument: {
+                    uri: editor.document.uri.toString(),
+                },
+                position: editor.selection.active,
+            })
 
-        const resp = await this.client?.sendRequest(method, {
-            textDocument: {
-                uri: doc.uri.toString(),
-            },
-            position: editor.selection.active,
-        })
+            if (!isObject(resp)) {
+                return
+            }
 
-        if (typeof resp !== 'object' || resp === null) {
-            return
+            const startPos = parsePos(resp.start)
+            const endPos = parsePos(resp.end)
+
+            if (startPos === undefined || endPos === undefined) {
+                return
+            }
+
+            return new vscode.Range(startPos, endPos)
+        } catch (err) {
+            log(`Failed to get expression range: ${toLog(err)}`)
         }
-
-        const respObj = resp as { [index: string]: unknown }
-        const startPos = parsePos(respObj.start)
-        const endPos = parsePos(respObj.end)
-
-        if (startPos === undefined || endPos === undefined) {
-            return
-        }
-
-        return new vscode.Range(startPos, endPos)
     }
 
-    getSurroundingExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
+    getSurroundingExprRange = async (editor: SelectionEditor | undefined): Promise<vscode.Range | undefined> => {
         return editor !== undefined ? await this.getExprRange(editor, '$/alive/surroundingFormBounds') : undefined
     }
 
-    getTopExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
+    getTopExprRange = async (editor: SelectionEditor | undefined): Promise<vscode.Range | undefined> => {
         return editor !== undefined ? await this.getExprRange(editor, '$/alive/topFormBounds') : undefined
     }
 
@@ -735,13 +745,12 @@ export class LSP extends EventEmitter implements LSPEvents {
 }
 
 const parsePos = (data: unknown): vscode.Position | undefined => {
-    if (typeof data !== 'object' || data === null) {
+    if (!isObject(data)) {
         return
     }
 
-    const dataObj = data as { [index: string]: unknown }
-    const line = parseToInt(dataObj.line)
-    const col = parseToInt(dataObj.character)
+    const line = parseToInt(data.line)
+    const col = parseToInt(data.character)
 
     if (line === undefined || col === undefined) {
         return
