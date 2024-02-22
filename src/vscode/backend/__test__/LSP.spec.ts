@@ -171,10 +171,10 @@ describe('LSP tests', () => {
 
             // Mock start position
             utilsMock.parseToInt.mockImplementationOnce(() => 1)
-            utilsMock.parseToInt.mockImplementationOnce(() => 5)
+            utilsMock.parseToInt.mockImplementationOnce(() => undefined)
 
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: fakePos })),
+                sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: 'Not valid' })),
             })
 
             expect(await lsp.getExprRange(fakeEditor, 'bar')).toBeUndefined()
