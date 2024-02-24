@@ -1,8 +1,10 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
+import { EOL } from 'os'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { isArray, isInspectResult, isObject, isRestartInfo, isStackTrace, isString } from '../Guards'
+import { log, toLog } from '../Log'
 import {
     CompileFileNote,
     CompileFileResp,
@@ -19,19 +21,6 @@ import {
     Thread,
 } from '../Types'
 import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
-import { log, toLog } from '../Log'
-import { EOL } from 'os'
-
-interface StringAble {
-    toString: () => string
-}
-
-interface SelectionEditor {
-    document: { uri: StringAble }
-    selection: { active: vscode.Position }
-}
-
-type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
 
 export declare interface LSPEvents {
     on(event: 'refreshPackages', listener: () => void): this
@@ -559,27 +548,23 @@ export class LSP extends EventEmitter implements LSPEvents {
         return this.client !== undefined
     }
 
-    getTextAndPackage = async (editor: vscode.TextEditor | undefined, rangeFn: RangeFunction): Promise<EvalInfo | undefined> => {
-        if (editor === undefined) {
-            return
-        }
-
-        const range = editor.selection.isEmpty
-            ? await rangeFn(editor)
-            : new vscode.Range(editor.selection.start, editor.selection.end)
+    getEvalInfo = async (
+        doc: Pick<vscode.TextDocument, 'getText'>,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+    ): Promise<EvalInfo | undefined> => {
+        const range = selection.isEmpty
+            ? await this.getTopExprRange(uri, selection)
+            : new vscode.Range(selection.start, selection.end)
 
         if (range === undefined) {
             return
         }
 
-        const text = editor.document.getText(range)
-        const pkg = await this.getPackage(editor, range.start)
+        const text = doc.getText(range)
+        const pkg = await this.getPackage(uri, range.start)
 
         return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
-    }
-
-    getEvalInfo = async (editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> => {
-        return await this.getTextAndPackage(editor, this.getTopExprRange)
     }
 
     private doMacroExpand = async (method: string, text: string, pkgName: string) => {
@@ -614,28 +599,29 @@ export class LSP extends EventEmitter implements LSPEvents {
         return await this.doMacroExpand('$/alive/macroexpand1', text, pkgName)
     }
 
-    getMacroInfo = async (editor: vscode.TextEditor): Promise<MacroInfo | undefined> => {
-        const range = editor.selection.isEmpty
-            ? await this.getSurroundingExprRange(editor)
-            : new vscode.Range(editor.selection.start, editor.selection.end)
+    getMacroInfo = async (
+        getTextFn: (range?: vscode.Range) => string,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+    ): Promise<MacroInfo | undefined> => {
+        const range = selection.isEmpty
+            ? await this.getSurroundingExprRange(uri, selection)
+            : new vscode.Range(selection.start, selection.end)
 
         if (range === undefined) {
             return
         }
 
-        const text = editor.document.getText(range)
-        const pkg = await this.getPackage(editor, range.start)
+        const text = getTextFn(range)
+        const pkg = await this.getPackage(uri, range.start)
 
         return text !== undefined && pkg !== undefined ? { range, text, package: pkg } : undefined
     }
 
-    getPackage = async (editor: SelectionEditor, pos: vscode.Position): Promise<string | undefined> => {
+    getPackage = async (uri: string, pos: vscode.Position): Promise<string | undefined> => {
         try {
-            const doc = editor.document
             const resp = await this.client?.sendRequest('$/alive/getPackageForPosition', {
-                textDocument: {
-                    uri: doc.uri.toString(),
-                },
+                textDocument: { uri },
                 position: pos,
             })
 
@@ -682,13 +668,15 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    getExprRange = async (editor: SelectionEditor, method: string): Promise<vscode.Range | undefined> => {
+    getExprRange = async (
+        method: string,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active'>
+    ): Promise<vscode.Range | undefined> => {
         try {
             const resp = await this.client?.sendRequest(method, {
-                textDocument: {
-                    uri: editor.document.uri.toString(),
-                },
-                position: editor.selection.active,
+                textDocument: { uri },
+                position: selection.active,
             })
 
             if (!isObject(resp)) {
@@ -708,12 +696,15 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    getSurroundingExprRange = async (editor: SelectionEditor | undefined): Promise<vscode.Range | undefined> => {
-        return editor !== undefined ? await this.getExprRange(editor, '$/alive/surroundingFormBounds') : undefined
+    getSurroundingExprRange = async (
+        uri: string,
+        selection: Pick<vscode.Selection, 'active'>
+    ): Promise<vscode.Range | undefined> => {
+        return await this.getExprRange('$/alive/surroundingFormBounds', uri, selection)
     }
 
-    getTopExprRange = async (editor: SelectionEditor | undefined): Promise<vscode.Range | undefined> => {
-        return editor !== undefined ? await this.getExprRange(editor, '$/alive/topFormBounds') : undefined
+    getTopExprRange = async (uri: string, selection: Pick<vscode.Selection, 'active'>): Promise<vscode.Range | undefined> => {
+        return await this.getExprRange('$/alive/topFormBounds', uri, selection)
     }
 
     getSymbol = async (fileUri: string, pos: vscode.Position): Promise<LispSymbol | undefined> => {

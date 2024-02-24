@@ -127,15 +127,12 @@ describe('LSP tests', () => {
     })
 
     describe('getExprRange', () => {
-        const fakeEditor = {
-            document: { uri: { toString: () => 'foo' } },
-            selection: { active: new vscodeMock.Position() },
-        }
+        const fakeSelection = { active: new vscodeMock.Position() }
 
         it('getSurroundingExprRange', async () => {
             const { lsp, clientMock } = await doConnect()
 
-            await lsp.getSurroundingExprRange(fakeEditor)
+            await lsp.getSurroundingExprRange('foo', fakeSelection)
 
             expect(clientMock.sendRequest).toHaveBeenCalledWith('$/alive/surroundingFormBounds', expect.anything())
         })
@@ -143,7 +140,7 @@ describe('LSP tests', () => {
         it('getTopExprRange', async () => {
             const { lsp, clientMock } = await doConnect()
 
-            await lsp.getTopExprRange(fakeEditor)
+            await lsp.getTopExprRange('foo', fakeSelection)
 
             expect(clientMock.sendRequest).toHaveBeenCalledWith('$/alive/topFormBounds', expect.anything())
         })
@@ -163,7 +160,7 @@ describe('LSP tests', () => {
                 sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: fakePos })),
             })
 
-            expect(await lsp.getExprRange(fakeEditor, 'bar')).not.toBeUndefined()
+            expect(await lsp.getExprRange('bar', 'foo', fakeSelection)).not.toBeUndefined()
         })
 
         it('Invalid response, parse pos fail', async () => {
@@ -177,7 +174,7 @@ describe('LSP tests', () => {
                 sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: 'Not valid' })),
             })
 
-            expect(await lsp.getExprRange(fakeEditor, 'bar')).toBeUndefined()
+            expect(await lsp.getExprRange('bar', 'foo', fakeSelection)).toBeUndefined()
         })
 
         it('Request failed', async () => {
@@ -187,7 +184,7 @@ describe('LSP tests', () => {
                 }),
             })
 
-            expect(await lsp.getExprRange(fakeEditor, 'bar')).toBeUndefined()
+            expect(await lsp.getExprRange('bar', 'foo', fakeSelection)).toBeUndefined()
         })
     })
 
@@ -254,17 +251,12 @@ describe('LSP tests', () => {
     })
 
     describe('getPackage', () => {
-        const fakeEditor = {
-            document: { uri: { toString: () => 'foo' } },
-            selection: { active: new vscodeMock.Position() },
-        }
-
         const runTest = async (testPkg: unknown, validate: (pkg: string | undefined) => void) => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn().mockImplementation(() => testPkg),
             })
 
-            const pkg = await lsp.getPackage(fakeEditor, new vscodeMock.Position())
+            const pkg = await lsp.getPackage('uri', new vscodeMock.Position())
 
             validate(pkg)
         }
@@ -286,14 +278,14 @@ describe('LSP tests', () => {
                 }),
             })
 
-            const pkg = await lsp.getPackage(fakeEditor, new vscodeMock.Position())
+            const pkg = await lsp.getPackage('uri', new vscodeMock.Position())
 
             expect(pkg).toBeUndefined()
         })
 
         it('No client', async () => {
             const lsp = new LSP({ hoverText: '' })
-            const pkg = await lsp.getPackage(fakeEditor, new vscodeMock.Position())
+            const pkg = await lsp.getPackage('uri', new vscodeMock.Position())
 
             expect(pkg).toBeUndefined()
         })

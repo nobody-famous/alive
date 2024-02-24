@@ -12,48 +12,46 @@ export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
 }
 
 export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'eval'>) {
-    const editor = vscode.window.activeTextEditor
-    const info = await lsp.getEvalInfo(editor)
+    useEditor([COMMON_LISP_ID], async (editor) => {
+        const info = await lsp.getEvalInfo(editor.document, editor.document.uri.toString(), editor.selection)
 
-    if (info !== undefined) {
-        await vscode.workspace.saveAll()
-        await lsp.eval(info.text, info.package)
-    }
+        if (info !== undefined) {
+            await vscode.workspace.saveAll()
+            await lsp.eval(info.text, info.package)
+        }
+    })
 }
 
 export async function inlineEval(lsp: Pick<LSP, 'getEvalInfo' | 'doEval'>, state: ExtensionState): Promise<void> {
-    const editor = vscode.window.activeTextEditor
-    const info = await lsp.getEvalInfo(editor)
+    useEditor([COMMON_LISP_ID], async (editor) => {
+        const info = await lsp.getEvalInfo(editor.document, editor.document.uri.toString(), editor.selection)
 
-    if (editor === undefined || info === undefined) {
-        return
-    }
+        if (editor === undefined || info === undefined) {
+            return
+        }
 
-    const result = await lsp.doEval(info.text, info.package)
+        const result = await lsp.doEval(info.text, info.package)
 
-    if (result === undefined) {
-        return
-    }
+        if (result === undefined) {
+            return
+        }
 
-    state.hoverText = `=> ${strToMarkdown(result)}`
-    await vscode.window.showTextDocument(editor.document, editor.viewColumn)
-    vscode.commands.executeCommand('editor.action.showHover')
+        state.hoverText = `=> ${strToMarkdown(result)}`
+        await vscode.window.showTextDocument(editor.document, editor.viewColumn)
+        vscode.commands.executeCommand('editor.action.showHover')
+    })
 }
 
 export async function selectSexpr(lsp: Pick<LSP, 'getTopExprRange'>) {
-    const editor = vscode.window.activeTextEditor
+    useEditor([COMMON_LISP_ID], async (editor) => {
+        const range = await lsp.getTopExprRange(editor.document.uri.toString(), editor.selection)
 
-    if (editor?.document === undefined) {
-        return
-    }
+        if (range === undefined) {
+            return
+        }
 
-    const range = await lsp.getTopExprRange(editor)
-
-    if (range === undefined) {
-        return
-    }
-
-    editor.selection = new vscode.Selection(range?.start, range?.end)
+        editor.selection = new vscode.Selection(range?.start, range?.end)
+    })
 }
 
 export async function refreshPackages(ui: Pick<UI, 'updatePackages'>, lsp: Pick<LSP, 'listPackages'>) {
@@ -92,7 +90,7 @@ export async function inspect(lsp: Pick<LSP, 'inspectSymbol'>, symbol: LispSymbo
 
 export async function inspectMacro(lsp: Pick<LSP, 'getMacroInfo' | 'inspectMacro'>) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        const info = await lsp.getMacroInfo(editor)
+        const info = await lsp.getMacroInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
         if (info === undefined) {
             return
@@ -163,7 +161,7 @@ export async function openScratchPad(state: ExtensionState) {
 
 async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, pkg: string) => Promise<string | undefined>) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        const info = await lsp.getMacroInfo(editor)
+        const info = await lsp.getMacroInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
         if (info === undefined) {
             return
