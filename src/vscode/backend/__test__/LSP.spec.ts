@@ -252,4 +252,50 @@ describe('LSP tests', () => {
             await runNoClientTest(async (lsp) => await lsp.removePackage('foo'))
         })
     })
+
+    describe('getPackage', () => {
+        const fakeEditor = {
+            document: { uri: { toString: () => 'foo' } },
+            selection: { active: new vscodeMock.Position() },
+        }
+
+        const runTest = async (testPkg: unknown, validate: (pkg: string | undefined) => void) => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => testPkg),
+            })
+
+            const pkg = await lsp.getPackage(fakeEditor, new vscodeMock.Position())
+
+            validate(pkg)
+        }
+
+        it('Success', async () => {
+            await runTest({ package: 'foo' }, (pkg) => expect(pkg).toBe('foo'))
+        })
+
+        it('Invalid package', async () => {
+            await runTest({}, (pkg) => expect(pkg).toBeUndefined())
+            await runTest('foo', (pkg) => expect(pkg).toBeUndefined())
+            await runTest({ package: 5 }, (pkg) => expect(pkg).toBeUndefined())
+        })
+
+        it('Fail', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            const pkg = await lsp.getPackage(fakeEditor, new vscodeMock.Position())
+
+            expect(pkg).toBeUndefined()
+        })
+
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+            const pkg = await lsp.getPackage(fakeEditor, new vscodeMock.Position())
+
+            expect(pkg).toBeUndefined()
+        })
+    })
 })

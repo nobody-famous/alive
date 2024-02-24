@@ -633,22 +633,24 @@ export class LSP extends EventEmitter implements LSPEvents {
         return text !== undefined && pkg !== undefined ? { range, text, package: pkg } : undefined
     }
 
-    getPackage = async (editor: vscode.TextEditor, pos: vscode.Position): Promise<string | undefined> => {
-        const doc = editor.document
-        const resp = await this.client?.sendRequest('$/alive/getPackageForPosition', {
-            textDocument: {
-                uri: doc.uri.toString(),
-            },
-            position: pos,
-        })
+    getPackage = async (editor: SelectionEditor, pos: vscode.Position): Promise<string | undefined> => {
+        try {
+            const doc = editor.document
+            const resp = await this.client?.sendRequest('$/alive/getPackageForPosition', {
+                textDocument: {
+                    uri: doc.uri.toString(),
+                },
+                position: pos,
+            })
 
-        if (typeof resp !== 'object' || resp === null) {
-            return
+            if (!isObject(resp) || !isString(resp.package)) {
+                return
+            }
+
+            return resp.package
+        } catch (err) {
+            log(`Failed to get package: ${toLog(err)}`)
         }
-
-        const respObj = resp as { package: string }
-
-        return respObj.package
     }
 
     removePackage = async (name: string): Promise<void> => {
