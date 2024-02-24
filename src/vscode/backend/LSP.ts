@@ -614,11 +614,7 @@ export class LSP extends EventEmitter implements LSPEvents {
         return await this.doMacroExpand('$/alive/macroexpand1', text, pkgName)
     }
 
-    getMacroInfo = async (editor: vscode.TextEditor | undefined): Promise<MacroInfo | undefined> => {
-        if (editor === undefined) {
-            return
-        }
-
+    getMacroInfo = async (editor: vscode.TextEditor): Promise<MacroInfo | undefined> => {
         const range = editor.selection.isEmpty
             ? await this.getSurroundingExprRange(editor)
             : new vscode.Range(editor.selection.start, editor.selection.end)
