@@ -94,10 +94,12 @@ export async function inspectMacro(lsp: Pick<LSP, 'getMacroInfo' | 'inspectMacro
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         const info = await lsp.getMacroInfo(editor)
 
-        if (info !== undefined) {
-            await vscode.workspace.saveAll()
-            await lsp.inspectMacro(info.text, info.package)
+        if (info === undefined) {
+            return
         }
+
+        await vscode.workspace.saveAll()
+        await lsp.inspectMacro(info.text, info.package)
     })
 }
 
