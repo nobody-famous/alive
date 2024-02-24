@@ -652,11 +652,19 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     removePackage = async (name: string): Promise<void> => {
-        await this.client?.sendRequest('$/alive/removePackage', {
-            name,
-        })
+        try {
+            if (this.client === undefined) {
+                return
+            }
 
-        this.emit('refreshPackages')
+            await this.client?.sendRequest('$/alive/removePackage', {
+                name,
+            })
+
+            this.emit('refreshPackages')
+        } catch (err) {
+            log(`Failed to remove package: ${toLog(err)}`)
+        }
     }
 
     removeExport = async (pkg: string, name: string): Promise<void> => {

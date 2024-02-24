@@ -191,26 +191,39 @@ describe('LSP tests', () => {
         })
     })
 
+    const runRemoveTest = async (fn: (lsp: LSP) => Promise<void>, expCalled: boolean, fns?: Record<string, jest.Mock>) => {
+        const { lsp } = await doConnect(fns)
+        let eventCalled = false
+
+        lsp.on('refreshPackages', () => {
+            eventCalled = true
+        })
+
+        await fn(lsp)
+
+        expect(eventCalled).toBe(expCalled)
+    }
+
+    const runNoClientTest = async (fn: (lsp: LSP) => Promise<void>) => {
+        const lsp = new LSP({ hoverText: '' })
+        let eventCalled = false
+
+        lsp.on('refreshPackages', () => {
+            eventCalled = true
+        })
+
+        await fn(lsp)
+
+        expect(eventCalled).toBe(false)
+    }
+
     describe('removeExport', () => {
-        const runTest = async (expCalled: boolean, fns?: Record<string, jest.Mock>) => {
-            const { lsp } = await doConnect(fns)
-            let eventCalled = false
-
-            lsp.on('refreshPackages', () => {
-                eventCalled = true
-            })
-
-            await lsp.removeExport('foo', 'bar')
-
-            expect(eventCalled).toBe(expCalled)
-        }
-
         it('Success', async () => {
-            await runTest(true)
+            await runRemoveTest(async (lsp) => await lsp.removeExport('foo', 'bar'), true)
         })
 
         it('Fail', async () => {
-            await runTest(false, {
+            await runRemoveTest(async (lsp) => await lsp.removeExport('foo', 'bar'), false, {
                 sendRequest: jest.fn().mockImplementation(() => {
                     throw new Error('Failed, as requested')
                 }),
@@ -218,16 +231,25 @@ describe('LSP tests', () => {
         })
 
         it('No client', async () => {
-            const lsp = new LSP({ hoverText: '' })
-            let eventCalled = false
+            await runNoClientTest(async (lsp) => await lsp.removeExport('foo', 'bar'))
+        })
+    })
 
-            lsp.on('refreshPackages', () => {
-                eventCalled = true
+    describe('removePackage', () => {
+        it('Success', async () => {
+            await runRemoveTest(async (lsp) => await lsp.removePackage('foo'), true)
+        })
+
+        it('Fail', async () => {
+            await runRemoveTest(async (lsp) => await lsp.removePackage('foo'), false, {
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
             })
+        })
 
-            await lsp.removeExport('foo', 'bar')
-
-            expect(eventCalled).toBe(false)
+        it('No client', async () => {
+            await runNoClientTest(async (lsp) => await lsp.removePackage('foo'))
         })
     })
 })
