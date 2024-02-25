@@ -354,4 +354,54 @@ describe('LSP tests', () => {
             expect(info).toBeUndefined()
         })
     })
+
+    describe('macroexpand', () => {
+        const runTest = async (
+            fn: (lsp: LSP) => Promise<string | undefined>,
+            fakeResp: unknown,
+            validate: (macro: string | undefined) => void
+        ) => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => fakeResp),
+            })
+
+            const macro = await fn(lsp)
+
+            validate(macro)
+        }
+
+        it('Success', async () => {
+            await runTest(
+                (lsp) => lsp.macroexpand('Some text', 'Some package'),
+                { text: 'Some text' },
+                (macro) => expect(macro).not.toBeUndefined()
+            )
+
+            await runTest(
+                (lsp) => lsp.macroexpand1('Some text', 'Some package'),
+                { text: 'Some text' },
+                (macro) => expect(macro).not.toBeUndefined()
+            )
+        })
+
+        it('Invalid response', async () => {
+            await runTest(
+                (lsp) => lsp.macroexpand('Some text', 'Some package'),
+                { text: 10 },
+                (macro) => expect(macro).toBeUndefined()
+            )
+        })
+
+        it('Failure', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            const macro = await lsp.macroexpand('Some text', 'Some package')
+
+            expect(macro).toBeUndefined()
+        })
+    })
 })

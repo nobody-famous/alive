@@ -571,23 +571,14 @@ export class LSP extends EventEmitter implements LSPEvents {
         try {
             const resp = await this.client?.sendRequest(method, { text, package: pkgName })
 
-            if (typeof resp !== 'object') {
+            if (!isObject(resp) || !isString(resp.text)) {
                 return
             }
 
-            const resultObj = resp as { text: string }
-
-            if (resultObj.text !== undefined) {
-                return resultObj.text
-            }
+            return resp.text
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            const msg = isObject(err) && isString(err.message) ? err.message : JSON.stringify(err)
+            this.emit('output', msg)
         }
     }
 
