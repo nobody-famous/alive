@@ -290,4 +290,68 @@ describe('LSP tests', () => {
             expect(pkg).toBeUndefined()
         })
     })
+
+    describe('getMacroInfo', () => {
+        it('Success, selection not empty', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({ package: 'Some package' })),
+            })
+
+            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+                active: new vscodeMock.Position(),
+                start: new vscodeMock.Position(),
+                end: new vscodeMock.Position(),
+                isEmpty: false,
+            })
+
+            expect(info?.text).toBe('Some text')
+            expect(info?.package).toBe('Some package')
+        })
+
+        it('Success, selection empty', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation((method: string) => {
+                    return method === '$/alive/surroundingFormBounds'
+                        ? {
+                              start: {},
+                              end: {},
+                          }
+                        : { package: 'Some package' }
+                }),
+            })
+
+            // Mock start position
+            utilsMock.parseToInt.mockImplementationOnce(() => 1)
+            utilsMock.parseToInt.mockImplementationOnce(() => 1)
+
+            // Mock end position
+            utilsMock.parseToInt.mockImplementationOnce(() => 1)
+            utilsMock.parseToInt.mockImplementationOnce(() => 2)
+
+            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+                active: new vscodeMock.Position(),
+                start: new vscodeMock.Position(),
+                end: new vscodeMock.Position(),
+                isEmpty: true,
+            })
+
+            expect(info?.text).toBe('Some text')
+            expect(info?.package).toBe('Some package')
+        })
+
+        it('No range', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({ package: 'Some package' })),
+            })
+
+            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+                active: new vscodeMock.Position(),
+                start: new vscodeMock.Position(),
+                end: new vscodeMock.Position(),
+                isEmpty: true,
+            })
+
+            expect(info).toBeUndefined()
+        })
+    })
 })
