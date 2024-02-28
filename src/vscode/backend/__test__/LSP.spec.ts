@@ -453,17 +453,17 @@ describe('LSP tests', () => {
             utilsMock.parseNote.mockImplementationOnce(toFakeNote)
             utilsMock.parseNote.mockImplementationOnce(toFakeNote)
 
-            const notes = await lsp.tryCompileFile('/some/path')
+            const resp = await lsp.tryCompileFile('/some/path')
 
-            expect(notes).toMatchObject({ notes: [{ message: 1 }, { message: 2 }, { message: 3 }] })
+            expect(resp).toMatchObject({ notes: [{ message: 1 }, { message: 2 }, { message: 3 }] })
         })
 
         it('No client', async () => {
             const lsp = new LSP({ hoverText: '' })
 
-            const notes = await lsp.tryCompileFile('/some/path')
+            const resp = await lsp.tryCompileFile('/some/path')
 
-            expect(notes).toMatchObject({ notes: [] })
+            expect(resp).toMatchObject({ notes: [] })
         })
 
         it('Failure', async () => {
@@ -473,9 +473,18 @@ describe('LSP tests', () => {
                 }),
             })
 
-            const notes = await lsp.tryCompileFile('/some/path')
+            const resp = await lsp.tryCompileFile('/some/path')
 
-            expect(notes).toMatchObject({ notes: [] })
+            expect(resp).toMatchObject({ notes: [] })
+        })
+    })
+
+    describe('compileFile', () => {
+        it('Success', async () => {
+            const { lsp } = await doConnect()
+
+            const resp = await lsp.compileFile('/some/path')
+            expect(resp).toMatchObject({ notes: [] })
         })
     })
 })

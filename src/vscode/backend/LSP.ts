@@ -474,13 +474,9 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    compileFile = async (path: string): Promise<void> => {
-        await this.client?.sendRequest('$/alive/compile', { path })
-    }
-
-    tryCompileFile = async (path: string): Promise<CompileFileResp | undefined> => {
+    private doCompile = async (method: string, path: string): Promise<CompileFileResp> => {
         try {
-            const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
+            const resp = await this.client?.sendRequest(method, { path })
 
             if (!isObject(resp) || !Array.isArray(resp.messages)) {
                 return { notes: [] }
@@ -503,6 +499,14 @@ export class LSP extends EventEmitter implements LSPEvents {
             log(`Failed to compile file: ${toLog(err)}`)
             return { notes: [] }
         }
+    }
+
+    compileFile = async (path: string): Promise<CompileFileResp> => {
+        return await this.doCompile('$/alive/compile', path)
+    }
+
+    tryCompileFile = async (path: string): Promise<CompileFileResp> => {
+        return await this.doCompile('$/alive/tryCompile', path)
     }
 
     isConnected = (): boolean => {
