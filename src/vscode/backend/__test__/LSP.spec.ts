@@ -404,4 +404,53 @@ describe('LSP tests', () => {
             expect(macro).toBeUndefined()
         })
     })
+
+    describe('getEvalInfo', () => {
+        const createSelection = (params?: unknown) => {
+            return Object.assign(
+                {},
+                {
+                    active: new vscodeMock.Position(),
+                    start: new vscodeMock.Position(),
+                    end: new vscodeMock.Position(),
+                    isEmpty: false,
+                },
+                params
+            )
+        }
+
+        it('Success', async () => {
+            const fakeSelection = createSelection()
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({ package: 'Some package' })),
+            })
+
+            const info = await lsp.getEvalInfo(() => 'Some text', 'uri', fakeSelection)
+
+            expect(info?.text).toBe('Some text')
+            expect(info?.package).toBe('Some package')
+        })
+
+        it('No range', async () => {
+            const fakeSelection = createSelection({ isEmpty: true })
+
+            const { lsp } = await doConnect()
+
+            expect(await lsp.getEvalInfo(() => 'Some text', 'uri', fakeSelection)).toBeUndefined()
+        })
+    })
+
+    describe('isConnected', () => {
+        it('True', async () => {
+            const { lsp } = await doConnect()
+
+            expect(lsp.isConnected()).toBe(true)
+        })
+
+        it('False', () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            expect(lsp.isConnected()).toBe(false)
+        })
+    })
 })

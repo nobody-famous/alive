@@ -549,7 +549,7 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     getEvalInfo = async (
-        doc: Pick<vscode.TextDocument, 'getText'>,
+        getTextFn: (range: vscode.Range) => string,
         uri: string,
         selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
     ): Promise<EvalInfo | undefined> => {
@@ -561,7 +561,7 @@ export class LSP extends EventEmitter implements LSPEvents {
             return
         }
 
-        const text = doc.getText(range)
+        const text = getTextFn(range)
         const pkg = await this.getPackage(uri, range.start)
 
         return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
