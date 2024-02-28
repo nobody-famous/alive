@@ -148,13 +148,8 @@ describe('LSP tests', () => {
         it('Valid response', async () => {
             const fakePos = { line: 1, character: 5 }
 
-            // Mock start position
-            utilsMock.parseToInt.mockImplementationOnce(() => 1)
-            utilsMock.parseToInt.mockImplementationOnce(() => 5)
-
-            // Mock end position
-            utilsMock.parseToInt.mockImplementationOnce(() => 1)
-            utilsMock.parseToInt.mockImplementationOnce(() => 5)
+            utilsMock.parsePos.mockImplementationOnce(() => fakePos)
+            utilsMock.parsePos.mockImplementationOnce(() => fakePos)
 
             const { lsp } = await doConnect({
                 sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: fakePos })),
@@ -166,9 +161,7 @@ describe('LSP tests', () => {
         it('Invalid response, parse pos fail', async () => {
             const fakePos = { line: 1, character: 5 }
 
-            // Mock start position
-            utilsMock.parseToInt.mockImplementationOnce(() => 1)
-            utilsMock.parseToInt.mockImplementationOnce(() => undefined)
+            utilsMock.parsePos.mockImplementationOnce(() => fakePos)
 
             const { lsp } = await doConnect({
                 sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: 'Not valid' })),
@@ -320,13 +313,8 @@ describe('LSP tests', () => {
                 }),
             })
 
-            // Mock start position
-            utilsMock.parseToInt.mockImplementationOnce(() => 1)
-            utilsMock.parseToInt.mockImplementationOnce(() => 1)
-
-            // Mock end position
-            utilsMock.parseToInt.mockImplementationOnce(() => 1)
-            utilsMock.parseToInt.mockImplementationOnce(() => 2)
+            utilsMock.parsePos.mockImplementationOnce(() => 1)
+            utilsMock.parsePos.mockImplementationOnce(() => 1)
 
             const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
                 active: new vscodeMock.Position(),
@@ -451,6 +439,43 @@ describe('LSP tests', () => {
             const lsp = new LSP({ hoverText: '' })
 
             expect(lsp.isConnected()).toBe(false)
+        })
+    })
+
+    describe('tryCompileFile', () => {
+        it('Success', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({ messages: [1, 2, 3] })),
+            })
+            const toFakeNote = (path: string, item: unknown) => ({ message: item })
+
+            utilsMock.parseNote.mockImplementationOnce(toFakeNote)
+            utilsMock.parseNote.mockImplementationOnce(toFakeNote)
+            utilsMock.parseNote.mockImplementationOnce(toFakeNote)
+
+            const notes = await lsp.tryCompileFile('/some/path')
+
+            expect(notes).toMatchObject({ notes: [{ message: 1 }, { message: 2 }, { message: 3 }] })
+        })
+
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            const notes = await lsp.tryCompileFile('/some/path')
+
+            expect(notes).toMatchObject({ notes: [] })
+        })
+
+        it('Failure', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            const notes = await lsp.tryCompileFile('/some/path')
+
+            expect(notes).toMatchObject({ notes: [] })
         })
     })
 })

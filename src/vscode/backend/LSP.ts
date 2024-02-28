@@ -8,7 +8,6 @@ import { log, toLog } from '../Log'
 import {
     CompileFileNote,
     CompileFileResp,
-    CompileLocation,
     DebugInfo,
     EvalInfo,
     ExtensionState,
@@ -20,7 +19,7 @@ import {
     Package,
     Thread,
 } from '../Types'
-import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
+import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseNote, parsePos, strToMarkdown } from '../Utils'
 
 export declare interface LSPEvents {
     on(event: 'refreshPackages', listener: () => void): this
@@ -480,68 +479,30 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     tryCompileFile = async (path: string): Promise<CompileFileResp | undefined> => {
-        const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
+        try {
+            const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
 
-        if (typeof resp !== 'object' || resp === null) {
+            if (!isObject(resp) || !Array.isArray(resp.messages)) {
+                return { notes: [] }
+            }
+
+            const notes: CompileFileNote[] = []
+            const seen: { [index: string]: true } = {}
+
+            for (const item of resp.messages) {
+                const note = parseNote(path, item)
+
+                if (note !== undefined && seen[note.message] === undefined) {
+                    seen[note.message] = true
+                    notes.push(note)
+                }
+            }
+
+            return { notes }
+        } catch (err) {
+            log(`Failed to compile file: ${toLog(err)}`)
             return { notes: [] }
         }
-
-        const respObj = resp as { [index: string]: unknown }
-
-        if (!Array.isArray(respObj.messages)) {
-            return { notes: [] }
-        }
-
-        const parseLocation = (data: unknown): CompileLocation | undefined => {
-            if (typeof data !== 'object' || data === null) {
-                return
-            }
-
-            const dataObj = data as { [index: string]: unknown }
-            const start = parsePos(dataObj.start)
-            const end = parsePos(dataObj.end)
-
-            if (start === undefined || end === undefined) {
-                return
-            }
-
-            return { file: path, start, end }
-        }
-
-        const parseNote = (data: unknown): CompileFileNote | undefined => {
-            if (typeof data !== 'object' || data === null) {
-                return
-            }
-
-            const dataObj = data as { [index: string]: unknown }
-            const msg = typeof dataObj.message === 'string' ? dataObj.message : ''
-            const sev = typeof dataObj.severity === 'string' ? dataObj.severity : ''
-            const loc = parseLocation(dataObj.location)
-
-            if (loc === undefined) {
-                return
-            }
-
-            return {
-                message: msg,
-                severity: sev,
-                location: loc,
-            }
-        }
-
-        const notes: CompileFileNote[] = []
-        const seen: { [index: string]: true } = {}
-
-        for (const item of respObj.messages) {
-            const note = parseNote(item)
-
-            if (note !== undefined && seen[note.message] === undefined) {
-                seen[note.message] = true
-                notes.push(note)
-            }
-        }
-
-        return { notes }
     }
 
     isConnected = (): boolean => {
@@ -738,19 +699,4 @@ export class LSP extends EventEmitter implements LSPEvents {
             return ''
         }
     }
-}
-
-const parsePos = (data: unknown): vscode.Position | undefined => {
-    if (!isObject(data)) {
-        return
-    }
-
-    const line = parseToInt(data.line)
-    const col = parseToInt(data.character)
-
-    if (line === undefined || col === undefined) {
-        return
-    }
-
-    return new vscode.Position(line, col)
 }
