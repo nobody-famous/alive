@@ -45,13 +45,12 @@ export const parsePos = (data: unknown): vscode.Position | undefined => {
 }
 
 export const parseLocation = (filePath: string, data: unknown): CompileLocation | undefined => {
-    if (typeof data !== 'object' || data === null) {
+    if (!isObject(data)) {
         return
     }
 
-    const dataObj = data as { [index: string]: unknown }
-    const start = parsePos(dataObj.start)
-    const end = parsePos(dataObj.end)
+    const start = parsePos(data.start)
+    const end = parsePos(data.end)
 
     if (start === undefined || end === undefined) {
         return
@@ -61,14 +60,13 @@ export const parseLocation = (filePath: string, data: unknown): CompileLocation 
 }
 
 export const parseNote = (filePath: string, data: unknown): CompileFileNote | undefined => {
-    if (typeof data !== 'object' || data === null) {
+    if (!isObject(data)) {
         return
     }
 
-    const dataObj = data as { [index: string]: unknown }
-    const msg = typeof dataObj.message === 'string' ? dataObj.message : ''
-    const sev = typeof dataObj.severity === 'string' ? dataObj.severity : ''
-    const loc = parseLocation(filePath, dataObj.location)
+    const msg = typeof data.message === 'string' ? data.message : ''
+    const sev = typeof data.severity === 'string' ? data.severity : ''
+    const loc = parseLocation(filePath, data.location)
 
     if (loc === undefined) {
         return
