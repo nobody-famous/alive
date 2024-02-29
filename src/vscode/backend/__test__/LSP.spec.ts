@@ -504,4 +504,21 @@ describe('LSP tests', () => {
         runTest({ hasId: true, diags: true }, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
         runTest({ hasId: false, diags: true }, (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
+
+    it('textDocumentChanged', () => {
+        const runTest = (opts: { hasId: boolean; diags: boolean }, validate: (lsp: LSP) => void) => {
+            const lsp = new LSP({ hoverText: '' })
+
+            utilsMock.hasValidLangId.mockImplementationOnce(() => opts.hasId)
+            utilsMock.diagnosticsEnabled.mockImplementationOnce(() => opts.diags)
+
+            lsp.emit = jest.fn()
+            lsp.textDocumentChanged({ languageId: 'foo' })
+
+            validate(lsp)
+        }
+
+        runTest({ hasId: true, diags: true }, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
+        runTest({ hasId: false, diags: true }, (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
+    })
 })

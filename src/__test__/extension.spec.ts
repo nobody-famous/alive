@@ -269,7 +269,7 @@ describe('Extension tests', () => {
         it('onDidChangeTextDocument', async () => {
             const fn = await getHandler(vscodeMock.workspace.onDidChangeTextDocument)
 
-            fn?.()
+            fn?.({ document: {} })
 
             expect(lspMock.textDocumentChanged).toHaveBeenCalled()
         })

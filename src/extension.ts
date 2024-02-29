@@ -244,7 +244,7 @@ function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(ui, lsp, state, doc))
 
     vscode.workspace.onDidChangeTextDocument(
-        (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event),
+        (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event.document),
         null,
         state.ctx.subscriptions
     )

@@ -452,8 +452,8 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    textDocumentChanged = (event: vscode.TextDocumentChangeEvent): void => {
-        if (!hasValidLangId(event.document, [COMMON_LISP_ID])) {
+    textDocumentChanged = (doc: Pick<vscode.TextDocument, 'languageId'>): void => {
+        if (!hasValidLangId(doc, [COMMON_LISP_ID])) {
             return
         }
 
