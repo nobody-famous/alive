@@ -277,8 +277,12 @@ describe('Extension tests', () => {
         it('onDidChangeActiveTextEditor', async () => {
             const fn = await getHandler(vscodeMock.window.onDidChangeActiveTextEditor)
 
-            fn?.()
+            lspMock.editorChanged.mockReset()
 
+            fn?.()
+            expect(lspMock.editorChanged).not.toHaveBeenCalled()
+
+            fn?.({ document: {} })
             expect(lspMock.editorChanged).toHaveBeenCalled()
         })
 

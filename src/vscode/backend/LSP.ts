@@ -464,12 +464,8 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    editorChanged = (editor?: vscode.TextEditor): void => {
-        if (editor === undefined || !hasValidLangId(editor.document, [COMMON_LISP_ID])) {
-            return
-        }
-
-        if (diagnosticsEnabled()) {
+    editorChanged = (doc: Pick<vscode.TextDocument, 'languageId'>): void => {
+        if (hasValidLangId(doc, [COMMON_LISP_ID]) && diagnosticsEnabled()) {
             this.emit('startCompileTimer')
         }
     }

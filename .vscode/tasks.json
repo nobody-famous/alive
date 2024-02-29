@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/backend/__test__/LSP.spec.ts",
+                "src/__test__/extension.spec.ts",
                 "-t",
-                "tryCompileFile"
+                "onDidChangeActiveTextEditor"
             ],
             "problemMatcher": [
                 "$tsc"

@@ -487,4 +487,21 @@ describe('LSP tests', () => {
             expect(resp).toMatchObject({ notes: [] })
         })
     })
+
+    it('editorChanged', () => {
+        const runTest = (opts: { hasId: boolean; diags: boolean }, validate: (lsp: LSP) => void) => {
+            const lsp = new LSP({ hoverText: '' })
+
+            utilsMock.hasValidLangId.mockImplementationOnce(() => opts.hasId)
+            utilsMock.diagnosticsEnabled.mockImplementationOnce(() => opts.diags)
+
+            lsp.emit = jest.fn()
+            lsp.editorChanged({ languageId: 'foo' })
+
+            validate(lsp)
+        }
+
+        runTest({ hasId: true, diags: true }, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
+        runTest({ hasId: false, diags: true }, (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
+    })
 })
