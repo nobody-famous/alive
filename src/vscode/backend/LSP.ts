@@ -429,11 +429,7 @@ export class LSP extends EventEmitter implements LSPEvents {
                 this.emit('output', `${msg.severity.toUpperCase()}: ${msg.message}`)
             }
         } catch (err) {
-            if (isObject(err) && isString(err.message)) {
-                this.emit('output', err.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            this.emit('output', isObject(err) && isString(err.message) ? err.message : JSON.stringify(err))
         }
     }
 
