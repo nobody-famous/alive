@@ -521,4 +521,62 @@ describe('LSP tests', () => {
         runTest({ hasId: true, diags: true }, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
         runTest({ hasId: false, diags: true }, (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
+
+    describe('loadFile', () => {
+        it('Success, no messages', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({ messages: [] })),
+            })
+
+            await lsp.loadFile('/some/path')
+        })
+
+        it('Success, with messages', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => ({
+                    messages: [{ severity: 'TOP', message: 'foo' }, { message: 'foo' }, { severity: 'TOP' }],
+                })),
+            })
+
+            lsp.emit = jest.fn()
+            await lsp.loadFile('/some/path')
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            lsp.emit = jest.fn()
+            await lsp.loadFile('/some/path')
+
+            expect(lsp.emit).not.toHaveBeenCalled()
+        })
+
+        it('Failure, as error', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            lsp.emit = jest.fn()
+            await lsp.loadFile('/some/path')
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+
+        it('Failure, as not error', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn().mockImplementation(() => {
+                    throw 'Failed, as requested'
+                }),
+            })
+
+            lsp.emit = jest.fn()
+            await lsp.loadFile('/some/path')
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+    })
 })

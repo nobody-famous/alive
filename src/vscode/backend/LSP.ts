@@ -415,37 +415,22 @@ export class LSP extends EventEmitter implements LSPEvents {
 
     loadFile = async (path: string): Promise<void> => {
         try {
-            const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
+            const resp = await this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-            const resp = await promise
-            if (typeof resp !== 'object') {
+            if (!isObject(resp) || !Array.isArray(resp.messages)) {
                 return
             }
 
-            const respObj = resp as { [index: string]: unknown }
-
-            if (!Array.isArray(respObj.messages)) {
-                return
-            }
-
-            for (const msg of respObj.messages) {
-                if (typeof msg !== 'object') {
+            for (const msg of resp.messages) {
+                if (!isObject(msg) || !isString(msg.severity) || !isString(msg.message)) {
                     continue
                 }
 
-                const msgObj = msg as { [index: string]: unknown }
-
-                if (typeof msgObj.severity !== 'string' || typeof msgObj.message !== 'string') {
-                    continue
-                }
-
-                this.emit('output', `${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
+                this.emit('output', `${msg.severity.toUpperCase()}: ${msg.message}`)
             }
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
+            if (isObject(err) && isString(err.message)) {
+                this.emit('output', err.message)
             } else {
                 this.emit('output', JSON.stringify(err))
             }
