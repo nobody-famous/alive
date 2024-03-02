@@ -153,13 +153,7 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     private handleError = (err: unknown) => {
-        const errObj = err as { message: string }
-
-        if (errObj.message !== undefined) {
-            this.emit('output', errObj.message)
-        } else {
-            this.emit('output', JSON.stringify(err))
-        }
+        this.emit('output', isObject(err) && isString(err.message) ? err.message : JSON.stringify(err))
     }
 
     inspectEval = async (info: InspectInfo, text: string) => {
@@ -312,7 +306,7 @@ export class LSP extends EventEmitter implements LSPEvents {
 
             return resp.text
         } catch (err) {
-            this.emit('output', isObject(err) && isString(err.message) ? err.message : JSON.stringify(err))
+            this.handleError(err)
         }
     }
 
@@ -431,7 +425,7 @@ export class LSP extends EventEmitter implements LSPEvents {
                 this.emit('output', `${msg.severity.toUpperCase()}: ${msg.message}`)
             }
         } catch (err) {
-            this.emit('output', isObject(err) && isString(err.message) ? err.message : JSON.stringify(err))
+            this.handleError(err)
         }
     }
 
@@ -521,8 +515,7 @@ export class LSP extends EventEmitter implements LSPEvents {
 
             return resp.text
         } catch (err) {
-            const msg = isObject(err) && isString(err.message) ? err.message : JSON.stringify(err)
-            this.emit('output', msg)
+            this.handleError(err)
         }
     }
 
