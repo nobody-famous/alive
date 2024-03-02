@@ -236,64 +236,48 @@ export class LSP extends EventEmitter implements LSPEvents {
         this.emit('refreshDiagnostics')
     }
 
-    inspectSymbol = async (symbol: LispSymbol): Promise<void> => {
+    private doInspect = async (method: string, reqObj: unknown, buildInfoFn: (resp: InspectResult) => InspectInfo) => {
         try {
-            const resp = await this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
+            const resp = await this.client?.sendRequest(method, reqObj)
 
             if (isInspectResult(resp)) {
-                const info: InspectInfo = {
-                    id: resp.id,
-                    resultType: resp.resultType,
-                    result: resp.result,
-                    text: symbol.name,
-                    package: symbol.package,
-                }
+                const info: InspectInfo = buildInfoFn(resp)
 
                 this.emit('inspectResult', info)
             }
         } catch (err) {
             this.handleError(err)
         }
+    }
+
+    inspectSymbol = async (symbol: LispSymbol): Promise<void> => {
+        await this.doInspect('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package }, (resp) => ({
+            id: resp.id,
+            resultType: resp.resultType,
+            result: resp.result,
+            text: symbol.name,
+            package: symbol.package,
+        }))
     }
 
     inspectMacro = async (text: string, pkgName: string): Promise<void> => {
-        try {
-            const resp = await this.client?.sendRequest('$/alive/inspectMacro', { text, package: pkgName })
-
-            if (isInspectResult(resp)) {
-                const info: InspectInfo = {
-                    id: resp.id,
-                    resultType: resp.resultType,
-                    result: resp.result,
-                    text: text,
-                    package: pkgName,
-                }
-
-                this.emit('inspectResult', info)
-            }
-        } catch (err) {
-            this.handleError(err)
-        }
+        await this.doInspect('$/alive/inspectMacro', { text, package: pkgName }, (resp) => ({
+            id: resp.id,
+            resultType: resp.resultType,
+            result: resp.result,
+            text: text,
+            package: pkgName,
+        }))
     }
 
     inspect = async (text: string, pkgName: string): Promise<void> => {
-        try {
-            const resp = await this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
-
-            if (isInspectResult(resp)) {
-                const info: InspectInfo = {
-                    id: resp.id,
-                    resultType: resp.resultType,
-                    result: resp.result,
-                    text: text,
-                    package: pkgName,
-                }
-
-                this.emit('inspectResult', info)
-            }
-        } catch (err) {
-            this.handleError(err)
-        }
+        this.doInspect('$/alive/inspect', { text, package: pkgName }, (resp) => ({
+            id: resp.id,
+            resultType: resp.resultType,
+            result: resp.result,
+            text: text,
+            package: pkgName,
+        }))
     }
 
     doEval = async (text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> => {
