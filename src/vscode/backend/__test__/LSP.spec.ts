@@ -58,7 +58,7 @@ describe('LSP tests', () => {
 
         it('Invalid response', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => 'foo'),
+                sendRequest: jest.fn(() => 'foo'),
             })
 
             expect(await lsp.getHoverText('/some/file', new vscodeMock.Position())).toBe('')
@@ -68,7 +68,7 @@ describe('LSP tests', () => {
             utilsMock.strToMarkdown.mockImplementationOnce((v: string) => v)
 
             const { lsp, clientMock } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({
+                sendRequest: jest.fn(() => ({
                     value: 'foo',
                 })),
             })
@@ -79,7 +79,7 @@ describe('LSP tests', () => {
 
         it('Request fail', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -97,7 +97,7 @@ describe('LSP tests', () => {
 
         it('Valid response', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({
+                sendRequest: jest.fn(() => ({
                     value: ['foo', 'bar'],
                 })),
             })
@@ -107,7 +107,7 @@ describe('LSP tests', () => {
 
         it('Invalid response', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({
+                sendRequest: jest.fn(() => ({
                     value: ['foo'],
                 })),
             })
@@ -117,7 +117,7 @@ describe('LSP tests', () => {
 
         it('Request fail', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -152,7 +152,7 @@ describe('LSP tests', () => {
             utilsMock.parsePos.mockImplementationOnce(() => fakePos)
 
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: fakePos })),
+                sendRequest: jest.fn(() => ({ start: fakePos, end: fakePos })),
             })
 
             expect(await lsp.getExprRange('bar', 'foo', fakeSelection)).not.toBeUndefined()
@@ -164,7 +164,7 @@ describe('LSP tests', () => {
             utilsMock.parsePos.mockImplementationOnce(() => fakePos)
 
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ start: fakePos, end: 'Not valid' })),
+                sendRequest: jest.fn(() => ({ start: fakePos, end: 'Not valid' })),
             })
 
             expect(await lsp.getExprRange('bar', 'foo', fakeSelection)).toBeUndefined()
@@ -172,7 +172,7 @@ describe('LSP tests', () => {
 
         it('Request failed', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -214,7 +214,7 @@ describe('LSP tests', () => {
 
         it('Fail', async () => {
             await runRemoveTest(async (lsp) => await lsp.removeExport('foo', 'bar'), false, {
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -232,7 +232,7 @@ describe('LSP tests', () => {
 
         it('Fail', async () => {
             await runRemoveTest(async (lsp) => await lsp.removePackage('foo'), false, {
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -246,7 +246,7 @@ describe('LSP tests', () => {
     describe('getPackage', () => {
         const runTest = async (testPkg: unknown, validate: (pkg: string | undefined) => void) => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => testPkg),
+                sendRequest: jest.fn(() => testPkg),
             })
 
             const pkg = await lsp.getPackage('uri', new vscodeMock.Position())
@@ -266,7 +266,7 @@ describe('LSP tests', () => {
 
         it('Fail', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -287,7 +287,7 @@ describe('LSP tests', () => {
     describe('getMacroInfo', () => {
         it('Success, selection not empty', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ package: 'Some package' })),
+                sendRequest: jest.fn(() => ({ package: 'Some package' })),
             })
 
             const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
@@ -303,7 +303,7 @@ describe('LSP tests', () => {
 
         it('Success, selection empty', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation((method: string) => {
+                sendRequest: jest.fn((method: string) => {
                     return method === '$/alive/surroundingFormBounds'
                         ? {
                               start: {},
@@ -329,7 +329,7 @@ describe('LSP tests', () => {
 
         it('No range', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ package: 'Some package' })),
+                sendRequest: jest.fn(() => ({ package: 'Some package' })),
             })
 
             const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
@@ -350,7 +350,7 @@ describe('LSP tests', () => {
             validate: (macro: string | undefined) => void
         ) => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => fakeResp),
+                sendRequest: jest.fn(() => fakeResp),
             })
 
             const macro = await fn(lsp)
@@ -382,7 +382,7 @@ describe('LSP tests', () => {
 
         it('Failure', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -410,7 +410,7 @@ describe('LSP tests', () => {
         it('Success', async () => {
             const fakeSelection = createSelection()
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ package: 'Some package' })),
+                sendRequest: jest.fn(() => ({ package: 'Some package' })),
             })
 
             const info = await lsp.getEvalInfo(() => 'Some text', 'uri', fakeSelection)
@@ -445,7 +445,7 @@ describe('LSP tests', () => {
     describe('tryCompileFile', () => {
         it('Success', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ messages: [1, 2, 3] })),
+                sendRequest: jest.fn(() => ({ messages: [1, 2, 3] })),
             })
             const toFakeNote = (path: string, item: unknown) => ({ message: item })
 
@@ -468,7 +468,7 @@ describe('LSP tests', () => {
 
         it('Failure', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -525,7 +525,7 @@ describe('LSP tests', () => {
     describe('loadFile', () => {
         it('Success, no messages', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({ messages: [] })),
+                sendRequest: jest.fn(() => ({ messages: [] })),
             })
 
             await lsp.loadFile('/some/path')
@@ -533,7 +533,7 @@ describe('LSP tests', () => {
 
         it('Success, with messages', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => ({
+                sendRequest: jest.fn(() => ({
                     messages: [{ severity: 'TOP', message: 'foo' }, { message: 'foo' }, { severity: 'TOP' }],
                 })),
             })
@@ -555,7 +555,7 @@ describe('LSP tests', () => {
 
         it('Failure, as error', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw new Error('Failed, as requested')
                 }),
             })
@@ -568,7 +568,7 @@ describe('LSP tests', () => {
 
         it('Failure, as not error', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn().mockImplementation(() => {
+                sendRequest: jest.fn(() => {
                     throw 'Failed, as requested'
                 }),
             })
@@ -577,6 +577,143 @@ describe('LSP tests', () => {
             await lsp.loadFile('/some/path')
 
             expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('loadAsdfSystem', () => {
+        it('Success', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => 'Some response'),
+            })
+
+            const resp = await lsp.loadAsdfSystem('Some system')
+            expect(resp).toBe('Some response')
+        })
+
+        it('Failure', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            expect(await lsp.loadAsdfSystem('Some system')).toBeUndefined()
+        })
+
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            expect(await lsp.loadAsdfSystem('Some system')).toBeUndefined()
+        })
+    })
+
+    describe('List items tests', () => {
+        const noClientTest = async <T>(fn: (lsp: LSP) => Promise<T>) => {
+            const lsp = new LSP({ hoverText: '' })
+
+            expect(await fn(lsp)).toMatchObject([])
+        }
+
+        const listTest = async <T>(respData: unknown, expLength: number, fn: (lsp: LSP) => Promise<T[]>) => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => respData),
+            })
+
+            const threads = await fn(lsp)
+
+            expect(threads.length).toBe(expLength)
+        }
+
+        const networkErrorTest = async <T>(fn: (lsp: LSP) => Promise<T[]>) => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            const resp = await fn(lsp)
+
+            expect(resp).toMatchObject([])
+        }
+
+        describe('listThreads', () => {
+            it('Success', async () => {
+                await listTest(
+                    {
+                        threads: [
+                            { id: 5, name: 'foo' },
+                            { id: 'foo', name: {} },
+                            { id: 10, name: 'bar' },
+                        ],
+                    },
+                    2,
+                    (lsp) => lsp.listThreads()
+                )
+            })
+
+            it('Invalid data', async () => {
+                await listTest([{ id: 5, name: 'foo' }], 0, (lsp) => lsp.listThreads())
+            })
+
+            it('No client', async () => {
+                await noClientTest((lsp) => lsp.listThreads())
+            })
+
+            it('Network error', async () => {
+                await networkErrorTest((lsp) => lsp.listThreads())
+            })
+        })
+
+        describe('listPackages', () => {
+            it('Success', async () => {
+                await listTest(
+                    {
+                        packages: [
+                            { name: 'foo', exports: [], nicknames: [] },
+                            { name: {}, exports: [], nicknames: [] },
+                            { name: 'bar', exports: [], nicknames: [] },
+                        ],
+                    },
+                    2,
+                    (lsp) => lsp.listPackages()
+                )
+            })
+
+            it('Invalid data', async () => {
+                await listTest([{ id: 5, name: 'foo' }], 0, (lsp) => lsp.listPackages())
+            })
+
+            it('No client', async () => {
+                await noClientTest((lsp) => lsp.listPackages())
+            })
+
+            it('Network error', async () => {
+                await networkErrorTest((lsp) => lsp.listPackages())
+            })
+        })
+
+        describe('listAsdfSystems', () => {
+            it('Success', async () => {
+                await listTest(
+                    {
+                        systems: ['foo', {}, 'bar'],
+                    },
+                    2,
+                    (lsp) => lsp.listAsdfSystems()
+                )
+            })
+
+            it('Invalid data', async () => {
+                await listTest([{ id: 5, name: 'foo' }], 0, (lsp) => lsp.listAsdfSystems())
+            })
+
+            it('No client', async () => {
+                await noClientTest((lsp) => lsp.listAsdfSystems())
+            })
+
+            it('Network error', async () => {
+                await networkErrorTest((lsp) => lsp.listAsdfSystems())
+            })
         })
     })
 })

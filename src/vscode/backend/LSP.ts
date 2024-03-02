@@ -3,7 +3,7 @@ import * as net from 'net'
 import { EOL } from 'os'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { isArray, isInspectResult, isObject, isRestartInfo, isStackTrace, isString } from '../Guards'
+import { isArray, isInspectResult, isObject, isPackage, isRestartInfo, isStackTrace, isString, isThread } from '../Guards'
 import { log, toLog } from '../Log'
 import {
     CompileFileNote,
@@ -337,49 +337,51 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     listAsdfSystems = async (): Promise<string[]> => {
-        const resp = await this.client?.sendRequest('$/alive/listAsdfSystems')
-        const respObj = resp as { systems: Array<string> }
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listAsdfSystems')
 
-        if (respObj.systems === undefined) {
+            if (!isObject(resp) || !Array.isArray(resp.systems)) {
+                return []
+            }
+
+            const systems: string[] = []
+
+            for (const sys of resp.systems) {
+                if (typeof sys === 'string') {
+                    systems.push(sys)
+                }
+            }
+
+            return systems
+        } catch (err) {
+            log(`Failed to list ASDF systems: ${toLog(err)}`)
             return []
         }
-
-        const systems: string[] = []
-
-        for (const sys of respObj.systems) {
-            if (typeof sys === 'string') {
-                systems.push(sys)
-            }
-        }
-
-        return systems
     }
 
     listPackages = async (): Promise<Package[]> => {
-        const resp = await this.client?.sendRequest('$/alive/listPackages')
-        const respObj = resp as { packages: Array<{ name: string; exports: Array<string> }> }
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listPackages')
 
-        if (respObj.packages === undefined) {
+            if (!isObject(resp) || !Array.isArray(resp.packages)) {
+                return []
+            }
+
+            const pkgs: Package[] = []
+
+            for (const item of resp.packages) {
+                if (!isPackage(item)) {
+                    continue
+                }
+
+                pkgs.push(item)
+            }
+
+            return pkgs
+        } catch (err) {
+            log(`Failed to list packages: ${toLog(err)}`)
             return []
         }
-
-        const pkgs: Package[] = []
-
-        for (const obj of respObj.packages) {
-            const pkgObj = obj as Package
-
-            if (pkgObj.name === undefined || pkgObj.exports === undefined || pkgObj.nicknames === undefined) {
-                continue
-            }
-
-            if (pkgObj.nicknames === undefined || pkgObj.nicknames === null) {
-                pkgObj.nicknames = []
-            }
-
-            pkgs.push(pkgObj)
-        }
-
-        return pkgs
     }
 
     killThread = async (thread: Thread): Promise<void> => {
@@ -387,30 +389,36 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     listThreads = async (): Promise<Thread[]> => {
-        const resp = await this.client?.sendRequest('$/alive/listThreads')
-        const respObj = resp as { threads: Array<Thread> }
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listThreads')
 
-        if (typeof respObj !== 'object' || respObj.threads === undefined || !Array.isArray(respObj.threads)) {
-            return []
-        }
-
-        const threads: Thread[] = []
-
-        for (const item of respObj.threads) {
-            const itemObj = item as Thread
-
-            if (itemObj.id === undefined || itemObj.name === undefined) {
-                continue
+            if (!isObject(resp) || !Array.isArray(resp.threads)) {
+                return []
             }
 
-            threads.push(itemObj)
-        }
+            const threads: Thread[] = []
 
-        return threads
+            for (const item of resp.threads) {
+                if (!isThread(item)) {
+                    continue
+                }
+
+                threads.push(item)
+            }
+
+            return threads
+        } catch (err) {
+            log(`Failed to list threads: ${toLog(err)}`)
+            return []
+        }
     }
 
     loadAsdfSystem = async (name: string): Promise<CompileFileResp | undefined> => {
-        return await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
+        try {
+            return await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
+        } catch (err) {
+            log(`Failed to load ASDF system: ${toLog(err)}`)
+        }
     }
 
     loadFile = async (path: string): Promise<void> => {
