@@ -716,4 +716,34 @@ describe('LSP tests', () => {
             })
         })
     })
+
+    describe('killThread', () => {
+        it('Success', async () => {
+            let reqMethod: string = ''
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn((method: string) => {
+                    reqMethod = method
+                }),
+            })
+
+            await lsp.killThread({ id: 10, name: 'foo' })
+            expect(reqMethod).toBe('$/alive/killThread')
+        })
+
+        it('Failure', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => {
+                    throw new Error('Failed, as requested')
+                }),
+            })
+
+            await lsp.killThread({ id: 10, name: 'foo' })
+        })
+
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            await lsp.killThread({ id: 10, name: 'foo' })
+        })
+    })
 })

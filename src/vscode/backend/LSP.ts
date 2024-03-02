@@ -385,7 +385,11 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     killThread = async (thread: Thread): Promise<void> => {
-        await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
+        try {
+            await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
+        } catch (err) {
+            log(`Failed to kill thread: ${toLog(err)}`)
+        }
     }
 
     listThreads = async (): Promise<Thread[]> => {
