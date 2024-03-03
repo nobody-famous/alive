@@ -824,19 +824,17 @@ describe('LSP tests', () => {
             expect(lsp.emit).toHaveBeenCalled()
         }
 
-        describe('inspect', () => {
-            it('Success', async () => {
-                await successTest((lsp) => lsp.inspect('Some text', 'Some package'))
-                await successTest((lsp) => lsp.inspectMacro('Some text', 'Some package'))
-                await successTest((lsp) => lsp.inspectSymbol({ name: 'foo', package: 'bar' }))
-            })
+        it('Success', async () => {
+            await successTest((lsp) => lsp.inspect('Some text', 'Some package'))
+            await successTest((lsp) => lsp.inspectMacro('Some text', 'Some package'))
+            await successTest((lsp) => lsp.inspectSymbol({ name: 'foo', package: 'bar' }))
+        })
 
-            it('Network error', async () => {
-                await networkErrorTest(
-                    (lsp) => lsp.inspect('Some text', 'Some package'),
-                    (resp) => expect(resp).toBeUndefined()
-                )
-            })
+        it('Network error', async () => {
+            await networkErrorTest(
+                (lsp) => lsp.inspect('Some text', 'Some package'),
+                (resp) => expect(resp).toBeUndefined()
+            )
         })
     })
 })
