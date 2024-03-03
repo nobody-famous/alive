@@ -251,7 +251,7 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     inspectSymbol = async (symbol: LispSymbol): Promise<void> => {
-        await this.doInspect('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package }, (resp) => ({
+        return this.doInspect('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package }, (resp) => ({
             id: resp.id,
             resultType: resp.resultType,
             result: resp.result,
@@ -261,7 +261,7 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     inspectMacro = async (text: string, pkgName: string): Promise<void> => {
-        await this.doInspect('$/alive/inspectMacro', { text, package: pkgName }, (resp) => ({
+        return this.doInspect('$/alive/inspectMacro', { text, package: pkgName }, (resp) => ({
             id: resp.id,
             resultType: resp.resultType,
             result: resp.result,
@@ -271,7 +271,7 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     inspect = async (text: string, pkgName: string): Promise<void> => {
-        this.doInspect('$/alive/inspect', { text, package: pkgName }, (resp) => ({
+        return this.doInspect('$/alive/inspect', { text, package: pkgName }, (resp) => ({
             id: resp.id,
             resultType: resp.resultType,
             result: resp.result,

@@ -812,4 +812,31 @@ describe('LSP tests', () => {
             expect(lsp.emit).toHaveBeenCalledTimes(1)
         })
     })
+
+    describe('doInspect', () => {
+        const successTest = async (fn: (lsp: LSP) => Promise<void>) => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ id: 10, resultType: 'foo', result: {} })) })
+
+            utilsMock.parseToInt.mockImplementationOnce((num: unknown) => num)
+            lsp.emit = jest.fn()
+            await fn(lsp)
+
+            expect(lsp.emit).toHaveBeenCalled()
+        }
+
+        describe('inspect', () => {
+            it('Success', async () => {
+                await successTest((lsp) => lsp.inspect('Some text', 'Some package'))
+                await successTest((lsp) => lsp.inspectMacro('Some text', 'Some package'))
+                await successTest((lsp) => lsp.inspectSymbol({ name: 'foo', package: 'bar' }))
+            })
+
+            it('Network error', async () => {
+                await networkErrorTest(
+                    (lsp) => lsp.inspect('Some text', 'Some package'),
+                    (resp) => expect(resp).toBeUndefined()
+                )
+            })
+        })
+    })
 })
