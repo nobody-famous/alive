@@ -1,3 +1,4 @@
+import { InspectInfo } from '../../Types'
 import { LSP } from '../LSP'
 
 const nodeMock = jest.requireMock('vscode-languageclient/node')
@@ -833,6 +834,30 @@ describe('LSP tests', () => {
         it('Network error', async () => {
             await networkErrorTest(
                 (lsp) => lsp.inspect('Some text', 'Some package'),
+                (resp) => expect(resp).toBeUndefined()
+            )
+        })
+    })
+
+    describe('doInspectMacro', () => {
+        const successTest = async (fn: (lsp: LSP, info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => Promise<void>) => {
+            const info = { text: 'Some text', package: 'Some package', result: {} }
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ text: 'Result text' })) })
+
+            lsp.emit = jest.fn()
+            await fn(lsp, info)
+
+            expect(lsp.emit).toHaveBeenCalledWith('inspectUpdate', Object.assign({}, info, { result: 'Result text' }))
+        }
+
+        it('Success', async () => {
+            await successTest((lsp: LSP, info) => lsp.inspectMacroInc(info))
+            await successTest((lsp: LSP, info) => lsp.inspectRefreshMacro(info))
+        })
+
+        it('Network error', async () => {
+            await networkErrorTest(
+                (lsp) => lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result: [] }),
                 (resp) => expect(resp).toBeUndefined()
             )
         })

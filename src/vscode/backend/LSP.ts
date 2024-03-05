@@ -195,27 +195,21 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    doInspectMacro = async (text: string, info: InspectInfo) => {
-        try {
-            const resp = await this.doMacroExpand('$/alive/macroexpand1', text, info.package)
+    doInspectMacro = async (text: string, info: Pick<InspectInfo, 'package' | 'result'>) => {
+        const resp = await this.doMacroExpand('$/alive/macroexpand1', text, info.package)
 
-            if (typeof resp === 'string') {
-                const newInfo = Object.assign({}, info)
-
-                newInfo.result = resp
-
-                this.emit('inspectUpdate', newInfo)
-            }
-        } catch (err) {
-            this.handleError(err)
+        if (typeof resp !== 'string') {
+            return
         }
+
+        this.emit('inspectUpdate', Object.assign({}, info, { result: resp }))
     }
 
-    inspectRefreshMacro = async (info: InspectInfo) => {
+    inspectRefreshMacro = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
         await this.doInspectMacro(info.text, info)
     }
 
-    inspectMacroInc = async (info: InspectInfo) => {
+    inspectMacroInc = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
         const oldResult = typeof info.result === 'string' ? info.result : info.text
         await this.doInspectMacro(oldResult, info)
     }
