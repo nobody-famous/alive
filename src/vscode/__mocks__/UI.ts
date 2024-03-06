@@ -21,7 +21,7 @@ export const setReplInput = jest.fn()
 export const setReplPackage = jest.fn()
 export const updateInspector = jest.fn()
 
-export const UI = jest.fn().mockImplementation(() => ({
+export const UI = jest.fn(() => ({
     on,
     addReplText,
     clearReplHistory,

@@ -181,7 +181,7 @@ export class LSP extends EventEmitter implements LSPEvents {
     inspectRefresh = async (info: InspectInfo) => {
         try {
             if (info.resultType === 'macro') {
-                this.inspectRefreshMacro(info)
+                await this.inspectRefreshMacro(info)
                 return
             }
 
@@ -198,7 +198,7 @@ export class LSP extends EventEmitter implements LSPEvents {
     doInspectMacro = async (text: string, info: Pick<InspectInfo, 'package' | 'result'>) => {
         const resp = await this.doMacroExpand('$/alive/macroexpand1', text, info.package)
 
-        if (typeof resp !== 'string') {
+        if (!isString(resp)) {
             return
         }
 
