@@ -886,11 +886,12 @@ describe('LSP tests', () => {
         it('Invalid response', async () => {
             const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({})) })
 
+            guardsMock.isString.mockImplementationOnce(() => true)
             guardsMock.isObject.mockImplementationOnce(() => false)
             guardsMock.isString.mockImplementationOnce(() => false)
 
             lsp.emit = jest.fn()
-            await lsp.doInspectMacro('Some text', { package: 'Some package', result: {} })
+            await lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result: {} })
 
             expect(lsp.emit).not.toHaveBeenCalled()
         })
@@ -936,6 +937,8 @@ describe('LSP tests', () => {
             const { lsp } = await doConnect({ sendRequest: jest.fn(() => 'foo') })
 
             guardsMock.isInspectResult.mockImplementationOnce(() => false)
+            guardsMock.isString.mockImplementationOnce(() => false)
+
             lsp.emit = jest.fn()
             await lsp.inspectRefresh(fakeInfo)
 

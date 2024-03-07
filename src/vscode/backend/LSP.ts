@@ -113,6 +113,14 @@ export class LSP extends EventEmitter implements LSPEvents {
         })
     }
 
+    private emitRefresh() {
+        this.emit('refreshPackages')
+        this.emit('refreshAsdfSystems')
+        this.emit('refreshThreads')
+        this.emit('refreshInspectors')
+        this.emit('refreshDiagnostics')
+    }
+
     private parseDebugInfo = (params: unknown): DebugInfo | undefined => {
         if (typeof params !== 'object' || params === null) {
             return
@@ -178,16 +186,18 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
+    private doInspectMacro = async (text: string, info: Pick<InspectInfo, 'package' | 'result'>) => {
+        return await this.doMacroExpand('$/alive/macroexpand1', text, info.package)
+    }
+
     inspectRefresh = async (info: InspectInfo) => {
         try {
-            if (info.resultType === 'macro') {
-                await this.inspectRefreshMacro(info)
-                return
-            }
+            const resp =
+                info.resultType === 'macro'
+                    ? await this.doInspectMacro(info.text, info)
+                    : await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
 
-            const resp = await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
-
-            if (isInspectResult(resp)) {
+            if (isInspectResult(resp) || isString(resp)) {
                 this.emit('inspectUpdate', resp)
             }
         } catch (err) {
@@ -195,31 +205,21 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    doInspectMacro = async (text: string, info: Pick<InspectInfo, 'package' | 'result'>) => {
-        const resp = await this.doMacroExpand('$/alive/macroexpand1', text, info.package)
-
-        if (!isString(resp)) {
-            return
-        }
-
-        this.emit('inspectUpdate', Object.assign({}, info, { result: resp }))
-    }
-
     inspectRefreshMacro = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
-        await this.doInspectMacro(info.text, info)
+        const resp = await this.doInspectMacro(info.text, info)
+
+        if (isString(resp)) {
+            this.emit('inspectUpdate', Object.assign({}, info, { result: resp }))
+        }
     }
 
     inspectMacroInc = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
-        const oldResult = typeof info.result === 'string' ? info.result : info.text
-        await this.doInspectMacro(oldResult, info)
-    }
+        const oldResult = isString(info.result) ? info.result : info.text
+        const resp = await this.doInspectMacro(oldResult, info)
 
-    private emitRefresh() {
-        this.emit('refreshPackages')
-        this.emit('refreshAsdfSystems')
-        this.emit('refreshThreads')
-        this.emit('refreshInspectors')
-        this.emit('refreshDiagnostics')
+        if (isString(resp)) {
+            this.emit('inspectUpdate', Object.assign({}, info, { result: resp }))
+        }
     }
 
     private doInspect = async (method: string, reqObj: unknown, buildInfoFn: (resp: InspectResult) => InspectInfo) => {
