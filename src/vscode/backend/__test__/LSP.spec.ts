@@ -656,14 +656,12 @@ describe('LSP tests', () => {
             expect(await fn(lsp)).toMatchObject([])
         }
 
-        const listTest = async <T>(respData: unknown, expLength: number, fn: (lsp: LSP) => Promise<T[]>) => {
+        const listTest = async <T>(respData: unknown, fn: (lsp: LSP) => Promise<T[]>, validate: (result: T[]) => void) => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => respData),
             })
 
-            const threads = await fn(lsp)
-
-            expect(threads.length).toBe(expLength)
+            validate(await fn(lsp))
         }
 
         describe('listThreads', () => {
@@ -679,13 +677,17 @@ describe('LSP tests', () => {
                             { id: 10, name: 'bar' },
                         ],
                     },
-                    2,
-                    (lsp) => lsp.listThreads()
+                    (lsp) => lsp.listThreads(),
+                    (result) => expect(result.length).toBe(2)
                 )
             })
 
             it('Invalid data', async () => {
-                await listTest([{ id: 5, name: 'foo' }], 0, (lsp) => lsp.listThreads())
+                await listTest(
+                    [{ id: 5, name: 'foo' }],
+                    (lsp) => lsp.listThreads(),
+                    (result) => expect(result.length).toBe(0)
+                )
             })
 
             it('No client', async () => {
@@ -713,18 +715,26 @@ describe('LSP tests', () => {
                 await listTest(
                     {
                         packages: [
-                            { name: 'foo', exports: [], nicknames: [] },
+                            { name: 'foo', exports: null, nicknames: ['a', 'b'] },
                             { name: {}, exports: [], nicknames: [] },
-                            { name: 'bar', exports: [], nicknames: [] },
+                            { name: 'bar', exports: ['a', 'b'], nicknames: null },
                         ],
                     },
-                    2,
-                    (lsp) => lsp.listPackages()
+                    (lsp) => lsp.listPackages(),
+                    (result) => {
+                        expect(result.length).toBe(2)
+                        expect(result[0].exports).toMatchObject([])
+                        expect(result[1].nicknames).toMatchObject([])
+                    }
                 )
             })
 
             it('Invalid data', async () => {
-                await listTest([{ id: 5, name: 'foo' }], 0, (lsp) => lsp.listPackages())
+                await listTest(
+                    [{ id: 5, name: 'foo' }],
+                    (lsp) => lsp.listPackages(),
+                    (result) => expect(result.length).toBe(0)
+                )
             })
 
             it('No client', async () => {
@@ -750,13 +760,17 @@ describe('LSP tests', () => {
                     {
                         systems: ['foo', {}, 'bar'],
                     },
-                    2,
-                    (lsp) => lsp.listAsdfSystems()
+                    (lsp) => lsp.listAsdfSystems(),
+                    (result) => expect(result.length).toBe(2)
                 )
             })
 
             it('Invalid data', async () => {
-                await listTest([{ id: 5, name: 'foo' }], 0, (lsp) => lsp.listAsdfSystems())
+                await listTest(
+                    [{ id: 5, name: 'foo' }],
+                    (lsp) => lsp.listAsdfSystems(),
+                    (result) => expect(result.length).toBe(0)
+                )
             })
 
             it('No client', async () => {

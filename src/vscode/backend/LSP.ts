@@ -324,6 +324,9 @@ export class LSP extends EventEmitter implements LSPEvents {
             const pkgs: Package[] = []
 
             for (const item of resp.packages) {
+                item.exports = item.exports ?? []
+                item.nicknames = item.nicknames ?? []
+
                 if (!isPackage(item)) {
                     continue
                 }
