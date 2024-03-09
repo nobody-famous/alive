@@ -157,7 +157,11 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     inspectClosed = async (info: InspectInfo) => {
-        await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
+        try {
+            await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
+        } catch (err) {
+            this.handleError(err)
+        }
     }
 
     private handleError = (err: unknown) => {
