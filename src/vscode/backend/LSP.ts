@@ -122,38 +122,31 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     private parseDebugInfo = (params: unknown): DebugInfo | undefined => {
-        if (typeof params !== 'object' || params === null) {
+        if (
+            !isObject(params) ||
+            !isString(params.message) ||
+            !Array.isArray(params.restarts) ||
+            !Array.isArray(params.stackTrace)
+        ) {
             return
         }
 
-        const paramsObj = params as { [index: string]: unknown }
-
-        if (typeof paramsObj.message !== 'string' || !Array.isArray(paramsObj.restarts) || !Array.isArray(paramsObj.stackTrace)) {
-            return
-        }
-
-        const isRestarts = paramsObj.restarts.reduce((acc, item) => acc && isRestartInfo(item))
-        const isStack = isStackTrace(paramsObj.stackTrace)
+        const isRestarts = params.restarts.every(isRestartInfo)
+        const isStack = isStackTrace(params.stackTrace)
 
         return {
-            message: paramsObj.message,
-            restarts: isRestarts ? paramsObj.restarts : [],
-            stackTrace: isStack ? paramsObj.stackTrace : [],
+            message: params.message,
+            restarts: isRestarts ? params.restarts : [],
+            stackTrace: isStack ? params.stackTrace : [],
         }
     }
 
     private sendOutput = (params: unknown) => {
-        if (typeof params !== 'object' || params === null) {
+        if (!isObject(params) || !isString(params.data)) {
             throw new Error('Invalid output message')
         }
 
-        const paramsObj = params as { [index: string]: unknown }
-
-        if (typeof paramsObj.data !== 'string') {
-            throw new Error('Invalid output message')
-        }
-
-        this.emit('output', paramsObj.data)
+        this.emit('output', params.data)
     }
 
     inspectClosed = async (info: InspectInfo) => {
