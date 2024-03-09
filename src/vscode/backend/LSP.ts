@@ -178,6 +178,7 @@ export class LSP extends EventEmitter implements LSPEvents {
                 }
 
                 this.emit('inspectResult', newInfo)
+                return
             }
 
             await this.inspectRefresh(info)

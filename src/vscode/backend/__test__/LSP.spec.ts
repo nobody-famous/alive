@@ -966,4 +966,40 @@ describe('LSP tests', () => {
             )
         })
     })
+
+    describe('inspectEval', () => {
+        const fakeInfo = {
+            id: 5,
+            resultType: 'foo',
+            text: 'Some text',
+            package: 'Some package',
+            result: [],
+        }
+
+        it('Success', async () => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ id: 10 })) })
+
+            lsp.emit = jest.fn()
+            await lsp.inspectEval(fakeInfo, 'Some eval text')
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+
+        it('Success, invalid response', async () => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ id: 10 })) })
+
+            guardsMock.isInspectResult.mockImplementationOnce(() => false)
+            lsp.emit = jest.fn()
+            await lsp.inspectEval(fakeInfo, 'Some eval text')
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+
+        it('Network error', async () => {
+            await networkErrorTest(
+                (lsp) => lsp.inspectEval(fakeInfo, 'Some eval text'),
+                (resp) => expect(resp).toBeUndefined()
+            )
+        })
+    })
 })
