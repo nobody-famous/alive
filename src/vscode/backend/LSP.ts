@@ -143,9 +143,9 @@ export class LSP extends EventEmitter implements LSPEvents {
 
     private sendOutput = (params: unknown) => {
         if (!isObject(params) || !isString(params.data)) {
-            throw new Error('Invalid output message')
+            return
         }
-
+        
         this.emit('output', params.data)
     }
 

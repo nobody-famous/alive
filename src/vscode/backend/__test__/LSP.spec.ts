@@ -1,3 +1,4 @@
+import { getCallback } from '../../../../TestHelpers'
 import { InspectInfo } from '../../Types'
 import { LSP } from '../LSP'
 
@@ -67,6 +68,52 @@ describe('LSP tests', () => {
                     }),
                 })
             }).rejects.toThrow()
+        })
+    })
+
+    describe('connect callbacks', () => {
+        const getClientFunc = async (name: string) => {
+            const lsp = new LSP({ hoverText: '' })
+            const fakeClient = {
+                onNotification: jest.fn(() => console.log('MOCK CALLED')),
+                onReady: jest.fn(),
+                onRequest: jest.fn(),
+                start: jest.fn(),
+            }
+
+            nodeMock.LanguageClient.mockImplementationOnce(() => fakeClient)
+
+            lsp.emit = jest.fn()
+            const cb = await getCallback(fakeClient.onNotification, 3, () => lsp.connect({ host: 'foo', port: 1234 }), name)
+
+            return { lsp, cb }
+        }
+
+        const testStream = async (name: string) => {
+            const { lsp, cb } = await getClientFunc(name)
+
+            guardsMock.isObject.mockImplementationOnce(() => false)
+            cb?.({})
+            expect(lsp.emit).not.toHaveBeenCalled()
+
+            guardsMock.isString.mockImplementationOnce(() => false)
+            cb?.({})
+            expect(lsp.emit).not.toHaveBeenCalled()
+
+            cb?.({ data: 'foo' })
+            expect(lsp.emit).toHaveBeenCalledWith('output', 'foo')
+        }
+
+        it('streams', async () => {
+            await testStream('$/alive/stderr')
+            await testStream('$/alive/stdout')
+        })
+
+        it('refresh', async () => {
+            const { lsp, cb } = await getClientFunc('$/alive/refresh')
+
+            cb?.()
+            expect(lsp.emit).toHaveBeenCalledTimes(5)
         })
     })
 
