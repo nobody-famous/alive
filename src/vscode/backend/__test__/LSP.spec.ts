@@ -1,4 +1,4 @@
-import { getCallback } from '../../../../TestHelpers'
+import { getAllCallbacks } from '../../../../TestHelpers'
 import { InspectInfo } from '../../Types'
 import { LSP } from '../LSP'
 
@@ -72,35 +72,41 @@ describe('LSP tests', () => {
     })
 
     describe('connect callbacks', () => {
-        const getClientFunc = async (name: string) => {
+        const getClientFuncs = async () => {
             const lsp = new LSP({ hoverText: '' })
             const fakeClient = {
-                onNotification: jest.fn(() => console.log('MOCK CALLED')),
+                onNotification: jest.fn(),
                 onReady: jest.fn(),
                 onRequest: jest.fn(),
                 start: jest.fn(),
             }
+            const fakeHostPort = { host: 'foo', port: 1234 }
 
+            nodeMock.LanguageClient.mockImplementationOnce(() => fakeClient)
             nodeMock.LanguageClient.mockImplementationOnce(() => fakeClient)
 
             lsp.emit = jest.fn()
-            const cb = await getCallback(fakeClient.onNotification, 3, () => lsp.connect({ host: 'foo', port: 1234 }), name)
 
-            return { lsp, cb }
+            const funcMap = {
+                notification: await getAllCallbacks(fakeClient.onNotification, 3, () => lsp.connect(fakeHostPort)),
+                request: await getAllCallbacks(fakeClient.onRequest, 2, async () => lsp.connect(fakeHostPort)),
+            }
+
+            return { lsp, funcMap }
         }
 
         const testStream = async (name: string) => {
-            const { lsp, cb } = await getClientFunc(name)
+            const { lsp, funcMap } = await getClientFuncs()
 
             guardsMock.isObject.mockImplementationOnce(() => false)
-            cb?.({})
+            funcMap.notification[name]?.({})
             expect(lsp.emit).not.toHaveBeenCalled()
 
             guardsMock.isString.mockImplementationOnce(() => false)
-            cb?.({})
+            funcMap.notification[name]?.({})
             expect(lsp.emit).not.toHaveBeenCalled()
 
-            cb?.({ data: 'foo' })
+            funcMap.notification[name]?.({ data: 'foo' })
             expect(lsp.emit).toHaveBeenCalledWith('output', 'foo')
         }
 
@@ -110,10 +116,22 @@ describe('LSP tests', () => {
         })
 
         it('refresh', async () => {
-            const { lsp, cb } = await getClientFunc('$/alive/refresh')
+            const { lsp, funcMap } = await getClientFuncs()
 
-            cb?.()
+            funcMap.notification['$/alive/refresh']?.()
             expect(lsp.emit).toHaveBeenCalledTimes(5)
+        })
+
+        it('userInput', async () => {
+            const { lsp, funcMap } = await getClientFuncs()
+
+            lsp.emit = jest.fn().mockImplementation((name: string, fn: (input: string) => void) => {
+                fn('Some input')
+            })
+
+            const resp = await funcMap.request['$/alive/userInput']?.()
+
+            expect(resp).toMatchObject({ text: 'Some input' })
         })
     })
 

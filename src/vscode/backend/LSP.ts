@@ -145,7 +145,7 @@ export class LSP extends EventEmitter implements LSPEvents {
         if (!isObject(params) || !isString(params.data)) {
             return
         }
-        
+
         this.emit('output', params.data)
     }
 
