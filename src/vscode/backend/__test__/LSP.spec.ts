@@ -1,5 +1,5 @@
 import { getAllCallbacks } from '../../../../TestHelpers'
-import { InspectInfo } from '../../Types'
+import { DebugInfo, InspectInfo } from '../../Types'
 import { LSP } from '../LSP'
 
 const nodeMock = jest.requireMock('vscode-languageclient/node')
@@ -132,6 +132,25 @@ describe('LSP tests', () => {
             const resp = await funcMap.request['$/alive/userInput']?.()
 
             expect(resp).toMatchObject({ text: 'Some input' })
+        })
+
+        describe('debugger', () => {
+            it('success', async () => {
+                const { lsp, funcMap } = await getClientFuncs()
+
+                lsp.emit = jest.fn().mockImplementation((name: string, info: DebugInfo, fn: (index: number) => void) => {
+                    fn(5)
+                })
+
+                expect(await funcMap.request['$/alive/debugger']({ restarts: [], stackTrace: [] })).toMatchObject({ index: 5 })
+            })
+
+            it('debug info not object', async () => {
+                const { funcMap } = await getClientFuncs()
+
+                guardsMock.isObject.mockImplementationOnce(() => false)
+                expect(await funcMap.request['$/alive/debugger']()).toBeUndefined()
+            })
         })
     })
 

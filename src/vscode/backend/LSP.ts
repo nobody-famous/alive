@@ -131,13 +131,13 @@ export class LSP extends EventEmitter implements LSPEvents {
             return
         }
 
-        const isRestarts = params.restarts.every(isRestartInfo)
-        const isStack = isStackTrace(params.stackTrace)
+        const hasRestarts = params.restarts.every(isRestartInfo)
+        const hasStack = isStackTrace(params.stackTrace)
 
         return {
             message: params.message,
-            restarts: isRestarts ? params.restarts : [],
-            stackTrace: isStack ? params.stackTrace : [],
+            restarts: hasRestarts ? params.restarts : [],
+            stackTrace: hasStack ? params.stackTrace : [],
         }
     }
 

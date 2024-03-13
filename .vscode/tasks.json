@@ -35,7 +35,7 @@
                 "jest",
                 "src/vscode/backend/__test__/LSP.spec.ts",
                 "-t",
-                "userInput"
+                "debugger"
             ],
             "problemMatcher": [
                 "$tsc"
