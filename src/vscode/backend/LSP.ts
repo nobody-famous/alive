@@ -163,7 +163,11 @@ export class LSP extends EventEmitter implements LSPEvents {
 
     inspectEval = async (info: InspectInfo, text: string) => {
         try {
-            const resp = await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
+            if (this.client === undefined) {
+                return
+            }
+
+            const resp = await this.client.sendRequest('$/alive/inspectEval', { id: info.id, text })
 
             if (isInspectResult(resp) && resp.id !== info.id) {
                 const newInfo: InspectInfo = {
@@ -457,23 +461,34 @@ export class LSP extends EventEmitter implements LSPEvents {
         return this.client !== undefined
     }
 
+    private doGetInfo = async (
+        getRange: () => Promise<vscode.Range | undefined>,
+        getTextFn: (range: vscode.Range) => string,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+    ) => {
+        const range = selection.isEmpty ? await getRange() : new vscode.Range(selection.start, selection.end)
+
+        return {
+            range,
+            text: range ? getTextFn(range) : undefined,
+            pkg: range ? await this.getPackage(uri, range.start) : undefined,
+        }
+    }
+
     getEvalInfo = async (
         getTextFn: (range: vscode.Range) => string,
         uri: string,
         selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
     ): Promise<EvalInfo | undefined> => {
-        const range = selection.isEmpty
-            ? await this.getTopExprRange(uri, selection)
-            : new vscode.Range(selection.start, selection.end)
+        const { text, pkg } = await this.doGetInfo(
+            async () => await this.getTopExprRange(uri, selection),
+            getTextFn,
+            uri,
+            selection
+        )
 
-        if (range === undefined) {
-            return
-        }
-
-        const text = getTextFn(range)
-        const pkg = await this.getPackage(uri, range.start)
-
-        return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
+        return isString(text) && isString(pkg) ? { text, package: pkg } : undefined
     }
 
     private doMacroExpand = async (method: string, text: string, pkgName: string) => {
@@ -503,18 +518,14 @@ export class LSP extends EventEmitter implements LSPEvents {
         uri: string,
         selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
     ): Promise<MacroInfo | undefined> => {
-        const range = selection.isEmpty
-            ? await this.getSurroundingExprRange(uri, selection)
-            : new vscode.Range(selection.start, selection.end)
+        const { range, text, pkg } = await this.doGetInfo(
+            async () => await this.getSurroundingExprRange(uri, selection),
+            getTextFn,
+            uri,
+            selection
+        )
 
-        if (range === undefined) {
-            return
-        }
-
-        const text = getTextFn(range)
-        const pkg = await this.getPackage(uri, range.start)
-
-        return text !== undefined && pkg !== undefined ? { range, text, package: pkg } : undefined
+        return range !== undefined && isString(text) && isString(pkg) ? { range, text, package: pkg } : undefined
     }
 
     getPackage = async (uri: string, pos: vscode.Position): Promise<string | undefined> => {
@@ -540,7 +551,7 @@ export class LSP extends EventEmitter implements LSPEvents {
                 return
             }
 
-            await this.client?.sendRequest('$/alive/removePackage', {
+            await this.client.sendRequest('$/alive/removePackage', {
                 name,
             })
 

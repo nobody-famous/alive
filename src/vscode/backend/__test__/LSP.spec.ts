@@ -299,6 +299,12 @@ describe('LSP tests', () => {
                 false
             )
         })
+
+        it('Not connected', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            expect(await lsp.getExprRange('bar', 'foo', fakeSelection)).toBeUndefined()
+        })
     })
 
     const runRemoveTest = async (fn: (lsp: LSP) => Promise<void>, expCalled: boolean, fns?: Record<string, jest.Mock>) => {
@@ -463,6 +469,24 @@ describe('LSP tests', () => {
 
             expect(info).toBeUndefined()
         })
+
+        it('Invalid package', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => ({ package: 5 })),
+            })
+
+            guardsMock.isString.mockImplementationOnce(() => true)
+            guardsMock.isString.mockImplementationOnce(() => false)
+
+            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+                active: new vscodeMock.Position(),
+                start: new vscodeMock.Position(),
+                end: new vscodeMock.Position(),
+                isEmpty: false,
+            })
+
+            expect(info).toBeUndefined()
+        })
     })
 
     describe('macroexpand', () => {
@@ -501,6 +525,12 @@ describe('LSP tests', () => {
                 { text: 10 },
                 (macro) => expect(macro).toBeUndefined()
             )
+        })
+
+        it('Not connected', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            expect(await lsp.macroexpand('Some text', 'Some package')).toBeUndefined()
         })
 
         it('Failure', async () => {
@@ -547,6 +577,7 @@ describe('LSP tests', () => {
 
             const { lsp } = await doConnect()
 
+            guardsMock.isString.mockImplementationOnce(() => false)
             expect(await lsp.getEvalInfo(() => 'Some text', 'uri', fakeSelection)).toBeUndefined()
         })
     })
@@ -945,7 +976,7 @@ describe('LSP tests', () => {
         })
     })
 
-    describe('inspext', () => {
+    describe('inspect', () => {
         const fakeInfo = {
             id: 5,
             resultType: 'foo',
@@ -969,6 +1000,16 @@ describe('LSP tests', () => {
                 await successTest((lsp) => lsp.inspect('Some text', 'Some package'))
                 await successTest((lsp) => lsp.inspectMacro('Some text', 'Some package'))
                 await successTest((lsp) => lsp.inspectSymbol({ name: 'foo', package: 'bar' }))
+            })
+
+            it('Not connected', async () => {
+                const lsp = new LSP({ hoverText: '' })
+
+                guardsMock.isInspectResult.mockImplementationOnce(() => false)
+                lsp.emit = jest.fn()
+                await lsp.inspect('Some text', 'Some package')
+
+                expect(lsp.emit).not.toHaveBeenCalled()
             })
 
             it('Network error', async () => {
@@ -998,16 +1039,21 @@ describe('LSP tests', () => {
             })
 
             it('Invalid response', async () => {
-                const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({})) })
+                const runTest = async (firstIsString: boolean, isObjectValue: boolean, secondIsString: boolean) => {
+                    const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({})) })
 
-                guardsMock.isString.mockImplementationOnce(() => true)
-                guardsMock.isObject.mockImplementationOnce(() => false)
-                guardsMock.isString.mockImplementationOnce(() => false)
+                    guardsMock.isString.mockImplementationOnce(() => firstIsString)
+                    guardsMock.isObject.mockImplementationOnce(() => isObjectValue)
+                    guardsMock.isString.mockImplementationOnce(() => secondIsString)
 
-                lsp.emit = jest.fn()
-                await lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result: {} })
+                    lsp.emit = jest.fn()
+                    await lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result: {} })
 
-                expect(lsp.emit).not.toHaveBeenCalled()
+                    expect(lsp.emit).not.toHaveBeenCalled()
+                }
+
+                await runTest(true, false, false)
+                await runTest(false, false, false)
             })
 
             it('Network error', async () => {
@@ -1051,6 +1097,18 @@ describe('LSP tests', () => {
                 expect(lsp.emit).not.toHaveBeenCalled()
             })
 
+            it('Not connected', async () => {
+                const lsp = new LSP({ hoverText: '' })
+
+                guardsMock.isInspectResult.mockImplementationOnce(() => false)
+                guardsMock.isString.mockImplementationOnce(() => false)
+
+                lsp.emit = jest.fn()
+                await lsp.inspectRefresh(fakeInfo)
+
+                expect(lsp.emit).not.toHaveBeenCalled()
+            })
+
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.inspectRefresh(fakeInfo),
@@ -1079,6 +1137,17 @@ describe('LSP tests', () => {
                 expect(lsp.emit).toHaveBeenCalledTimes(1)
             })
 
+            it('Not connected', async () => {
+                const lsp = new LSP({ hoverText: '' })
+
+                guardsMock.isInspectResult.mockImplementationOnce(() => false)
+
+                lsp.emit = jest.fn()
+                await lsp.inspectEval(fakeInfo, 'Some text')
+
+                expect(lsp.emit).not.toHaveBeenCalled()
+            })
+
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.inspectEval(fakeInfo, 'Some eval text'),
@@ -1097,12 +1166,46 @@ describe('LSP tests', () => {
                 expect(lsp.emit).not.toHaveBeenCalled()
             })
 
+            it('Not connected', async () => {
+                const lsp = new LSP({ hoverText: '' })
+
+                lsp.emit = jest.fn()
+                await lsp.inspectClosed(fakeInfo)
+
+                expect(lsp.emit).not.toHaveBeenCalled()
+            })
+
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.inspectClosed(fakeInfo),
                     (resp) => expect(resp).toBeUndefined()
                 )
             })
+        })
+    })
+
+    describe('handleError', () => {
+        const fakeInfo = {
+            id: 5,
+            resultType: 'foo',
+            text: 'Some text',
+            package: 'Some package',
+            result: [],
+        }
+
+        it('', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => {
+                    throw { foo: 'bar' }
+                }),
+            })
+
+            guardsMock.isObject.mockImplementationOnce(() => false)
+
+            lsp.emit = jest.fn()
+            await lsp.inspectClosed(fakeInfo)
+
+            expect(lsp.emit).toHaveBeenCalledWith('output', expect.anything())
         })
     })
 
