@@ -8,6 +8,9 @@ jest.mock('vscode-languageclient/node')
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
 
+const netMock = jest.requireMock('net')
+jest.mock('net')
+
 const utilsMock = jest.requireMock('../../Utils')
 jest.mock('../../Utils')
 
@@ -15,14 +18,16 @@ const guardsMock = jest.requireMock('../../Guards')
 jest.mock('../../Guards')
 
 describe('LSP tests', () => {
+    const createClientMock = () => ({
+        start: jest.fn(),
+        onReady: jest.fn(),
+        onNotification: jest.fn(),
+        onRequest: jest.fn(),
+        sendRequest: jest.fn(),
+    })
+
     const doConnect = async (mockFns?: Record<string, jest.Mock>) => {
-        const clientMock: Record<string, jest.Mock> = {
-            start: jest.fn(),
-            onReady: jest.fn(),
-            onNotification: jest.fn(),
-            onRequest: jest.fn(),
-            sendRequest: jest.fn(),
-        }
+        const clientMock: Record<string, jest.Mock> = createClientMock()
         nodeMock.LanguageClient.mockImplementationOnce(() => clientMock)
 
         for (const name in mockFns) {
@@ -1099,5 +1104,40 @@ describe('LSP tests', () => {
                 )
             })
         })
+    })
+
+    it('Server opts', async () => {
+        const getOptsFn = async () => {
+            const lsp = new LSP({ hoverText: '' })
+            const clientMock = createClientMock()
+            const fns: Record<string, (() => Promise<void> | void) | undefined> = {}
+
+            netMock.connect.mockImplementationOnce((info: unknown, cb: () => void) => {
+                fns.socketCB = cb
+                return {
+                    on: jest.fn((label: string, fn: () => void) => {
+                        fns.errorFn = fn
+                    }),
+                }
+            })
+
+            nodeMock.LanguageClient.mockImplementationOnce((id: string, name: string, fn: () => Promise<void>) => {
+                fns.optsFn = fn
+                return clientMock
+            })
+
+            const task = lsp.connect({ host: 'foo', port: 1234 })
+            const optsTask = fns.optsFn?.()
+
+            fns.socketCB?.()
+            fns.errorFn?.()
+
+            await optsTask
+            await task
+
+            return fns
+        }
+
+        await getOptsFn()
     })
 })
