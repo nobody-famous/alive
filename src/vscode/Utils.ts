@@ -6,7 +6,7 @@ import { promises as fs } from 'fs'
 import { homedir } from 'os'
 import { TextEncoder, format } from 'util'
 import { log, toLog } from '../vscode/Log'
-import { isString } from './Guards'
+import { isFiniteNumber, isObject, isString } from './Guards'
 import { CompileFileNote, CompileFileResp, CompileLocation, ExtensionState } from './Types'
 import { UI } from './UI'
 import { LSP } from './backend/LSP'
@@ -20,13 +20,63 @@ interface VscodeFolder {
 export const COMMON_LISP_ID = 'commonlisp'
 
 export const parseToInt = (data: unknown): number | undefined => {
-    if (typeof data !== 'string' && typeof data !== 'number') {
+    if (!isString(data) && !isFiniteNumber(data)) {
         return
     }
 
     const int = typeof data === 'string' ? Number(data) : data
 
     return Number.isInteger(int) ? int : undefined
+}
+
+export const parsePos = (data: unknown): vscode.Position | undefined => {
+    if (!isObject(data)) {
+        return
+    }
+
+    const line = parseToInt(data.line)
+    const col = parseToInt(data.character)
+
+    if (line === undefined || col === undefined) {
+        return
+    }
+
+    return new vscode.Position(line, col)
+}
+
+export const parseLocation = (filePath: string, data: unknown): CompileLocation | undefined => {
+    if (!isObject(data)) {
+        return
+    }
+
+    const start = parsePos(data.start)
+    const end = parsePos(data.end)
+
+    if (start === undefined || end === undefined) {
+        return
+    }
+
+    return { file: filePath, start, end }
+}
+
+export const parseNote = (filePath: string, data: unknown): CompileFileNote | undefined => {
+    if (!isObject(data)) {
+        return
+    }
+
+    const msg = typeof data.message === 'string' ? data.message : ''
+    const sev = typeof data.severity === 'string' ? data.severity : ''
+    const loc = parseLocation(filePath, data.location)
+
+    if (loc === undefined) {
+        return
+    }
+
+    return {
+        message: msg,
+        severity: sev,
+        location: loc,
+    }
 }
 
 export async function getWorkspaceOrFilePath(): Promise<string> {

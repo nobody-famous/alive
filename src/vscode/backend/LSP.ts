@@ -1,12 +1,13 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
+import { EOL } from 'os'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { isInspectResult, isRestartInfo, isStackTrace } from '../Guards'
+import { isArray, isInspectResult, isObject, isPackage, isRestartInfo, isStackTrace, isString, isThread } from '../Guards'
+import { log, toLog } from '../Log'
 import {
     CompileFileNote,
     CompileFileResp,
-    CompileLocation,
     DebugInfo,
     EvalInfo,
     ExtensionState,
@@ -18,11 +19,7 @@ import {
     Package,
     Thread,
 } from '../Types'
-import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseToInt, strToMarkdown } from '../Utils'
-import { log, toLog } from '../Log'
-import { EOL } from 'os'
-
-type RangeFunction = (editor: vscode.TextEditor) => Promise<vscode.Range | undefined>
+import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseNote, parsePos, strToMarkdown } from '../Utils'
 
 export declare interface LSPEvents {
     on(event: 'refreshPackages', listener: () => void): this
@@ -39,10 +36,10 @@ export declare interface LSPEvents {
 }
 
 export class LSP extends EventEmitter implements LSPEvents {
-    private state: ExtensionState
+    private state: Pick<ExtensionState, 'hoverText'>
     private client: LanguageClient | undefined
 
-    constructor(state: ExtensionState) {
+    constructor(state: Pick<ExtensionState, 'hoverText'>) {
         super()
 
         this.state = state
@@ -116,58 +113,61 @@ export class LSP extends EventEmitter implements LSPEvents {
         })
     }
 
+    private emitRefresh() {
+        this.emit('refreshPackages')
+        this.emit('refreshAsdfSystems')
+        this.emit('refreshThreads')
+        this.emit('refreshInspectors')
+        this.emit('refreshDiagnostics')
+    }
+
     private parseDebugInfo = (params: unknown): DebugInfo | undefined => {
-        if (typeof params !== 'object' || params === null) {
+        if (
+            !isObject(params) ||
+            !isString(params.message) ||
+            !Array.isArray(params.restarts) ||
+            !Array.isArray(params.stackTrace)
+        ) {
             return
         }
 
-        const paramsObj = params as { [index: string]: unknown }
-
-        if (typeof paramsObj.message !== 'string' || !Array.isArray(paramsObj.restarts) || !Array.isArray(paramsObj.stackTrace)) {
-            return
-        }
-
-        const isRestarts = paramsObj.restarts.reduce((acc, item) => acc && isRestartInfo(item))
-        const isStack = isStackTrace(paramsObj.stackTrace)
+        const hasRestarts = params.restarts.every(isRestartInfo)
+        const hasStack = isStackTrace(params.stackTrace)
 
         return {
-            message: paramsObj.message,
-            restarts: isRestarts ? paramsObj.restarts : [],
-            stackTrace: isStack ? paramsObj.stackTrace : [],
+            message: params.message,
+            restarts: hasRestarts ? params.restarts : [],
+            stackTrace: hasStack ? params.stackTrace : [],
         }
     }
 
     private sendOutput = (params: unknown) => {
-        if (typeof params !== 'object' || params === null) {
-            throw new Error('Invalid output message')
+        if (!isObject(params) || !isString(params.data)) {
+            return
         }
 
-        const paramsObj = params as { [index: string]: unknown }
-
-        if (typeof paramsObj.data !== 'string') {
-            throw new Error('Invalid output message')
-        }
-
-        this.emit('output', paramsObj.data)
+        this.emit('output', params.data)
     }
 
     inspectClosed = async (info: InspectInfo) => {
-        await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
+        try {
+            await this.client?.sendRequest('$/alive/inspectClose', { id: info.id })
+        } catch (err) {
+            this.handleError(err)
+        }
     }
 
     private handleError = (err: unknown) => {
-        const errObj = err as { message: string }
-
-        if (errObj.message !== undefined) {
-            this.emit('output', errObj.message)
-        } else {
-            this.emit('output', JSON.stringify(err))
-        }
+        this.emit('output', isObject(err) && isString(err.message) ? err.message : JSON.stringify(err))
     }
 
     inspectEval = async (info: InspectInfo, text: string) => {
         try {
-            const resp = await this.client?.sendRequest('$/alive/inspectEval', { id: info.id, text })
+            if (this.client === undefined) {
+                return
+            }
+
+            const resp = await this.client.sendRequest('$/alive/inspectEval', { id: info.id, text })
 
             if (isInspectResult(resp) && resp.id !== info.id) {
                 const newInfo: InspectInfo = {
@@ -179,6 +179,7 @@ export class LSP extends EventEmitter implements LSPEvents {
                 }
 
                 this.emit('inspectResult', newInfo)
+                return
             }
 
             await this.inspectRefresh(info)
@@ -187,16 +188,18 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
+    private doInspectMacro = async (text: string, info: Pick<InspectInfo, 'package' | 'result'>) => {
+        return await this.doMacroExpand('$/alive/macroexpand1', text, info.package)
+    }
+
     inspectRefresh = async (info: InspectInfo) => {
         try {
-            if (info.resultType === 'macro') {
-                this.inspectRefreshMacro(info)
-                return
-            }
+            const resp =
+                info.resultType === 'macro'
+                    ? await this.doInspectMacro(info.text, info)
+                    : await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
 
-            const resp = await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
-
-            if (isInspectResult(resp)) {
+            if (isInspectResult(resp) || isString(resp)) {
                 this.emit('inspectUpdate', resp)
             }
         } catch (err) {
@@ -204,128 +207,78 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    inspectRefreshMacro = async (info: InspectInfo) => {
+    inspectRefreshMacro = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
+        const resp = await this.doInspectMacro(info.text, info)
+
+        if (isString(resp)) {
+            this.emit('inspectUpdate', Object.assign({}, info, { result: resp }))
+        }
+    }
+
+    inspectMacroInc = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
+        const oldResult = isString(info.result) ? info.result : info.text
+        const resp = await this.doInspectMacro(oldResult, info)
+
+        if (isString(resp)) {
+            this.emit('inspectUpdate', Object.assign({}, info, { result: resp }))
+        }
+    }
+
+    private doInspect = async (method: string, reqObj: unknown, buildInfoFn: (resp: InspectResult) => InspectInfo) => {
         try {
-            const resp = await this.doMacroExpand('$/alive/macroexpand1', info.text, info.package)
+            const resp = await this.client?.sendRequest(method, reqObj)
 
-            if (typeof resp === 'string') {
-                const newInfo = Object.assign({}, info)
+            if (isInspectResult(resp)) {
+                const info: InspectInfo = buildInfoFn(resp)
 
-                newInfo.result = resp
-
-                this.emit('inspectUpdate', newInfo)
+                this.emit('inspectResult', info)
             }
         } catch (err) {
             this.handleError(err)
         }
-    }
-
-    inspectMacroInc = async (info: InspectInfo) => {
-        try {
-            const oldResult = typeof info.result === 'string' ? info.result : info.text
-            const resp = await this.doMacroExpand('$/alive/macroexpand1', oldResult, info.package)
-
-            if (typeof resp === 'string') {
-                const newInfo = Object.assign({}, info)
-
-                newInfo.result = resp
-
-                this.emit('inspectUpdate', newInfo)
-            }
-        } catch (err) {
-            this.handleError(err)
-        }
-    }
-
-    private emitRefresh() {
-        this.emit('refreshPackages')
-        this.emit('refreshAsdfSystems')
-        this.emit('refreshThreads')
-        this.emit('refreshInspectors')
-        this.emit('refreshDiagnostics')
     }
 
     inspectSymbol = async (symbol: LispSymbol): Promise<void> => {
-        try {
-            const resp = await this.client?.sendRequest('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package })
-
-            if (isInspectResult(resp)) {
-                const info: InspectInfo = {
-                    id: resp.id,
-                    resultType: resp.resultType,
-                    result: resp.result,
-                    text: symbol.name,
-                    package: symbol.package,
-                }
-
-                this.emit('inspectResult', info)
-            }
-        } catch (err) {
-            this.handleError(err)
-        }
+        return this.doInspect('$/alive/inspectSymbol', { symbol: symbol.name, package: symbol.package }, (resp) => ({
+            id: resp.id,
+            resultType: resp.resultType,
+            result: resp.result,
+            text: symbol.name,
+            package: symbol.package,
+        }))
     }
 
     inspectMacro = async (text: string, pkgName: string): Promise<void> => {
-        try {
-            const resp = await this.client?.sendRequest('$/alive/inspectMacro', { text, package: pkgName })
-
-            if (isInspectResult(resp)) {
-                const info: InspectInfo = {
-                    id: resp.id,
-                    resultType: resp.resultType,
-                    result: resp.result,
-                    text: text,
-                    package: pkgName,
-                }
-
-                this.emit('inspectResult', info)
-            }
-        } catch (err) {
-            this.handleError(err)
-        }
+        return this.doInspect('$/alive/inspectMacro', { text, package: pkgName }, (resp) => ({
+            id: resp.id,
+            resultType: resp.resultType,
+            result: resp.result,
+            text: text,
+            package: pkgName,
+        }))
     }
 
     inspect = async (text: string, pkgName: string): Promise<void> => {
-        try {
-            const resp = await this.client?.sendRequest('$/alive/inspect', { text, package: pkgName })
-
-            if (isInspectResult(resp)) {
-                const info: InspectInfo = {
-                    id: resp.id,
-                    resultType: resp.resultType,
-                    result: resp.result,
-                    text: text,
-                    package: pkgName,
-                }
-
-                this.emit('inspectResult', info)
-            }
-        } catch (err) {
-            this.handleError(err)
-        }
+        return this.doInspect('$/alive/inspect', { text, package: pkgName }, (resp) => ({
+            id: resp.id,
+            resultType: resp.resultType,
+            result: resp.result,
+            text: text,
+            package: pkgName,
+        }))
     }
 
     doEval = async (text: string, pkgName: string, storeResult?: boolean): Promise<string | undefined> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
-            if (typeof resp !== 'object') {
+            if (!isObject(resp) || !isString(resp.text)) {
                 return
             }
 
-            const resultObj = resp as { text: string }
-
-            if (resultObj.text !== undefined) {
-                return resultObj.text
-            }
+            return resp.text
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            this.handleError(err)
         }
     }
 
@@ -340,123 +293,119 @@ export class LSP extends EventEmitter implements LSPEvents {
     }
 
     listAsdfSystems = async (): Promise<string[]> => {
-        const resp = await this.client?.sendRequest('$/alive/listAsdfSystems')
-        const respObj = resp as { systems: Array<string> }
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listAsdfSystems')
 
-        if (respObj.systems === undefined) {
+            if (!isObject(resp) || !Array.isArray(resp.systems)) {
+                return []
+            }
+
+            const systems: string[] = []
+
+            for (const sys of resp.systems) {
+                if (typeof sys === 'string') {
+                    systems.push(sys)
+                }
+            }
+
+            return systems
+        } catch (err) {
+            log(`Failed to list ASDF systems: ${toLog(err)}`)
             return []
         }
-
-        const systems: string[] = []
-
-        for (const sys of respObj.systems) {
-            if (typeof sys === 'string') {
-                systems.push(sys)
-            }
-        }
-
-        return systems
     }
 
     listPackages = async (): Promise<Package[]> => {
-        const resp = await this.client?.sendRequest('$/alive/listPackages')
-        const respObj = resp as { packages: Array<{ name: string; exports: Array<string> }> }
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listPackages')
 
-        if (respObj.packages === undefined) {
+            if (!isObject(resp) || !Array.isArray(resp.packages)) {
+                return []
+            }
+
+            const pkgs: Package[] = []
+
+            for (const item of resp.packages) {
+                item.exports = item.exports ?? []
+                item.nicknames = item.nicknames ?? []
+
+                if (!isPackage(item)) {
+                    continue
+                }
+
+                pkgs.push(item)
+            }
+
+            return pkgs
+        } catch (err) {
+            log(`Failed to list packages: ${toLog(err)}`)
             return []
         }
-
-        const pkgs: Package[] = []
-
-        for (const obj of respObj.packages) {
-            const pkgObj = obj as Package
-
-            if (pkgObj.name === undefined || pkgObj.exports === undefined || pkgObj.nicknames === undefined) {
-                continue
-            }
-
-            if (pkgObj.nicknames === undefined || pkgObj.nicknames === null) {
-                pkgObj.nicknames = []
-            }
-
-            pkgs.push(pkgObj)
-        }
-
-        return pkgs
     }
 
     killThread = async (thread: Thread): Promise<void> => {
-        await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
+        try {
+            await this.client?.sendRequest('$/alive/killThread', { id: thread.id })
+        } catch (err) {
+            log(`Failed to kill thread: ${toLog(err)}`)
+        }
     }
 
     listThreads = async (): Promise<Thread[]> => {
-        const resp = await this.client?.sendRequest('$/alive/listThreads')
-        const respObj = resp as { threads: Array<Thread> }
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listThreads')
 
-        if (typeof respObj !== 'object' || respObj.threads === undefined || !Array.isArray(respObj.threads)) {
-            return []
-        }
-
-        const threads: Thread[] = []
-
-        for (const item of respObj.threads) {
-            const itemObj = item as Thread
-
-            if (itemObj.id === undefined || itemObj.name === undefined) {
-                continue
+            if (!isObject(resp) || !Array.isArray(resp.threads)) {
+                return []
             }
 
-            threads.push(itemObj)
-        }
+            const threads: Thread[] = []
 
-        return threads
+            for (const item of resp.threads) {
+                if (!isThread(item)) {
+                    continue
+                }
+
+                threads.push(item)
+            }
+
+            return threads
+        } catch (err) {
+            log(`Failed to list threads: ${toLog(err)}`)
+            return []
+        }
     }
 
     loadAsdfSystem = async (name: string): Promise<CompileFileResp | undefined> => {
-        return await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
+        try {
+            return await this.client?.sendRequest('$/alive/loadAsdfSystem', { name })
+        } catch (err) {
+            log(`Failed to load ASDF system: ${toLog(err)}`)
+        }
     }
 
     loadFile = async (path: string): Promise<void> => {
         try {
-            const promise = this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
+            const resp = await this.client?.sendRequest('$/alive/loadFile', { path, showStdout: true, showStderr: true })
 
-            const resp = await promise
-            if (typeof resp !== 'object') {
+            if (!isObject(resp) || !Array.isArray(resp.messages)) {
                 return
             }
 
-            const respObj = resp as { [index: string]: unknown }
-
-            if (!Array.isArray(respObj.messages)) {
-                return
-            }
-
-            for (const msg of respObj.messages) {
-                if (typeof msg !== 'object') {
+            for (const msg of resp.messages) {
+                if (!isObject(msg) || !isString(msg.severity) || !isString(msg.message)) {
                     continue
                 }
 
-                const msgObj = msg as { [index: string]: unknown }
-
-                if (typeof msgObj.severity !== 'string' || typeof msgObj.message !== 'string') {
-                    continue
-                }
-
-                this.emit('output', `${msgObj.severity.toUpperCase()}: ${msgObj.message}`)
+                this.emit('output', `${msg.severity.toUpperCase()}: ${msg.message}`)
             }
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            this.handleError(err)
         }
     }
 
-    textDocumentChanged = (event: vscode.TextDocumentChangeEvent): void => {
-        if (!hasValidLangId(event.document, [COMMON_LISP_ID])) {
+    textDocumentChanged = (doc: Pick<vscode.TextDocument, 'languageId'>): void => {
+        if (!hasValidLangId(doc, [COMMON_LISP_ID])) {
             return
         }
 
@@ -467,133 +416,92 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    editorChanged = (editor?: vscode.TextEditor): void => {
-        if (editor === undefined || !hasValidLangId(editor.document, [COMMON_LISP_ID])) {
-            return
-        }
-
-        if (diagnosticsEnabled()) {
+    editorChanged = (doc: Pick<vscode.TextDocument, 'languageId'>): void => {
+        if (hasValidLangId(doc, [COMMON_LISP_ID]) && diagnosticsEnabled()) {
             this.emit('startCompileTimer')
         }
     }
 
-    compileFile = async (path: string): Promise<void> => {
-        await this.client?.sendRequest('$/alive/compile', { path })
+    private doCompile = async (method: string, path: string): Promise<CompileFileResp> => {
+        try {
+            const resp = await this.client?.sendRequest(method, { path })
+
+            if (!isObject(resp) || !Array.isArray(resp.messages)) {
+                return { notes: [] }
+            }
+
+            const notes: CompileFileNote[] = []
+            const seen: { [index: string]: true } = {}
+
+            for (const item of resp.messages) {
+                const note = parseNote(path, item)
+
+                if (note !== undefined && seen[note.message] === undefined) {
+                    seen[note.message] = true
+                    notes.push(note)
+                }
+            }
+
+            return { notes }
+        } catch (err) {
+            log(`Failed to compile file: ${toLog(err)}`)
+            return { notes: [] }
+        }
     }
 
-    tryCompileFile = async (path: string): Promise<CompileFileResp | undefined> => {
-        const resp = await this.client?.sendRequest('$/alive/tryCompile', { path })
+    compileFile = async (path: string): Promise<CompileFileResp> => {
+        return await this.doCompile('$/alive/compile', path)
+    }
 
-        if (typeof resp !== 'object' || resp === null) {
-            return { notes: [] }
-        }
-
-        const respObj = resp as { [index: string]: unknown }
-
-        if (!Array.isArray(respObj.messages)) {
-            return { notes: [] }
-        }
-
-        const parseLocation = (data: unknown): CompileLocation | undefined => {
-            if (typeof data !== 'object' || data === null) {
-                return
-            }
-
-            const dataObj = data as { [index: string]: unknown }
-            const start = parsePos(dataObj.start)
-            const end = parsePos(dataObj.end)
-
-            if (start === undefined || end === undefined) {
-                return
-            }
-
-            return { file: path, start, end }
-        }
-
-        const parseNote = (data: unknown): CompileFileNote | undefined => {
-            if (typeof data !== 'object' || data === null) {
-                return
-            }
-
-            const dataObj = data as { [index: string]: unknown }
-            const msg = typeof dataObj.message === 'string' ? dataObj.message : ''
-            const sev = typeof dataObj.severity === 'string' ? dataObj.severity : ''
-            const loc = parseLocation(dataObj.location)
-
-            if (loc === undefined) {
-                return
-            }
-
-            return {
-                message: msg,
-                severity: sev,
-                location: loc,
-            }
-        }
-
-        const notes: CompileFileNote[] = []
-        const seen: { [index: string]: true } = {}
-
-        for (const item of respObj.messages) {
-            const note = parseNote(item)
-
-            if (note !== undefined && seen[note.message] === undefined) {
-                seen[note.message] = true
-                notes.push(note)
-            }
-        }
-
-        return { notes }
+    tryCompileFile = async (path: string): Promise<CompileFileResp> => {
+        return await this.doCompile('$/alive/tryCompile', path)
     }
 
     isConnected = (): boolean => {
         return this.client !== undefined
     }
 
-    getTextAndPackage = async (editor: vscode.TextEditor | undefined, rangeFn: RangeFunction): Promise<EvalInfo | undefined> => {
-        if (editor === undefined) {
-            return
+    private doGetInfo = async (
+        getRange: () => Promise<vscode.Range | undefined>,
+        getTextFn: (range: vscode.Range) => string,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+    ) => {
+        const range = selection.isEmpty ? await getRange() : new vscode.Range(selection.start, selection.end)
+
+        return {
+            range,
+            text: range ? getTextFn(range) : undefined,
+            pkg: range ? await this.getPackage(uri, range.start) : undefined,
         }
-
-        const range = editor.selection.isEmpty
-            ? await rangeFn(editor)
-            : new vscode.Range(editor.selection.start, editor.selection.end)
-
-        if (range === undefined) {
-            return
-        }
-
-        const text = editor.document.getText(range)
-        const pkg = await this.getPackage(editor, range.start)
-
-        return text !== undefined && pkg !== undefined ? { text, package: pkg } : undefined
     }
 
-    getEvalInfo = async (editor: vscode.TextEditor | undefined): Promise<EvalInfo | undefined> => {
-        return await this.getTextAndPackage(editor, this.getTopExprRange)
+    getEvalInfo = async (
+        getTextFn: (range: vscode.Range) => string,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+    ): Promise<EvalInfo | undefined> => {
+        const { text, pkg } = await this.doGetInfo(
+            async () => await this.getTopExprRange(uri, selection),
+            getTextFn,
+            uri,
+            selection
+        )
+
+        return isString(text) && isString(pkg) ? { text, package: pkg } : undefined
     }
 
     private doMacroExpand = async (method: string, text: string, pkgName: string) => {
         try {
             const resp = await this.client?.sendRequest(method, { text, package: pkgName })
 
-            if (typeof resp !== 'object') {
+            if (!isObject(resp) || !isString(resp.text)) {
                 return
             }
 
-            const resultObj = resp as { text: string }
-
-            if (resultObj.text !== undefined) {
-                return resultObj.text
-            }
+            return resp.text
         } catch (err) {
-            const errObj = err as { message: string }
-
-            if (errObj.message !== undefined) {
-                this.emit('output', errObj.message)
-            } else {
-                this.emit('output', JSON.stringify(err))
-            }
+            this.handleError(err)
         }
     }
 
@@ -605,117 +513,124 @@ export class LSP extends EventEmitter implements LSPEvents {
         return await this.doMacroExpand('$/alive/macroexpand1', text, pkgName)
     }
 
-    getMacroInfo = async (editor: vscode.TextEditor | undefined): Promise<MacroInfo | undefined> => {
-        if (editor === undefined) {
-            return
-        }
+    getMacroInfo = async (
+        getTextFn: (range?: vscode.Range) => string,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+    ): Promise<MacroInfo | undefined> => {
+        const { range, text, pkg } = await this.doGetInfo(
+            async () => await this.getSurroundingExprRange(uri, selection),
+            getTextFn,
+            uri,
+            selection
+        )
 
-        const range = editor.selection.isEmpty
-            ? await this.getSurroundingExprRange(editor)
-            : new vscode.Range(editor.selection.start, editor.selection.end)
-
-        if (range === undefined) {
-            return
-        }
-
-        const text = editor.document.getText(range)
-        const pkg = await this.getPackage(editor, range.start)
-
-        return text !== undefined && pkg !== undefined ? { range, text, package: pkg } : undefined
+        return range !== undefined && isString(text) && isString(pkg) ? { range, text, package: pkg } : undefined
     }
 
-    getPackage = async (editor: vscode.TextEditor, pos: vscode.Position): Promise<string | undefined> => {
-        const doc = editor.document
-        const resp = await this.client?.sendRequest('$/alive/getPackageForPosition', {
-            textDocument: {
-                uri: doc.uri.toString(),
-            },
-            position: pos,
-        })
+    getPackage = async (uri: string, pos: vscode.Position): Promise<string | undefined> => {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/getPackageForPosition', {
+                textDocument: { uri },
+                position: pos,
+            })
 
-        if (typeof resp !== 'object' || resp === null) {
-            return
+            if (!isObject(resp) || !isString(resp.package)) {
+                return
+            }
+
+            return resp.package
+        } catch (err) {
+            log(`Failed to get package: ${toLog(err)}`)
         }
-
-        const respObj = resp as { package: string }
-
-        return respObj.package
     }
 
     removePackage = async (name: string): Promise<void> => {
-        await this.client?.sendRequest('$/alive/removePackage', {
-            name,
-        })
+        try {
+            if (this.client === undefined) {
+                return
+            }
 
-        this.emit('refreshPackages')
+            await this.client.sendRequest('$/alive/removePackage', {
+                name,
+            })
+
+            this.emit('refreshPackages')
+        } catch (err) {
+            log(`Failed to remove package: ${toLog(err)}`)
+        }
     }
 
     removeExport = async (pkg: string, name: string): Promise<void> => {
-        await this.client?.sendRequest('$/alive/unexportSymbol', {
-            package: pkg,
-            symbol: name,
-        })
+        try {
+            if (this.client === undefined) {
+                return
+            }
 
-        this.emit('refreshPackages')
-    }
+            await this.client.sendRequest('$/alive/unexportSymbol', {
+                package: pkg,
+                symbol: name,
+            })
 
-    getExprRange = async (editor: vscode.TextEditor | undefined, method: string): Promise<vscode.Range | undefined> => {
-        if (editor?.document === undefined) {
-            return
+            this.emit('refreshPackages')
+        } catch (err) {
+            log(`Failed to remove export: ${toLog(err)}`)
         }
+    }
 
-        const doc = editor.document
+    getExprRange = async (
+        method: string,
+        uri: string,
+        selection: Pick<vscode.Selection, 'active'>
+    ): Promise<vscode.Range | undefined> => {
+        try {
+            const resp = await this.client?.sendRequest(method, {
+                textDocument: { uri },
+                position: selection.active,
+            })
 
-        const resp = await this.client?.sendRequest(method, {
-            textDocument: {
-                uri: doc.uri.toString(),
-            },
-            position: editor.selection.active,
-        })
+            if (!isObject(resp)) {
+                return
+            }
 
-        if (typeof resp !== 'object' || resp === null) {
-            return
+            const startPos = parsePos(resp.start)
+            const endPos = parsePos(resp.end)
+
+            if (startPos === undefined || endPos === undefined) {
+                return
+            }
+
+            return new vscode.Range(startPos, endPos)
+        } catch (err) {
+            log(`Failed to get expression range: ${toLog(err)}`)
         }
-
-        const respObj = resp as { [index: string]: unknown }
-        const startPos = parsePos(respObj.start)
-        const endPos = parsePos(respObj.end)
-
-        if (startPos === undefined || endPos === undefined) {
-            return
-        }
-
-        return new vscode.Range(startPos, endPos)
     }
 
-    getSurroundingExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
-        return await this.getExprRange(editor, '$/alive/surroundingFormBounds')
+    getSurroundingExprRange = async (
+        uri: string,
+        selection: Pick<vscode.Selection, 'active'>
+    ): Promise<vscode.Range | undefined> => {
+        return await this.getExprRange('$/alive/surroundingFormBounds', uri, selection)
     }
 
-    getTopExprRange = async (editor: vscode.TextEditor | undefined): Promise<vscode.Range | undefined> => {
-        return await this.getExprRange(editor, '$/alive/topFormBounds')
+    getTopExprRange = async (uri: string, selection: Pick<vscode.Selection, 'active'>): Promise<vscode.Range | undefined> => {
+        return await this.getExprRange('$/alive/topFormBounds', uri, selection)
     }
 
-    getSymbol = async (fileUri: vscode.Uri, pos: vscode.Position): Promise<LispSymbol | undefined> => {
+    getSymbol = async (fileUri: string, pos: vscode.Position): Promise<LispSymbol | undefined> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/symbol', {
                 textDocument: {
-                    uri: fileUri.toString(),
+                    uri: fileUri,
                 },
                 position: pos,
             })
 
-            if (typeof resp !== 'object') {
+            if (!isObject(resp) || !isArray(resp.value, isString) || resp.value.length !== 2) {
                 return
             }
 
-            const respObj = resp as { [index: string]: unknown }
-
-            if (!Array.isArray(respObj.value)) {
-                return
-            }
-
-            const [name, pkgName] = respObj.value
+            const [name, pkgName] = resp.value
 
             return { name, package: pkgName }
         } catch (err) {
@@ -723,46 +638,23 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    getHoverText = async (fileUri: vscode.Uri, pos: vscode.Position): Promise<string> => {
+    getHoverText = async (fileUri: string, pos: vscode.Position): Promise<string> => {
         try {
             const resp = await this.client?.sendRequest('textDocument/hover', {
                 textDocument: {
-                    uri: fileUri.toString(),
+                    uri: fileUri,
                 },
                 position: pos,
             })
 
-            if (typeof resp !== 'object' || resp === null) {
+            if (!isObject(resp) || !isString(resp.value)) {
                 return ''
             }
 
-            const respObj = resp as { [index: string]: unknown }
-
-            if (typeof respObj.value !== 'string') {
-                return ''
-            }
-
-            return strToMarkdown(respObj.value)
+            return strToMarkdown(resp.value)
         } catch (err) {
             log(`Hover failed: ${toLog(err)}`)
+            return ''
         }
-
-        return ''
     }
-}
-
-const parsePos = (data: unknown): vscode.Position | undefined => {
-    if (typeof data !== 'object' || data === null) {
-        return
-    }
-
-    const dataObj = data as { [index: string]: unknown }
-    const line = parseToInt(dataObj.line)
-    const col = parseToInt(dataObj.character)
-
-    if (line === undefined || col === undefined) {
-        return
-    }
-
-    return new vscode.Position(line, col)
 }

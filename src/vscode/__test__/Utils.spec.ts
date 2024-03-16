@@ -9,6 +9,9 @@ import {
     findSubFolders,
     getFolderPath,
     getWorkspaceOrFilePath,
+    parseLocation,
+    parseNote,
+    parsePos,
     parseToInt,
     startCompileTimer,
     strToHtml,
@@ -45,6 +48,34 @@ describe('Utils Tests', () => {
         expect(parseToInt('5.9')).toBe(undefined)
         expect(parseToInt(5.9)).toBe(undefined)
         expect(parseToInt('foo')).toBe(undefined)
+    })
+
+    it('parsePos', () => {
+        expect(parsePos(5)).toBeUndefined()
+        expect(parsePos({ line: 1, character: 'foo' })).toBeUndefined()
+        expect(parsePos({ line: 1, character: 10 })).not.toBeUndefined()
+    })
+
+    it('parseLocation', () => {
+        expect(parseLocation('/some/path', 5)).toBeUndefined()
+        expect(parseLocation('/some/path', { start: 5, end: 'foo' })).toBeUndefined()
+        expect(
+            parseLocation('/some/path', { start: { line: 1, character: 10 }, end: { line: 1, character: 10 } })
+        ).not.toBeUndefined()
+    })
+
+    it('parseNote', () => {
+        expect(parseNote('/some/path', 5)).toBeUndefined()
+        expect(parseNote('/some/path', { message: 'foo', severity: 'bar' })).toBeUndefined()
+        expect(
+            parseNote('/some/path', {
+                location: { start: { line: 1, character: 10 }, end: { line: 1, character: 10 } },
+            })
+        ).toMatchObject({
+            message: '',
+            severity: '',
+            location: { file: '/some/path', start: new vscodeMock.Position(), end: new vscodeMock.Position() },
+        })
     })
 
     describe('getWorkspaceOrFilePath', () => {

@@ -22,7 +22,6 @@ jest.mock('../vscode/views/ThreadsTree')
 const historyMock = jest.requireMock('../vscode/views/ReplHistory')
 jest.mock('../vscode/views/ReplHistory')
 
-// const asdfMock = jest.requireMock('../vscode/views/AsdfSystemsTree')
 jest.mock('../vscode/views/AsdfSystemsTree')
 
 const utilsMock = jest.requireMock('../vscode/Utils')
@@ -270,7 +269,7 @@ describe('Extension tests', () => {
         it('onDidChangeTextDocument', async () => {
             const fn = await getHandler(vscodeMock.workspace.onDidChangeTextDocument)
 
-            fn?.()
+            fn?.({ document: {} })
 
             expect(lspMock.textDocumentChanged).toHaveBeenCalled()
         })
@@ -278,8 +277,12 @@ describe('Extension tests', () => {
         it('onDidChangeActiveTextEditor', async () => {
             const fn = await getHandler(vscodeMock.window.onDidChangeActiveTextEditor)
 
-            fn?.()
+            lspMock.editorChanged.mockReset()
 
+            fn?.()
+            expect(lspMock.editorChanged).not.toHaveBeenCalled()
+
+            fn?.({ document: {} })
             expect(lspMock.editorChanged).toHaveBeenCalled()
         })
 

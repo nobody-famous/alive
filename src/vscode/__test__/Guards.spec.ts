@@ -5,11 +5,13 @@ import {
     isHistoryItem,
     isInspectResult,
     isObject,
+    isPackage,
     isPosition,
     isRestartInfo,
     isSourceLocation,
     isStackTrace,
     isString,
+    isThread,
 } from '../Guards'
 
 describe('Type guard tests', () => {
@@ -89,5 +91,16 @@ describe('Type guard tests', () => {
         expect(isHistoryItem({ pkgName: 'foo' })).toBe(false)
         expect(isHistoryItem({ text: 'bar' })).toBe(false)
         expect(isHistoryItem({ resultType: 'foo', result: 'bar' })).toBe(false)
+    })
+
+    it('isThread', () => {
+        expect(isThread({ id: 10, name: 'foo' })).toBe(true)
+        expect(isThread({ id: 'bar', name: 10 })).toBe(false)
+    })
+
+    it('isPackage', () => {
+        expect(isPackage({ name: 'foo', exports: ['bar'], nicknames: ['baz'] })).toBe(true)
+        expect(isPackage({ name: 'foo', exports: ['bar'], nicknames: [10] })).toBe(false)
+        expect(isPackage({ id: 'bar', name: 10 })).toBe(false)
     })
 })

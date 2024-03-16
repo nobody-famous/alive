@@ -20,10 +20,10 @@ class Provider implements vscode.HoverProvider {
             return new vscode.Hover(this.state.hoverText)
         }
 
-        let text = await this.lsp.getHoverText(doc.uri, pos)
+        let text = await this.lsp.getHoverText(doc.uri.toString(), pos)
 
         if (text !== '') {
-            const symbol = await this.lsp.getSymbol(doc.uri, pos)
+            const symbol = await this.lsp.getSymbol(doc.uri.toString(), pos)
             const json = JSON.stringify(symbol)
 
             text += `<br>[Inspect](command:alive.inspect?${encodeURIComponent(json)})`
