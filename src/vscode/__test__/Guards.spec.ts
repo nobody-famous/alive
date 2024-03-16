@@ -94,7 +94,8 @@ describe('Type guard tests', () => {
     })
 
     it('isThread', () => {
-        expect(isThread({ id: 10, name: 'foo' })).toBe(true)
+        expect(isThread({ id: '10', name: 'foo' })).toBe(true)
+        expect(isThread({ id: 10, name: 'foo' })).toBe(false)
         expect(isThread({ id: 'bar', name: 10 })).toBe(false)
     })
 

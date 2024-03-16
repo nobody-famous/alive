@@ -52,7 +52,7 @@ export function isHistoryItem(data: unknown): data is HistoryItem {
 }
 
 export function isThread(data: unknown): data is Thread {
-    return isObject(data) && isFiniteNumber(data.id) && isString(data.name)
+    return isObject(data) && isString(data.id) && isString(data.name)
 }
 
 export function isPackage(data: unknown): data is Package {

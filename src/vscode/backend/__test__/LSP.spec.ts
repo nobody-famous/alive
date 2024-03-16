@@ -933,17 +933,17 @@ describe('LSP tests', () => {
                 }),
             })
 
-            await lsp.killThread({ id: 10, name: 'foo' })
+            await lsp.killThread({ id: '10', name: 'foo' })
             expect(reqMethod).toBe('$/alive/killThread')
         })
 
         it('Failure', async () => {
             await networkErrorTest(
-                (lsp) => lsp.killThread({ id: 10, name: 'foo' }),
+                (lsp) => lsp.killThread({ id: '10', name: 'foo' }),
                 (resp) => expect(resp).toBeUndefined()
             )
             await networkErrorTest(
-                (lsp) => lsp.killThread({ id: 10, name: 'foo' }),
+                (lsp) => lsp.killThread({ id: '10', name: 'foo' }),
                 (resp) => expect(resp).toBeUndefined(),
                 false
             )
@@ -952,7 +952,7 @@ describe('LSP tests', () => {
         it('No client', async () => {
             const lsp = new LSP({ hoverText: '' })
 
-            await lsp.killThread({ id: 10, name: 'foo' })
+            await lsp.killThread({ id: '10', name: 'foo' })
         })
     })
 

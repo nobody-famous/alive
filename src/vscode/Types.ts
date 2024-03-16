@@ -53,7 +53,7 @@ export interface Package {
 }
 
 export interface Thread {
-    id: number
+    id: string
     name: string
 }
 
