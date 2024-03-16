@@ -2,7 +2,7 @@ import { Buffer } from 'buffer'
 import { getAllCallbacks } from '../../TestHelpers'
 import { activate } from '../extension'
 import { COMMON_LISP_ID } from '../vscode/Utils'
-import { HistoryItem } from '../vscode/Types'
+import { HistoryItem, HostPort } from '../vscode/Types'
 
 const fsMock = jest.requireMock('fs')
 jest.mock('fs')
@@ -50,6 +50,9 @@ describe('Extension tests', () => {
         ctx.extensionPath = '/ext/path'
     }
 
+    const remoteHost = 'foo'
+    const remotePort = 1234
+
     beforeEach(() => {
         jest.restoreAllMocks()
 
@@ -60,8 +63,8 @@ describe('Extension tests', () => {
         configMock.readAliveConfig.mockImplementation(() => ({
             lsp: {
                 remote: {
-                    host: 'foo',
-                    port: 1234,
+                    host: remoteHost,
+                    port: remotePort,
                 },
             },
         }))
@@ -91,6 +94,41 @@ describe('Extension tests', () => {
 
             expect(lspMock.editorChanged).toHaveBeenCalled()
             expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+        })
+    })
+
+    describe('Remote connect', () => {
+        const getHostPort = () => {
+            return new Promise<HostPort>((resolve) => {
+                lspMock.connect.mockImplementationOnce((hp: HostPort) => resolve(hp))
+
+                activate(ctx)
+            })
+        }
+
+        it('Use remote', async () => {
+            const hostPort = await getHostPort()
+
+            expect(hostPort?.host).toBe(remoteHost)
+        })
+
+        it('Use local', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    remote: {
+                        host: undefined,
+                        port: remotePort,
+                    },
+                },
+            }))
+
+            lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
+            lspProcMock.startLspServer.mockImplementationOnce(() => 4321)
+
+            const hostPort = await getHostPort()
+
+            expect(hostPort?.host).toBe('127.0.0.1')
+            expect(hostPort?.port).toBe(4321)
         })
     })
 
@@ -335,8 +373,8 @@ describe('Extension tests', () => {
         })
 
         it('Start OK', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => 'foo')
-            lspProcMock.startLspServer.mockImplementationOnce(() => 1234)
+            lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
+            lspProcMock.startLspServer.mockImplementationOnce(() => remotePort)
 
             await activate(ctx)
 
@@ -346,7 +384,7 @@ describe('Extension tests', () => {
         })
 
         it('Start Invalid Port', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => 'foo')
+            lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
             lspProcMock.startLspServer.mockImplementationOnce(() => NaN)
 
             await activate(ctx)
