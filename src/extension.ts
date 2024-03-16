@@ -72,9 +72,12 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         hostPort.host = '127.0.0.1'
         hostPort.port = srvPort
 
-        log(`Server port ${toLog(remoteCfg.port)}`)
+        log(`Using local server ${toLog(hostPort.host)}:${toLog(hostPort.port)}`)
     } else {
-        log(`Using remote server ${toLog(remoteCfg.host)} ${toLog(remoteCfg.port)}`)
+        hostPort.host = remoteCfg.host
+        hostPort.port = remoteCfg.port
+
+        log(`Using remote server ${toLog(hostPort.host)}:${toLog(hostPort.port)}`)
     }
 
     const history = await readReplHistory(state.replHistoryFile)
