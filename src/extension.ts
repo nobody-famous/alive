@@ -88,7 +88,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     const activeDoc = vscode.window.activeTextEditor?.document
 
     if (activeDoc !== undefined && hasValidLangId(activeDoc, [COMMON_LISP_ID])) {
-        lsp.editorChanged(vscode.window.activeTextEditor)
+        lsp.editorChanged(activeDoc)
     }
 
     ctx.subscriptions.push(
@@ -247,13 +247,17 @@ function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
     vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(ui, lsp, state, doc))
 
     vscode.workspace.onDidChangeTextDocument(
-        (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event),
+        (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event.document),
         null,
         state.ctx.subscriptions
     )
 
     vscode.window.onDidChangeActiveTextEditor(
-        (editor?: vscode.TextEditor) => lsp.editorChanged(editor),
+        (editor?: vscode.TextEditor) => {
+            if (editor?.document !== undefined) {
+                lsp.editorChanged(editor.document)
+            }
+        },
         null,
         state.ctx.subscriptions
     )

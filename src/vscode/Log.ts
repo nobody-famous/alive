@@ -8,9 +8,5 @@ export const log = (message: string) => {
 }
 
 export const toLog = (obj: unknown): string => {
-    if (isObject(obj)) {
-        return JSON.stringify(obj)
-    }
-
-    return `${obj}`
+    return isObject(obj) ? JSON.stringify(obj) : `${obj}`
 }

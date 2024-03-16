@@ -1,5 +1,5 @@
 import { Position } from 'vscode'
-import { HistoryItem, InspectResult, RestartInfo, SourceLocation } from './Types'
+import { HistoryItem, InspectResult, Package, RestartInfo, SourceLocation, Thread } from './Types'
 import { parseToInt } from './Utils'
 
 export function isString(data: unknown): data is string {
@@ -49,4 +49,12 @@ export function isInspectResult(data: unknown): data is InspectResult {
 
 export function isHistoryItem(data: unknown): data is HistoryItem {
     return isObject(data) && isString(data.pkgName) && isString(data.text)
+}
+
+export function isThread(data: unknown): data is Thread {
+    return isObject(data) && isString(data.id) && isString(data.name)
+}
+
+export function isPackage(data: unknown): data is Package {
+    return isObject(data) && isString(data.name) && isArray(data.exports, isString) && isArray(data.nicknames, isString)
 }
