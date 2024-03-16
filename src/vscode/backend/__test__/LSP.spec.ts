@@ -150,6 +150,19 @@ describe('LSP tests', () => {
                 expect(await funcMap.request['$/alive/debugger']({ restarts: [], stackTrace: [] })).toMatchObject({ index: 5 })
             })
 
+            it('Missing data', async () => {
+                const { lsp, funcMap } = await getClientFuncs()
+
+                lsp.emit = jest.fn().mockImplementation((name: string, info: DebugInfo, fn: (index: number) => void) => {
+                    fn(5)
+                })
+
+                guardsMock.isRestartInfo.mockImplementationOnce(() => false)
+                guardsMock.isStackTrace.mockImplementationOnce(() => false)
+
+                expect(await funcMap.request['$/alive/debugger']({ restarts: [5], stackTrace: [10] })).toMatchObject({ index: 5 })
+            })
+
             it('debug info not object', async () => {
                 const { funcMap } = await getClientFuncs()
 
