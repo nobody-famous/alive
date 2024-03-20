@@ -33,7 +33,7 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/backend/__test__/LSP.spec.ts",
+                "src/vscode/backend/__test__/LspProcess.spec.ts",
                 // "-t",
                 // "inspectEval"
             ],
