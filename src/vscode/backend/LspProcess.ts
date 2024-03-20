@@ -3,7 +3,7 @@ import { ChildProcess, spawn } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isObject } from '../Guards'
+import { isFiniteNumber, isObject, isString } from '../Guards'
 import { log, toLog } from '../Log'
 import { AliveLspVersion, ExtensionState } from '../Types'
 import StreamZip = require('node-stream-zip')
@@ -129,7 +129,7 @@ export async function downloadLspServer(): Promise<string | undefined> {
 
         log(`Config install path: ${toLog(cfgInstallPath)}`)
 
-        if (typeof cfgInstallPath === 'string' && cfgInstallPath !== '') {
+        if (isString(cfgInstallPath) && cfgInstallPath !== '') {
             log(`Found ${toLog(cfgInstallPath)}, returning`)
             return cfgInstallPath
         }
@@ -229,7 +229,7 @@ async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
 
     log(`URL: ${toLog(url)}`)
 
-    if (typeof url !== 'string') {
+    if (!isString(url)) {
         log(`URL not a string: ${typeof url}`)
         return
     }
@@ -249,26 +249,24 @@ async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
     log(`Versions: ${toLog(versions)}`)
 
     versions.sort((a, b) => {
-        if (
-            typeof a?.createdAt === 'number' &&
-            Number.isFinite(a.createdAt) &&
-            typeof b?.createdAt === 'number' &&
-            Number.isFinite(b.createdAt)
-        ) {
-            if (a.createdAt > b.createdAt) {
+        const aNumber = isFiniteNumber(a?.createdAt) ? a?.createdAt : NaN
+        const bNumber = isFiniteNumber(b?.createdAt) ? b?.createdAt : NaN
+
+        if (isFiniteNumber(aNumber) && isFiniteNumber(bNumber)) {
+            if (aNumber > bNumber) {
                 return -1
-            } else if (a.createdAt < b.createdAt) {
+            } else if (aNumber < bNumber) {
                 return 1
             } else {
                 return 0
             }
         }
 
-        if (Number.isFinite(a?.createdAt) && !Number.isFinite(b?.createdAt)) {
+        if (isFiniteNumber(aNumber) && !isFiniteNumber(bNumber)) {
             return -1
-        } else if (!Number.isFinite(a?.createdAt) && Number.isFinite(b?.createdAt)) {
+        } else if (!isFiniteNumber(aNumber) && isFiniteNumber(bNumber)) {
             return 1
-        } else if (!Number.isFinite(a?.createdAt) && !Number.isFinite(b?.createdAt)) {
+        } else if (!isFiniteNumber(aNumber) && !isFiniteNumber(bNumber)) {
             return 0
         }
 
@@ -335,7 +333,7 @@ function parseVersionData(data: unknown): AliveLspVersion | undefined {
 function getLspBasePath(): string {
     const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
 
-    if (!extensionMetadata) {
+    if (extensionMetadata === undefined) {
         throw new Error('Failed to find rheller.alive extension config directory')
     }
 

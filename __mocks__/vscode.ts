@@ -48,6 +48,10 @@ export const commands = {
     registerCommand: jest.fn(),
 }
 
+export const extensions = {
+    getExtension: jest.fn(),
+}
+
 export class Position {}
 export class Range {}
 export class Selection {}
