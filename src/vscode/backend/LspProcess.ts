@@ -3,10 +3,12 @@ import { ChildProcess, spawn } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isFiniteNumber, isObject, isString } from '../Guards'
+import { isAliveLspVersion, isObject, isString } from '../Guards'
 import { log, toLog } from '../Log'
-import { AliveLspVersion, ExtensionState } from '../Types'
+import { ExtensionState } from '../Types'
+import { getLspBasePath } from '../Utils'
 import StreamZip = require('node-stream-zip')
+import { getDownloadUrl, getLatestVersion } from './LspUtils'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
@@ -117,28 +119,29 @@ export async function startLspServer(state: ExtensionState): Promise<number | nu
     }
 }
 
-export async function downloadLspServer(): Promise<string | undefined> {
+export function getInstallPath(): string | undefined {
+    log('Get LSP server install path')
+
+    const config = vscode.workspace.getConfiguration('alive.lsp')
+
+    log(`LSP config: ${toLog(config)}`)
+
+    const cfgInstallPath = config.get('install.path')
+
+    log(`Config install path: ${toLog(cfgInstallPath)}`)
+
+    return isString(cfgInstallPath) && cfgInstallPath !== '' ? cfgInstallPath : undefined
+}
+
+export async function downloadLspServer(url: string): Promise<string | undefined> {
     try {
         log('Download LSP server')
-
-        const config = vscode.workspace.getConfiguration('alive.lsp')
-
-        log(`LSP config: ${toLog(config)}`)
-
-        const cfgInstallPath = config.get('install.path')
-
-        log(`Config install path: ${toLog(cfgInstallPath)}`)
-
-        if (isString(cfgInstallPath) && cfgInstallPath !== '') {
-            log(`Found ${toLog(cfgInstallPath)}, returning`)
-            return cfgInstallPath
-        }
 
         const basePath = getLspBasePath()
 
         log(`Base path: ${toLog(basePath)}`)
 
-        const latestVersion = await getLatestVersion()
+        const latestVersion = await getLatestVersion(url, isAliveLspVersion)
 
         log(`Latest version: ${toLog(latestVersion)}`)
 
@@ -221,63 +224,6 @@ async function readZipFile(file: string, resp: AxiosResponse<unknown>) {
     })
 }
 
-async function getLatestVersion(): Promise<AliveLspVersion | undefined> {
-    log('Get latest version')
-
-    const config = vscode.workspace.getConfiguration('alive')
-    const url = config.lsp?.downloadUrl
-
-    log(`URL: ${toLog(url)}`)
-
-    if (!isString(url)) {
-        log(`URL not a string: ${typeof url}`)
-        return
-    }
-
-    const resp = await axios(url, {
-        headers: { 'User-Agent': 'nobody-famous/alive' },
-        method: 'GET',
-    })
-
-    if (!Array.isArray(resp.data)) {
-        log(`Response not an array: ${toLog(resp.data)}`)
-        return
-    }
-
-    const versions = resp.data.map((data) => parseVersionData(data)).filter((entry) => entry !== undefined)
-
-    log(`Versions: ${toLog(versions)}`)
-
-    versions.sort((a, b) => {
-        const aNumber = isFiniteNumber(a?.createdAt) ? a?.createdAt : NaN
-        const bNumber = isFiniteNumber(b?.createdAt) ? b?.createdAt : NaN
-
-        if (isFiniteNumber(aNumber) && isFiniteNumber(bNumber)) {
-            if (aNumber > bNumber) {
-                return -1
-            } else if (aNumber < bNumber) {
-                return 1
-            } else {
-                return 0
-            }
-        }
-
-        if (isFiniteNumber(aNumber) && !isFiniteNumber(bNumber)) {
-            return -1
-        } else if (!isFiniteNumber(aNumber) && isFiniteNumber(bNumber)) {
-            return 1
-        } else if (!isFiniteNumber(aNumber) && !isFiniteNumber(bNumber)) {
-            return 0
-        }
-
-        return 0
-    })
-
-    log(`Versions sorted: ${toLog(versions)}`)
-
-    return versions[0]
-}
-
 async function getInstalledVersion(basePath: string): Promise<string | undefined> {
     log(`Get installed version: ${toLog(basePath)}`)
 
@@ -298,46 +244,6 @@ async function getInstalledVersion(basePath: string): Promise<string | undefined
     }
 
     return files[0]
-}
-
-function parseVersionData(data: unknown): AliveLspVersion | undefined {
-    if (typeof data !== 'object' || data === null) {
-        return
-    }
-
-    const dataObj = data as { [index: string]: unknown }
-
-    if (
-        typeof dataObj.created_at !== 'string' ||
-        typeof dataObj.name !== 'string' ||
-        typeof dataObj.tag_name !== 'string' ||
-        typeof dataObj.zipball_url !== 'string'
-    ) {
-        return
-    }
-
-    const createdAtDate = Date.parse(dataObj.created_at)
-
-    if (!Number.isFinite(createdAtDate)) {
-        return
-    }
-
-    return {
-        createdAt: createdAtDate,
-        name: dataObj.name,
-        tagName: dataObj.tag_name,
-        zipballUrl: dataObj.zipball_url,
-    }
-}
-
-function getLspBasePath(): string {
-    const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
-
-    if (extensionMetadata === undefined) {
-        throw new Error('Failed to find rheller.alive extension config directory')
-    }
-
-    return path.normalize(path.join(extensionMetadata.extensionPath, 'out', 'alive-lsp'))
 }
 
 function setupFailedStartupWarningTimer() {

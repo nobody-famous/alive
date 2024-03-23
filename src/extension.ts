@@ -16,12 +16,13 @@ import {
     updateDiagnostics,
 } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
-import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
+import { downloadLspServer, getInstallPath, startLspServer } from './vscode/backend/LspProcess'
 import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
 import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
 import { isHistoryNode } from './vscode/views/ReplHistory'
 import { isThreadNode } from './vscode/views/ThreadsTree'
+import { getDownloadUrl } from './vscode/backend/LspUtils'
 
 // Word separator characters for CommonLisp.
 // These determine how a double-click will extend over a symbol.
@@ -233,7 +234,12 @@ async function updateEditorConfig() {
 }
 
 async function startLocalServer(state: ExtensionState): Promise<number | undefined> {
-    state.lspInstallPath = await downloadLspServer()
+    const url = getDownloadUrl()
+    if (!isString(url)) {
+        return
+    }
+
+    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(url))
     if (!isString(state.lspInstallPath)) {
         return
     }

@@ -238,6 +238,16 @@ export function convertSeverity(sev: string): vscode.DiagnosticSeverity {
     }
 }
 
+export function getLspBasePath(): string {
+    const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
+
+    if (extensionMetadata === undefined) {
+        throw new Error('Failed to find rheller.alive extension config directory')
+    }
+
+    return path.normalize(path.join(extensionMetadata.extensionPath, 'out', 'alive-lsp'))
+}
+
 async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder> {
     log('Pick workspace folder')
 

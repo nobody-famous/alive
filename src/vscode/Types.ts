@@ -19,7 +19,7 @@ export interface ExtensionState {
 }
 
 export interface AliveLspVersion {
-    createdAt: number
+    createdAt: string
     name: string
     tagName: string
     zipballUrl: string
