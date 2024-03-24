@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/Guards.spec.ts",
+                "src/__test__/extension.spec.ts",
                 "-t",
-                "isAliveLspVersion"
+                "start invalid path"
             ],
             "problemMatcher": [
                 "$tsc"

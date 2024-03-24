@@ -50,7 +50,7 @@ export const commands = {
 }
 
 export const extensions = {
-    getExtension: jest.fn(),
+    getExtension: jest.fn(() => ({ extensionPath: 'some path' })),
 }
 
 export class Position {}

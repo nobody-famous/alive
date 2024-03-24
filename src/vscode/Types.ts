@@ -8,6 +8,7 @@ export interface AliveContext {
 
 export interface ExtensionState {
     ctx: AliveContext
+    extension: vscode.Extension<unknown>
     diagnostics: vscode.DiagnosticCollection
     lspInstallPath?: string
     child?: ChildProcess

@@ -71,6 +71,14 @@ describe('Extension tests', () => {
     })
 
     describe('Activate', () => {
+        it('No extension', async () => {
+            vscodeMock.extensions.getExtension.mockReturnValueOnce(undefined)
+
+            await activate(ctx)
+
+            expect(configMock.readAliveConfig).not.toHaveBeenCalled()
+        })
+
         it('No document', async () => {
             await activate(ctx)
 
@@ -364,9 +372,7 @@ describe('Extension tests', () => {
 
     describe('startLocalServer', () => {
         beforeEach(() => {
-            configMock.readAliveConfig.mockImplementation(() => ({
-                lsp: { downloadUrl: '/some/url' },
-            }))
+            vscodeMock.extensions.getExtension.mockReturnValueOnce({})
 
             lspMock.connect.mockReset()
             lspProcMock.downloadLspServer.mockReset()
@@ -374,8 +380,9 @@ describe('Extension tests', () => {
         })
 
         it('Start OK', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
-            lspProcMock.startLspServer.mockImplementationOnce(() => remotePort)
+            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.startLspServer.mockReturnValueOnce(remotePort)
 
             await activate(ctx)
 
@@ -385,8 +392,9 @@ describe('Extension tests', () => {
         })
 
         it('Start Invalid Port', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
-            lspProcMock.startLspServer.mockImplementationOnce(() => NaN)
+            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.startLspServer.mockReturnValueOnce(NaN)
 
             await activate(ctx)
 
@@ -396,11 +404,35 @@ describe('Extension tests', () => {
         })
 
         it('Start Invalid Path', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => 5)
+            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce(5)
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
+            expect(lspProcMock.startLspServer).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('Have install path', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            lspProcMock.getInstallPath.mockReturnValueOnce('/install/path')
+            lspProcMock.downloadLspServer.mockReturnValueOnce(5)
+
+            await activate(ctx)
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspProcMock.startLspServer).toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('No url', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: undefined } }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce(5)
+
+            await activate(ctx)
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
             expect(lspProcMock.startLspServer).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })

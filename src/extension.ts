@@ -37,6 +37,12 @@ const wordSeparators = '`|;:\'",()'
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
 
+    const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
+    if (extensionMetadata === undefined) {
+        log('Failed to find rheller.alive extension config directory')
+        return
+    }
+
     const aliveCfg = readAliveConfig()
     const workspacePath = await getWorkspaceOrFilePath()
 
@@ -45,6 +51,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     await updateEditorConfig()
 
     const state: ExtensionState = {
+        extension: extensionMetadata,
         diagnostics: vscode.languages.createDiagnosticCollection('Compiler Diagnostics'),
         hoverText: '',
         compileRunning: false,
@@ -237,7 +244,7 @@ async function startLocalServer(state: ExtensionState, config: AliveConfig): Pro
         return
     }
 
-    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(config.lsp.downloadUrl))
+    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(state.extension, config.lsp.downloadUrl))
     if (!isString(state.lspInstallPath)) {
         return
     }

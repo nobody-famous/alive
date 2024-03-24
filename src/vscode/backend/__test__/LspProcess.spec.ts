@@ -16,12 +16,13 @@ jest.mock('../zipUtils')
 
 describe('LspProcess tests', () => {
     describe('downloadLspServer', () => {
+        const fakeExtension = { extensionPath: 'some path' }
         it('No versions', async () => {
             utilsMock.getLspBasePath.mockReturnValueOnce('/some/path')
             lspUtilsMock.getLatestVersion.mockReturnValueOnce(undefined)
             lspUtilsMock.getInstalledVersion.mockReturnValueOnce(undefined)
 
-            const resp = await downloadLspServer('some url')
+            const resp = await downloadLspServer(fakeExtension, 'some url')
 
             expect(resp).toBeUndefined()
         })
@@ -32,7 +33,7 @@ describe('LspProcess tests', () => {
             lspUtilsMock.pullLatestVersion.mockReturnValueOnce('/latest/version/path')
             lspUtilsMock.getInstalledVersion.mockReturnValueOnce(undefined)
 
-            const resp = await downloadLspServer('some url')
+            const resp = await downloadLspServer(fakeExtension, 'some url')
 
             expect(resp).toBe('/latest/version/path')
         })
@@ -43,7 +44,7 @@ describe('LspProcess tests', () => {
             lspUtilsMock.getInstalledVersion.mockReturnValueOnce('v1')
             zipUtilsMock.getUnzippedPath.mockReturnValueOnce('/unzipped/path')
 
-            const resp = await downloadLspServer('some url')
+            const resp = await downloadLspServer(fakeExtension, 'some url')
 
             expect(resp).toBe('/unzipped/path')
         })
@@ -54,7 +55,7 @@ describe('LspProcess tests', () => {
             lspUtilsMock.pullLatestVersion.mockReturnValueOnce('/latest/version/path')
             lspUtilsMock.getInstalledVersion.mockReturnValueOnce('v1')
 
-            const resp = await downloadLspServer('some url')
+            const resp = await downloadLspServer(fakeExtension, 'some url')
 
             expect(resp).toBe('/latest/version/path')
         })
@@ -65,7 +66,7 @@ describe('LspProcess tests', () => {
             lspUtilsMock.getInstalledVersion.mockReturnValueOnce('v1')
             zipUtilsMock.getUnzippedPath.mockReturnValueOnce('/unzipped/path')
 
-            const resp = await downloadLspServer('some url')
+            const resp = await downloadLspServer(fakeExtension, 'some url')
 
             expect(resp).toBe('/unzipped/path')
         })
@@ -78,7 +79,7 @@ describe('LspProcess tests', () => {
             })
             lspUtilsMock.getInstalledVersion.mockReturnValueOnce(undefined)
 
-            const resp = await downloadLspServer('some url')
+            const resp = await downloadLspServer(fakeExtension, 'some url')
 
             expect(resp).toBe(undefined)
         })

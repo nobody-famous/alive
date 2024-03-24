@@ -131,11 +131,14 @@ export function getInstallPath(): string | undefined {
     return isString(cfgInstallPath) && cfgInstallPath !== '' ? cfgInstallPath : undefined
 }
 
-export async function downloadLspServer(url: string): Promise<string | undefined> {
+export async function downloadLspServer(
+    extension: Pick<vscode.Extension<unknown>, 'extensionPath'>,
+    url: string
+): Promise<string | undefined> {
     try {
         log('Download LSP server')
 
-        const basePath = getLspBasePath()
+        const basePath = getLspBasePath(extension)
 
         log(`Base path: ${toLog(basePath)}`)
 
