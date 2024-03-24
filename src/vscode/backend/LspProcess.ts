@@ -3,12 +3,12 @@ import { ChildProcess, spawn } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isAliveLspVersion, isObject, isString } from '../Guards'
+import { isObject, isString } from '../Guards'
 import { log, toLog } from '../Log'
 import { ExtensionState } from '../Types'
 import { getLspBasePath } from '../Utils'
+import { getLatestVersion } from './LspUtils'
 import StreamZip = require('node-stream-zip')
-import { getDownloadUrl, getLatestVersion } from './LspUtils'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
@@ -141,7 +141,7 @@ export async function downloadLspServer(url: string): Promise<string | undefined
 
         log(`Base path: ${toLog(basePath)}`)
 
-        const latestVersion = await getLatestVersion(url, isAliveLspVersion)
+        const latestVersion = await getLatestVersion(url)
 
         log(`Latest version: ${toLog(latestVersion)}`)
 

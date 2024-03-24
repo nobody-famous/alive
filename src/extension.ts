@@ -22,7 +22,6 @@ import { getHoverProvider } from './vscode/providers/Hover'
 import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
 import { isHistoryNode } from './vscode/views/ReplHistory'
 import { isThreadNode } from './vscode/views/ThreadsTree'
-import { getDownloadUrl } from './vscode/backend/LspUtils'
 
 // Word separator characters for CommonLisp.
 // These determine how a double-click will extend over a symbol.
@@ -46,6 +45,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     await updateEditorConfig()
 
     const state: ExtensionState = {
+        config: aliveCfg,
         diagnostics: vscode.languages.createDiagnosticCollection('Compiler Diagnostics'),
         hoverText: '',
         compileRunning: false,
@@ -234,12 +234,11 @@ async function updateEditorConfig() {
 }
 
 async function startLocalServer(state: ExtensionState): Promise<number | undefined> {
-    const url = getDownloadUrl()
-    if (!isString(url)) {
+    if (!isString(state.config.lsp.downloadUrl)) {
         return
     }
 
-    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(url))
+    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(state.config.lsp.downloadUrl))
     if (!isString(state.lspInstallPath)) {
         return
     }

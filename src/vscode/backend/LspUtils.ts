@@ -1,12 +1,9 @@
 import axios from 'axios'
-import * as vscode from 'vscode'
-import { isFiniteNumber } from '../Guards'
+import { isFiniteNumber, isGitHubVersion } from '../Guards'
 import { log, toLog } from '../Log'
+import { AliveLspVersion, GitHubVersion } from '../Types'
 
-export async function getLatestVersion<T extends { createdAt: string }>(
-    url: string,
-    guard: (data: unknown) => data is T
-): Promise<T | undefined> {
+export async function getLatestVersion(url: string): Promise<AliveLspVersion | undefined> {
     log('Get latest version')
 
     const resp = await axios(url, {
@@ -19,13 +16,13 @@ export async function getLatestVersion<T extends { createdAt: string }>(
         return
     }
 
-    const versions = resp.data.filter(guard)
+    const versions = resp.data.filter(isGitHubVersion)
 
     log(`Versions: ${toLog(versions)}`)
 
     versions.sort((a, b) => {
-        let aTime = Date.parse(a.createdAt)
-        let bTime = Date.parse(b.createdAt)
+        let aTime = Date.parse(a.created_at)
+        let bTime = Date.parse(b.created_at)
 
         aTime = isFiniteNumber(aTime) ? aTime : 0
         bTime = isFiniteNumber(bTime) ? bTime : 0
@@ -41,10 +38,16 @@ export async function getLatestVersion<T extends { createdAt: string }>(
 
     log(`Versions sorted: ${toLog(versions)}`)
 
-    return versions[0]
+    return toAliveLspVersion(versions[0])
 }
 
-export function getDownloadUrl() {
-    const config = vscode.workspace.getConfiguration('alive')
-    return config.lsp?.downloadUrl
+function toAliveLspVersion(version: GitHubVersion): AliveLspVersion {
+    const date = Date.parse(version.created_at)
+
+    return {
+        createdAt: isFiniteNumber(date) ? date : 0,
+        name: version.name,
+        tagName: version.tag_name,
+        zipballUrl: version.zipball_url,
+    }
 }

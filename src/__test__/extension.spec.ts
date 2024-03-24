@@ -115,6 +115,7 @@ describe('Extension tests', () => {
         it('Use local', async () => {
             configMock.readAliveConfig.mockImplementation(() => ({
                 lsp: {
+                    downloadUrl: '/download/url',
                     remote: {
                         host: undefined,
                         port: remotePort,
@@ -364,7 +365,7 @@ describe('Extension tests', () => {
     describe('startLocalServer', () => {
         beforeEach(() => {
             configMock.readAliveConfig.mockImplementation(() => ({
-                lsp: {},
+                lsp: { downloadUrl: '/some/url' },
             }))
 
             lspMock.connect.mockReset()

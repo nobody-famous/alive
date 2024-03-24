@@ -1,5 +1,6 @@
 import { ChildProcess } from 'child_process'
 import * as vscode from 'vscode'
+import { AliveConfig } from '../config'
 
 export interface AliveContext {
     subscriptions: { dispose: () => unknown }[]
@@ -8,6 +9,7 @@ export interface AliveContext {
 
 export interface ExtensionState {
     ctx: AliveContext
+    config: AliveConfig
     diagnostics: vscode.DiagnosticCollection
     lspInstallPath?: string
     child?: ChildProcess
@@ -18,8 +20,15 @@ export interface ExtensionState {
     workspacePath: string
 }
 
+export interface GitHubVersion {
+    created_at: string
+    name: string
+    tag_name: string
+    zipball_url: string
+}
+
 export interface AliveLspVersion {
-    createdAt: string
+    createdAt: number
     name: string
     tagName: string
     zipballUrl: string

@@ -7,18 +7,11 @@ jest.mock('axios')
 
 describe('LspProcess tests', () => {
     describe('downloadLspServer', () => {
-        it('Have install path', async () => {
-            vscodeMock.workspace.getConfiguration.mockReturnValueOnce({ get: () => '/some/path' })
-            const resp = await downloadLspServer()
-
-            expect(resp).toBe('/some/path')
-        })
-
         it('Base path', async () => {
             vscodeMock.workspace.getConfiguration.mockReturnValueOnce({ get: () => undefined })
             vscodeMock.extensions.getExtension.mockReturnValueOnce(undefined)
 
-            const resp = await downloadLspServer()
+            const resp = await downloadLspServer('some url')
 
             expect(resp).toBeUndefined()
         })
@@ -28,7 +21,7 @@ describe('LspProcess tests', () => {
             vscodeMock.workspace.getConfiguration.mockReturnValueOnce({ lsp: { downloadUrl: 'url' } })
             vscodeMock.extensions.getExtension.mockReturnValueOnce({ extensionPath: '/some/path' })
 
-            const resp = await downloadLspServer()
+            const resp = await downloadLspServer('some url')
 
             expect(resp).toBeUndefined()
         })

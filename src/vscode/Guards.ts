@@ -1,5 +1,5 @@
 import { Position } from 'vscode'
-import { AliveLspVersion, HistoryItem, InspectResult, Package, RestartInfo, SourceLocation, Thread } from './Types'
+import { AliveLspVersion, GitHubVersion, HistoryItem, InspectResult, Package, RestartInfo, SourceLocation, Thread } from './Types'
 import { parseToInt } from './Utils'
 
 export function isString(data: unknown): data is string {
@@ -59,12 +59,22 @@ export function isPackage(data: unknown): data is Package {
     return isObject(data) && isString(data.name) && isArray(data.exports, isString) && isArray(data.nicknames, isString)
 }
 
-export function isAliveLspVersion(data: unknown): data is AliveLspVersion {
+export function isGitHubVersion(data: unknown): data is GitHubVersion {
     return (
         isObject(data) &&
         isString(data.created_at) &&
         isString(data.name) &&
         isString(data.tag_name) &&
         isString(data.zipball_url)
+    )
+}
+
+export function isAliveLspVersion(data: unknown): data is AliveLspVersion {
+    return (
+        isObject(data) &&
+        isFiniteNumber(data.createdAt) &&
+        isString(data.name) &&
+        isString(data.tagName) &&
+        isString(data.zipballUrl)
     )
 }
