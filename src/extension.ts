@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { readAliveConfig } from './config'
+import { AliveConfig, readAliveConfig } from './config'
 import { isFiniteNumber, isHistoryItem, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
 import { ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
@@ -45,7 +45,6 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     await updateEditorConfig()
 
     const state: ExtensionState = {
-        config: aliveCfg,
         diagnostics: vscode.languages.createDiagnosticCollection('Compiler Diagnostics'),
         hoverText: '',
         compileRunning: false,
@@ -64,7 +63,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     registerLSPEvents(ui, lsp, state)
 
     if (remoteCfg.host == null || remoteCfg.port == null) {
-        const srvPort = await startLocalServer(state)
+        const srvPort = await startLocalServer(state, aliveCfg)
 
         if (srvPort === undefined) {
             return
@@ -233,12 +232,12 @@ async function updateEditorConfig() {
     log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 }
 
-async function startLocalServer(state: ExtensionState): Promise<number | undefined> {
-    if (!isString(state.config.lsp.downloadUrl)) {
+async function startLocalServer(state: ExtensionState, config: AliveConfig): Promise<number | undefined> {
+    if (!isString(config.lsp.downloadUrl)) {
         return
     }
 
-    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(state.config.lsp.downloadUrl))
+    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(config.lsp.downloadUrl))
     if (!isString(state.lspInstallPath)) {
         return
     }
