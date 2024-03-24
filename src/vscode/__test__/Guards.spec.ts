@@ -1,7 +1,9 @@
 import {
+    isAliveLspVersion,
     isArray,
     isBoolean,
     isFiniteNumber,
+    isGitHubVersion,
     isHistoryItem,
     isInspectResult,
     isObject,
@@ -103,5 +105,23 @@ describe('Type guard tests', () => {
         expect(isPackage({ name: 'foo', exports: ['bar'], nicknames: ['baz'] })).toBe(true)
         expect(isPackage({ name: 'foo', exports: ['bar'], nicknames: [10] })).toBe(false)
         expect(isPackage({ id: 'bar', name: 10 })).toBe(false)
+    })
+
+    it('isGitHubVersion', () => {
+        expect(isGitHubVersion({ created_at: 'time', name: 'foo', tag_name: 'bar', zipball_url: 'url' })).toBe(true)
+        expect(isGitHubVersion({ created_at: 5, name: 'foo', tag_name: 'bar', zipball_url: 'url' })).toBe(false)
+        expect(isGitHubVersion({ created_at: 'time', name: 10, tag_name: 'bar', zipball_url: 'url' })).toBe(false)
+        expect(isGitHubVersion({ created_at: 'time', name: 'foo', tag_name: 15, zipball_url: 'url' })).toBe(false)
+        expect(isGitHubVersion({ created_at: 'time', name: 'foo', tag_name: 'bar', zipball_url: 20 })).toBe(false)
+        expect(isGitHubVersion({})).toBe(false)
+    })
+
+    it('isAliveLspVersion', () => {
+        expect(isAliveLspVersion({ createdAt: 5, name: 'foo', tagName: 'bar', zipballUrl: 'url' })).toBe(true)
+        expect(isAliveLspVersion({ createdAt: 'foo', name: 'foo', tagName: 'bar', zipballUrl: 'url' })).toBe(false)
+        expect(isAliveLspVersion({ createdAt: 5, name: 10, tagName: 'bar', zipballUrl: 'url' })).toBe(false)
+        expect(isAliveLspVersion({ createdAt: 5, name: 'foo', tagName: 15, zipballUrl: 'url' })).toBe(false)
+        expect(isAliveLspVersion({ createdAt: 5, name: 'foo', tagName: 'bar', zipballUrl: 20 })).toBe(false)
+        expect(isAliveLspVersion({})).toBe(false)
     })
 })
