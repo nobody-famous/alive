@@ -23,6 +23,7 @@ export const window = {
     createQuickPick: jest.fn(),
     showQuickPick: jest.fn(),
     showErrorMessage: jest.fn(),
+    showInformationMessage: jest.fn(),
     showTextDocument: jest.fn(),
     onDidChangeActiveTextEditor: jest.fn(),
     registerWebviewViewProvider: jest.fn(),

@@ -1,14 +1,12 @@
-import axios, { AxiosResponse } from 'axios'
 import { ChildProcess, spawn } from 'child_process'
-import * as fs from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isObject, isString } from '../Guards'
+import { isString } from '../Guards'
 import { log, toLog } from '../Log'
-import { ExtensionState } from '../Types'
+import { AliveLspVersion, ExtensionState } from '../Types'
 import { getLspBasePath } from '../Utils'
-import { getLatestVersion } from './LspUtils'
-import StreamZip = require('node-stream-zip')
+import { getInstalledVersion, getLatestVersion, nukeInstalledVersion, pullLatestVersion } from './LspUtils'
+import { getUnzippedPath } from './ZipUtils'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
@@ -154,13 +152,13 @@ export async function downloadLspServer(url: string): Promise<string | undefined
                 throw new Error('Could not find latest LSP server version')
             }
 
-            return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
+            return await downloadLatestVersion(basePath, latestVersion)
         } else if (latestVersion === undefined) {
             return getUnzippedPath(path.join(basePath, installedVersion))
         } else if (installedVersion !== latestVersion.tagName) {
             await nukeInstalledVersion(basePath)
 
-            return await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
+            return await downloadLatestVersion(basePath, latestVersion)
         } else {
             return getUnzippedPath(path.join(basePath, installedVersion))
         }
@@ -170,80 +168,18 @@ export async function downloadLspServer(url: string): Promise<string | undefined
     }
 }
 
-async function nukeInstalledVersion(basePath: string) {
-    log(`Removing path: ${toLog(basePath)}`)
-    await fs.promises.rm(basePath, { recursive: true })
-}
-
-async function pullLatestVersion(basePath: string, version: string, url: string): Promise<string> {
-    vscode.window.showInformationMessage('Installing LSP server')
-
+async function downloadLatestVersion(basePath: string, latestVersion: AliveLspVersion) {
     try {
-        const zipPath = path.normalize(path.join(basePath, version))
-        const zipFile = path.join(zipPath, `${version}.zip`)
+        vscode.window.showInformationMessage('Installing LSP server')
 
-        const resp = await axios(url, {
-            headers: { 'User-Agent': 'nobody-famous/alive' },
-            method: 'GET',
-            responseType: 'stream',
-        })
+        const path = await pullLatestVersion(basePath, latestVersion.tagName, latestVersion.zipballUrl)
 
-        await fs.promises.mkdir(zipPath, { recursive: true })
-        await readZipFile(zipFile, resp)
-        await unzipFile(zipPath, zipFile)
-
-        return await getUnzippedPath(zipPath)
-    } finally {
         vscode.window.showInformationMessage('Done installing LSP server')
-    }
-}
 
-async function getUnzippedPath(basePath: string): Promise<string> {
-    const files = await fs.promises.readdir(basePath, { withFileTypes: true })
-    const dirs = files.filter((entry) => entry.isDirectory()).map((entry) => entry.name)
-
-    return dirs.length === 0 ? basePath : path.join(basePath, dirs[0])
-}
-
-async function unzipFile(basePath: string, file: string) {
-    const zip = new StreamZip.async({ file })
-
-    await zip.extract(null, basePath)
-    await zip.close()
-}
-
-async function readZipFile(file: string, resp: AxiosResponse<unknown>) {
-    const writer = fs.createWriteStream(file)
-
-    return new Promise((resolve, reject) => {
-        if (isObject(resp?.data) && typeof resp.data.pipe === 'function') {
-            resp.data.pipe(writer).on('finish', resolve).on('close', resolve).on('error', reject)
-        } else {
-            reject('Invalid response object')
-        }
-    })
-}
-
-async function getInstalledVersion(basePath: string): Promise<string | undefined> {
-    log(`Get installed version: ${toLog(basePath)}`)
-
-    try {
-        await fs.promises.access(basePath)
+        return path
     } catch (err) {
-        log(`Creating path: ${toLog(basePath)}`)
-        await fs.promises.mkdir(basePath, { recursive: true })
+        vscode.window.showErrorMessage(`Failed to download latest LSP server: ${err}`)
     }
-
-    const files = await fs.promises.readdir(basePath)
-
-    log(`Files: ${toLog(files)}`)
-
-    if (files.length > 1) {
-        await nukeInstalledVersion(basePath)
-        return
-    }
-
-    return files[0]
 }
 
 function setupFailedStartupWarningTimer() {
