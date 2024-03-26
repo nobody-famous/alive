@@ -2,9 +2,6 @@ import { downloadLspServer } from '../LspProcess'
 
 jest.mock('axios')
 
-const vscodeMock = jest.requireMock('vscode')
-jest.mock('vscode')
-
 const lspUtilsMock = jest.requireMock('../LspUtils')
 jest.mock('../LspUtils')
 
@@ -12,7 +9,7 @@ const utilsMock = jest.requireMock('../../Utils')
 jest.mock('../../Utils')
 
 const zipUtilsMock = jest.requireMock('../ZipUtils')
-jest.mock('../zipUtils')
+jest.mock('../ZipUtils')
 
 describe('LspProcess tests', () => {
     describe('downloadLspServer', () => {
