@@ -1,4 +1,4 @@
-import { ChildProcess, spawn } from 'child_process'
+import { spawn } from 'child_process'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { isString } from '../Guards'
@@ -6,111 +6,71 @@ import { log, toLog } from '../Log'
 import { AliveLspVersion, ExtensionState } from '../Types'
 import { getLspBasePath } from '../Utils'
 import { getInstalledVersion, getLatestVersion, nukeInstalledVersion, pullLatestVersion } from './LspUtils'
+import { getClSourceRegistryEnv, waitForPort } from './ProcUtils'
 import { getUnzippedPath } from './ZipUtils'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
-export async function startLspServer(state: ExtensionState): Promise<number | null> {
-    const startChild = (cmd: unknown[], child: ChildProcess) => {
-        return new Promise<number>((resolve, reject) => {
-            const handleDisconnect = (state: ExtensionState) => async (code: number, signal: string) => {
-                log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
-
-                if (state.child !== undefined) {
-                    await disconnectAndClearChild(state)
-                }
-            }
-
-            const timer = setupFailedStartupWarningTimer()
-
-            const appendOutputData = (data: unknown) => {
-                lspOutputChannel.append(`${data}`)
-            }
-
-            let connected = false
-
-            child.stdout?.setEncoding('utf-8').on('data', (data) => {
-                appendOutputData(data)
-
-                if (typeof data !== 'string' || connected) {
-                    return
-                }
-
-                log(`Check for port: ${data}`)
-
-                const match = data.match(/\[(.*?)\]\[(.*?)\] Started on port (\d+)/)
-
-                log(`Match: ${toLog(match)}`)
-
-                const port = parseInt(match?.[3] ?? '')
-
-                if (!Number.isFinite(port) || match === null) {
-                    log(`Invalid port: ${toLog(port)}`)
-                    return
-                }
-
-                timer.cancel()
-                connected = true
-
-                log(`Found port: ${toLog(port)}`)
-
-                resolve(port)
-            })
-
-            child.stderr?.setEncoding('utf-8').on('data', (data) => {
-                log(`${toLog(cmd[0])} ERROR: ${toLog(data)}`)
-
-                appendOutputData(data)
-            })
-
-            child
-                .on('exit', handleDisconnect(state))
-                .on('disconnect', handleDisconnect(state))
-                .on('error', (err: Error) => {
-                    log(`Failed to spawn ${toLog(cmd[0])}: ${toLog(err)}`)
-
-                    timer.cancel()
-                    reject(`Couldn't spawn server: ${err.message}`)
-                })
-        })
-    }
-
-    log('Start LSP server')
-
+export async function startLspServer(state: ExtensionState, command: string[]): Promise<number | null> {
     try {
-        if (typeof state.lspInstallPath !== 'string') {
+        log('Start LSP server')
+
+        const handleDisconnect = (state: ExtensionState) => async (code: number, signal: string) => {
+            log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
+
+            if (state.child !== undefined) {
+                await disconnectAndClearChild(state)
+            }
+        }
+
+        function displayWarning() {
+            vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
+            lspOutputChannel.show()
+        }
+
+        const handleError = (cmdName: string, err: Error) => {
+            log(`${toLog(cmdName)} ERROR: ${toLog(err)}`)
+        }
+
+        const appendOutputData = (data: unknown) => {
+            lspOutputChannel.append(`${data}`)
+        }
+
+        const handleErrData = (cmdName: string, data: unknown) => {
+            log(`${toLog(cmdName)} ERROR: ${toLog(data)}`)
+
+            appendOutputData(data)
+        }
+
+        const handleOutData = (data: unknown) => {
+            appendOutputData(data)
+        }
+
+        if (!isString(state.lspInstallPath)) {
             log(`Invalid install path: ${toLog(state.lspInstallPath)}`)
             throw new Error('No LSP server install path')
         }
 
-        const lspConfig = vscode.workspace.getConfiguration('alive.lsp')
-
-        log(`LSP config: ${toLog(lspConfig)}`)
-
-        const cmd = lspConfig.get('startCommand')
-
-        log(`Command: ${toLog(cmd)}`)
-
-        const env = getClSourceRegistryEnv(state.lspInstallPath, process.env)
-
-        log(`ENV: ${toLog(env)}`)
-
-        const cwd = state.workspacePath
-
-        log(`CWD: ${toLog(cwd)}`)
-
-        if (!Array.isArray(cmd)) {
-            log(`Invalid command: ${toLog(cmd)}`)
-            throw new Error('No command defined, cannot start LSP server')
+        const spawnOpts = {
+            env: getClSourceRegistryEnv(state.lspInstallPath, process.env),
+            cwd: state.workspacePath,
         }
 
-        log(`Spawning child: ${toLog(cmd[0])}`)
+        log(`ENV: ${toLog(spawnOpts.env)}`)
+        log(`CWD: ${toLog(spawnOpts.cwd)}`)
+        log(`Spawning child: ${toLog(command[0])}`)
 
-        state.child = spawn(cmd[0], cmd.slice(1), { cwd, env })
+        state.child = spawn(command[0], command.slice(1), spawnOpts)
 
-        log(`Spawned: ${toLog(cmd[0])}`)
+        log(`Spawned: ${toLog(command[0])}`)
 
-        return await startChild(cmd, state.child)
+        return await waitForPort(state.child, {
+            onDisconnect: handleDisconnect(state),
+            onError: (err: Error) => handleError(command[0], err),
+            onErrData: (data: unknown) => handleErrData(command[0], data),
+            onOutData: handleOutData,
+            onWarning: displayWarning,
+        })
     } catch (err) {
         vscode.window.showErrorMessage(`Failed to start LSP server: ${err}`)
         return null
@@ -185,30 +145,6 @@ async function downloadLatestVersion(basePath: string, latestVersion: AliveLspVe
     }
 }
 
-function setupFailedStartupWarningTimer() {
-    const timeoutInMs = 10000
-    const displayWarning = () => {
-        vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
-        lspOutputChannel.show()
-    }
-
-    let complete = false
-    let timer = setTimeout(displayWarning, timeoutInMs)
-
-    return {
-        restart(): void {
-            clearTimeout(timer)
-            if (!complete) {
-                timer = setTimeout(displayWarning, timeoutInMs)
-            }
-        },
-        cancel(): void {
-            complete = true
-            clearTimeout(timer)
-        },
-    }
-}
-
 async function disconnectAndClearChild(state: ExtensionState): Promise<boolean> {
     if ((state.child?.exitCode !== 0 && state.child?.exitCode !== null) || state.child?.signalCode !== null) {
         log('Child exited')
@@ -237,22 +173,4 @@ async function disconnectAndClearChild(state: ExtensionState): Promise<boolean> 
     state.child = undefined
 
     return true
-}
-
-function getClSourceRegistryEnv(installPath: string, processEnv: NodeJS.ProcessEnv): { [key: string]: string | undefined } {
-    const updatedEnv = { ...processEnv }
-
-    if (!processEnv.CL_SOURCE_REGISTRY) {
-        updatedEnv.CL_SOURCE_REGISTRY = installPath + path.delimiter
-        return updatedEnv
-    }
-
-    if (processEnv.CL_SOURCE_REGISTRY.startsWith('(')) {
-        const pathSExpressionEnding = ` (:directory "${installPath}")`
-        updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY.replace(/\)$/, pathSExpressionEnding)})`
-        return updatedEnv
-    }
-
-    updatedEnv.CL_SOURCE_REGISTRY = `${processEnv.CL_SOURCE_REGISTRY}${path.delimiter}${installPath}`
-    return updatedEnv
 }
