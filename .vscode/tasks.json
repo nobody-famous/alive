@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/__test__/extension.spec.ts",
-                "-t",
-                "start invalid path"
+                "src/vscode/backend/__test__/ProcUtils.spec.ts",
+                // "-t",
+                // "start invalid path"
             ],
             "problemMatcher": [
                 "$tsc"

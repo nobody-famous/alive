@@ -64,7 +64,8 @@ export async function startLspServer(state: ExtensionState, command: string[]): 
 
         log(`Spawned: ${toLog(command[0])}`)
 
-        return await waitForPort(state.child, {
+        return await waitForPort({
+            child: state.child,
             onDisconnect: handleDisconnect(state),
             onError: (err: Error) => handleError(command[0], err),
             onErrData: (data: unknown) => handleErrData(command[0], data),

@@ -1,7 +1,9 @@
-import { ChildProcess, SpawnOptionsWithoutStdio } from 'child_process'
 import * as path from 'path'
+import { Readable } from 'stream'
 import { isFiniteNumber, isString } from '../Guards'
-import { ExtensionState } from '../Types'
+import EventEmitter = require('events')
+
+type WaitStream = Pick<Readable, 'setEncoding'>
 
 interface WaitForPortOpts {
     onDisconnect: (code: number, signal: string) => Promise<void>
@@ -9,9 +11,14 @@ interface WaitForPortOpts {
     onErrData: (data: unknown) => void
     onOutData: (data: unknown) => void
     onWarning: () => void
+    child: {
+        stderr: WaitStream | null
+        stdout: WaitStream | null
+        on: (event: string, listener: (...args: any[]) => void) => EventEmitter
+    }
 }
 
-export const waitForPort = (child: ChildProcess, opts: WaitForPortOpts) => {
+export const waitForPort = (opts: WaitForPortOpts) => {
     return new Promise<number | null>((resolve, reject) => {
         const handleError = (err: Error) => {
             opts.onError(err)
@@ -33,7 +40,8 @@ export const waitForPort = (child: ChildProcess, opts: WaitForPortOpts) => {
             resolve(port)
         }
 
-        setCallbacks(child, {
+        setCallbacks({
+            child: opts.child,
             onDisconnect: opts.onDisconnect,
             onError: handleError,
             onErrData: opts.onErrData,
@@ -64,10 +72,13 @@ export function getClSourceRegistryEnv(
     return updatedEnv
 }
 
-const setCallbacks = (child: ChildProcess, opts: WaitForPortOpts) => {
-    child.stdout?.setEncoding('utf-8').on('data', opts.onOutData)
-    child.stderr?.setEncoding('utf-8').on('data', opts.onErrData)
-    child.on('exit', opts.onDisconnect).on('disconnect', opts.onDisconnect).on('error', opts.onError)
+const setCallbacks = (opts: WaitForPortOpts) => {
+    opts.child.stdout?.setEncoding('utf-8').on('data', opts.onOutData)
+    opts.child.stderr?.setEncoding('utf-8').on('data', opts.onErrData)
+
+    opts.child.on('exit', opts.onDisconnect).on('disconnect', opts.onDisconnect).on('error', opts.onError)
+    opts.child.on('disconnect', opts.onDisconnect)
+    opts.child.on('error', opts.onError)
 }
 
 function setupWarningTimer(onWarning: () => void) {

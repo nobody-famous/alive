@@ -249,7 +249,7 @@ async function startLocalServer(state: ExtensionState, config: AliveConfig): Pro
         return
     }
 
-    const port = await startLspServer(state)
+    const port = await startLspServer(state, config.lsp.startCommand)
 
     return isFiniteNumber(port) ? port : undefined
 }
