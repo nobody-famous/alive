@@ -72,6 +72,22 @@ export function getClSourceRegistryEnv(
     return updatedEnv
 }
 
+export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
+    if (!isFiniteNumber(timeoutInMs)) {
+        return
+    }
+
+    let complete = false
+    let timer = setTimeout(onWarning, timeoutInMs)
+
+    return {
+        cancel(): void {
+            complete = true
+            clearTimeout(timer)
+        },
+    }
+}
+
 const setCallbacks = (opts: WaitForPortOpts) => {
     opts.child.stdout?.setEncoding('utf-8').on('data', opts.onOutData)
     opts.child.stderr?.setEncoding('utf-8').on('data', opts.onErrData)
@@ -79,26 +95,6 @@ const setCallbacks = (opts: WaitForPortOpts) => {
     opts.child.on('exit', opts.onDisconnect).on('disconnect', opts.onDisconnect).on('error', opts.onError)
     opts.child.on('disconnect', opts.onDisconnect)
     opts.child.on('error', opts.onError)
-}
-
-function setupWarningTimer(onWarning: () => void) {
-    const timeoutInMs = 10000
-
-    let complete = false
-    let timer = setTimeout(onWarning, timeoutInMs)
-
-    return {
-        restart(): void {
-            clearTimeout(timer)
-            if (!complete) {
-                timer = setTimeout(onWarning, timeoutInMs)
-            }
-        },
-        cancel(): void {
-            complete = true
-            clearTimeout(timer)
-        },
-    }
 }
 
 const parsePort = (data: string): number | undefined => {

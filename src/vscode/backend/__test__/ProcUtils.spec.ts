@@ -1,5 +1,6 @@
 import { PassThrough } from 'stream'
-import { waitForPort } from '../ProcUtils'
+import { getClSourceRegistryEnv, waitForPort } from '../ProcUtils'
+import path = require('path')
 
 describe('ProcUtils tests', () => {
     describe('waitForPort', () => {
@@ -57,5 +58,27 @@ describe('ProcUtils tests', () => {
 
             expect(await task).toBe(1234)
         })
+    })
+
+    describe('getClSourceRegistryEnv', () => {
+        it('No registry', () => {
+            expect(getClSourceRegistryEnv('/some/path', { foo: 'bar' })).toMatchObject({ foo: 'bar' })
+        })
+
+        it('Has registry expression', () => {
+            expect(getClSourceRegistryEnv('/some/path', { CL_SOURCE_REGISTRY: '(expr)' })).toMatchObject({
+                CL_SOURCE_REGISTRY: '(expr (:directory "/some/path"))',
+            })
+        })
+
+        it('Has registry path', () => {
+            expect(getClSourceRegistryEnv('/some/path', { CL_SOURCE_REGISTRY: 'reg/path' })).toMatchObject({
+                CL_SOURCE_REGISTRY: `reg/path${path.delimiter}/some/path`,
+            })
+        })
+    })
+
+    describe('startWarningTimer', () => {
+        it('', () => {})
     })
 })
