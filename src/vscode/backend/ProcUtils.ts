@@ -77,12 +77,10 @@ export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
         return
     }
 
-    let complete = false
     let timer = setTimeout(onWarning, timeoutInMs)
 
     return {
         cancel(): void {
-            complete = true
             clearTimeout(timer)
         },
     }
