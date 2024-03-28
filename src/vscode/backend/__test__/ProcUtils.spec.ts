@@ -5,10 +5,22 @@ describe('ProcUtils tests', () => {
     describe('waitForPort', () => {
         const getCallbacks = () => {
             const callbacks: Record<string, Function> = {}
+            const errPass = new PassThrough()
+            const outPass = new PassThrough()
+
+            errPass.on = jest.fn((name: string, fn: (err: Error) => void) => {
+                callbacks['stderr'] = fn
+                return new PassThrough()
+            })
+            outPass.on = jest.fn((name: string, fn: (err: Error) => void) => {
+                callbacks['stdout'] = fn
+                return new PassThrough()
+            })
+
             const opts = {
                 child: {
-                    stdout: new PassThrough(),
-                    stderr: new PassThrough(),
+                    stdout: outPass,
+                    stderr: errPass,
                     on: jest.fn((name: string, fn: () => void) => {
                         callbacks[name] = fn
                         return new PassThrough()
@@ -34,6 +46,16 @@ describe('ProcUtils tests', () => {
                 await task
                 expect(true).toBe(false)
             } catch (err) {}
+        })
+
+        it('handleOutData', async () => {
+            const { task, callbacks } = getCallbacks()
+
+            callbacks['stdout']?.(10)
+            callbacks['stdout']?.('Some stuff')
+            callbacks['stdout']?.('{This can be ignored} Started on port 1234')
+
+            expect(await task).toBe(1234)
         })
     })
 })

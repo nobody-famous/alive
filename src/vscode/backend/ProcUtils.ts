@@ -102,8 +102,8 @@ function setupWarningTimer(onWarning: () => void) {
 }
 
 const parsePort = (data: string): number | undefined => {
-    const match = data.match(/\[(.*?)\]\[(.*?)\] Started on port (\d+)/)
-    const port = parseInt(match?.[3] ?? '')
+    const match = data.match(/.*Started on port (\d+)/)
+    const port = parseInt(match?.[1] ?? '')
 
     return isFiniteNumber(port) ? port : undefined
 }

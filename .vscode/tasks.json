@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/backend/__test__/ProcUtils.spec.ts",
-                // "-t",
-                // "start invalid path"
+                "-t",
+                "handleOutData"
             ],
             "problemMatcher": [
                 "$tsc"
