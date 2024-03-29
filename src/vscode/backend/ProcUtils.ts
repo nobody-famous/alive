@@ -10,7 +10,6 @@ interface WaitForPortOpts {
     onError: (err: Error) => void
     onErrData: (data: unknown) => void
     onOutData: (data: unknown) => void
-    onWarning: () => void
     child: {
         stderr: WaitStream | null
         stdout: WaitStream | null
@@ -52,7 +51,6 @@ export const waitForPort = (opts: WaitForPortOpts) => {
                 onError: handleError,
                 onErrData: opts.onErrData,
                 onOutData: handleOutData,
-                onWarning: opts.onWarning,
             }
         )
     })

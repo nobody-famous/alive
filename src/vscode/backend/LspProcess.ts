@@ -6,7 +6,7 @@ import { log, toLog } from '../Log'
 import { AliveLspVersion, ExtensionState } from '../Types'
 import { getLspBasePath } from '../Utils'
 import { getInstalledVersion, getLatestVersion, nukeInstalledVersion, pullLatestVersion } from './LspUtils'
-import { getClSourceRegistryEnv, waitForPort } from './ProcUtils'
+import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from './ProcUtils'
 import { getUnzippedPath } from './ZipUtils'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
@@ -64,14 +64,19 @@ export async function startLspServer(state: ExtensionState, command: string[]): 
 
         log(`Spawned: ${toLog(command[0])}`)
 
-        return await waitForPort({
-            child: state.child,
-            onDisconnect: handleDisconnect(state),
-            onError: (err: Error) => handleError(command[0], err),
-            onErrData: (data: unknown) => handleErrData(command[0], data),
-            onOutData: handleOutData,
-            onWarning: displayWarning,
-        })
+        const timer = startWarningTimer(displayWarning, 10000)
+
+        try {
+            return await waitForPort({
+                child: state.child,
+                onDisconnect: handleDisconnect(state),
+                onError: (err: Error) => handleError(command[0], err),
+                onErrData: (data: unknown) => handleErrData(command[0], data),
+                onOutData: handleOutData,
+            })
+        } finally {
+            timer?.cancel()
+        }
     } catch (err) {
         vscode.window.showErrorMessage(`Failed to start LSP server: ${err}`)
         return null
