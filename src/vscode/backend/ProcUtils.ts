@@ -40,14 +40,21 @@ export const waitForPort = (opts: WaitForPortOpts) => {
             resolve(port)
         }
 
-        setCallbacks({
-            child: opts.child,
-            onDisconnect: opts.onDisconnect,
-            onError: handleError,
-            onErrData: opts.onErrData,
-            onOutData: handleOutData,
-            onWarning: opts.onWarning,
-        })
+        if (opts.child.stdout === null || opts.child.stderr === null) {
+            return reject('Missing child streams')
+        }
+
+        setCallbacks(
+            { stdout: opts.child.stdout, stderr: opts.child.stderr },
+            {
+                child: opts.child,
+                onDisconnect: opts.onDisconnect,
+                onError: handleError,
+                onErrData: opts.onErrData,
+                onOutData: handleOutData,
+                onWarning: opts.onWarning,
+            }
+        )
     })
 }
 
@@ -86,9 +93,9 @@ export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
     }
 }
 
-const setCallbacks = (opts: WaitForPortOpts) => {
-    opts.child.stdout?.setEncoding('utf-8').on('data', opts.onOutData)
-    opts.child.stderr?.setEncoding('utf-8').on('data', opts.onErrData)
+const setCallbacks = (streams: { stdout: WaitStream; stderr: WaitStream }, opts: WaitForPortOpts) => {
+    streams.stdout.setEncoding('utf-8').on('data', opts.onOutData)
+    streams.stderr.setEncoding('utf-8').on('data', opts.onErrData)
 
     opts.child.on('exit', opts.onDisconnect).on('disconnect', opts.onDisconnect).on('error', opts.onError)
     opts.child.on('disconnect', opts.onDisconnect)

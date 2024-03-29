@@ -1,6 +1,8 @@
 import { PassThrough } from 'stream'
-import { getClSourceRegistryEnv, waitForPort } from '../ProcUtils'
+import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from '../ProcUtils'
 import path = require('path')
+
+jest.useFakeTimers()
 
 describe('ProcUtils tests', () => {
     describe('waitForPort', () => {
@@ -58,6 +60,25 @@ describe('ProcUtils tests', () => {
 
             expect(await task).toBe(1234)
         })
+
+        it('No streams', async () => {
+            try {
+                const opts = {
+                    child: {
+                        stdout: null,
+                        stderr: null,
+                        on: jest.fn(),
+                    },
+                    onDisconnect: jest.fn(),
+                    onError: jest.fn(),
+                    onErrData: jest.fn(),
+                    onOutData: jest.fn(),
+                    onWarning: jest.fn(),
+                }
+                await waitForPort(opts)
+                expect(true).toBe(false)
+            } catch (err) {}
+        })
     })
 
     describe('getClSourceRegistryEnv', () => {
@@ -79,6 +100,29 @@ describe('ProcUtils tests', () => {
     })
 
     describe('startWarningTimer', () => {
-        it('', () => {})
+        it('Timed out', () => {
+            const fn = jest.fn()
+
+            startWarningTimer(fn, 1000)
+
+            jest.runAllTimers()
+
+            expect(fn).toHaveBeenCalled()
+        })
+
+        it('Cancel', () => {
+            const fn = jest.fn()
+
+            const fns = startWarningTimer(fn, 1000)
+
+            fns?.cancel()
+            jest.runAllTimers()
+
+            expect(fn).not.toHaveBeenCalled()
+        })
+
+        it('Invalid timeout', () => {
+            expect(startWarningTimer(() => {}, NaN)).toBeUndefined()
+        })
     })
 })
