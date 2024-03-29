@@ -23,11 +23,6 @@ export async function startLspServer(state: ExtensionState, command: string[]): 
             }
         }
 
-        function displayWarning() {
-            vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
-            lspOutputChannel.show()
-        }
-
         const handleError = (cmdName: string, err: Error) => {
             log(`${toLog(cmdName)} ERROR: ${toLog(err)}`)
         }
@@ -64,7 +59,10 @@ export async function startLspServer(state: ExtensionState, command: string[]): 
 
         log(`Spawned: ${toLog(command[0])}`)
 
-        const timer = startWarningTimer(displayWarning, 10000)
+        const timer = startWarningTimer(() => {
+            vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
+            lspOutputChannel.show()
+        }, 10000)
 
         try {
             return await waitForPort({
