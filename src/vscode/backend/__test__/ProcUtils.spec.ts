@@ -1,34 +1,23 @@
-import { PassThrough } from 'stream'
 import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from '../ProcUtils'
 import path = require('path')
+
+jest.mock('stream')
 
 jest.useFakeTimers()
 
 describe('ProcUtils tests', () => {
     describe('waitForPort', () => {
         const getCallbacks = () => {
-            const callbacks: Record<string, Function> = {}
-            const errPass = new PassThrough()
-            const outPass = new PassThrough()
-
-            errPass.on = jest.fn((name: string, fn: (err: Error) => void) => {
-                callbacks['stderr'] = fn
-                return new PassThrough()
-            })
-            outPass.on = jest.fn((name: string, fn: (err: Error) => void) => {
-                callbacks['stdout'] = fn
-                return new PassThrough()
-            })
-
+            const callbacks: Record<string, (...args: unknown[]) => void> = {}
             const opts = {
                 child: {
-                    stdout: outPass,
-                    stderr: errPass,
                     on: jest.fn((name: string, fn: () => void) => {
                         callbacks[name] = fn
-                        return new PassThrough()
+                        return { on: jest.fn() }
                     }),
                 },
+                stdout: { setEncoding: jest.fn(), on: jest.fn() },
+                stderr: { setEncoding: jest.fn(), on: jest.fn() },
                 onDisconnect: jest.fn(),
                 onError: jest.fn(),
                 onErrData: jest.fn(),
@@ -44,11 +33,8 @@ describe('ProcUtils tests', () => {
         it('handleError', async () => {
             const { task, callbacks } = getCallbacks()
 
-            try {
-                callbacks['error']?.(new Error('Failed, as requested'))
-                await task
-                expect(true).toBe(false)
-            } catch (err) {}
+            callbacks['error']?.(new Error('Failed, as requested'))
+            await expect(async () => await task).rejects.toThrow(Error)
         })
 
         it('handleOutData', async () => {
@@ -59,25 +45,6 @@ describe('ProcUtils tests', () => {
             callbacks['stdout']?.('{This can be ignored} Started on port 1234')
 
             expect(await task).toBe(1234)
-        })
-
-        it('No streams', async () => {
-            try {
-                const opts = {
-                    child: {
-                        stdout: null,
-                        stderr: null,
-                        on: jest.fn(),
-                    },
-                    onDisconnect: jest.fn(),
-                    onError: jest.fn(),
-                    onErrData: jest.fn(),
-                    onOutData: jest.fn(),
-                    onWarning: jest.fn(),
-                }
-                await waitForPort(opts)
-                expect(true).toBe(false)
-            } catch (err) {}
         })
     })
 

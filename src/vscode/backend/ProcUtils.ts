@@ -1,9 +1,10 @@
 import * as path from 'path'
+import { types } from 'util'
 import { Readable } from 'stream'
 import { isFiniteNumber, isString } from '../Guards'
 import EventEmitter = require('events')
 
-type WaitStream = Pick<Readable, 'setEncoding'>
+type WaitStream = Pick<Readable, 'setEncoding' | 'on'>
 
 interface WaitForPortOpts {
     onDisconnect: (code: number, signal: string) => Promise<void>
@@ -11,10 +12,10 @@ interface WaitForPortOpts {
     onErrData: (data: unknown) => void
     onOutData: (data: unknown) => void
     child: {
-        stderr: WaitStream | null
-        stdout: WaitStream | null
-        on: (event: string, listener: (...args: any[]) => void) => EventEmitter
+        on: (event: string, listener: (...args: unknown[]) => void) => Pick<EventEmitter, 'on'>
     }
+    stderr: WaitStream
+    stdout: WaitStream
 }
 
 export const waitForPort = (opts: WaitForPortOpts) => {
@@ -39,20 +40,15 @@ export const waitForPort = (opts: WaitForPortOpts) => {
             resolve(port)
         }
 
-        if (opts.child.stdout === null || opts.child.stderr === null) {
-            return reject('Missing child streams')
-        }
-
-        setCallbacks(
-            { stdout: opts.child.stdout, stderr: opts.child.stderr },
-            {
-                child: opts.child,
-                onDisconnect: opts.onDisconnect,
-                onError: handleError,
-                onErrData: opts.onErrData,
-                onOutData: handleOutData,
-            }
-        )
+        setCallbacks({
+            child: opts.child,
+            stdout: opts.stdout,
+            stderr: opts.stderr,
+            onDisconnect: opts.onDisconnect,
+            onError: handleError,
+            onErrData: opts.onErrData,
+            onOutData: handleOutData,
+        })
     })
 }
 
@@ -82,7 +78,7 @@ export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
         return
     }
 
-    let timer = setTimeout(onWarning, timeoutInMs)
+    const timer = setTimeout(onWarning, timeoutInMs)
 
     return {
         cancel(): void {
@@ -91,13 +87,24 @@ export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
     }
 }
 
-const setCallbacks = (streams: { stdout: WaitStream; stderr: WaitStream }, opts: WaitForPortOpts) => {
-    streams.stdout.setEncoding('utf-8').on('data', opts.onOutData)
-    streams.stderr.setEncoding('utf-8').on('data', opts.onErrData)
+const setCallbacks = (opts: WaitForPortOpts) => {
+    opts.stdout.on('data', opts.onOutData)
+    opts.stderr.on('data', opts.onErrData)
 
-    opts.child.on('exit', opts.onDisconnect).on('disconnect', opts.onDisconnect).on('error', opts.onError)
-    opts.child.on('disconnect', opts.onDisconnect)
-    opts.child.on('error', opts.onError)
+    const doDisconnect = (...args: unknown[]) => {
+        const code = isFiniteNumber(args[0]) ? args[0] : 0
+        const signal = isString(args[1]) ? args[1] : 'Unknown signal'
+
+        opts.onDisconnect(code, signal)
+    }
+
+    opts.child.on('exit', doDisconnect)
+    opts.child.on('disconnect', doDisconnect)
+
+    opts.child.on('error', (arg: unknown) => {
+        const err = types.isNativeError(arg) ? arg : new Error(`Unknown error: ${arg}`)
+        opts.onError(err)
+    })
 }
 
 const parsePort = (data: string): number | undefined => {

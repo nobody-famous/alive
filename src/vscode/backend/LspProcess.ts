@@ -64,9 +64,18 @@ export async function startLspServer(state: ExtensionState, command: string[]): 
             lspOutputChannel.show()
         }, 10000)
 
+        if (state.child.stdout === null || state.child.stderr === null) {
+            throw new Error('Missing child streams')
+        }
+
         try {
+            const stdout = state.child.stdout.setEncoding('utf-8')
+            const stderr = state.child.stderr.setEncoding('utf-8')
+
             return await waitForPort({
                 child: state.child,
+                stdout,
+                stderr,
                 onDisconnect: handleDisconnect(state),
                 onError: (err: Error) => handleError(command[0], err),
                 onErrData: (data: unknown) => handleErrData(command[0], data),

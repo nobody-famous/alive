@@ -1,10 +1,11 @@
 import axios from 'axios'
 import * as fs from 'fs'
 import * as path from 'path'
-import { isFiniteNumber, isGitHubVersion } from '../Guards'
+import { isFiniteNumber, isGitHubVersion, isObject } from '../Guards'
 import { log, toLog } from '../Log'
 import { AliveLspVersion, GitHubVersion } from '../Types'
-import { getUnzippedPath, readZipFile, unzipFile } from './ZipUtils'
+import { getUnzippedPath, unzipFile, writeZipFile } from './ZipUtils'
+import EventEmitter = require('events')
 
 export async function getLatestVersion(url: string): Promise<AliveLspVersion | undefined> {
     log('Get latest version')
@@ -81,8 +82,16 @@ export async function pullLatestVersion(basePath: string, version: string, url: 
         responseType: 'stream',
     })
 
+    const isPipeFunction = (f: unknown): f is () => EventEmitter => {
+        return typeof f === 'function' && f.length === 1
+    }
+
+    if (!isObject(resp.data) || !isPipeFunction(resp.data.pipe)) {
+        throw new Error('Invalid response, no stream pipe')
+    }
+
     await fs.promises.mkdir(zipPath, { recursive: true })
-    await readZipFile(zipFile, resp)
+    await writeZipFile(zipFile, resp.data.pipe)
     await unzipFile(zipPath, zipFile)
 
     return await getUnzippedPath(zipPath)

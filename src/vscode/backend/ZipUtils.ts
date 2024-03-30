@@ -1,18 +1,16 @@
-import { AxiosResponse } from 'axios'
 import * as fs from 'fs'
 import * as path from 'path'
-import { isObject } from '../Guards'
+import * as stream from 'stream'
 import StreamZip = require('node-stream-zip')
+import EventEmitter = require('events')
 
-export async function readZipFile(file: string, resp: AxiosResponse<unknown>) {
+export async function writeZipFile(file: string, pipe: (s: stream.Writable) => Pick<EventEmitter, 'on'>) {
     const writer = fs.createWriteStream(file)
 
     return new Promise((resolve, reject) => {
-        if (isObject(resp?.data) && typeof resp.data.pipe === 'function') {
-            resp.data.pipe(writer).on('finish', resolve).on('close', resolve).on('error', reject)
-        } else {
-            reject('Invalid response object')
-        }
+        pipe(writer).on('finish', resolve)
+        pipe(writer).on('close', resolve)
+        pipe(writer).on('error', reject)
     })
 }
 
