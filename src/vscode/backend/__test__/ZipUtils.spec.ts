@@ -1,10 +1,11 @@
 import EventEmitter = require('events')
-import { writeZipFile } from '../ZipUtils'
+import { unzipFile, writeZipFile } from '../ZipUtils'
 
 jest.mock('fs')
+jest.mock('node-stream-zip')
 
 describe('ZipUtils tests', () => {
-    describe('readZipFile', () => {
+    describe('writeZipFile', () => {
         const getCallbacks = () => {
             const callbacks: Record<string, (err?: Error) => void> = {}
             const pipe = () => ({
@@ -39,5 +40,9 @@ describe('ZipUtils tests', () => {
             callbacks['error']?.(new Error('Failed, as requested'))
             await expect(async () => await task).rejects.toThrow(Error)
         })
+    })
+
+    it('unzipFile', async () => {
+        await unzipFile('/some/path', 'file.name')
     })
 })
