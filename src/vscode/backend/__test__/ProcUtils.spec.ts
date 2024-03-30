@@ -1,3 +1,4 @@
+import { PassThrough } from 'stream'
 import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from '../ProcUtils'
 import path = require('path')
 
@@ -16,8 +17,20 @@ describe('ProcUtils tests', () => {
                         return { on: jest.fn() }
                     }),
                 },
-                stdout: { setEncoding: jest.fn(), on: jest.fn() },
-                stderr: { setEncoding: jest.fn(), on: jest.fn() },
+                stdout: {
+                    setEncoding: jest.fn(),
+                    on: jest.fn((name, fn) => {
+                        callbacks['stdout'] = fn
+                        return new PassThrough()
+                    }),
+                },
+                stderr: {
+                    setEncoding: jest.fn(),
+                    on: jest.fn((name, fn) => {
+                        callbacks['stderr'] = fn
+                        return new PassThrough()
+                    }),
+                },
                 onDisconnect: jest.fn(),
                 onError: jest.fn(),
                 onErrData: jest.fn(),
@@ -30,9 +43,24 @@ describe('ProcUtils tests', () => {
             return { task, callbacks }
         }
 
+        it('exit', async () => {
+            const { task, callbacks } = getCallbacks()
+
+            callbacks['stdout']?.('{This can be ignored} Started on port 1234')
+
+            callbacks['exit']?.(5, 'Fake signal')
+            callbacks['exit']?.(NaN, {})
+            callbacks['exit']?.()
+
+            await task
+        })
+
+        it('disconnect', async () => {})
+
         it('handleError', async () => {
             const { task, callbacks } = getCallbacks()
 
+            callbacks['error']?.('Failed, as requested')
             callbacks['error']?.(new Error('Failed, as requested'))
             await expect(async () => await task).rejects.toThrow(Error)
         })

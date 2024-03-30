@@ -22,7 +22,7 @@ export const waitForPort = (opts: WaitForPortOpts) => {
     return new Promise<number | null>((resolve, reject) => {
         const handleError = (err: Error) => {
             opts.onError(err)
-            reject(`Couldn't spawn server: ${err.message}`)
+            reject(new Error(`Couldn't spawn server: ${err.message}`))
         }
 
         const handleOutData = (data: unknown) => {
