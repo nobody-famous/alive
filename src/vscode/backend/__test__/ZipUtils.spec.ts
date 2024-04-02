@@ -1,6 +1,8 @@
+import * as path from 'path'
 import EventEmitter = require('events')
-import { unzipFile, writeZipFile } from '../ZipUtils'
+import { getUnzippedPath, unzipFile, writeZipFile } from '../ZipUtils'
 
+const fsMock = jest.requireMock('fs')
 jest.mock('fs')
 jest.mock('node-stream-zip')
 
@@ -44,5 +46,22 @@ describe('ZipUtils tests', () => {
 
     it('unzipFile', async () => {
         await unzipFile('/some/path', 'file.name')
+    })
+
+    describe('getUnzippedPath', () => {
+        it('No directories', async () => {
+            fsMock.promises = { readdir: jest.fn(() => []) }
+            expect(await getUnzippedPath('/base/path')).toBe('/base/path')
+        })
+
+        it('Have directories', async () => {
+            fsMock.promises = {
+                readdir: jest.fn(() => [
+                    { isDirectory: jest.fn(() => false) },
+                    { isDirectory: jest.fn(() => true), name: 'foo' },
+                ]),
+            }
+            expect(await getUnzippedPath('/base/path')).toBe(path.join('/base/path', 'foo'))
+        })
     })
 })
