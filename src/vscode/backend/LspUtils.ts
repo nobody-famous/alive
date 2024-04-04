@@ -24,7 +24,7 @@ export async function getLatestVersion(url: string): Promise<AliveLspVersion | u
         return undefined
     }
 
-    versions.sort(sortVersions)
+    versions.sort(compareVersions)
 
     log(`Versions sorted: ${toLog(versions)}`)
 
@@ -108,7 +108,7 @@ async function fetchVersions(url: string) {
     return resp.data
 }
 
-function sortVersions(a: GitHubVersion, b: GitHubVersion) {
+function compareVersions(a: GitHubVersion, b: GitHubVersion) {
     let aTime = Date.parse(a.created_at)
     let bTime = Date.parse(b.created_at)
 
