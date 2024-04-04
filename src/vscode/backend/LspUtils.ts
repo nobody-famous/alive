@@ -10,35 +10,21 @@ import EventEmitter = require('events')
 export async function getLatestVersion(url: string): Promise<AliveLspVersion | undefined> {
     log('Get latest version')
 
-    const resp = await axios(url, {
-        headers: { 'User-Agent': 'nobody-famous/alive' },
-        method: 'GET',
-    })
+    const data = await fetchVersions(url)
 
-    if (!Array.isArray(resp.data)) {
-        log(`Response not an array: ${toLog(resp.data)}`)
-        return
+    if (data === undefined) {
+        return undefined
     }
 
-    const versions = resp.data.filter(isGitHubVersion)
+    const versions = data.filter(isGitHubVersion)
 
     log(`Versions: ${toLog(versions)}`)
 
-    versions.sort((a, b) => {
-        let aTime = Date.parse(a.created_at)
-        let bTime = Date.parse(b.created_at)
+    if (versions.length === 0) {
+        return undefined
+    }
 
-        aTime = isFiniteNumber(aTime) ? aTime : 0
-        bTime = isFiniteNumber(bTime) ? bTime : 0
-
-        if (aTime > bTime) {
-            return -1
-        } else if (aTime < bTime) {
-            return 1
-        } else {
-            return 0
-        }
-    })
+    versions.sort(sortVersions)
 
     log(`Versions sorted: ${toLog(versions)}`)
 
@@ -105,5 +91,35 @@ function toAliveLspVersion(version: GitHubVersion): AliveLspVersion {
         name: version.name,
         tagName: version.tag_name,
         zipballUrl: version.zipball_url,
+    }
+}
+
+async function fetchVersions(url: string) {
+    const resp = await axios(url, {
+        headers: { 'User-Agent': 'nobody-famous/alive' },
+        method: 'GET',
+    })
+
+    if (!isObject(resp) || !Array.isArray(resp.data)) {
+        log(`Response not an array: ${toLog(resp?.data)}`)
+        return
+    }
+
+    return resp.data
+}
+
+function sortVersions(a: GitHubVersion, b: GitHubVersion) {
+    let aTime = Date.parse(a.created_at)
+    let bTime = Date.parse(b.created_at)
+
+    aTime = isFiniteNumber(aTime) ? aTime : 0
+    bTime = isFiniteNumber(bTime) ? bTime : 0
+
+    if (aTime > bTime) {
+        return -1
+    } else if (aTime < bTime) {
+        return 1
+    } else {
+        return 0
     }
 }
