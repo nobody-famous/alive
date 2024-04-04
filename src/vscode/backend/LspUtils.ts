@@ -108,7 +108,7 @@ async function fetchVersions(url: string) {
     return resp.data
 }
 
-function compareVersions(a: GitHubVersion, b: GitHubVersion) {
+function compareVersions(a: Pick<GitHubVersion, 'created_at'>, b: Pick<GitHubVersion, 'created_at'>) {
     let aTime = Date.parse(a.created_at)
     let bTime = Date.parse(b.created_at)
 
