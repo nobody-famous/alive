@@ -1,7 +1,10 @@
-import { getLatestVersion } from '../LspUtils'
+import { createPath, doesPathExist, getLatestVersion } from '../LspUtils'
 
 const axiosMock = jest.requireMock('axios')
 jest.mock('axios')
+
+const fsMock = jest.requireMock('fs')
+jest.mock('fs')
 
 describe('LspUtils tests', () => {
     describe('getLatestVersion', () => {
@@ -44,5 +47,32 @@ describe('LspUtils tests', () => {
             axiosMock.mockReturnValueOnce(undefined)
             expect(await getLatestVersion('/some/url')).toBeUndefined()
         })
+    })
+
+    it('createPath', async () => {
+        try {
+            fsMock.promises = { mkdir: jest.fn() }
+
+            await createPath('/some/path')
+
+            expect(fsMock.promises.mkdir).toHaveBeenCalledWith('/some/path', expect.objectContaining({ recursive: true }))
+        } finally {
+            fsMock.promises = undefined
+        }
+    })
+
+    it('doesPathExist', async () => {
+        try {
+            fsMock.promises = { access: jest.fn() }
+
+            expect(await doesPathExist('/first/path')).toBe(true)
+
+            fsMock.promises.access.mockImplementationOnce(() => {
+                throw new Error('Failed, as requested')
+            })
+            expect(await doesPathExist('/second/path')).toBe(false)
+        } finally {
+            fsMock.promises = undefined
+        }
     })
 })

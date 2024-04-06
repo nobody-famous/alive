@@ -5,7 +5,14 @@ import { isString } from '../Guards'
 import { log, toLog } from '../Log'
 import { AliveLspVersion, ExtensionState } from '../Types'
 import { getLspBasePath } from '../Utils'
-import { getInstalledVersion, getLatestVersion, nukeInstalledVersion, pullLatestVersion } from './LspUtils'
+import {
+    createPath,
+    doesPathExist,
+    getInstalledVersion,
+    getLatestVersion,
+    nukeInstalledVersion,
+    pullLatestVersion,
+} from './LspUtils'
 import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from './ProcUtils'
 import { getUnzippedPath } from './ZipUtils'
 
@@ -112,6 +119,10 @@ export async function downloadLspServer(
         log('Download LSP server')
 
         const basePath = getLspBasePath(extension)
+
+        if (!(await doesPathExist(basePath))) {
+            await createPath(basePath)
+        }
 
         log(`Base path: ${toLog(basePath)}`)
 

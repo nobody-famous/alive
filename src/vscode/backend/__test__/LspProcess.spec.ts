@@ -14,6 +14,7 @@ jest.mock('../ZipUtils')
 describe('LspProcess tests', () => {
     describe('downloadLspServer', () => {
         const fakeExtension = { extensionPath: 'some path' }
+
         it('No versions', async () => {
             utilsMock.getLspBasePath.mockReturnValueOnce('/some/path')
             lspUtilsMock.getLatestVersion.mockReturnValueOnce(undefined)

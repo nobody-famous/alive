@@ -31,15 +31,13 @@ export async function getLatestVersion(url: string): Promise<AliveLspVersion | u
     return toAliveLspVersion(versions[0])
 }
 
+export async function createPath(basePath: string) {
+    log(`Creating path: ${toLog(basePath)}`)
+    await fs.promises.mkdir(basePath, { recursive: true })
+}
+
 export async function getInstalledVersion(basePath: string): Promise<string | undefined> {
     log(`Get installed version: ${toLog(basePath)}`)
-
-    try {
-        await fs.promises.access(basePath)
-    } catch (err) {
-        log(`Creating path: ${toLog(basePath)}`)
-        await fs.promises.mkdir(basePath, { recursive: true })
-    }
 
     const files = await fs.promises.readdir(basePath)
 
@@ -81,6 +79,15 @@ export async function pullLatestVersion(basePath: string, version: string, url: 
     await unzipFile(zipPath, zipFile)
 
     return await getUnzippedPath(zipPath)
+}
+
+export async function doesPathExist(path: string): Promise<boolean> {
+    try {
+        await fs.promises.access(path)
+        return true
+    } catch (err) {
+        return false
+    }
 }
 
 function toAliveLspVersion(version: GitHubVersion): AliveLspVersion {
