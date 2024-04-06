@@ -1,4 +1,4 @@
-import { createPath, doesPathExist, getLatestVersion } from '../LspUtils'
+import { createPath, doesPathExist, getInstalledVersion, getLatestVersion } from '../LspUtils'
 
 const axiosMock = jest.requireMock('axios')
 jest.mock('axios')
@@ -74,5 +74,37 @@ describe('LspUtils tests', () => {
         } finally {
             fsMock.promises = undefined
         }
+    })
+
+    describe('getInstalledVersion', () => {
+        beforeEach(() => {
+            fsMock.promises = {
+                readdir: jest.fn(() => []),
+                rm: jest.fn(),
+            }
+        })
+
+        afterEach(() => {
+            fsMock.promises = undefined
+        })
+
+        it('No files', async () => {
+            expect(await getInstalledVersion('/some/path')).toBeUndefined()
+            expect(fsMock.promises.rm).not.toHaveBeenCalled()
+        })
+
+        it('One file', async () => {
+            fsMock.promises.readdir.mockReturnValueOnce(['some_file'])
+
+            expect(await getInstalledVersion('/some/path')).toBe('some_file')
+            expect(fsMock.promises.rm).not.toHaveBeenCalled()
+        })
+
+        it('Two files', async () => {
+            fsMock.promises.readdir.mockReturnValueOnce(['first_file', 'second_file'])
+
+            expect(await getInstalledVersion('/some/path')).toBeUndefined()
+            expect(fsMock.promises.rm).toHaveBeenCalled()
+        })
     })
 })

@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/backend/__test__/LspUtils.spec.ts",
-                // "-t",
-                // "no version installed"
+                "-t",
+                "getInstalledVersion"
             ],
             "problemMatcher": [
                 "$tsc"
