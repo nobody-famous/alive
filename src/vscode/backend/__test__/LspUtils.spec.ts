@@ -76,14 +76,10 @@ describe('LspUtils tests', () => {
 
             axiosMock.mockReturnValueOnce({ data: 10 })
             expect(await getLatestVersion('/some/url')).toBeUndefined()
-        })
 
-        it('Empty array', async () => {
             axiosMock.mockReturnValueOnce({ data: [] })
             expect(await getLatestVersion('/some/url')).toBeUndefined()
-        })
 
-        it('Not an array', async () => {
             axiosMock.mockReturnValueOnce(undefined)
             expect(await getLatestVersion('/some/url')).toBeUndefined()
         })
