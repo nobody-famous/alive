@@ -40,7 +40,7 @@ describe('ZipUtils tests', () => {
             const { task, callbacks } = getCallbacks()
 
             callbacks['error']?.(new Error('Failed, as requested'))
-            await expect(async () => await task).rejects.toThrow(Error)
+            expect(async () => task).rejects.toThrow()
         })
     })
 

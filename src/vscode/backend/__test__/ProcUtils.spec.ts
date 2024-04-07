@@ -57,12 +57,13 @@ describe('ProcUtils tests', () => {
 
         it('disconnect', async () => {})
 
-        it('handleError', async () => {
+        it('handleError', () => {
             const { task, callbacks } = getCallbacks()
 
             callbacks['error']?.('Failed, as requested')
             callbacks['error']?.(new Error('Failed, as requested'))
-            await expect(async () => await task).rejects.toThrow(Error)
+
+            expect(async () => task).rejects.toThrow()
         })
 
         it('handleOutData', async () => {

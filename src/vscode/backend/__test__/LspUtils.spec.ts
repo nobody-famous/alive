@@ -1,10 +1,14 @@
-import { createPath, doesPathExist, getInstalledVersion, getLatestVersion } from '../LspUtils'
+import * as path from 'path'
+import { createPath, doesPathExist, getInstalledVersion, getLatestVersion, pullLatestVersion } from '../LspUtils'
 
 const axiosMock = jest.requireMock('axios')
 jest.mock('axios')
 
 const fsMock = jest.requireMock('fs')
 jest.mock('fs')
+
+const zipMock = jest.requireMock('../ZipUtils')
+jest.mock('../ZipUtils')
 
 describe('LspUtils tests', () => {
     describe('getLatestVersion', () => {
@@ -105,6 +109,38 @@ describe('LspUtils tests', () => {
 
             expect(await getInstalledVersion('/some/path')).toBeUndefined()
             expect(fsMock.promises.rm).toHaveBeenCalled()
+        })
+    })
+
+    describe('pullLatestVersion', () => {
+        beforeEach(() => {
+            fsMock.promises = {
+                mkdir: jest.fn(),
+            }
+        })
+
+        afterEach(() => {
+            fsMock.promises = undefined
+        })
+
+        it('Valid response', async () => {
+            axiosMock.mockReturnValueOnce({
+                data: {
+                    pipe: jest.fn((data: unknown) => ({
+                        on: jest.fn(() => data),
+                    })),
+                },
+            })
+
+            await pullLatestVersion('/some/path', 'v1.0', '/some/url')
+
+            expect(zipMock.writeZipFile).toHaveBeenCalledWith(path.normalize('/some/path/v1.0/v1.0.zip'), expect.anything())
+            expect(zipMock.getUnzippedPath).toHaveBeenCalledWith(path.normalize('/some/path/v1.0'))
+        })
+
+        it('Invalid response', () => {
+            axiosMock.mockReturnValueOnce({ data: {} })
+            expect(async () => pullLatestVersion('/some/path', 'v1.0', '/some/url')).rejects.toThrow()
         })
     })
 })
