@@ -13,20 +13,39 @@ import {
     nukeInstalledVersion,
     pullLatestVersion,
 } from './LspUtils'
-import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from './ProcUtils'
+import { disconnectChild, getClSourceRegistryEnv, startWarningTimer, waitForPort } from './ProcUtils'
 import { getUnzippedPath } from './ZipUtils'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
-export async function startLspServer(state: ExtensionState, command: string[]): Promise<number | null> {
+export async function startLspServer(
+    state: Pick<ExtensionState, 'lspInstallPath' | 'workspacePath' | 'child'>,
+    command: string[]
+): Promise<number | undefined> {
+    const timer = startWarningTimer(() => {
+        vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
+        lspOutputChannel.show()
+    }, 10000)
+
     try {
         log('Start LSP server')
 
-        const handleDisconnect = (state: ExtensionState) => async (code: number, signal: string) => {
+        if (!isString(state.lspInstallPath)) {
+            log(`Invalid install path: ${toLog(state.lspInstallPath)}`)
+            throw new Error('No LSP server install path')
+        }
+
+        const handleDisconnect = (state: Pick<ExtensionState, 'child'>) => async (code: number, signal: string) => {
             log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
 
-            if (state.child !== undefined) {
-                await disconnectAndClearChild(state)
+            try {
+                if (state.child !== undefined) {
+                    await disconnectChild(state.child)
+                }
+            } catch (err) {
+                vscode.window.showWarningMessage(`Disconnect: ${toLog(err)}`)
+            } finally {
+                state.child = undefined
             }
         }
 
@@ -48,11 +67,6 @@ export async function startLspServer(state: ExtensionState, command: string[]): 
             appendOutputData(data)
         }
 
-        if (!isString(state.lspInstallPath)) {
-            log(`Invalid install path: ${toLog(state.lspInstallPath)}`)
-            throw new Error('No LSP server install path')
-        }
-
         const spawnOpts = {
             env: getClSourceRegistryEnv(state.lspInstallPath, process.env),
             cwd: state.workspacePath,
@@ -66,34 +80,26 @@ export async function startLspServer(state: ExtensionState, command: string[]): 
 
         log(`Spawned: ${toLog(command[0])}`)
 
-        const timer = startWarningTimer(() => {
-            vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
-            lspOutputChannel.show()
-        }, 10000)
-
         if (state.child.stdout === null || state.child.stderr === null) {
             throw new Error('Missing child streams')
         }
 
-        try {
-            const stdout = state.child.stdout.setEncoding('utf-8')
-            const stderr = state.child.stderr.setEncoding('utf-8')
+        const stdout = state.child.stdout.setEncoding('utf-8')
+        const stderr = state.child.stderr.setEncoding('utf-8')
 
-            return await waitForPort({
-                child: state.child,
-                stdout,
-                stderr,
-                onDisconnect: handleDisconnect(state),
-                onError: (err: Error) => handleError(command[0], err),
-                onErrData: (data: unknown) => handleErrData(command[0], data),
-                onOutData: handleOutData,
-            })
-        } finally {
-            timer?.cancel()
-        }
+        return await waitForPort({
+            child: state.child,
+            stdout,
+            stderr,
+            onDisconnect: handleDisconnect(state),
+            onError: (err: Error) => handleError(command[0], err),
+            onErrData: (data: unknown) => handleErrData(command[0], data),
+            onOutData: handleOutData,
+        })
     } catch (err) {
         vscode.window.showErrorMessage(`Failed to start LSP server: ${err}`)
-        return null
+    } finally {
+        timer.cancel()
     }
 }
 
@@ -167,34 +173,4 @@ async function downloadLatestVersion(basePath: string, latestVersion: AliveLspVe
     } catch (err) {
         vscode.window.showErrorMessage(`Failed to download latest LSP server: ${err}`)
     }
-}
-
-async function disconnectAndClearChild(state: ExtensionState): Promise<boolean> {
-    if ((state.child?.exitCode !== 0 && state.child?.exitCode !== null) || state.child?.signalCode !== null) {
-        log('Child exited')
-        state.child = undefined
-        return false
-    }
-
-    log('Killing child')
-
-    state.child?.kill()
-
-    let killAttempts = 5
-
-    while ((!state.child?.killed || state.child?.signalCode !== null) && killAttempts > 0) {
-        log(`Kill attempts remaining ${toLog(killAttempts)}`)
-        await new Promise((r) => setTimeout(r, 1000))
-        killAttempts -= 1
-    }
-
-    if (!state.child?.killed) {
-        vscode.window.showWarningMessage('Failed to kill child process after 5 seconds')
-    }
-
-    log('Killed child')
-
-    state.child = undefined
-
-    return true
 }

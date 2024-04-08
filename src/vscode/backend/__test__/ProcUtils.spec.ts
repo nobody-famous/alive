@@ -108,17 +108,16 @@ describe('ProcUtils tests', () => {
 
         it('Cancel', () => {
             const fn = jest.fn()
-
             const fns = startWarningTimer(fn, 1000)
 
-            fns?.cancel()
+            fns.cancel()
             jest.runAllTimers()
 
             expect(fn).not.toHaveBeenCalled()
         })
 
         it('Invalid timeout', () => {
-            expect(startWarningTimer(() => {}, NaN)).toBeUndefined()
+            expect(startWarningTimer(() => {}, NaN)).not.toBeUndefined()
         })
     })
 })

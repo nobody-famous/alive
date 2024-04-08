@@ -3,6 +3,8 @@ import { types } from 'util'
 import { Readable } from 'stream'
 import { isFiniteNumber, isString } from '../Guards'
 import EventEmitter = require('events')
+import { ChildProcess } from 'child_process'
+import { log, toLog } from '../Log'
 
 type WaitStream = Pick<Readable, 'setEncoding' | 'on'>
 
@@ -19,7 +21,7 @@ interface WaitForPortOpts {
 }
 
 export const waitForPort = (opts: WaitForPortOpts) => {
-    return new Promise<number | null>((resolve, reject) => {
+    return new Promise<number>((resolve, reject) => {
         const handleError = (err: Error) => {
             opts.onError(err)
             reject(new Error(`Couldn't spawn server: ${err.message}`))
@@ -75,7 +77,7 @@ export function getClSourceRegistryEnv(
 
 export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
     if (!isFiniteNumber(timeoutInMs)) {
-        return
+        return { cancel: () => {} }
     }
 
     const timer = setTimeout(onWarning, timeoutInMs)
@@ -85,6 +87,32 @@ export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
             clearTimeout(timer)
         },
     }
+}
+
+export async function disconnectChild(child: ChildProcess, maxAttemps: number = 5) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+        log('Child already exited')
+        return false
+    }
+
+    log('Killing child')
+
+    let killAttempts = 0
+
+    while (killAttempts < maxAttemps) {
+        log(`Kill attempt ${toLog(killAttempts)}`)
+
+        killAttempts++
+
+        if (child.kill() || typeof child.exitCode === 'number') {
+            log('Killed child')
+            return
+        }
+
+        await new Promise((r) => setTimeout(r, 1000))
+    }
+
+    throw new Error(`Failed to kill child process after ${maxAttemps} seconds`)
 }
 
 const setCallbacks = (opts: WaitForPortOpts) => {
