@@ -38,9 +38,13 @@ export async function startLspServer(
         const handleDisconnect = (state: Pick<ExtensionState, 'child'>) => async (code: number, signal: string) => {
             log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
 
+            if (state.child === undefined) {
+                return
+            }
+
             try {
-                if (state.child !== undefined) {
-                    await disconnectChild(state.child)
+                if (!(await disconnectChild(state.child))) {
+                    vscode.window.showWarningMessage('Disconnect: Failed to kill child process')
                 }
             } catch (err) {
                 vscode.window.showWarningMessage(`Disconnect: ${toLog(err)}`)

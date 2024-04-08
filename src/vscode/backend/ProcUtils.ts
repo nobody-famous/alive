@@ -77,7 +77,9 @@ export function getClSourceRegistryEnv(
 
 export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
     if (!isFiniteNumber(timeoutInMs)) {
-        return { cancel: () => {} }
+        return {
+            cancel: () => {},
+        }
     }
 
     const timer = setTimeout(onWarning, timeoutInMs)
@@ -89,10 +91,10 @@ export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
     }
 }
 
-export async function disconnectChild(child: ChildProcess, maxAttemps: number = 5) {
-    if (child.exitCode !== null || child.signalCode !== null) {
-        log('Child already exited')
-        return false
+export async function disconnectChild(child: Pick<ChildProcess, 'exitCode' | 'signalCode' | 'kill'>, maxAttemps: number = 5) {
+    if (child.exitCode !== null) {
+        log('Disconnect: Child already exited')
+        return true
     }
 
     log('Killing child')
@@ -106,13 +108,13 @@ export async function disconnectChild(child: ChildProcess, maxAttemps: number = 
 
         if (child.kill() || typeof child.exitCode === 'number') {
             log('Killed child')
-            return
+            return true
         }
 
         await new Promise((r) => setTimeout(r, 1000))
     }
 
-    throw new Error(`Failed to kill child process after ${maxAttemps} seconds`)
+    return false
 }
 
 const setCallbacks = (opts: WaitForPortOpts) => {

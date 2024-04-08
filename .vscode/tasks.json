@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/backend/__test__/LspUtils.spec.ts",
+                "src/vscode/backend/__test__/ProcUtils.spec.ts",
                 "-t",
-                "sort versions"
+                "non-kill"
             ],
             "problemMatcher": [
                 "$tsc"

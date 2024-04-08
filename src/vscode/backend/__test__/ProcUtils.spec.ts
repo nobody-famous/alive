@@ -1,5 +1,5 @@
 import { PassThrough } from 'stream'
-import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from '../ProcUtils'
+import { disconnectChild, getClSourceRegistryEnv, startWarningTimer, waitForPort } from '../ProcUtils'
 import path = require('path')
 
 jest.mock('stream')
@@ -117,7 +117,57 @@ describe('ProcUtils tests', () => {
         })
 
         it('Invalid timeout', () => {
-            expect(startWarningTimer(() => {}, NaN)).not.toBeUndefined()
+            const fns = startWarningTimer(() => {}, NaN)
+            fns.cancel()
+        })
+    })
+
+    describe('disconnectChild', () => {
+        const fakeProc: { exitCode: number | null; signalCode: NodeJS.Signals | null; kill: jest.Mock } = {
+            exitCode: null,
+            signalCode: null,
+            kill: jest.fn(() => false),
+        }
+
+        it('Already killed', async () => {
+            fakeProc.exitCode = 1
+            try {
+                const task = disconnectChild(fakeProc)
+
+                expect(await task).toBe(true)
+            } finally {
+                fakeProc.exitCode = null
+            }
+        })
+
+        it('Kill worked', async () => {
+            fakeProc.kill.mockReturnValueOnce(true)
+            const task = disconnectChild(fakeProc, 1)
+
+            jest.runAllTimers()
+
+            expect(await task).toBe(true)
+        })
+
+        it('Kill failed', async () => {
+            const task = disconnectChild(fakeProc, 1)
+
+            jest.runAllTimers()
+
+            expect(await task).toBe(false)
+        })
+
+        it('Non-kill exit', async () => {
+            try {
+                const task = disconnectChild(fakeProc)
+
+                fakeProc.exitCode = 1
+                jest.runAllTimers()
+
+                expect(await task).toBe(true)
+            } finally {
+                fakeProc.exitCode = null
+            }
         })
     })
 })
