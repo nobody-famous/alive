@@ -8,10 +8,29 @@ jest.mock('../LspUtils')
 const utilsMock = jest.requireMock('../../Utils')
 jest.mock('../../Utils')
 
+const procUtilsMock = jest.requireMock('../ProcUtils')
+jest.mock('../ProcUtils')
+
 const zipUtilsMock = jest.requireMock('../ZipUtils')
 jest.mock('../ZipUtils')
 
 describe('LspProcess tests', () => {
+    describe('listenForServerPort', () => {
+        // const fakeState = {
+        //     lspInstallPath: '/lsp/path',
+        //     workspacePath: '/workspace/path',
+        // }
+
+        beforeEach(() => {
+            procUtilsMock.startWarningTimer.mockReturnValueOnce({ cancel: jest.fn() })
+        })
+
+        it('No command', () => {
+            // expect(async () => await startLspServer(fakeState, [])).rejects.toThrow()
+            // expect(procUtilsMock.waitForPort).not.toHaveBeenCalled()
+        })
+    })
+
     describe('downloadLspServer', () => {
         const fakeExtension = { extensionPath: 'some path' }
 

@@ -11,7 +11,7 @@ export interface ExtensionState {
     extension: vscode.Extension<unknown>
     diagnostics: vscode.DiagnosticCollection
     lspInstallPath?: string
-    child?: ChildProcess
+    child?: Pick<ChildProcess, 'exitCode' | 'kill' | 'on'>
     hoverText: string
     compileRunning: boolean
     compileTimeoutID: NodeJS.Timeout | undefined

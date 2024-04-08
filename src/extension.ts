@@ -16,7 +16,7 @@ import {
     updateDiagnostics,
 } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
-import { downloadLspServer, getInstallPath, startLspServer } from './vscode/backend/LspProcess'
+import { downloadLspServer, getInstallPath, spawnLspProcess, listenForServerPort } from './vscode/backend/LspProcess'
 import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
 import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
@@ -241,15 +241,27 @@ async function updateEditorConfig() {
 
 async function startLocalServer(state: ExtensionState, config: AliveConfig): Promise<number | undefined> {
     if (!isString(config.lsp.downloadUrl)) {
-        return
+        throw new Error('No download URL given for LSP server')
     }
 
     state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(state.extension, config.lsp.downloadUrl))
     if (!isString(state.lspInstallPath)) {
-        return
+        throw new Error('No install path given for LSP server')
     }
 
-    const port = await startLspServer(state, config.lsp.startCommand)
+    if (config.lsp.startCommand.length === 0) {
+        throw new Error('No command given for LSP server')
+    }
+
+    const child = spawnLspProcess(state.lspInstallPath, state.workspacePath, config.lsp.startCommand)
+
+    if (child.stdout === null || child.stderr === null) {
+        throw new Error('Missing child streams')
+    }
+
+    state.child = child
+
+    const port = await listenForServerPort(state, child.stdout, child.stderr)
 
     return isFiniteNumber(port) ? port : undefined
 }

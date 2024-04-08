@@ -1,16 +1,15 @@
-import * as path from 'path'
-import { types } from 'util'
-import { Readable } from 'stream'
-import { isFiniteNumber, isString } from '../Guards'
-import EventEmitter = require('events')
 import { ChildProcess } from 'child_process'
+import * as path from 'path'
+import { Readable } from 'stream'
+import { types } from 'util'
+import { isFiniteNumber, isString } from '../Guards'
 import { log, toLog } from '../Log'
+import EventEmitter = require('events')
 
-type WaitStream = Pick<Readable, 'setEncoding' | 'on'>
+export type WaitStream = Pick<Readable, 'setEncoding' | 'on'>
 
 interface WaitForPortOpts {
     onDisconnect: (code: number, signal: string) => Promise<void>
-    onError: (err: Error) => void
     onErrData: (data: unknown) => void
     onOutData: (data: unknown) => void
     child: {
@@ -23,7 +22,6 @@ interface WaitForPortOpts {
 export const waitForPort = (opts: WaitForPortOpts) => {
     return new Promise<number>((resolve, reject) => {
         const handleError = (err: Error) => {
-            opts.onError(err)
             reject(new Error(`Couldn't spawn server: ${err.message}`))
         }
 
@@ -91,7 +89,7 @@ export function startWarningTimer(onWarning: () => void, timeoutInMs: number) {
     }
 }
 
-export async function disconnectChild(child: Pick<ChildProcess, 'exitCode' | 'signalCode' | 'kill'>, maxAttemps: number = 5) {
+export async function disconnectChild(child: Pick<ChildProcess, 'exitCode' | 'kill'>, maxAttemps: number = 5) {
     if (child.exitCode !== null) {
         log('Disconnect: Child already exited')
         return true
@@ -117,7 +115,11 @@ export async function disconnectChild(child: Pick<ChildProcess, 'exitCode' | 'si
     return false
 }
 
-const setCallbacks = (opts: WaitForPortOpts) => {
+interface CallbacksOpts extends WaitForPortOpts {
+    onError: (err: Error) => void
+}
+
+const setCallbacks = (opts: CallbacksOpts) => {
     opts.stdout.on('data', opts.onOutData)
     opts.stderr.on('data', opts.onErrData)
 
