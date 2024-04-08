@@ -76,7 +76,6 @@ export async function listenForServerPort(
 
         const handleErrData = (data: unknown) => {
             log(`ERROR: ${toLog(data)}`)
-
             appendOutputData(data)
         }
 

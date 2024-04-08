@@ -19,11 +19,12 @@ export const languages = {
 }
 
 export const window = {
-    createOutputChannel: () => ({ appendLine: () => {} }),
+    createOutputChannel: () => ({ appendLine: () => {}, append: () => {} }),
     createQuickPick: jest.fn(),
     showQuickPick: jest.fn(),
     showErrorMessage: jest.fn(),
     showInformationMessage: jest.fn(),
+    showWarningMessage: jest.fn(),
     showTextDocument: jest.fn(),
     onDidChangeActiveTextEditor: jest.fn(),
     registerWebviewViewProvider: jest.fn(),

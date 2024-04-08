@@ -8,7 +8,7 @@ import EventEmitter = require('events')
 
 export type WaitStream = Pick<Readable, 'setEncoding' | 'on'>
 
-interface WaitForPortOpts {
+export interface WaitForPortOpts {
     onDisconnect: (code: number, signal: string) => Promise<void>
     onErrData: (data: unknown) => void
     onOutData: (data: unknown) => void
