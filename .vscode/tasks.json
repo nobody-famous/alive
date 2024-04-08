@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/backend/__test__/LspProcess.spec.ts",
+                "src/__test__/extension.spec.ts",
                 "-t",
-                "startLspServer"
+                "bad command"
             ],
             "problemMatcher": [
                 "$tsc"

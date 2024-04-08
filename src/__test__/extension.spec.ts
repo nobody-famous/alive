@@ -128,11 +128,13 @@ describe('Extension tests', () => {
                         host: undefined,
                         port: remotePort,
                     },
+                    startCommand: ['cmd'],
                 },
             }))
 
             lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
-            lspProcMock.startLspServer.mockImplementationOnce(() => 4321)
+            lspProcMock.listenForServerPort.mockImplementationOnce(() => 4321)
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
 
             const hostPort = await getHostPort()
 
@@ -376,53 +378,77 @@ describe('Extension tests', () => {
 
             lspMock.connect.mockReset()
             lspProcMock.downloadLspServer.mockReset()
-            lspProcMock.startLspServer.mockReset()
+            lspProcMock.listenForServerPort.mockReset()
+            lspProcMock.spawnLspProcess.mockReset()
         })
 
         it('Start OK', async () => {
-            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
             lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
-            lspProcMock.startLspServer.mockReturnValueOnce(remotePort)
+            lspProcMock.listenForServerPort.mockReturnValueOnce(remotePort)
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).toHaveBeenCalled()
+            expect(lspProcMock.listenForServerPort).toHaveBeenCalled()
             expect(lspMock.connect).toHaveBeenCalled()
         })
 
         it('Start Invalid Port', async () => {
-            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
             lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
-            lspProcMock.startLspServer.mockReturnValueOnce(NaN)
+            lspProcMock.listenForServerPort.mockReturnValueOnce(NaN)
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).toHaveBeenCalled()
+            expect(lspProcMock.listenForServerPort).toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
         it('Start Invalid Path', async () => {
-            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
             lspProcMock.downloadLspServer.mockReturnValueOnce(5)
 
-            await activate(ctx)
+            expect(async () => await activate(ctx)).rejects.toThrow()
 
-            expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).not.toHaveBeenCalled()
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
         it('Have install path', async () => {
-            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: '/some/url' } }))
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
             lspProcMock.getInstallPath.mockReturnValueOnce('/install/path')
             lspProcMock.downloadLspServer.mockReturnValueOnce(5)
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).toHaveBeenCalled()
+            expect(lspProcMock.listenForServerPort).toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
@@ -430,10 +456,37 @@ describe('Extension tests', () => {
             configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: undefined } }))
             lspProcMock.downloadLspServer.mockReturnValueOnce(5)
 
-            await activate(ctx)
+            expect(async () => await activate(ctx)).rejects.toThrow()
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).not.toHaveBeenCalled()
+            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('Bad command', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: { downloadUrl: '/some/url', startCommand: [] },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+
+            expect(async () => await activate(ctx)).rejects.toThrow()
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('Bad spawn', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: { downloadUrl: '/some/url', startCommand: ['cmd'] },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: null })
+
+            expect(async () => await activate(ctx)).rejects.toThrow()
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
     })
