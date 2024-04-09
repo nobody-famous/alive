@@ -1,7 +1,7 @@
 import { spawn } from 'child_process'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isString } from '../Guards'
+import { isFiniteNumber, isNodeSignal, isString } from '../Guards'
 import { log, toLog } from '../Log'
 import { AliveLspVersion, ExtensionState } from '../Types'
 import { getLspBasePath } from '../Utils'
@@ -15,10 +15,19 @@ import {
 } from './LspUtils'
 import { WaitStream, disconnectChild, getClSourceRegistryEnv, startWarningTimer, waitForPort } from './ProcUtils'
 import { getUnzippedPath } from './ZipUtils'
+import { types } from 'util'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
-export function spawnLspProcess(lspInstallPath: string, workspacePath: string, command: string[]) {
+export interface LspSpawnOpts {
+    lspInstallPath: string
+    workspacePath: string
+    command: string[]
+    onDisconnect: (code: number, signal: NodeJS.Signals | 'UNKNOWN') => void
+    onError: (err: Error) => void
+}
+
+export function spawnLspProcess({ lspInstallPath, workspacePath, command, onDisconnect, onError }: LspSpawnOpts) {
     const spawnOpts = {
         env: getClSourceRegistryEnv(lspInstallPath, process.env),
         cwd: workspacePath,
@@ -31,6 +40,27 @@ export function spawnLspProcess(lspInstallPath: string, workspacePath: string, c
     const child = spawn(command[0], command.slice(1), spawnOpts)
 
     log(`Spawned: ${toLog(command[0])}`)
+
+    const doDisconnect = (...args: unknown[]) => {
+        const code = isFiniteNumber(args[0]) ? args[0] : 0
+        const signal = isNodeSignal(args[1]) ? args[1] : 'UNKNOWN'
+
+        onDisconnect(code, signal)
+    }
+
+    child.on('exit', doDisconnect)
+    child.on('disconnect', doDisconnect)
+    child.on('error', (arg: unknown) => {
+        const err = types.isNativeError(arg) ? arg : new Error(`Unknown error: ${arg}`)
+        onError(err)
+    })
+
+    child.stdout.setEncoding('utf-8').on('data', (data: unknown) => {
+        lspOutputChannel.append(`${data}`)
+    })
+    child.stderr.setEncoding('utf-8').on('data', (data: unknown) => {
+        lspOutputChannel.append(`${data}`)
+    })
 
     return child
 }

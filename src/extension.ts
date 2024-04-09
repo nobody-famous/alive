@@ -253,11 +253,13 @@ async function startLocalServer(state: ExtensionState, config: AliveConfig): Pro
         throw new Error('No command given for LSP server')
     }
 
-    const child = spawnLspProcess(state.lspInstallPath, state.workspacePath, config.lsp.startCommand)
-
-    if (child.stdout === null || child.stderr === null) {
-        throw new Error('Missing child streams')
-    }
+    const child = spawnLspProcess({
+        lspInstallPath: state.lspInstallPath,
+        workspacePath: state.workspacePath,
+        command: config.lsp.startCommand,
+        onDisconnect: () => {},
+        onError: () => {},
+    })
 
     state.child = child
 

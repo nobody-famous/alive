@@ -78,3 +78,48 @@ export function isAliveLspVersion(data: unknown): data is AliveLspVersion {
         isString(data.zipballUrl)
     )
 }
+
+export function isNodeSignal(signal: unknown): signal is NodeJS.Signals {
+    switch (signal) {
+        case 'SIGABRT':
+        case 'SIGALRM':
+        case 'SIGBUS':
+        case 'SIGCHLD':
+        case 'SIGCONT':
+        case 'SIGFPE':
+        case 'SIGHUP':
+        case 'SIGILL':
+        case 'SIGINT':
+        case 'SIGIO':
+        case 'SIGIOT':
+        case 'SIGKILL':
+        case 'SIGPIPE':
+        case 'SIGPOLL':
+        case 'SIGPROF':
+        case 'SIGPWR':
+        case 'SIGQUIT':
+        case 'SIGSEGV':
+        case 'SIGSTKFLT':
+        case 'SIGSTOP':
+        case 'SIGSYS':
+        case 'SIGTERM':
+        case 'SIGTRAP':
+        case 'SIGTSTP':
+        case 'SIGTTIN':
+        case 'SIGTTOU':
+        case 'SIGUNUSED':
+        case 'SIGURG':
+        case 'SIGUSR1':
+        case 'SIGUSR2':
+        case 'SIGVTALRM':
+        case 'SIGWINCH':
+        case 'SIGXCPU':
+        case 'SIGXFSZ':
+        case 'SIGBREAK':
+        case 'SIGLOST':
+        case 'SIGINFO':
+            return true
+        default:
+            return false
+    }
+}
