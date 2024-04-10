@@ -16,7 +16,8 @@ import {
     updateDiagnostics,
 } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
-import { downloadLspServer, getInstallPath, spawnLspProcess, listenForServerPort } from './vscode/backend/LspProcess'
+import { downloadLspServer, getInstallPath, spawnLspProcess } from './vscode/backend/LspProcess'
+import { disconnectChild } from './vscode/backend/ProcUtils'
 import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
 import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
@@ -239,6 +240,27 @@ async function updateEditorConfig() {
     log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 }
 
+function handleDisconnect(state: ExtensionState) {
+    return async (code: number, signal: string) => {
+        log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
+
+        if (state.child === undefined) {
+            log('Disconnect: No child process')
+            return
+        }
+
+        try {
+            if (!(await disconnectChild(state.child))) {
+                vscode.window.showWarningMessage('Disconnect: Failed to kill child process')
+            }
+        } catch (err) {
+            vscode.window.showWarningMessage(`Disconnect: ${toLog(err)}`)
+        } finally {
+            state.child = undefined
+        }
+    }
+}
+
 async function startLocalServer(state: ExtensionState, config: AliveConfig): Promise<number | undefined> {
     if (!isString(config.lsp.downloadUrl)) {
         throw new Error('No download URL given for LSP server')
@@ -253,17 +275,16 @@ async function startLocalServer(state: ExtensionState, config: AliveConfig): Pro
         throw new Error('No command given for LSP server')
     }
 
-    const child = spawnLspProcess({
+    const { child, port } = await spawnLspProcess({
         lspInstallPath: state.lspInstallPath,
         workspacePath: state.workspacePath,
         command: config.lsp.startCommand,
-        onDisconnect: () => {},
+        onDisconnect: handleDisconnect(state),
         onError: () => {},
     })
 
     state.child = child
-
-    const port = await listenForServerPort(state, child.stdout, child.stderr)
+    state.child.on('disconnect', handleDisconnect(state))
 
     return isFiniteNumber(port) ? port : undefined
 }

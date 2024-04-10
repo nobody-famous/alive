@@ -1,9 +1,10 @@
-import { spawn } from 'child_process'
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import * as path from 'path'
+import { types } from 'util'
 import * as vscode from 'vscode'
 import { isFiniteNumber, isNodeSignal, isString } from '../Guards'
 import { log, toLog } from '../Log'
-import { AliveLspVersion, ExtensionState } from '../Types'
+import { AliveLspVersion } from '../Types'
 import { getLspBasePath } from '../Utils'
 import {
     createPath,
@@ -13,9 +14,8 @@ import {
     nukeInstalledVersion,
     pullLatestVersion,
 } from './LspUtils'
-import { WaitStream, disconnectChild, getClSourceRegistryEnv, startWarningTimer, waitForPort } from './ProcUtils'
+import { getClSourceRegistryEnv, startWarningTimer, waitForPort } from './ProcUtils'
 import { getUnzippedPath } from './ZipUtils'
-import { types } from 'util'
 
 const lspOutputChannel = vscode.window.createOutputChannel('Alive LSP')
 
@@ -27,7 +27,7 @@ export interface LspSpawnOpts {
     onError: (err: Error) => void
 }
 
-export function spawnLspProcess({ lspInstallPath, workspacePath, command, onDisconnect, onError }: LspSpawnOpts) {
+export async function spawnLspProcess({ lspInstallPath, workspacePath, command, onDisconnect, onError }: LspSpawnOpts) {
     const spawnOpts = {
         env: getClSourceRegistryEnv(lspInstallPath, process.env),
         cwd: workspacePath,
@@ -62,18 +62,12 @@ export function spawnLspProcess({ lspInstallPath, workspacePath, command, onDisc
         lspOutputChannel.append(`${data}`)
     })
 
-    return child
+    const port = await listenForServerPort(child)
+
+    return { child, port }
 }
 
-export async function listenForServerPort(
-    state: Pick<ExtensionState, 'child'>,
-    stdout: WaitStream,
-    stderr: WaitStream
-): Promise<number | undefined> {
-    if (state.child === undefined) {
-        return
-    }
-
+async function listenForServerPort(child: ChildProcessWithoutNullStreams): Promise<number | undefined> {
     const timer = startWarningTimer(() => {
         vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
         lspOutputChannel.show()
@@ -81,24 +75,6 @@ export async function listenForServerPort(
 
     try {
         log('Start LSP server')
-
-        const handleDisconnect = async (code: number, signal: string) => {
-            log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
-
-            if (state.child === undefined) {
-                return
-            }
-
-            try {
-                if (!(await disconnectChild(state.child))) {
-                    vscode.window.showWarningMessage('Disconnect: Failed to kill child process')
-                }
-            } catch (err) {
-                vscode.window.showWarningMessage(`Disconnect: ${toLog(err)}`)
-            } finally {
-                state.child = undefined
-            }
-        }
 
         const appendOutputData = (data: unknown) => {
             lspOutputChannel.append(`${data}`)
@@ -114,10 +90,9 @@ export async function listenForServerPort(
         }
 
         return await waitForPort({
-            child: state.child,
-            stdout: stdout.setEncoding('utf-8'),
-            stderr: stderr.setEncoding('utf-8'),
-            onDisconnect: handleDisconnect,
+            child,
+            stdout: child.stdout.setEncoding('utf-8'),
+            stderr: child.stderr.setEncoding('utf-8'),
             onErrData: (data: unknown) => handleErrData(data),
             onOutData: handleOutData,
         })

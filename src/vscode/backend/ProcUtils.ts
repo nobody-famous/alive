@@ -6,14 +6,14 @@ import { isFiniteNumber, isString } from '../Guards'
 import { log, toLog } from '../Log'
 import EventEmitter = require('events')
 
-export type WaitStream = Pick<Readable, 'setEncoding' | 'on'>
+export type WaitStream = Pick<Readable, 'setEncoding' | 'on' | 'off'>
 
 export interface WaitForPortOpts {
-    onDisconnect: (code: number, signal: string) => Promise<void>
     onErrData: (data: unknown) => void
     onOutData: (data: unknown) => void
     child: {
         on: (event: string, listener: (...args: unknown[]) => void) => Pick<EventEmitter, 'on'>
+        off: (event: string, listener: (...args: unknown[]) => void) => void
     }
     stderr: WaitStream
     stdout: WaitStream
@@ -21,10 +21,6 @@ export interface WaitForPortOpts {
 
 export const waitForPort = (opts: WaitForPortOpts) => {
     return new Promise<number>((resolve, reject) => {
-        const handleError = (err: Error) => {
-            reject(new Error(`Couldn't spawn server: ${err.message}`))
-        }
-
         const handleOutData = (data: unknown) => {
             opts.onOutData(data)
 
@@ -37,18 +33,48 @@ export const waitForPort = (opts: WaitForPortOpts) => {
                 return
             }
 
+            unsetCallbacks()
             resolve(port)
         }
 
-        setCallbacks({
-            child: opts.child,
-            stdout: opts.stdout,
-            stderr: opts.stderr,
-            onDisconnect: opts.onDisconnect,
-            onError: handleError,
-            onErrData: opts.onErrData,
-            onOutData: handleOutData,
-        })
+        const handleErrData = (data: unknown) => {
+            opts.onErrData(data)
+        }
+
+        const handleError = (arg: unknown) => {
+            unsetCallbacks()
+            reject(types.isNativeError(arg) ? arg : new Error(`Unknown error: ${arg}`))
+        }
+
+        const doDisconnect = (...args: unknown[]) => {
+            const code = isFiniteNumber(args[0]) ? args[0] : 0
+            const signal = isString(args[1]) ? args[1] : 'Unknown signal'
+
+            unsetCallbacks()
+            reject(new Error(`Disconnected: CODE ${code} SIGNAL ${signal}`))
+        }
+
+        const setCallbacks = () => {
+            opts.stdout.on('data', handleOutData)
+            opts.stderr.on('data', handleErrData)
+
+            opts.child.on('exit', doDisconnect)
+            opts.child.on('disconnect', doDisconnect)
+
+            opts.child.on('error', handleError)
+        }
+
+        const unsetCallbacks = () => {
+            opts.stdout.off('data', handleOutData)
+            opts.stderr.off('data', handleErrData)
+
+            opts.child.off('exit', doDisconnect)
+            opts.child.off('disconnect', doDisconnect)
+
+            opts.child.off('error', handleError)
+        }
+
+        setCallbacks()
     })
 }
 
@@ -113,30 +139,6 @@ export async function disconnectChild(child: Pick<ChildProcess, 'exitCode' | 'ki
     }
 
     return false
-}
-
-interface CallbacksOpts extends WaitForPortOpts {
-    onError: (err: Error) => void
-}
-
-const setCallbacks = (opts: CallbacksOpts) => {
-    opts.stdout.on('data', opts.onOutData)
-    opts.stderr.on('data', opts.onErrData)
-
-    const doDisconnect = (...args: unknown[]) => {
-        const code = isFiniteNumber(args[0]) ? args[0] : 0
-        const signal = isString(args[1]) ? args[1] : 'Unknown signal'
-
-        opts.onDisconnect(code, signal)
-    }
-
-    opts.child.on('exit', doDisconnect)
-    opts.child.on('disconnect', doDisconnect)
-
-    opts.child.on('error', (arg: unknown) => {
-        const err = types.isNativeError(arg) ? arg : new Error(`Unknown error: ${arg}`)
-        opts.onError(err)
-    })
 }
 
 const parsePort = (data: string): number | undefined => {

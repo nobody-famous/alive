@@ -16,6 +16,7 @@ describe('ProcUtils tests', () => {
                         callbacks[name] = fn
                         return { on: jest.fn() }
                     }),
+                    off: jest.fn(),
                 },
                 stdout: {
                     setEncoding: jest.fn(),
@@ -23,6 +24,7 @@ describe('ProcUtils tests', () => {
                         callbacks['stdout'] = fn
                         return new PassThrough()
                     }),
+                    off: jest.fn(),
                 },
                 stderr: {
                     setEncoding: jest.fn(),
@@ -30,8 +32,8 @@ describe('ProcUtils tests', () => {
                         callbacks['stderr'] = fn
                         return new PassThrough()
                     }),
+                    off: jest.fn(),
                 },
-                onDisconnect: jest.fn(),
                 onError: jest.fn(),
                 onErrData: jest.fn(),
                 onOutData: jest.fn(),

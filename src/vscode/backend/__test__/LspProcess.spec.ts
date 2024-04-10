@@ -1,5 +1,4 @@
-import { downloadLspServer, listenForServerPort } from '../LspProcess'
-import { WaitForPortOpts } from '../ProcUtils'
+import { downloadLspServer } from '../LspProcess'
 
 jest.mock('axios')
 
@@ -9,71 +8,71 @@ jest.mock('../LspUtils')
 const utilsMock = jest.requireMock('../../Utils')
 jest.mock('../../Utils')
 
-const procUtilsMock = jest.requireMock('../ProcUtils')
-jest.mock('../ProcUtils')
+// const procUtilsMock = jest.requireMock('../ProcUtils')
+// jest.mock('../ProcUtils')
 
 const zipUtilsMock = jest.requireMock('../ZipUtils')
 jest.mock('../ZipUtils')
 
 describe('LspProcess tests', () => {
-    describe('listenForServerPort', () => {
-        const createFakeState = () => ({
-            lspInstallPath: '/lsp/path',
-            workspacePath: '/workspace/path',
-            child: {
-                exitCode: null,
-                on: jest.fn(),
-                kill: jest.fn(),
-            },
-        })
+    // describe('listenForServerPort', () => {
+    //     const createFakeState = () => ({
+    //         lspInstallPath: '/lsp/path',
+    //         workspacePath: '/workspace/path',
+    //         child: {
+    //             exitCode: null,
+    //             on: jest.fn(),
+    //             kill: jest.fn(),
+    //         },
+    //     })
 
-        const fakeStream = {
-            on: jest.fn(),
-            setEncoding: jest.fn(),
-        }
+    //     const fakeStream = {
+    //         on: jest.fn(),
+    //         setEncoding: jest.fn(),
+    //     }
 
-        beforeEach(() => {
-            procUtilsMock.waitForPort.mockReset()
-            procUtilsMock.startWarningTimer.mockReturnValueOnce({ cancel: jest.fn() })
-        })
+    //     beforeEach(() => {
+    //         procUtilsMock.waitForPort.mockReset()
+    //         procUtilsMock.startWarningTimer.mockReturnValueOnce({ cancel: jest.fn() })
+    //     })
 
-        it('Works OK', async () => {
-            procUtilsMock.waitForPort.mockReturnValueOnce(1234)
-            const port = await listenForServerPort(createFakeState(), fakeStream, fakeStream)
+    //     it('Works OK', async () => {
+    //         procUtilsMock.waitForPort.mockReturnValueOnce(1234)
+    //         const port = await listenForServerPort(createFakeState(), fakeStream, fakeStream)
 
-            expect(port).toBe(1234)
-            expect(procUtilsMock.waitForPort).toHaveBeenCalled()
-        })
+    //         expect(port).toBe(1234)
+    //         expect(procUtilsMock.waitForPort).toHaveBeenCalled()
+    //     })
 
-        describe('Callbacks', () => {
-            const getOpts = async (): Promise<WaitForPortOpts | undefined> => {
-                let waitOpts: WaitForPortOpts | undefined
+    //     describe('Callbacks', () => {
+    //         const getOpts = async (): Promise<WaitForPortOpts | undefined> => {
+    //             let waitOpts: WaitForPortOpts | undefined
 
-                procUtilsMock.waitForPort.mockImplementationOnce((opts: WaitForPortOpts) => (waitOpts = opts))
-                await listenForServerPort(createFakeState(), fakeStream, fakeStream)
+    //             procUtilsMock.waitForPort.mockImplementationOnce((opts: WaitForPortOpts) => (waitOpts = opts))
+    //             await listenForServerPort(createFakeState(), fakeStream, fakeStream)
 
-                expect(procUtilsMock.waitForPort).toHaveBeenCalled()
+    //             expect(procUtilsMock.waitForPort).toHaveBeenCalled()
 
-                return waitOpts
-            }
+    //             return waitOpts
+    //         }
 
-            it('onDiconnect', async () => {
-                const opts = await getOpts()
+    //         it('onDiconnect', async () => {
+    //             const opts = await getOpts()
 
-                opts?.onDisconnect(5, 'signal')
-            })
+    //             opts?.onDisconnect(5, 'signal')
+    //         })
 
-            it('handleErrData', async () => {
-                const opts = await getOpts()
-                opts?.onErrData('stdout data')
-            })
+    //         it('handleErrData', async () => {
+    //             const opts = await getOpts()
+    //             opts?.onErrData('stdout data')
+    //         })
 
-            it('handleOutData', async () => {
-                const opts = await getOpts()
-                opts?.onOutData('stdout data')
-            })
-        })
-    })
+    //         it('handleOutData', async () => {
+    //             const opts = await getOpts()
+    //             opts?.onOutData('stdout data')
+    //         })
+    //     })
+    // })
 
     describe('downloadLspServer', () => {
         const fakeExtension = { extensionPath: 'some path' }

@@ -133,8 +133,10 @@ describe('Extension tests', () => {
             }))
 
             lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
-            lspProcMock.listenForServerPort.mockImplementationOnce(() => 4321)
-            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+                port: 4321,
+            })
 
             const hostPort = await getHostPort()
 
@@ -378,7 +380,6 @@ describe('Extension tests', () => {
 
             lspMock.connect.mockReset()
             lspProcMock.downloadLspServer.mockReset()
-            lspProcMock.listenForServerPort.mockReset()
             lspProcMock.spawnLspProcess.mockReset()
         })
 
@@ -390,13 +391,14 @@ describe('Extension tests', () => {
                 },
             }))
             lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
-            lspProcMock.listenForServerPort.mockReturnValueOnce(remotePort)
-            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+                port: 4321,
+            })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.listenForServerPort).toHaveBeenCalled()
             expect(lspMock.connect).toHaveBeenCalled()
         })
 
@@ -408,13 +410,14 @@ describe('Extension tests', () => {
                 },
             }))
             lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
-            lspProcMock.listenForServerPort.mockReturnValueOnce(NaN)
-            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+                port: NaN,
+            })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.listenForServerPort).toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
@@ -430,7 +433,6 @@ describe('Extension tests', () => {
             expect(async () => await activate(ctx)).rejects.toThrow()
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
-            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
@@ -443,12 +445,13 @@ describe('Extension tests', () => {
             }))
             lspProcMock.getInstallPath.mockReturnValueOnce('/install/path')
             lspProcMock.downloadLspServer.mockReturnValueOnce(5)
-            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: jest.fn() })
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+            })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
-            expect(lspProcMock.listenForServerPort).toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
@@ -459,7 +462,6 @@ describe('Extension tests', () => {
             expect(async () => await activate(ctx)).rejects.toThrow()
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
-            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
@@ -472,7 +474,6 @@ describe('Extension tests', () => {
             expect(async () => await activate(ctx)).rejects.toThrow()
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
-            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
@@ -481,12 +482,13 @@ describe('Extension tests', () => {
                 lsp: { downloadUrl: '/some/url', startCommand: ['cmd'] },
             }))
             lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
-            lspProcMock.spawnLspProcess.mockReturnValueOnce({ stdout: jest.fn(), stderr: null })
+            lspProcMock.spawnLspProcess.mockImplementationOnce(() => {
+                throw new Error('Failed, as requested')
+            })
 
             expect(async () => await activate(ctx)).rejects.toThrow()
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
-            expect(lspProcMock.listenForServerPort).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
     })
