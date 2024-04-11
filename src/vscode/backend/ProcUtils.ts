@@ -9,7 +9,6 @@ import EventEmitter = require('events')
 export type WaitStream = Pick<Readable, 'setEncoding' | 'on' | 'off'>
 
 export interface WaitForPortOpts {
-    onOutData: (data: unknown) => void
     child: {
         on: (event: string, listener: (...args: unknown[]) => void) => Pick<EventEmitter, 'on'>
         off: (event: string, listener: (...args: unknown[]) => void) => void
@@ -21,8 +20,6 @@ export interface WaitForPortOpts {
 export const waitForPort = (opts: WaitForPortOpts) => {
     return new Promise<number>((resolve, reject) => {
         const handleOutData = (data: unknown) => {
-            opts.onOutData(data)
-
             if (!isString(data)) {
                 return
             }

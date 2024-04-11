@@ -76,19 +76,10 @@ async function listenForServerPort(child: ChildProcessWithoutNullStreams): Promi
     try {
         log('Start LSP server')
 
-        const appendOutputData = (data: unknown) => {
-            lspOutputChannel.append(`${data}`)
-        }
-
-        const handleOutData = (data: unknown) => {
-            appendOutputData(data)
-        }
-
         return await waitForPort({
             child,
             stdout: child.stdout.setEncoding('utf-8'),
             stderr: child.stderr.setEncoding('utf-8'),
-            onOutData: handleOutData,
         })
     } finally {
         timer.cancel()
