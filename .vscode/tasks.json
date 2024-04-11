@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/__test__/extension.spec.ts",
-                // "-t",
-                // "use local"
+                "-t",
+                "disconnect"
             ],
             "problemMatcher": [
                 "$tsc"

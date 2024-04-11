@@ -3,6 +3,7 @@ import { getAllCallbacks } from '../../TestHelpers'
 import { activate } from '../extension'
 import { COMMON_LISP_ID } from '../vscode/Utils'
 import { HistoryItem, HostPort } from '../vscode/Types'
+import { LspSpawnOpts } from '../vscode/backend/LspProcess'
 
 const fsMock = jest.requireMock('fs')
 jest.mock('fs')
@@ -26,6 +27,9 @@ jest.mock('../vscode/views/AsdfSystemsTree')
 
 const utilsMock = jest.requireMock('../vscode/Utils')
 jest.mock('../vscode/Utils')
+
+const procUtilsMock = jest.requireMock('../vscode/backend/ProcUtils')
+jest.mock('../vscode/backend/ProcUtils')
 
 const uiMock = jest.requireMock('../vscode/UI')
 jest.mock('../vscode/UI')
@@ -490,6 +494,65 @@ describe('Extension tests', () => {
 
             expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        const getSpawnCallbacks = async (): Promise<{
+            cbs: Record<string, () => Promise<void>>
+            opts: LspSpawnOpts | undefined
+        }> => {
+            const cbs: Record<string, () => Promise<void>> = {}
+            let opts: LspSpawnOpts | undefined
+
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: { downloadUrl: '/some/url', startCommand: ['cmd'] },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.spawnLspProcess.mockImplementationOnce((spawnOpts: LspSpawnOpts) => {
+                opts = spawnOpts
+                return {
+                    child: {
+                        stdout: jest.fn(),
+                        stderr: jest.fn(),
+                        on: jest.fn((name, fn) => {
+                            cbs[name] = fn
+                        }),
+                    },
+                }
+            })
+
+            await activate(ctx)
+
+            return { cbs, opts }
+        }
+
+        it('Spawn error', async () => {
+            const { opts } = await getSpawnCallbacks()
+
+            opts?.onError(new Error('Failed, as requested'))
+            expect(vscodeMock.window.showErrorMessage).toHaveBeenCalled()
+        })
+
+        describe('disconnect', () => {
+            it('Multiple disconnect calls', async () => {
+                const { cbs } = await getSpawnCallbacks()
+
+                await cbs['disconnect']?.()
+                expect(procUtilsMock.disconnectChild).toHaveBeenCalled()
+
+                procUtilsMock.disconnectChild.mockReset()
+                await cbs['disconnect']?.()
+                expect(procUtilsMock.disconnectChild).not.toHaveBeenCalled()
+            })
+
+            it('Disconnect error', async () => {
+                const { cbs } = await getSpawnCallbacks()
+
+                procUtilsMock.disconnectChild.mockImplementationOnce(() => {
+                    throw new Error('Failed, as requested')
+                })
+                await cbs['disconnect']?.()
+                expect(vscodeMock.window.showWarningMessage).toHaveBeenCalled()
+            })
         })
     })
 

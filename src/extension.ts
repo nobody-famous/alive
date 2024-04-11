@@ -240,7 +240,7 @@ async function updateEditorConfig() {
     log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 }
 
-function handleDisconnect(state: ExtensionState) {
+function handleDisconnect(state: Pick<ExtensionState, 'child'>) {
     return async (code: number, signal: string) => {
         log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
 
@@ -280,7 +280,9 @@ async function startLocalServer(state: ExtensionState, config: AliveConfig): Pro
         workspacePath: state.workspacePath,
         command: config.lsp.startCommand,
         onDisconnect: handleDisconnect(state),
-        onError: () => {},
+        onError: (err: Error) => {
+            vscode.window.showErrorMessage(err.message)
+        },
     })
 
     state.child = child
