@@ -19,7 +19,7 @@ export const languages = {
 }
 
 export const window = {
-    createOutputChannel: () => ({ appendLine: () => {}, append: () => {} }),
+    createOutputChannel: () => ({ appendLine: () => {}, append: () => {}, show: () => {} }),
     createQuickPick: jest.fn(),
     showQuickPick: jest.fn(),
     showErrorMessage: jest.fn(),

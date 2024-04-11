@@ -1,6 +1,9 @@
-import { downloadLspServer } from '../LspProcess'
+import { downloadLspServer, spawnLspProcess } from '../LspProcess'
 
 jest.mock('axios')
+
+const cpMock = jest.requireMock('child_process')
+jest.mock('child_process')
 
 const lspUtilsMock = jest.requireMock('../LspUtils')
 jest.mock('../LspUtils')
@@ -8,71 +11,90 @@ jest.mock('../LspUtils')
 const utilsMock = jest.requireMock('../../Utils')
 jest.mock('../../Utils')
 
-// const procUtilsMock = jest.requireMock('../ProcUtils')
-// jest.mock('../ProcUtils')
+const procUtilsMock = jest.requireMock('../ProcUtils')
+jest.mock('../ProcUtils')
 
 const zipUtilsMock = jest.requireMock('../ZipUtils')
 jest.mock('../ZipUtils')
 
+jest.useFakeTimers()
+
 describe('LspProcess tests', () => {
-    // describe('listenForServerPort', () => {
-    //     const createFakeState = () => ({
-    //         lspInstallPath: '/lsp/path',
-    //         workspacePath: '/workspace/path',
-    //         child: {
-    //             exitCode: null,
-    //             on: jest.fn(),
-    //             kill: jest.fn(),
-    //         },
-    //     })
+    describe('spawnLspProcess', () => {
+        interface InitOpts {
+            port: number
+            onDisconnect: (code: number, signal: NodeJS.Signals | 'UNKNOWN') => void
+            onError: (err: Error) => void
+        }
 
-    //     const fakeStream = {
-    //         on: jest.fn(),
-    //         setEncoding: jest.fn(),
-    //     }
+        const defaultInitOpts: InitOpts = {
+            port: 1234,
+            onDisconnect: jest.fn(),
+            onError: jest.fn(),
+        }
 
-    //     beforeEach(() => {
-    //         procUtilsMock.waitForPort.mockReset()
-    //         procUtilsMock.startWarningTimer.mockReturnValueOnce({ cancel: jest.fn() })
-    //     })
+        const initTest = async (initOpts: InitOpts = defaultInitOpts) => {
+            const opts = {
+                lspInstallPath: '/install/path',
+                workspacePath: '/workspace/path',
+                command: [],
+                onDisconnect: initOpts.onDisconnect,
+                onError: initOpts.onError,
+            }
+            const cbs: Record<string, (...args: unknown[]) => void> = {}
 
-    //     it('Works OK', async () => {
-    //         procUtilsMock.waitForPort.mockReturnValueOnce(1234)
-    //         const port = await listenForServerPort(createFakeState(), fakeStream, fakeStream)
+            cpMock.spawn.mockReturnValueOnce({
+                on: jest.fn((name, fn) => (cbs[name] = fn)),
+                stdout: { setEncoding: jest.fn(() => ({ on: jest.fn() })) },
+                stderr: { setEncoding: jest.fn(() => ({ on: jest.fn() })) },
+            })
 
-    //         expect(port).toBe(1234)
-    //         expect(procUtilsMock.waitForPort).toHaveBeenCalled()
-    //     })
+            procUtilsMock.waitForPort.mockReturnValueOnce(initOpts.port)
+            procUtilsMock.startWarningTimer.mockReturnValueOnce({ cancel: jest.fn() })
 
-    //     describe('Callbacks', () => {
-    //         const getOpts = async (): Promise<WaitForPortOpts | undefined> => {
-    //             let waitOpts: WaitForPortOpts | undefined
+            const { child, port } = await spawnLspProcess(opts)
 
-    //             procUtilsMock.waitForPort.mockImplementationOnce((opts: WaitForPortOpts) => (waitOpts = opts))
-    //             await listenForServerPort(createFakeState(), fakeStream, fakeStream)
+            return { child, port, cbs }
+        }
 
-    //             expect(procUtilsMock.waitForPort).toHaveBeenCalled()
+        it('OK', async () => {
+            const expectedPort = 1234
+            const { child, port } = await initTest(Object.assign(defaultInitOpts, { port: expectedPort }))
 
-    //             return waitOpts
-    //         }
+            expect(child).not.toBeUndefined()
+            expect(port).toBe(expectedPort)
+        })
 
-    //         it('onDiconnect', async () => {
-    //             const opts = await getOpts()
+        describe('Callbacks', () => {
+            it('exit', async () => {
+                const disconnect = jest.fn()
+                const { cbs } = await initTest(Object.assign(defaultInitOpts, { onDisconnect: disconnect }))
 
-    //             opts?.onDisconnect(5, 'signal')
-    //         })
+                cbs['exit']?.()
+                expect(disconnect).toHaveBeenCalled()
+            })
 
-    //         it('handleErrData', async () => {
-    //             const opts = await getOpts()
-    //             opts?.onErrData('stdout data')
-    //         })
+            it('disconnect', async () => {
+                const disconnect = jest.fn()
+                const { cbs } = await initTest(Object.assign(defaultInitOpts, { onDisconnect: disconnect }))
 
-    //         it('handleOutData', async () => {
-    //             const opts = await getOpts()
-    //             opts?.onOutData('stdout data')
-    //         })
-    //     })
-    // })
+                cbs['disconnect']?.()
+                expect(disconnect).toHaveBeenCalled()
+            })
+
+            it('error', async () => {
+                const errorFn = jest.fn()
+                const { cbs } = await initTest(Object.assign(defaultInitOpts, { onError: errorFn }))
+
+                cbs['error']?.()
+                expect(errorFn).toHaveBeenCalled()
+
+                errorFn.mockReset()
+                cbs['error']?.(new Error('Failed, as requested'))
+                expect(errorFn).toHaveBeenCalled()
+            })
+        })
+    })
 
     describe('downloadLspServer', () => {
         const fakeExtension = { extensionPath: 'some path' }
