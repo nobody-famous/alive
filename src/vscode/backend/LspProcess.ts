@@ -59,7 +59,7 @@ export async function spawnLspProcess({ lspInstallPath, workspacePath, command, 
         lspOutputChannel.append(`${data}`)
     })
     child.stderr.setEncoding('utf-8').on('data', (data: unknown) => {
-        lspOutputChannel.append(`${data}`)
+        lspOutputChannel.append(`STDERR: ${data}`)
     })
 
     const port = await listenForServerPort(child)
@@ -80,11 +80,6 @@ async function listenForServerPort(child: ChildProcessWithoutNullStreams): Promi
             lspOutputChannel.append(`${data}`)
         }
 
-        const handleErrData = (data: unknown) => {
-            log(`ERROR: ${toLog(data)}`)
-            appendOutputData(data)
-        }
-
         const handleOutData = (data: unknown) => {
             appendOutputData(data)
         }
@@ -93,7 +88,6 @@ async function listenForServerPort(child: ChildProcessWithoutNullStreams): Promi
             child,
             stdout: child.stdout.setEncoding('utf-8'),
             stderr: child.stderr.setEncoding('utf-8'),
-            onErrData: (data: unknown) => handleErrData(data),
             onOutData: handleOutData,
         })
     } finally {

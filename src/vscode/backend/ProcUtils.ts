@@ -9,7 +9,6 @@ import EventEmitter = require('events')
 export type WaitStream = Pick<Readable, 'setEncoding' | 'on' | 'off'>
 
 export interface WaitForPortOpts {
-    onErrData: (data: unknown) => void
     onOutData: (data: unknown) => void
     child: {
         on: (event: string, listener: (...args: unknown[]) => void) => Pick<EventEmitter, 'on'>
@@ -37,10 +36,6 @@ export const waitForPort = (opts: WaitForPortOpts) => {
             resolve(port)
         }
 
-        const handleErrData = (data: unknown) => {
-            opts.onErrData(data)
-        }
-
         const handleError = (arg: unknown) => {
             unsetCallbacks()
             reject(types.isNativeError(arg) ? arg : new Error(`Unknown error: ${arg}`))
@@ -56,7 +51,6 @@ export const waitForPort = (opts: WaitForPortOpts) => {
 
         const setCallbacks = () => {
             opts.stdout.on('data', handleOutData)
-            opts.stderr.on('data', handleErrData)
 
             opts.child.on('exit', doDisconnect)
             opts.child.on('disconnect', doDisconnect)
@@ -66,7 +60,6 @@ export const waitForPort = (opts: WaitForPortOpts) => {
 
         const unsetCallbacks = () => {
             opts.stdout.off('data', handleOutData)
-            opts.stderr.off('data', handleErrData)
 
             opts.child.off('exit', doDisconnect)
             opts.child.off('disconnect', doDisconnect)
