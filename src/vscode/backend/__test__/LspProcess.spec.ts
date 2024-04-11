@@ -45,8 +45,24 @@ describe('LspProcess tests', () => {
 
             cpMock.spawn.mockReturnValueOnce({
                 on: jest.fn((name, fn) => (cbs[name] = fn)),
-                stdout: { setEncoding: jest.fn(() => ({ on: jest.fn() })) },
-                stderr: { setEncoding: jest.fn(() => ({ on: jest.fn() })) },
+                stdout: {
+                    setEncoding: jest.fn(() => ({
+                        on: jest.fn((name, fn) => {
+                            if (name === 'data') {
+                                cbs['stdout'] = fn
+                            }
+                        }),
+                    })),
+                },
+                stderr: {
+                    setEncoding: jest.fn(() => ({
+                        on: jest.fn((name, fn) => {
+                            if (name === 'data') {
+                                cbs['stderr'] = fn
+                            }
+                        }),
+                    })),
+                },
             })
 
             procUtilsMock.waitForPort.mockReturnValueOnce(initOpts.port)
@@ -92,6 +108,13 @@ describe('LspProcess tests', () => {
                 errorFn.mockReset()
                 cbs['error']?.(new Error('Failed, as requested'))
                 expect(errorFn).toHaveBeenCalled()
+            })
+
+            it('stdout/err', async () => {
+                const { cbs } = await initTest()
+
+                cbs['stdout']?.()
+                cbs['stderr']?.()
             })
         })
     })
