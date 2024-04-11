@@ -6,6 +6,7 @@ import {
     isGitHubVersion,
     isHistoryItem,
     isInspectResult,
+    isNodeSignal,
     isObject,
     isPackage,
     isPosition,
@@ -123,5 +124,48 @@ describe('Type guard tests', () => {
         expect(isAliveLspVersion({ createdAt: 5, name: 'foo', tagName: 15, zipballUrl: 'url' })).toBe(false)
         expect(isAliveLspVersion({ createdAt: 5, name: 'foo', tagName: 'bar', zipballUrl: 20 })).toBe(false)
         expect(isAliveLspVersion({})).toBe(false)
+    })
+
+    it('isNodeSignal', () => {
+        expect(isNodeSignal('SIGABRT')).toBe(true)
+        expect(isNodeSignal('SIGALRM')).toBe(true)
+        expect(isNodeSignal('SIGBUS')).toBe(true)
+        expect(isNodeSignal('SIGCHLD')).toBe(true)
+        expect(isNodeSignal('SIGCONT')).toBe(true)
+        expect(isNodeSignal('SIGFPE')).toBe(true)
+        expect(isNodeSignal('SIGHUP')).toBe(true)
+        expect(isNodeSignal('SIGILL')).toBe(true)
+        expect(isNodeSignal('SIGINT')).toBe(true)
+        expect(isNodeSignal('SIGIO')).toBe(true)
+        expect(isNodeSignal('SIGIOT')).toBe(true)
+        expect(isNodeSignal('SIGKILL')).toBe(true)
+        expect(isNodeSignal('SIGPIPE')).toBe(true)
+        expect(isNodeSignal('SIGPOLL')).toBe(true)
+        expect(isNodeSignal('SIGPROF')).toBe(true)
+        expect(isNodeSignal('SIGPWR')).toBe(true)
+        expect(isNodeSignal('SIGQUIT')).toBe(true)
+        expect(isNodeSignal('SIGSEGV')).toBe(true)
+        expect(isNodeSignal('SIGSTKFLT')).toBe(true)
+        expect(isNodeSignal('SIGSTOP')).toBe(true)
+        expect(isNodeSignal('SIGSYS')).toBe(true)
+        expect(isNodeSignal('SIGTERM')).toBe(true)
+        expect(isNodeSignal('SIGTRAP')).toBe(true)
+        expect(isNodeSignal('SIGTSTP')).toBe(true)
+        expect(isNodeSignal('SIGTTIN')).toBe(true)
+        expect(isNodeSignal('SIGTTOU')).toBe(true)
+        expect(isNodeSignal('SIGUNUSED')).toBe(true)
+        expect(isNodeSignal('SIGURG')).toBe(true)
+        expect(isNodeSignal('SIGUSR1')).toBe(true)
+        expect(isNodeSignal('SIGUSR2')).toBe(true)
+        expect(isNodeSignal('SIGVTALRM')).toBe(true)
+        expect(isNodeSignal('SIGWINCH')).toBe(true)
+        expect(isNodeSignal('SIGXCPU')).toBe(true)
+        expect(isNodeSignal('SIGXFSZ')).toBe(true)
+        expect(isNodeSignal('SIGBREAK')).toBe(true)
+        expect(isNodeSignal('SIGLOST')).toBe(true)
+        expect(isNodeSignal('SIGINFO')).toBe(true)
+
+        expect(isNodeSignal('FOO')).toBe(false)
+        expect(isNodeSignal({ foo: 'bar' })).toBe(false)
     })
 })
