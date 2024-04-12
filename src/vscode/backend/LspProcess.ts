@@ -117,7 +117,7 @@ export async function downloadLspServer(
 
         const latestVersion = await getLatestVersion(url)
 
-        log(`Latest version: ${toLog(latestVersion)}`)
+        log(`Latest version: ${toLog(latestVersion?.tagName)}`)
 
         const installedVersion = await getInstalledVersion(basePath)
 

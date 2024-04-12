@@ -1,16 +1,17 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import * as stream from 'stream'
 import StreamZip = require('node-stream-zip')
 import EventEmitter = require('events')
 
-export async function writeZipFile(file: string, pipe: (s: stream.Writable) => Pick<EventEmitter, 'on'>) {
+export async function writeZipFile(file: string, data: { pipe: (s: fs.WriteStream) => Pick<EventEmitter, 'on'> }) {
     const writer = fs.createWriteStream(file)
 
-    return new Promise((resolve, reject) => {
-        pipe(writer).on('finish', resolve)
-        pipe(writer).on('close', resolve)
-        pipe(writer).on('error', reject)
+    return new Promise<void>((resolve, reject) => {
+        const pipeWriter = data.pipe(writer)
+
+        pipeWriter.on('finish', resolve)
+        pipeWriter.on('close', resolve)
+        pipeWriter.on('error', reject)
     })
 }
 

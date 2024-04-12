@@ -60,22 +60,28 @@ export async function pullLatestVersion(basePath: string, version: string, url: 
     const zipPath = path.normalize(path.join(basePath, version))
     const zipFile = path.join(zipPath, `${version}.zip`)
 
+    log(`Pulling latest version: ${url}`)
     const resp = await axios(url, {
         headers: { 'User-Agent': 'nobody-famous/alive' },
         method: 'GET',
         responseType: 'stream',
     })
 
-    const isPipeFunction = (f: unknown): f is () => EventEmitter => {
-        return typeof f === 'function' && f.length === 1
+    const isPipeData = (data: unknown): data is { pipe: () => EventEmitter } => {
+        return isObject(data) && typeof data.pipe === 'function'
     }
 
-    if (!isObject(resp.data) || !isPipeFunction(resp.data.pipe)) {
+    if (!isPipeData(resp.data)) {
         throw new Error('Invalid response, no stream pipe')
     }
 
+    log(`Creating zip directory: ${zipPath}`)
     await fs.promises.mkdir(zipPath, { recursive: true })
-    await writeZipFile(zipFile, resp.data.pipe)
+
+    log(`Writing zip file: ${zipFile}`)
+    await writeZipFile(zipFile, resp.data)
+
+    log(`Unzipping file: ${zipFile}`)
     await unzipFile(zipPath, zipFile)
 
     return await getUnzippedPath(zipPath)

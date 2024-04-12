@@ -1,6 +1,6 @@
 import * as path from 'path'
-import EventEmitter = require('events')
 import { getUnzippedPath, unzipFile, writeZipFile } from '../ZipUtils'
+import EventEmitter = require('events')
 
 const fsMock = jest.requireMock('fs')
 jest.mock('fs')
@@ -17,7 +17,7 @@ describe('ZipUtils tests', () => {
                 }),
             })
 
-            const task = writeZipFile('/some/path', pipe)
+            const task = writeZipFile('/some/path', { pipe })
 
             return { task, callbacks }
         }
