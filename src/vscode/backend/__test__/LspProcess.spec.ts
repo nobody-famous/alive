@@ -2,6 +2,9 @@ import { downloadLspServer, spawnLspProcess } from '../LspProcess'
 
 jest.mock('axios')
 
+const vscodeMock = jest.requireMock('vscode')
+jest.mock('vscode')
+
 const cpMock = jest.requireMock('child_process')
 jest.mock('child_process')
 
@@ -33,14 +36,19 @@ describe('LspProcess tests', () => {
             onError: jest.fn(),
         }
 
+        const defaultSpawnOpts = {
+            lspInstallPath: '/install/path',
+            workspacePath: '/workspace/path',
+            command: [],
+            onDisconnect: jest.fn(),
+            onError: jest.fn(),
+        }
+
         const initTest = async (initOpts: InitOpts = defaultInitOpts) => {
-            const opts = {
-                lspInstallPath: '/install/path',
-                workspacePath: '/workspace/path',
-                command: [],
+            const opts = Object.assign(defaultSpawnOpts, {
                 onDisconnect: initOpts.onDisconnect,
                 onError: initOpts.onError,
-            }
+            })
             const cbs: Record<string, (...args: unknown[]) => void> = {}
 
             cpMock.spawn.mockReturnValueOnce({
@@ -66,7 +74,10 @@ describe('LspProcess tests', () => {
             })
 
             procUtilsMock.waitForPort.mockReturnValueOnce(initOpts.port)
-            procUtilsMock.startWarningTimer.mockReturnValueOnce({ cancel: jest.fn() })
+            procUtilsMock.startWarningTimer.mockImplementationOnce((fn: () => void) => {
+                cbs['timer'] = fn
+                return { cancel: jest.fn() }
+            })
 
             const { child, port } = await spawnLspProcess(opts)
 
@@ -115,6 +126,13 @@ describe('LspProcess tests', () => {
 
                 cbs['stdout']?.()
                 cbs['stderr']?.()
+            })
+
+            it('timer', async () => {
+                const { cbs } = await initTest()
+
+                cbs['timer']?.()
+                expect(vscodeMock.window.showWarningMessage).toHaveBeenCalled()
             })
         })
     })
