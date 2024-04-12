@@ -1,4 +1,4 @@
-import { downloadLspServer, spawnLspProcess } from '../LspProcess'
+import { downloadLspServer, getInstallPath, spawnLspProcess } from '../LspProcess'
 
 jest.mock('axios')
 
@@ -107,6 +107,9 @@ describe('LspProcess tests', () => {
 
                 cbs['disconnect']?.()
                 expect(disconnect).toHaveBeenCalled()
+
+                cbs['disconnect']?.(5, 'SIGABRT')
+                expect(disconnect).toHaveBeenCalledWith(5, 'SIGABRT')
             })
 
             it('error', async () => {
@@ -137,8 +140,32 @@ describe('LspProcess tests', () => {
         })
     })
 
+    describe('getInstallPath', () => {
+        it('Have path', () => {
+            vscodeMock.workspace.getConfiguration.mockReturnValueOnce({ get: jest.fn(() => '/some/path') })
+            expect(getInstallPath()).toBe('/some/path')
+        })
+
+        it('Invalid path', () => {
+            vscodeMock.workspace.getConfiguration.mockReturnValueOnce({ get: jest.fn(() => '') })
+            expect(getInstallPath()).toBe(undefined)
+
+            vscodeMock.workspace.getConfiguration.mockReturnValueOnce({ get: jest.fn(() => 5) })
+            expect(getInstallPath()).toBe(undefined)
+        })
+    })
+
     describe('downloadLspServer', () => {
         const fakeExtension = { extensionPath: 'some path' }
+
+        it('No path', async () => {
+            lspUtilsMock.doesPathExist.mockReturnValueOnce(false)
+
+            const resp = await downloadLspServer(fakeExtension, 'some url')
+
+            expect(lspUtilsMock.createPath).toHaveBeenCalled()
+            expect(resp).toBeUndefined()
+        })
 
         it('No versions', async () => {
             utilsMock.getLspBasePath.mockReturnValueOnce('/some/path')
