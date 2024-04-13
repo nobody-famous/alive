@@ -29,7 +29,7 @@ export async function inlineEval(
     useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
-        if (editor === undefined || info === undefined) {
+        if (info === undefined) {
             return
         }
 
