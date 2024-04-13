@@ -1,4 +1,4 @@
-import { clearRepl, sendToRepl } from '../Repl'
+import { clearRepl, inlineEval, sendToRepl } from '../Repl'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -24,7 +24,7 @@ describe('Repl tests', () => {
         }
 
         const runTest = async (evalInfo: unknown, validate: () => void) => {
-            const lsp = { getEvalInfo: jest.fn().mockReturnValue(evalInfo), eval: jest.fn() }
+            const lsp = { getEvalInfo: jest.fn().mockReturnValue(evalInfo), evalWithOutput: jest.fn() }
             let editorFn: ((editor: unknown) => Promise<void>) | undefined
 
             utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
@@ -43,6 +43,15 @@ describe('Repl tests', () => {
 
         it('Have info', async () => {
             await runTest({}, () => expect(vscodeMock.workspace.saveAll).toHaveBeenCalled())
+        })
+    })
+
+    describe('inlineEval', () => {
+        it('', async () => {
+            const lsp = { getEvalInfo: jest.fn(), eval: jest.fn() }
+            const state = { hoverText: '' }
+
+            await inlineEval(lsp, state)
         })
     })
 })

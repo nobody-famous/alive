@@ -928,18 +928,18 @@ describe('LSP tests', () => {
             const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ text: 'Result text' })) })
 
             lsp.emit = jest.fn()
-            await lsp.eval('Some text', 'Some package')
+            await lsp.evalWithOutput('Some text', 'Some package')
 
             expect(lsp.emit).toHaveBeenCalledTimes(2)
         })
 
         it('Failure', async () => {
             await networkErrorTest(
-                (lsp) => lsp.eval('Some text', 'Some package'),
+                (lsp) => lsp.evalWithOutput('Some text', 'Some package'),
                 (resp) => expect(resp).toBeUndefined()
             )
             await networkErrorTest(
-                (lsp) => lsp.eval('Some text', 'Some package'),
+                (lsp) => lsp.evalWithOutput('Some text', 'Some package'),
                 (resp) => expect(resp).toBeUndefined(),
                 false
             )
@@ -949,7 +949,7 @@ describe('LSP tests', () => {
             const lsp = new LSP({ hoverText: '' })
 
             lsp.emit = jest.fn()
-            await lsp.eval('Some text', 'Some package')
+            await lsp.evalWithOutput('Some text', 'Some package')
 
             expect(lsp.emit).toHaveBeenCalledTimes(1)
         })

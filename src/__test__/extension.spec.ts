@@ -214,7 +214,7 @@ describe('Extension tests', () => {
         it('Simple redirects', async () => {
             const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
 
-            checkCallback(fns, 'eval', lspMock.evalFn)
+            checkCallback(fns, 'eval', lspMock.evalWithOutput)
             checkCallback(fns, 'inspect', lspMock.inspect)
             checkCallback(fns, 'inspectClosed', lspMock.inspectClosed)
             checkCallback(fns, 'inspectEval', lspMock.inspectEval)
@@ -638,7 +638,7 @@ describe('Extension tests', () => {
 
                 expect(uiMock.selectHistoryItem).toHaveBeenCalled()
                 expect(uiMock.getHistoryItems).toHaveBeenCalled()
-                expect(lspMock.evalFn).toHaveBeenCalled()
+                expect(lspMock.evalWithOutput).toHaveBeenCalled()
             })
         })
 
@@ -699,14 +699,14 @@ describe('Extension tests', () => {
         })
 
         describe('evalHistory', () => {
-            nodeTest('Invalid node', 'alive.evalHistory', historyMock.isHistoryNode, false, {}, lspMock.evalFn)
+            nodeTest('Invalid node', 'alive.evalHistory', historyMock.isHistoryNode, false, {}, lspMock.evalWithOutput)
             nodeTest(
                 'Valid node',
                 'alive.evalHistory',
                 historyMock.isHistoryNode,
                 true,
                 { label: 'foo', item: { text: '', pkgName: '' } },
-                lspMock.evalFn
+                lspMock.evalWithOutput
             )
         })
 

@@ -11,18 +11,21 @@ export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
     ui.clearRepl()
 }
 
-export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'eval'>) {
+export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'evalWithOutput'>) {
     useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
         if (info !== undefined) {
             await vscode.workspace.saveAll()
-            await lsp.eval(info.text, info.package)
+            await lsp.evalWithOutput(info.text, info.package)
         }
     })
 }
 
-export async function inlineEval(lsp: Pick<LSP, 'getEvalInfo' | 'doEval'>, state: ExtensionState): Promise<void> {
+export async function inlineEval(
+    lsp: Pick<LSP, 'getEvalInfo' | 'eval'>,
+    state: Pick<ExtensionState, 'hoverText'>
+): Promise<void> {
     useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
@@ -30,7 +33,7 @@ export async function inlineEval(lsp: Pick<LSP, 'getEvalInfo' | 'doEval'>, state
             return
         }
 
-        const result = await lsp.doEval(info.text, info.package)
+        const result = await lsp.eval(info.text, info.package)
 
         if (result === undefined) {
             return
