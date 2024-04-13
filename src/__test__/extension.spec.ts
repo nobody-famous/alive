@@ -2,7 +2,8 @@ import { Buffer } from 'buffer'
 import { getAllCallbacks } from '../../TestHelpers'
 import { activate } from '../extension'
 import { COMMON_LISP_ID } from '../vscode/Utils'
-import { HistoryItem } from '../vscode/Types'
+import { HistoryItem, HostPort } from '../vscode/Types'
+import { LspSpawnOpts } from '../vscode/backend/LspProcess'
 
 const fsMock = jest.requireMock('fs')
 jest.mock('fs')
@@ -27,6 +28,9 @@ jest.mock('../vscode/views/AsdfSystemsTree')
 const utilsMock = jest.requireMock('../vscode/Utils')
 jest.mock('../vscode/Utils')
 
+const procUtilsMock = jest.requireMock('../vscode/backend/ProcUtils')
+jest.mock('../vscode/backend/ProcUtils')
+
 const uiMock = jest.requireMock('../vscode/UI')
 jest.mock('../vscode/UI')
 
@@ -50,6 +54,9 @@ describe('Extension tests', () => {
         ctx.extensionPath = '/ext/path'
     }
 
+    const remoteHost = 'foo'
+    const remotePort = 1234
+
     beforeEach(() => {
         jest.restoreAllMocks()
 
@@ -60,14 +67,22 @@ describe('Extension tests', () => {
         configMock.readAliveConfig.mockImplementation(() => ({
             lsp: {
                 remote: {
-                    host: 'foo',
-                    port: 1234,
+                    host: remoteHost,
+                    port: remotePort,
                 },
             },
         }))
     })
 
     describe('Activate', () => {
+        it('No extension', async () => {
+            vscodeMock.extensions.getExtension.mockReturnValueOnce(undefined)
+
+            await activate(ctx)
+
+            expect(configMock.readAliveConfig).not.toHaveBeenCalled()
+        })
+
         it('No document', async () => {
             await activate(ctx)
 
@@ -91,6 +106,46 @@ describe('Extension tests', () => {
 
             expect(lspMock.editorChanged).toHaveBeenCalled()
             expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+        })
+    })
+
+    describe('Remote connect', () => {
+        const getHostPort = () => {
+            return new Promise<HostPort>((resolve) => {
+                lspMock.connect.mockImplementationOnce((hp: HostPort) => resolve(hp))
+
+                activate(ctx)
+            })
+        }
+
+        it('Use remote', async () => {
+            const hostPort = await getHostPort()
+
+            expect(hostPort?.host).toBe(remoteHost)
+        })
+
+        it('Use local', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/download/url',
+                    remote: {
+                        host: undefined,
+                        port: remotePort,
+                    },
+                    startCommand: ['cmd'],
+                },
+            }))
+
+            lspProcMock.downloadLspServer.mockImplementationOnce(() => '/some/path')
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+                port: 4321,
+            })
+
+            const hostPort = await getHostPort()
+
+            expect(hostPort?.host).toBe('127.0.0.1')
+            expect(hostPort?.port).toBe(4321)
         })
     })
 
@@ -325,45 +380,179 @@ describe('Extension tests', () => {
 
     describe('startLocalServer', () => {
         beforeEach(() => {
-            configMock.readAliveConfig.mockImplementation(() => ({
-                lsp: {},
-            }))
+            vscodeMock.extensions.getExtension.mockReturnValueOnce({})
 
             lspMock.connect.mockReset()
             lspProcMock.downloadLspServer.mockReset()
-            lspProcMock.startLspServer.mockReset()
+            lspProcMock.spawnLspProcess.mockReset()
         })
 
         it('Start OK', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => 'foo')
-            lspProcMock.startLspServer.mockImplementationOnce(() => 1234)
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+                port: 4321,
+            })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).toHaveBeenCalled()
             expect(lspMock.connect).toHaveBeenCalled()
         })
 
         it('Start Invalid Port', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => 'foo')
-            lspProcMock.startLspServer.mockImplementationOnce(() => NaN)
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+                port: NaN,
+            })
 
             await activate(ctx)
 
             expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
         })
 
         it('Start Invalid Path', async () => {
-            lspProcMock.downloadLspServer.mockImplementationOnce(() => 5)
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce(5)
+
+            expect(async () => await activate(ctx)).rejects.toThrow()
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('Have install path', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: {
+                    downloadUrl: '/some/url',
+                    startCommand: ['cmd'],
+                },
+            }))
+            lspProcMock.getInstallPath.mockReturnValueOnce('/install/path')
+            lspProcMock.downloadLspServer.mockReturnValueOnce(5)
+            lspProcMock.spawnLspProcess.mockReturnValueOnce({
+                child: { stdout: jest.fn(), stderr: jest.fn(), on: jest.fn() },
+            })
 
             await activate(ctx)
 
-            expect(lspProcMock.downloadLspServer).toHaveBeenCalled()
-            expect(lspProcMock.startLspServer).not.toHaveBeenCalled()
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
             expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('No url', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({ lsp: { downloadUrl: undefined } }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce(5)
+
+            expect(async () => await activate(ctx)).rejects.toThrow()
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('Bad command', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: { downloadUrl: '/some/url', startCommand: [] },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+
+            expect(async () => await activate(ctx)).rejects.toThrow()
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        it('Bad spawn', async () => {
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: { downloadUrl: '/some/url', startCommand: ['cmd'] },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.spawnLspProcess.mockImplementationOnce(() => {
+                throw new Error('Failed, as requested')
+            })
+
+            expect(async () => await activate(ctx)).rejects.toThrow()
+
+            expect(lspProcMock.downloadLspServer).not.toHaveBeenCalled()
+            expect(lspMock.connect).not.toHaveBeenCalled()
+        })
+
+        const getSpawnCallbacks = async (): Promise<{
+            cbs: Record<string, () => Promise<void>>
+            opts: LspSpawnOpts | undefined
+        }> => {
+            const cbs: Record<string, () => Promise<void>> = {}
+            let opts: LspSpawnOpts | undefined
+
+            configMock.readAliveConfig.mockImplementation(() => ({
+                lsp: { downloadUrl: '/some/url', startCommand: ['cmd'] },
+            }))
+            lspProcMock.downloadLspServer.mockReturnValueOnce('/some/path')
+            lspProcMock.spawnLspProcess.mockImplementationOnce((spawnOpts: LspSpawnOpts) => {
+                opts = spawnOpts
+                return {
+                    child: {
+                        stdout: jest.fn(),
+                        stderr: jest.fn(),
+                        on: jest.fn((name, fn) => {
+                            cbs[name] = fn
+                        }),
+                    },
+                }
+            })
+
+            await activate(ctx)
+
+            return { cbs, opts }
+        }
+
+        it('Spawn error', async () => {
+            const { opts } = await getSpawnCallbacks()
+
+            opts?.onError(new Error('Failed, as requested'))
+            expect(vscodeMock.window.showErrorMessage).toHaveBeenCalled()
+        })
+
+        describe('disconnect', () => {
+            it('Multiple disconnect calls', async () => {
+                const { cbs } = await getSpawnCallbacks()
+
+                await cbs['disconnect']?.()
+                expect(procUtilsMock.disconnectChild).toHaveBeenCalled()
+
+                procUtilsMock.disconnectChild.mockReset()
+                await cbs['disconnect']?.()
+                expect(procUtilsMock.disconnectChild).not.toHaveBeenCalled()
+            })
+
+            it('Disconnect error', async () => {
+                const { cbs } = await getSpawnCallbacks()
+
+                procUtilsMock.disconnectChild.mockImplementationOnce(() => {
+                    throw new Error('Failed, as requested')
+                })
+                await cbs['disconnect']?.()
+                expect(vscodeMock.window.showWarningMessage).toHaveBeenCalled()
+            })
         })
     })
 

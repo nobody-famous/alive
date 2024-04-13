@@ -8,6 +8,7 @@ import {
     dirExists,
     findSubFolders,
     getFolderPath,
+    getLspBasePath,
     getWorkspaceOrFilePath,
     parseLocation,
     parseNote,
@@ -365,5 +366,9 @@ describe('Utils Tests', () => {
     it('strToMarkdown', () => {
         expect(strToMarkdown(' ')).toBe('&nbsp;')
         expect(strToMarkdown('<foo>\n')).toBe('<foo>  \n')
+    })
+
+    it('getLspBasePath', () => {
+        expect(getLspBasePath({ extensionPath: 'path' })).toBe(path.join('path', 'out', 'alive-lsp'))
     })
 })

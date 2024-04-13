@@ -19,10 +19,12 @@ export const languages = {
 }
 
 export const window = {
-    createOutputChannel: () => ({ appendLine: () => {} }),
+    createOutputChannel: () => ({ appendLine: () => {}, append: () => {}, show: () => {} }),
     createQuickPick: jest.fn(),
     showQuickPick: jest.fn(),
     showErrorMessage: jest.fn(),
+    showInformationMessage: jest.fn(),
+    showWarningMessage: jest.fn(),
     showTextDocument: jest.fn(),
     onDidChangeActiveTextEditor: jest.fn(),
     registerWebviewViewProvider: jest.fn(),
@@ -46,6 +48,10 @@ export const workspace = {
 export const commands = {
     executeCommand: jest.fn(),
     registerCommand: jest.fn(),
+}
+
+export const extensions = {
+    getExtension: jest.fn(() => ({ extensionPath: 'some path' })),
 }
 
 export class Position {}

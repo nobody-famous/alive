@@ -6,7 +6,7 @@ export interface FormatConfig {
 }
 
 export interface InstallConfig {
-    path: string
+    path: string | undefined
 }
 
 export interface RemoteConfig {
@@ -16,7 +16,7 @@ export interface RemoteConfig {
 
 export interface LSPConfig {
     install: InstallConfig
-    downloadUrl: string
+    downloadUrl: string | undefined
     remote: RemoteConfig
     startCommand: Array<string>
 }
@@ -35,9 +35,9 @@ export const readAliveConfig = (): AliveConfig => {
         },
         lsp: {
             install: {
-                path: '',
+                path: undefined,
             },
-            downloadUrl: '',
+            downloadUrl: undefined,
             remote: {
                 host: null,
                 port: null,

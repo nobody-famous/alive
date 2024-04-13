@@ -17,7 +17,7 @@ export const removeExport = jest.fn()
 export const removePackage = jest.fn()
 export const textDocumentChanged = jest.fn()
 
-export const LSP = jest.fn().mockImplementation(() => ({
+export const LSP = jest.fn(() => ({
     on,
     connect,
     editorChanged,

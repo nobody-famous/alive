@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { readAliveConfig } from './config'
+import { AliveConfig, readAliveConfig } from './config'
 import { isFiniteNumber, isHistoryItem, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
 import { ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
@@ -16,7 +16,8 @@ import {
     updateDiagnostics,
 } from './vscode/Utils'
 import { LSP } from './vscode/backend/LSP'
-import { downloadLspServer, startLspServer } from './vscode/backend/LspProcess'
+import { downloadLspServer, getInstallPath, spawnLspProcess } from './vscode/backend/LspProcess'
+import { disconnectChild } from './vscode/backend/ProcUtils'
 import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
 import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
@@ -37,6 +38,12 @@ const wordSeparators = '`|;:\'",()'
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
 
+    const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
+    if (extensionMetadata === undefined) {
+        log('Failed to find rheller.alive extension config directory')
+        return
+    }
+
     const aliveCfg = readAliveConfig()
     const workspacePath = await getWorkspaceOrFilePath()
 
@@ -45,6 +52,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     await updateEditorConfig()
 
     const state: ExtensionState = {
+        extension: extensionMetadata,
         diagnostics: vscode.languages.createDiagnosticCollection('Compiler Diagnostics'),
         hoverText: '',
         compileRunning: false,
@@ -63,7 +71,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     registerLSPEvents(ui, lsp, state)
 
     if (remoteCfg.host == null || remoteCfg.port == null) {
-        const srvPort = await startLocalServer(state)
+        const srvPort = await startLocalServer(state, aliveCfg)
 
         if (srvPort === undefined) {
             return
@@ -232,13 +240,53 @@ async function updateEditorConfig() {
     log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 }
 
-async function startLocalServer(state: ExtensionState): Promise<number | undefined> {
-    state.lspInstallPath = await downloadLspServer()
-    if (!isString(state.lspInstallPath)) {
-        return
+function handleDisconnect(state: Pick<ExtensionState, 'child'>) {
+    return async (code: number, signal: string) => {
+        log(`Disconnected: CODE ${toLog(code)} SIGNAL ${toLog(signal)}`)
+
+        if (state.child === undefined) {
+            log('Disconnect: No child process')
+            return
+        }
+
+        try {
+            if (!(await disconnectChild(state.child))) {
+                vscode.window.showWarningMessage('Disconnect: Failed to kill child process')
+            }
+        } catch (err) {
+            vscode.window.showWarningMessage(`Disconnect: ${toLog(err)}`)
+        } finally {
+            state.child = undefined
+        }
+    }
+}
+
+async function startLocalServer(state: ExtensionState, config: AliveConfig): Promise<number | undefined> {
+    if (!isString(config.lsp.downloadUrl)) {
+        throw new Error('No download URL given for LSP server')
     }
 
-    const port = await startLspServer(state)
+    state.lspInstallPath = getInstallPath() ?? (await downloadLspServer(state.extension, config.lsp.downloadUrl))
+    if (!isString(state.lspInstallPath)) {
+        throw new Error('No install path given for LSP server')
+    }
+
+    if (config.lsp.startCommand.length === 0) {
+        throw new Error('No command given for LSP server')
+    }
+
+    const { child, port } = await spawnLspProcess({
+        lspInstallPath: state.lspInstallPath,
+        workspacePath: state.workspacePath,
+        command: config.lsp.startCommand,
+        onDisconnect: handleDisconnect(state),
+        onError: (err: Error) => {
+            vscode.window.showErrorMessage(err.message)
+        },
+    })
+
+    state.child = child
+    state.child.on('disconnect', handleDisconnect(state))
 
     return isFiniteNumber(port) ? port : undefined
 }

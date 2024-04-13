@@ -1,5 +1,5 @@
 import { Position } from 'vscode'
-import { HistoryItem, InspectResult, Package, RestartInfo, SourceLocation, Thread } from './Types'
+import { AliveLspVersion, GitHubVersion, HistoryItem, InspectResult, Package, RestartInfo, SourceLocation, Thread } from './Types'
 import { parseToInt } from './Utils'
 
 export function isString(data: unknown): data is string {
@@ -57,4 +57,69 @@ export function isThread(data: unknown): data is Thread {
 
 export function isPackage(data: unknown): data is Package {
     return isObject(data) && isString(data.name) && isArray(data.exports, isString) && isArray(data.nicknames, isString)
+}
+
+export function isGitHubVersion(data: unknown): data is GitHubVersion {
+    return (
+        isObject(data) &&
+        isString(data.created_at) &&
+        isString(data.name) &&
+        isString(data.tag_name) &&
+        isString(data.zipball_url)
+    )
+}
+
+export function isAliveLspVersion(data: unknown): data is AliveLspVersion {
+    return (
+        isObject(data) &&
+        isFiniteNumber(data.createdAt) &&
+        isString(data.name) &&
+        isString(data.tagName) &&
+        isString(data.zipballUrl)
+    )
+}
+
+export function isNodeSignal(signal: unknown): signal is NodeJS.Signals {
+    switch (signal) {
+        case 'SIGABRT':
+        case 'SIGALRM':
+        case 'SIGBUS':
+        case 'SIGCHLD':
+        case 'SIGCONT':
+        case 'SIGFPE':
+        case 'SIGHUP':
+        case 'SIGILL':
+        case 'SIGINT':
+        case 'SIGIO':
+        case 'SIGIOT':
+        case 'SIGKILL':
+        case 'SIGPIPE':
+        case 'SIGPOLL':
+        case 'SIGPROF':
+        case 'SIGPWR':
+        case 'SIGQUIT':
+        case 'SIGSEGV':
+        case 'SIGSTKFLT':
+        case 'SIGSTOP':
+        case 'SIGSYS':
+        case 'SIGTERM':
+        case 'SIGTRAP':
+        case 'SIGTSTP':
+        case 'SIGTTIN':
+        case 'SIGTTOU':
+        case 'SIGUNUSED':
+        case 'SIGURG':
+        case 'SIGUSR1':
+        case 'SIGUSR2':
+        case 'SIGVTALRM':
+        case 'SIGWINCH':
+        case 'SIGXCPU':
+        case 'SIGXFSZ':
+        case 'SIGBREAK':
+        case 'SIGLOST':
+        case 'SIGINFO':
+            return true
+        default:
+            return false
+    }
 }

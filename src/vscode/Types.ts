@@ -1,4 +1,4 @@
-import { ChildProcess } from 'child_process'
+import { ChildProcessWithoutNullStreams } from 'child_process'
 import * as vscode from 'vscode'
 
 export interface AliveContext {
@@ -8,14 +8,22 @@ export interface AliveContext {
 
 export interface ExtensionState {
     ctx: AliveContext
+    extension: vscode.Extension<unknown>
     diagnostics: vscode.DiagnosticCollection
     lspInstallPath?: string
-    child?: ChildProcess
+    child?: Pick<ChildProcessWithoutNullStreams, 'exitCode' | 'kill' | 'on'>
     hoverText: string
     compileRunning: boolean
     compileTimeoutID: NodeJS.Timeout | undefined
     replHistoryFile: string
     workspacePath: string
+}
+
+export interface GitHubVersion {
+    created_at: string
+    name: string
+    tag_name: string
+    zipball_url: string
 }
 
 export interface AliveLspVersion {

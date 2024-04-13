@@ -1,5 +1,6 @@
 import { getAllCallbacks } from '../../../../TestHelpers'
 import { DebugInfo, InspectInfo } from '../../Types'
+import { COMMON_LISP_ID } from '../../Utils'
 import { LSP } from '../LSP'
 
 const nodeMock = jest.requireMock('vscode-languageclient/node')
@@ -10,12 +11,6 @@ jest.mock('vscode')
 
 const netMock = jest.requireMock('net')
 jest.mock('net')
-
-const utilsMock = jest.requireMock('../../Utils')
-jest.mock('../../Utils')
-
-const guardsMock = jest.requireMock('../../Guards')
-jest.mock('../../Guards')
 
 describe('LSP tests', () => {
     const createClientMock = () => ({
@@ -103,12 +98,10 @@ describe('LSP tests', () => {
         const testStream = async (name: string) => {
             const { lsp, funcMap } = await getClientFuncs()
 
-            guardsMock.isObject.mockImplementationOnce(() => false)
             funcMap.notification[name]?.({})
             expect(lsp.emit).not.toHaveBeenCalled()
 
-            guardsMock.isString.mockImplementationOnce(() => false)
-            funcMap.notification[name]?.({})
+            funcMap.notification[name]?.({ data: 5 })
             expect(lsp.emit).not.toHaveBeenCalled()
 
             funcMap.notification[name]?.({ data: 'foo' })
@@ -147,7 +140,9 @@ describe('LSP tests', () => {
                     fn(5)
                 })
 
-                expect(await funcMap.request['$/alive/debugger']({ restarts: [], stackTrace: [] })).toMatchObject({ index: 5 })
+                expect(await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [], stackTrace: [] })).toMatchObject(
+                    { index: 5 }
+                )
             })
 
             it('Missing data', async () => {
@@ -157,16 +152,14 @@ describe('LSP tests', () => {
                     fn(5)
                 })
 
-                guardsMock.isRestartInfo.mockImplementationOnce(() => false)
-                guardsMock.isStackTrace.mockImplementationOnce(() => false)
-
-                expect(await funcMap.request['$/alive/debugger']({ restarts: [5], stackTrace: [10] })).toMatchObject({ index: 5 })
+                expect(
+                    await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [5], stackTrace: [10] })
+                ).toMatchObject({ index: 5 })
             })
 
             it('debug info not object', async () => {
                 const { funcMap } = await getClientFuncs()
 
-                guardsMock.isObject.mockImplementationOnce(() => false)
                 expect(await funcMap.request['$/alive/debugger']()).toBeUndefined()
             })
         })
@@ -184,13 +177,10 @@ describe('LSP tests', () => {
                 sendRequest: jest.fn(() => 'foo'),
             })
 
-            guardsMock.isObject.mockImplementationOnce(() => false)
             expect(await lsp.getHoverText('/some/file', new vscodeMock.Position())).toBe('')
         })
 
         it('Valid response', async () => {
-            utilsMock.strToMarkdown.mockImplementationOnce((v: string) => v)
-
             const { lsp, clientMock } = await doConnect({
                 sendRequest: jest.fn(() => ({
                     value: 'foo',
@@ -271,9 +261,6 @@ describe('LSP tests', () => {
         it('Valid response', async () => {
             const fakePos = { line: 1, character: 5 }
 
-            utilsMock.parsePos.mockImplementationOnce(() => fakePos)
-            utilsMock.parsePos.mockImplementationOnce(() => fakePos)
-
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({ start: fakePos, end: fakePos })),
             })
@@ -284,8 +271,6 @@ describe('LSP tests', () => {
         it('Invalid response, parse pos fail', async () => {
             const fakePos = { line: 1, character: 5 }
 
-            utilsMock.parsePos.mockImplementationOnce(() => fakePos)
-
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({ start: fakePos, end: 'Not valid' })),
             })
@@ -294,8 +279,6 @@ describe('LSP tests', () => {
         })
 
         it('Invalid response', async () => {
-            guardsMock.isObject.mockImplementationOnce(() => false)
-
             const { lsp } = await doConnect({ sendRequest: jest.fn(() => []) })
 
             expect(await lsp.getExprRange('bar', 'foo', fakeSelection)).toBeUndefined()
@@ -398,10 +381,7 @@ describe('LSP tests', () => {
         })
 
         it('Invalid package', async () => {
-            guardsMock.isObject.mockImplementationOnce(() => false)
             await runTest({}, (pkg) => expect(pkg).toBeUndefined())
-
-            guardsMock.isString.mockImplementationOnce(() => false)
             await runTest({}, (pkg) => expect(pkg).toBeUndefined())
         })
 
@@ -447,15 +427,12 @@ describe('LSP tests', () => {
                 sendRequest: jest.fn((method: string) => {
                     return method === '$/alive/surroundingFormBounds'
                         ? {
-                              start: {},
-                              end: {},
+                              start: { line: 5, character: 10 },
+                              end: { line: 5, character: 15 },
                           }
                         : { package: 'Some package' }
                 }),
             })
-
-            utilsMock.parsePos.mockImplementationOnce(() => 1)
-            utilsMock.parsePos.mockImplementationOnce(() => 1)
 
             const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
                 active: new vscodeMock.Position(),
@@ -487,9 +464,6 @@ describe('LSP tests', () => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({ package: 5 })),
             })
-
-            guardsMock.isString.mockImplementationOnce(() => true)
-            guardsMock.isString.mockImplementationOnce(() => false)
 
             const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
                 active: new vscodeMock.Position(),
@@ -532,7 +506,6 @@ describe('LSP tests', () => {
         })
 
         it('Invalid response', async () => {
-            guardsMock.isString.mockImplementationOnce(() => false)
             await runTest(
                 (lsp) => lsp.macroexpand('Some text', 'Some package'),
                 { text: 10 },
@@ -590,7 +563,6 @@ describe('LSP tests', () => {
 
             const { lsp } = await doConnect()
 
-            guardsMock.isString.mockImplementationOnce(() => false)
             expect(await lsp.getEvalInfo(() => 'Some text', 'uri', fakeSelection)).toBeUndefined()
         })
     })
@@ -612,23 +584,35 @@ describe('LSP tests', () => {
     describe('tryCompileFile', () => {
         it('Success', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn(() => ({ messages: [1, 2, 3] })),
+                sendRequest: jest.fn(() => ({
+                    messages: [
+                        {
+                            message: 'msg1',
+                            severity: 'sev1',
+                            location: { start: { line: 1, character: 1 }, end: { line: 1, character: 1 } },
+                        },
+                        {
+                            message: 'msg2',
+                            severity: 'sev2',
+                            location: { start: { line: 1, character: 1 }, end: { line: 1, character: 1 } },
+                        },
+                        {
+                            message: 'msg3',
+                            severity: 'sev3',
+                            location: { start: { line: 1, character: 1 }, end: { line: 1, character: 1 } },
+                        },
+                    ],
+                })),
             })
-            const toFakeNote = (path: string, item: unknown) => ({ message: item })
-
-            utilsMock.parseNote.mockImplementationOnce(toFakeNote)
-            utilsMock.parseNote.mockImplementationOnce(toFakeNote)
-            utilsMock.parseNote.mockImplementationOnce(toFakeNote)
 
             const resp = await lsp.tryCompileFile('/some/path')
 
-            expect(resp).toMatchObject({ notes: [{ message: 1 }, { message: 2 }, { message: 3 }] })
+            expect(resp).toMatchObject({ notes: [{ message: 'msg1' }, { message: 'msg2' }, { message: 'msg3' }] })
         })
 
         it('No client', async () => {
             const lsp = new LSP({ hoverText: '' })
 
-            guardsMock.isObject.mockImplementationOnce(() => false)
             const resp = await lsp.tryCompileFile('/some/path')
 
             expect(resp).toMatchObject({ notes: [] })
@@ -657,37 +641,31 @@ describe('LSP tests', () => {
     })
 
     it('editorChanged', () => {
-        const runTest = (opts: { hasId: boolean; diags: boolean }, validate: (lsp: LSP) => void) => {
+        const runTest = (langId: string, validate: (lsp: LSP) => void) => {
             const lsp = new LSP({ hoverText: '' })
 
-            utilsMock.hasValidLangId.mockImplementationOnce(() => opts.hasId)
-            utilsMock.diagnosticsEnabled.mockImplementationOnce(() => opts.diags)
-
             lsp.emit = jest.fn()
-            lsp.editorChanged({ languageId: 'foo' })
+            lsp.editorChanged({ languageId: langId })
 
             validate(lsp)
         }
 
-        runTest({ hasId: true, diags: true }, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
-        runTest({ hasId: false, diags: true }, (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
+        runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
+        runTest('foo', (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
 
     it('textDocumentChanged', () => {
-        const runTest = (opts: { hasId: boolean; diags: boolean }, validate: (lsp: LSP) => void) => {
+        const runTest = (langId: string, validate: (lsp: LSP) => void) => {
             const lsp = new LSP({ hoverText: '' })
 
-            utilsMock.hasValidLangId.mockImplementationOnce(() => opts.hasId)
-            utilsMock.diagnosticsEnabled.mockImplementationOnce(() => opts.diags)
-
             lsp.emit = jest.fn()
-            lsp.textDocumentChanged({ languageId: 'foo' })
+            lsp.textDocumentChanged({ languageId: langId })
 
             validate(lsp)
         }
 
-        runTest({ hasId: true, diags: true }, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
-        runTest({ hasId: false, diags: true }, (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
+        runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
+        runTest('foo', (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
 
     describe('loadFile', () => {
@@ -706,10 +684,6 @@ describe('LSP tests', () => {
                 })),
             })
 
-            guardsMock.isObject.mockImplementationOnce(() => true)
-            guardsMock.isObject.mockImplementationOnce(() => false)
-            guardsMock.isString.mockImplementationOnce(() => false)
-
             lsp.emit = jest.fn()
             await lsp.loadFile('/some/path')
 
@@ -719,7 +693,6 @@ describe('LSP tests', () => {
         it('No client', async () => {
             const lsp = new LSP({ hoverText: '' })
 
-            guardsMock.isObject.mockImplementationOnce(() => false)
             lsp.emit = jest.fn()
             await lsp.loadFile('/some/path')
 
@@ -799,15 +772,12 @@ describe('LSP tests', () => {
 
         describe('listThreads', () => {
             it('Success', async () => {
-                guardsMock.isThread.mockImplementationOnce(() => true)
-                guardsMock.isThread.mockImplementationOnce(() => false)
-
                 await listTest(
                     {
                         threads: [
-                            { id: 5, name: 'foo' },
-                            { id: 'foo', name: {} },
-                            { id: 10, name: 'bar' },
+                            { id: '5', name: 'foo' },
+                            { id: {}, name: {} },
+                            { id: '10', name: 'bar' },
                         ],
                     },
                     (lsp) => lsp.listThreads(),
@@ -842,9 +812,6 @@ describe('LSP tests', () => {
 
         describe('listPackages', () => {
             it('Success', async () => {
-                guardsMock.isPackage.mockImplementationOnce(() => true)
-                guardsMock.isPackage.mockImplementationOnce(() => false)
-
                 await listTest(
                     {
                         packages: [
@@ -981,7 +948,6 @@ describe('LSP tests', () => {
         it('No client', async () => {
             const lsp = new LSP({ hoverText: '' })
 
-            guardsMock.isObject.mockImplementationOnce(() => false)
             lsp.emit = jest.fn()
             await lsp.eval('Some text', 'Some package')
 
@@ -1002,7 +968,6 @@ describe('LSP tests', () => {
             const successTest = async (fn: (lsp: LSP) => Promise<void>) => {
                 const { lsp } = await doConnect({ sendRequest: jest.fn(() => fakeInfo) })
 
-                utilsMock.parseToInt.mockImplementationOnce((num: unknown) => num)
                 lsp.emit = jest.fn()
                 await fn(lsp)
 
@@ -1018,7 +983,6 @@ describe('LSP tests', () => {
             it('Not connected', async () => {
                 const lsp = new LSP({ hoverText: '' })
 
-                guardsMock.isInspectResult.mockImplementationOnce(() => false)
                 lsp.emit = jest.fn()
                 await lsp.inspect('Some text', 'Some package')
 
@@ -1052,21 +1016,17 @@ describe('LSP tests', () => {
             })
 
             it('Invalid response', async () => {
-                const runTest = async (firstIsString: boolean, isObjectValue: boolean, secondIsString: boolean) => {
-                    const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({})) })
-
-                    guardsMock.isString.mockImplementationOnce(() => firstIsString)
-                    guardsMock.isObject.mockImplementationOnce(() => isObjectValue)
-                    guardsMock.isString.mockImplementationOnce(() => secondIsString)
+                const runTest = async (result: unknown, resp: unknown) => {
+                    const { lsp } = await doConnect({ sendRequest: jest.fn(() => resp) })
 
                     lsp.emit = jest.fn()
-                    await lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result: {} })
+                    await lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result })
 
                     expect(lsp.emit).not.toHaveBeenCalled()
                 }
 
-                await runTest(true, false, false)
-                await runTest(false, false, false)
+                await runTest('result', undefined)
+                await runTest('result', { test: 10 })
             })
 
             it('Network error', async () => {
@@ -1080,7 +1040,7 @@ describe('LSP tests', () => {
         describe('inspectRefresh', () => {
             it('Success', async () => {
                 const { lsp } = await doConnect({
-                    sendRequest: jest.fn(() => []),
+                    sendRequest: jest.fn(() => ({ id: '5', result: {}, resultType: 'bar' })),
                 })
 
                 lsp.emit = jest.fn()
@@ -1099,10 +1059,7 @@ describe('LSP tests', () => {
             })
 
             it('Invalid response', async () => {
-                const { lsp } = await doConnect({ sendRequest: jest.fn(() => 'foo') })
-
-                guardsMock.isInspectResult.mockImplementationOnce(() => false)
-                guardsMock.isString.mockImplementationOnce(() => false)
+                const { lsp } = await doConnect({ sendRequest: jest.fn(() => 10) })
 
                 lsp.emit = jest.fn()
                 await lsp.inspectRefresh(fakeInfo)
@@ -1112,9 +1069,6 @@ describe('LSP tests', () => {
 
             it('Not connected', async () => {
                 const lsp = new LSP({ hoverText: '' })
-
-                guardsMock.isInspectResult.mockImplementationOnce(() => false)
-                guardsMock.isString.mockImplementationOnce(() => false)
 
                 lsp.emit = jest.fn()
                 await lsp.inspectRefresh(fakeInfo)
@@ -1132,7 +1086,13 @@ describe('LSP tests', () => {
 
         describe('inspectEval', () => {
             it('Success', async () => {
-                const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ id: 10 })) })
+                const { lsp } = await doConnect({
+                    sendRequest: jest.fn(() => ({
+                        id: '10',
+                        result: {},
+                        resultType: 'foo',
+                    })),
+                })
 
                 lsp.emit = jest.fn()
                 await lsp.inspectEval(fakeInfo, 'Some eval text')
@@ -1141,10 +1101,13 @@ describe('LSP tests', () => {
             })
 
             it('Success, invalid response', async () => {
-                const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ id: 10 })) })
+                const sendReq = jest.fn()
+                const { lsp } = await doConnect({ sendRequest: sendReq })
 
-                guardsMock.isInspectResult.mockImplementationOnce(() => false)
+                sendReq.mockReturnValueOnce({ id: 10 })
+                sendReq.mockReturnValueOnce('Valid response')
                 lsp.emit = jest.fn()
+
                 await lsp.inspectEval(fakeInfo, 'Some eval text')
 
                 expect(lsp.emit).toHaveBeenCalledTimes(1)
@@ -1152,8 +1115,6 @@ describe('LSP tests', () => {
 
             it('Not connected', async () => {
                 const lsp = new LSP({ hoverText: '' })
-
-                guardsMock.isInspectResult.mockImplementationOnce(() => false)
 
                 lsp.emit = jest.fn()
                 await lsp.inspectEval(fakeInfo, 'Some text')
@@ -1212,8 +1173,6 @@ describe('LSP tests', () => {
                     throw { foo: 'bar' }
                 }),
             })
-
-            guardsMock.isObject.mockImplementationOnce(() => false)
 
             lsp.emit = jest.fn()
             await lsp.inspectClosed(fakeInfo)

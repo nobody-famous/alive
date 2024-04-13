@@ -64,8 +64,8 @@ export const parseNote = (filePath: string, data: unknown): CompileFileNote | un
         return
     }
 
-    const msg = typeof data.message === 'string' ? data.message : ''
-    const sev = typeof data.severity === 'string' ? data.severity : ''
+    const msg = isString(data.message) ? data.message : ''
+    const sev = isString(data.severity) ? data.severity : ''
     const loc = parseLocation(filePath, data.location)
 
     if (loc === undefined) {
@@ -236,6 +236,10 @@ export function convertSeverity(sev: string): vscode.DiagnosticSeverity {
         default:
             return vscode.DiagnosticSeverity.Error
     }
+}
+
+export function getLspBasePath(extensionMetadata: Pick<vscode.Extension<unknown>, 'extensionPath'>): string {
+    return path.normalize(path.join(extensionMetadata.extensionPath, 'out', 'alive-lsp'))
 }
 
 async function pickWorkspaceFolder(folders: readonly VscodeFolder[]): Promise<VscodeFolder> {
