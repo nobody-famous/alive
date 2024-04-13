@@ -33,7 +33,7 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/commands/__test__/index.spec.ts",
+                "src/vscode/commands/__test__/Repl.spec.ts",
                 // "-t",
                 // "getInstallPath"
             ],

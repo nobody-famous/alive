@@ -9,6 +9,7 @@ export const startCompileTimer = jest.fn()
 export const strToMarkdown = jest.fn()
 export const tryCompile = jest.fn()
 export const updateDiagnostics = jest.fn()
+export const useEditor = jest.fn()
 
 export const Utils = jest.fn().mockImplementation(() => ({
     diagnosticsEnabled,
@@ -22,4 +23,5 @@ export const Utils = jest.fn().mockImplementation(() => ({
     strToMarkdown,
     tryCompile,
     updateDiagnostics,
+    useEditor,
 }))
