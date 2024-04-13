@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/commands/__test__/Repl.spec.ts",
-                // "-t",
-                // "getInstallPath"
+                "-t",
+                "macro expand"
             ],
             "problemMatcher": [
                 "$tsc"

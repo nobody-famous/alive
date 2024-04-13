@@ -1,6 +1,6 @@
-import { EvalInfo } from '../../Types'
+import { EvalInfo, MacroInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
-import { clearRepl, inlineEval, sendToRepl } from '../Repl'
+import { clearRepl, inlineEval, macroexpand, macroexpand1, sendToRepl } from '../Repl'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -16,7 +16,16 @@ describe('Repl tests', () => {
         expect(ui.clearRepl).toHaveBeenCalled()
     })
 
-    const createFakeEditor = () => ({
+    type FakeEditor = {
+        edit: () => void
+        document: {
+            getText: () => void
+            uri: { toString: () => string }
+            selection: {}
+        }
+    }
+    const createFakeEditor = (): FakeEditor => ({
+        edit: jest.fn(),
         document: {
             getText: jest.fn(),
             uri: { toString: jest.fn() },
@@ -92,6 +101,93 @@ describe('Repl tests', () => {
                 expect(lsp.eval).toHaveBeenCalled()
                 expect(vscodeMock.window.showTextDocument).not.toHaveBeenCalled()
             })
+        })
+    })
+
+    describe('Macro Expand', () => {
+        type MacroLSP = Pick<LSP, 'macroexpand' | 'macroexpand1' | 'getMacroInfo'>
+
+        beforeEach(() => {})
+
+        const runTest = async (
+            fn: (lsp: MacroLSP) => Promise<void>,
+            macroInfo: MacroInfo | undefined,
+            macroResult: string | undefined,
+            validate: (lsp: MacroLSP, editor: FakeEditor) => void
+        ) => {
+            const lsp: MacroLSP = {
+                macroexpand: jest.fn(async () => macroResult),
+                macroexpand1: jest.fn(),
+                getMacroInfo: jest.fn(async () => macroInfo),
+            }
+            const editor = createFakeEditor()
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await fn(lsp)
+            await editorFn?.(editor)
+
+            validate(lsp, editor)
+        }
+
+        it('macroexpand with info', async () => {
+            const info: MacroInfo = {
+                range: new vscodeMock.Range(),
+                text: 'some text',
+                package: 'some package',
+            }
+
+            await runTest(macroexpand, info, undefined, (lsp) => {
+                expect(lsp.macroexpand).toHaveBeenCalled()
+                expect(lsp.getMacroInfo).toHaveBeenCalled()
+            })
+        })
+
+        it('macroexpand with new text', async () => {
+            const info: MacroInfo = {
+                range: new vscodeMock.Range(),
+                text: 'some text',
+                package: 'some package',
+            }
+
+            await runTest(macroexpand, info, 'new text', (lsp, editor) => {
+                expect(lsp.macroexpand).toHaveBeenCalled()
+                expect(lsp.getMacroInfo).toHaveBeenCalled()
+                expect(editor.edit).toHaveBeenCalled()
+            })
+        })
+
+        it('macroexpand error', async () => {
+            const info: MacroInfo = {
+                range: new vscodeMock.Range(),
+                text: 'some text',
+                package: 'some package',
+            }
+            const lsp: MacroLSP = {
+                macroexpand: jest.fn(() => {
+                    throw new Error('Failed, as requested')
+                }),
+                macroexpand1: jest.fn(),
+                getMacroInfo: jest.fn(async () => info),
+            }
+            const editor = createFakeEditor()
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await macroexpand(lsp)
+            await editorFn?.(editor)
+
+            expect(editor.edit).not.toHaveBeenCalled()
+        })
+
+        it('macroexpand1', async () => {
+            await runTest(macroexpand1, undefined, undefined, (lsp) => expect(lsp.getMacroInfo).toHaveBeenCalled())
         })
     })
 })
