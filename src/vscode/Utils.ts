@@ -166,12 +166,7 @@ export function diagnosticsEnabled() {
 export function startCompileTimer(
     ui: Pick<UI, 'updatePackages'>,
     lsp: Pick<LSP, 'tryCompileFile' | 'listPackages'>,
-    state: {
-        compileRunning: boolean
-        compileTimeoutID: NodeJS.Timeout | undefined
-        diagnostics: VscodeDiags
-        workspacePath: string
-    }
+    state: Pick<ExtensionState, 'compileRunning' | 'compileTimeoutID' | 'diagnostics' | 'workspacePath'>
 ) {
     if (state.compileTimeoutID !== undefined) {
         clearTimeout(state.compileTimeoutID)

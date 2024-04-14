@@ -1,5 +1,5 @@
 import * as path from 'path'
-import { TextEncoder } from 'util'
+import { TextEncoder, format } from 'util'
 import * as vscode from 'vscode'
 import { log } from '../Log'
 import { ExtensionState, LispSymbol } from '../Types'
@@ -130,11 +130,7 @@ export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Extensio
 
 export async function tryCompileFile(
     lsp: Pick<LSP, 'tryCompileFile'>,
-    state: {
-        compileRunning: boolean
-        diagnostics: Pick<vscode.DiagnosticCollection, 'set'>
-        workspacePath: string
-    }
+    state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>
 ) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         const resp = await tryCompile(state, lsp, editor.document)
@@ -145,21 +141,25 @@ export async function tryCompileFile(
     })
 }
 
-export async function openScratchPad(state: ExtensionState) {
+export async function openScratchPad(state: Pick<ExtensionState, 'workspacePath'>) {
     const subdir = path.join('.vscode', 'alive')
     const folder = getFolderPath(state, subdir)
     const fileName = path.join(folder, 'scratch.lisp')
 
-    // Make sure the folder exists
-    await createFolder(vscode.Uri.file(folder))
+    try {
+        // Make sure the folder exists
+        await createFolder(vscode.Uri.file(folder))
 
-    // Make sure the file exists
-    const content = await readFileContent(fileName)
-    await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), new TextEncoder().encode(content))
+        // Make sure the file exists
+        const content = await readFileContent(fileName)
+        await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), new TextEncoder().encode(content))
 
-    // Open an editor with the file
-    const doc = await vscode.workspace.openTextDocument(fileName)
-    await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
+        // Open an editor with the file
+        const doc = await vscode.workspace.openTextDocument(fileName)
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
 }
 
 async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, pkg: string) => Promise<string | undefined>) {

@@ -1,6 +1,6 @@
 import { EvalInfo, MacroInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
-import { clearRepl, inlineEval, macroexpand, macroexpand1, sendToRepl } from '../Repl'
+import { clearRepl, inlineEval, macroexpand, macroexpand1, openScratchPad, sendToRepl } from '../Repl'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -188,6 +188,43 @@ describe('Repl tests', () => {
 
         it('macroexpand1', async () => {
             await runTest(macroexpand1, undefined, undefined, (lsp) => expect(lsp.getMacroInfo).toHaveBeenCalled())
+        })
+    })
+
+    describe('openScratchPad', () => {
+        beforeEach(() => {
+            vscodeMock.workspace.openTextDocument.mockReset()
+            vscodeMock.window.showErrorMessage.mockReset()
+        })
+
+        it('OK', async () => {
+            vscodeMock.workspace.fs.readFile.mockReturnValueOnce('Some content')
+            utilsMock.getFolderPath.mockReturnValueOnce('/some/folder')
+
+            await openScratchPad({ workspacePath: '/some/path' })
+
+            expect(vscodeMock.workspace.openTextDocument).toHaveBeenCalled()
+        })
+
+        it('Failed', async () => {
+            utilsMock.getFolderPath.mockReturnValueOnce('/some/folder')
+            utilsMock.createFolder.mockImplementationOnce(() => {
+                throw new Error('Failed, as requested')
+            })
+
+            await openScratchPad({ workspacePath: '/some/path' })
+
+            expect(vscodeMock.workspace.openTextDocument).not.toHaveBeenCalled()
+            expect(vscodeMock.window.showErrorMessage).toHaveBeenCalled()
+        })
+
+        it('readFileContent fail', async () => {
+            utilsMock.getFolderPath.mockReturnValueOnce('/some/folder')
+            vscodeMock.workspace.fs.readFile.mockImplementationOnce(() => {
+                throw new Error('Failed, as requested')
+            })
+
+            await openScratchPad({ workspacePath: '/some/path' })
         })
     })
 })

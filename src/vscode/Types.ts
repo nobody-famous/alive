@@ -9,7 +9,7 @@ export interface AliveContext {
 export interface ExtensionState {
     ctx: AliveContext
     extension: vscode.Extension<unknown>
-    diagnostics: vscode.DiagnosticCollection
+    diagnostics: Pick<vscode.DiagnosticCollection, 'set'>
     lspInstallPath?: string
     child?: Pick<ChildProcessWithoutNullStreams, 'exitCode' | 'kill' | 'on'>
     hoverText: string

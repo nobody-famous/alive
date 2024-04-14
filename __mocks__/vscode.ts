@@ -34,6 +34,7 @@ export const window = {
 export const workspace = {
     fs: {
         createDirectory: jest.fn(),
+        readFile: jest.fn(),
         writeFile: jest.fn(),
     },
 
