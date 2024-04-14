@@ -1,6 +1,6 @@
 import { EvalInfo, MacroInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
-import { clearRepl, inlineEval, macroexpand, macroexpand1, openScratchPad, sendToRepl } from '../Repl'
+import { clearRepl, inlineEval, macroexpand, macroexpand1, openScratchPad, sendToRepl, tryCompileWithDiags } from '../Repl'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -160,32 +160,6 @@ describe('Repl tests', () => {
             })
         })
 
-        it('macroexpand error', async () => {
-            const info: MacroInfo = {
-                range: new vscodeMock.Range(),
-                text: 'some text',
-                package: 'some package',
-            }
-            const lsp: MacroLSP = {
-                macroexpand: jest.fn(() => {
-                    throw new Error('Failed, as requested')
-                }),
-                macroexpand1: jest.fn(),
-                getMacroInfo: jest.fn(async () => info),
-            }
-            const editor = createFakeEditor()
-            let editorFn: ((editor: unknown) => Promise<void>) | undefined
-
-            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
-                editorFn = fn
-            })
-
-            await macroexpand(lsp)
-            await editorFn?.(editor)
-
-            expect(editor.edit).not.toHaveBeenCalled()
-        })
-
         it('macroexpand1', async () => {
             await runTest(macroexpand1, undefined, undefined, (lsp) => expect(lsp.getMacroInfo).toHaveBeenCalled())
         })
@@ -225,6 +199,41 @@ describe('Repl tests', () => {
             })
 
             await openScratchPad({ workspacePath: '/some/path' })
+        })
+    })
+
+    describe('tryCompileWithDiags', () => {
+        beforeEach(() => {
+            utilsMock.tryCompile.mockReset()
+            utilsMock.updateDiagnostics.mockReset()
+        })
+
+        const runTest = async (respValue: unknown) => {
+            const lsp = { tryCompileFile: jest.fn() }
+            const state = {
+                workspacePath: '/workspace/path',
+                compileRunning: false,
+                diagnostics: { set: jest.fn() },
+            }
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+            utilsMock.tryCompile.mockReturnValueOnce(respValue)
+
+            await tryCompileWithDiags(lsp, state)
+            await editorFn?.(createFakeEditor())
+        }
+
+        it('Have response', async () => {
+            await runTest({ foo: 'bar' })
+            expect(utilsMock.updateDiagnostics).toHaveBeenCalled()
+        })
+
+        it('No response', async () => {
+            await runTest(undefined)
+            expect(utilsMock.updateDiagnostics).not.toHaveBeenCalled()
         })
     })
 })

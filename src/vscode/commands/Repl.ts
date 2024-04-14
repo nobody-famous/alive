@@ -128,7 +128,7 @@ export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Extensio
     })
 }
 
-export async function tryCompileFile(
+export async function tryCompileWithDiags(
     lsp: Pick<LSP, 'tryCompileFile'>,
     state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>
 ) {
@@ -170,14 +170,10 @@ async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, 
             return
         }
 
-        try {
-            const newText = await fn(info?.text, info?.package)
+        const newText = await fn(info?.text, info?.package)
 
-            if (typeof newText === 'string') {
-                editor.edit((builder) => builder.replace(info.range, newText))
-            }
-        } catch (err) {
-            log('Failed to expand macro: ${err}')
+        if (typeof newText === 'string') {
+            editor.edit((builder) => builder.replace(info.range, newText))
         }
     })
 }

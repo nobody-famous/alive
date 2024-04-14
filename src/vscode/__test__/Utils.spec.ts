@@ -312,7 +312,7 @@ describe('Utils Tests', () => {
         const fn = spy.mock.calls[0][0]
         await fn()
 
-        expect(cmdsMock.tryCompileFile).toHaveBeenCalled()
+        expect(cmdsMock.tryCompileWithDiags).toHaveBeenCalled()
         expect(cmdsMock.refreshPackages).toHaveBeenCalled()
     })
 
