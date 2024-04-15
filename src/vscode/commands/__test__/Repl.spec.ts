@@ -4,6 +4,7 @@ import {
     clearRepl,
     compileFile,
     inlineEval,
+    loadFile,
     macroexpand,
     macroexpand1,
     openScratchPad,
@@ -31,6 +32,7 @@ describe('Repl tests', () => {
             getText: () => void
             uri: { toString: () => string }
             selection: {}
+            save: () => void
         }
     }
     const createFakeEditor = (): FakeEditor => ({
@@ -39,6 +41,7 @@ describe('Repl tests', () => {
             getText: jest.fn(),
             uri: { toString: jest.fn() },
             selection: {},
+            save: jest.fn(),
         },
     })
 
@@ -119,7 +122,7 @@ describe('Repl tests', () => {
         beforeEach(() => {})
 
         const runTest = async (
-            fn: (lsp: MacroLSP) => Promise<void>,
+            fn: (lsp: MacroLSP) => void,
             macroInfo: MacroInfo | undefined,
             macroResult: string | undefined,
             validate: (lsp: MacroLSP, editor: FakeEditor) => void
@@ -136,7 +139,7 @@ describe('Repl tests', () => {
                 editorFn = fn
             })
 
-            await fn(lsp)
+            fn(lsp)
             await editorFn?.(editor)
 
             validate(lsp, editor)
@@ -231,7 +234,7 @@ describe('Repl tests', () => {
             })
             utilsMock.tryCompile.mockReturnValueOnce(respValue)
 
-            await tryCompileWithDiags(lsp, state)
+            tryCompileWithDiags(lsp, state)
             await editorFn?.(createFakeEditor())
         }
 
@@ -256,7 +259,7 @@ describe('Repl tests', () => {
             editorFn = fn
         })
 
-        await compileFile(lsp, state)
+        compileFile(lsp, state)
 
         const task = editorFn?.(editor)
         expect(vscodeMock.workspace.saveAll).toHaveBeenCalled()
@@ -268,5 +271,20 @@ describe('Repl tests', () => {
 
         await task
         expect(lsp.compileFile).toHaveBeenCalled()
+    })
+
+    it('loadFile', async () => {
+        const lsp = { loadFile: jest.fn() }
+        let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+        utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+            editorFn = fn
+        })
+
+        loadFile(lsp)
+
+        await editorFn?.(createFakeEditor())
+
+        expect(lsp.loadFile).toHaveBeenCalled()
     })
 })

@@ -103,14 +103,14 @@ export async function inspectMacro(lsp: Pick<LSP, 'getMacroInfo' | 'inspectMacro
     })
 }
 
-export async function loadFile(lsp: Pick<LSP, 'loadFile'>) {
+export function loadFile(lsp: Pick<LSP, 'loadFile'>) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         await editor.document.save()
         await lsp.loadFile(editor.document.uri.fsPath)
     })
 }
 
-export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<ExtensionState, 'compileRunning'>) {
+export function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<ExtensionState, 'compileRunning'>) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         if (state.compileRunning) {
             return
@@ -127,7 +127,7 @@ export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<Ext
     })
 }
 
-export async function tryCompileWithDiags(
+export function tryCompileWithDiags(
     lsp: Pick<LSP, 'tryCompileFile'>,
     state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>
 ) {
@@ -161,7 +161,15 @@ export async function openScratchPad(state: Pick<ExtensionState, 'workspacePath'
     }
 }
 
-async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, pkg: string) => Promise<string | undefined>) {
+export function macroexpand(lsp: Pick<LSP, 'macroexpand' | 'getMacroInfo'>) {
+    doMacroExpand(lsp, lsp.macroexpand)
+}
+
+export function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getMacroInfo'>) {
+    doMacroExpand(lsp, lsp.macroexpand1)
+}
+
+function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, pkg: string) => Promise<string | undefined>) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         const info = await lsp.getMacroInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
@@ -175,14 +183,6 @@ async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, 
             editor.edit((builder) => builder.replace(info.range, newText))
         }
     })
-}
-
-export async function macroexpand(lsp: Pick<LSP, 'macroexpand' | 'getMacroInfo'>) {
-    await doMacroExpand(lsp, lsp.macroexpand)
-}
-
-export async function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getMacroInfo'>) {
-    await doMacroExpand(lsp, lsp.macroexpand1)
 }
 
 async function readFileContent(path: string): Promise<string> {
