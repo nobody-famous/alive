@@ -1,6 +1,15 @@
 import { EvalInfo, MacroInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
-import { clearRepl, inlineEval, macroexpand, macroexpand1, openScratchPad, sendToRepl, tryCompileWithDiags } from '../Repl'
+import {
+    clearRepl,
+    compileFile,
+    inlineEval,
+    macroexpand,
+    macroexpand1,
+    openScratchPad,
+    sendToRepl,
+    tryCompileWithDiags,
+} from '../Repl'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -235,5 +244,29 @@ describe('Repl tests', () => {
             await runTest(undefined)
             expect(utilsMock.updateDiagnostics).not.toHaveBeenCalled()
         })
+    })
+
+    it('compileFile', async () => {
+        const lsp = { compileFile: jest.fn() }
+        const state = { compileRunning: false }
+        const editor = createFakeEditor()
+        let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+        utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+            editorFn = fn
+        })
+
+        await compileFile(lsp, state)
+
+        const task = editorFn?.(editor)
+        expect(vscodeMock.workspace.saveAll).toHaveBeenCalled()
+
+        vscodeMock.workspace.saveAll.mockReset()
+        await editorFn?.(editor)
+
+        expect(vscodeMock.workspace.saveAll).not.toHaveBeenCalled()
+
+        await task
+        expect(lsp.compileFile).toHaveBeenCalled()
     })
 })

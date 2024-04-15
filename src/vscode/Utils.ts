@@ -140,7 +140,7 @@ export function hasValidLangId(doc: Pick<vscode.TextDocument, 'languageId'>, ids
     return ids.includes(doc.languageId)
 }
 
-export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) => void) {
+export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) => Promise<void>) {
     const editor = vscode.window.activeTextEditor
 
     if (editor === undefined || !hasValidLangId(editor.document, ids)) {
@@ -148,7 +148,7 @@ export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) =
     }
 
     try {
-        fn(editor)
+        await fn(editor)
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }

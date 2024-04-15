@@ -1,11 +1,10 @@
 import * as path from 'path'
 import { TextEncoder, format } from 'util'
 import * as vscode from 'vscode'
-import { log } from '../Log'
 import { ExtensionState, LispSymbol } from '../Types'
+import { UI } from '../UI'
 import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, tryCompile, updateDiagnostics, useEditor } from '../Utils'
 import { LSP } from '../backend/LSP'
-import { UI } from '../UI'
 
 export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
     ui.clearRepl()
@@ -111,7 +110,7 @@ export async function loadFile(lsp: Pick<LSP, 'loadFile'>) {
     })
 }
 
-export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: ExtensionState) {
+export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<ExtensionState, 'compileRunning'>) {
     useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         if (state.compileRunning) {
             return
