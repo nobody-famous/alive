@@ -4,6 +4,7 @@ import {
     clearRepl,
     compileFile,
     inlineEval,
+    inspectMacro,
     loadFile,
     macroexpand,
     macroexpand1,
@@ -286,5 +287,37 @@ describe('Repl tests', () => {
         await editorFn?.(createFakeEditor())
 
         expect(lsp.loadFile).toHaveBeenCalled()
+    })
+
+    describe('inspectMacro', () => {
+        const runTest = async (
+            info: MacroInfo | undefined,
+            validate: (lsp: Pick<LSP, 'getMacroInfo' | 'inspectMacro'>) => void
+        ) => {
+            const lsp = {
+                getMacroInfo: jest.fn(async () => info),
+                inspectMacro: jest.fn(),
+            }
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await inspectMacro(lsp)
+            await editorFn?.(createFakeEditor())
+
+            validate(lsp)
+        }
+
+        it('Have info', async () => {
+            await runTest({ text: 'some text', package: 'some package', range: new vscodeMock.Range() }, (lsp) =>
+                expect(lsp.inspectMacro).toHaveBeenCalled()
+            )
+        })
+
+        it('No info', async () => {
+            await runTest(undefined, (lsp) => expect(lsp.inspectMacro).not.toHaveBeenCalled())
+        })
     })
 })

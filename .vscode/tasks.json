@@ -35,7 +35,7 @@
                 "jest",
                 "src/vscode/commands/__test__/Repl.spec.ts",
                 "-t",
-                "compilefile"
+                "inspectMacro"
             ],
             "problemMatcher": [
                 "$tsc"
