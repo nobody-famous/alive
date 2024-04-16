@@ -4,6 +4,7 @@ import {
     clearRepl,
     compileFile,
     inlineEval,
+    inspect,
     inspectMacro,
     loadFile,
     macroexpand,
@@ -319,5 +320,13 @@ describe('Repl tests', () => {
         it('No info', async () => {
             await runTest(undefined, (lsp) => expect(lsp.inspectMacro).not.toHaveBeenCalled())
         })
+    })
+
+    it('inspect', async () => {
+        const lsp = { inspectSymbol: jest.fn() }
+
+        await inspect(lsp, { name: 'foo', package: 'bar' })
+
+        expect(lsp.inspectSymbol).toHaveBeenCalled()
     })
 })
