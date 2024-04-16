@@ -52,7 +52,7 @@ export async function selectSexpr(lsp: Pick<LSP, 'getTopExprRange'>) {
             return
         }
 
-        editor.selection = new vscode.Selection(range?.start, range?.end)
+        editor.selection = new vscode.Selection(range.start, range.end)
     })
 }
 
@@ -169,12 +169,12 @@ export async function openScratchPad(state: Pick<ExtensionState, 'workspacePath'
     })
 }
 
-export function macroexpand(lsp: Pick<LSP, 'macroexpand' | 'getMacroInfo'>) {
-    doMacroExpand(lsp, lsp.macroexpand)
+export async function macroexpand(lsp: Pick<LSP, 'macroexpand' | 'getMacroInfo'>) {
+    await doMacroExpand(lsp, lsp.macroexpand)
 }
 
-export function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getMacroInfo'>) {
-    doMacroExpand(lsp, lsp.macroexpand1)
+export async function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getMacroInfo'>) {
+    await doMacroExpand(lsp, lsp.macroexpand1)
 }
 
 async function withCatchError(fn: () => Promise<void>) {
@@ -193,7 +193,7 @@ async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, 
             return
         }
 
-        const newText = await fn(info?.text, info?.package)
+        const newText = await fn(info.text, info.package)
 
         if (typeof newText === 'string') {
             editor.edit((builder) => builder.replace(info.range, newText))

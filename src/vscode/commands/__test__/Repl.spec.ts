@@ -1,3 +1,4 @@
+import { Selection } from 'vscode'
 import { EvalInfo, MacroInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
 import {
@@ -14,6 +15,7 @@ import {
     refreshAsdfSystems,
     refreshPackages,
     refreshThreads,
+    selectSexpr,
     sendToRepl,
     tryCompileWithDiags,
 } from '../Repl'
@@ -34,19 +36,19 @@ describe('Repl tests', () => {
 
     type FakeEditor = {
         edit: () => void
+        selection: Selection
         document: {
             getText: () => void
             uri: { toString: () => string }
-            selection: {}
             save: () => void
         }
     }
     const createFakeEditor = (): FakeEditor => ({
         edit: jest.fn(),
+        selection: new vscodeMock.Selection(),
         document: {
             getText: jest.fn(),
             uri: { toString: jest.fn() },
-            selection: {},
             save: jest.fn(),
         },
     })
@@ -176,6 +178,39 @@ describe('Repl tests', () => {
                 expect(lsp.getMacroInfo).toHaveBeenCalled()
                 expect(editor.edit).toHaveBeenCalled()
             })
+        })
+
+        it('editor.edit function', async () => {
+            const info: MacroInfo = {
+                range: new vscodeMock.Range(),
+                text: 'some text',
+                package: 'some package',
+            }
+            const lsp: MacroLSP = {
+                macroexpand: jest.fn(),
+                macroexpand1: jest.fn(async () => 'new text'),
+                getMacroInfo: jest.fn(async () => info),
+            }
+            let builderFn: ((builder: { replace: () => void }) => void) | undefined
+            const editor = {
+                edit: jest.fn((fn) => {
+                    builderFn = fn
+                }),
+                document: { uri: { toString: jest.fn() } },
+            }
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await macroexpand1(lsp)
+            await editorFn?.(editor)
+
+            const builder = { replace: jest.fn() }
+            builderFn?.(builder)
+
+            expect(builder.replace).toHaveBeenCalled()
         })
 
         it('macroexpand1', async () => {
@@ -344,6 +379,15 @@ describe('Repl tests', () => {
             expect(lsp.loadAsdfSystem).toHaveBeenCalled()
         })
 
+        it('Select system with names', async () => {
+            const lsp = { listAsdfSystems: jest.fn(async () => []), loadAsdfSystem: jest.fn() }
+
+            vscodeMock.window.showQuickPick.mockReturnValueOnce('some name')
+            await loadAsdfSystem(lsp)
+
+            expect(lsp.loadAsdfSystem).toHaveBeenCalled()
+        })
+
         it('Nothing picked', async () => {
             const lsp = { listAsdfSystems: jest.fn(), loadAsdfSystem: jest.fn() }
 
@@ -378,5 +422,39 @@ describe('Repl tests', () => {
         await refreshPackages(ui, lsp)
 
         expect(ui.updatePackages).toHaveBeenCalled()
+    })
+
+    describe('selectSexpr', () => {
+        it('Have range', async () => {
+            const lsp = {
+                getTopExprRange: jest.fn(async () => new vscodeMock.Range()),
+            }
+            const editor = createFakeEditor()
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await selectSexpr(lsp)
+            await editorFn?.(editor)
+
+            expect(editor.selection).toMatchObject({})
+        })
+
+        it('No range', async () => {
+            const lsp = { getTopExprRange: jest.fn() }
+            const editor = createFakeEditor()
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await selectSexpr(lsp)
+            await editorFn?.(editor)
+
+            expect(editor.selection).toMatchObject({})
+        })
     })
 })
