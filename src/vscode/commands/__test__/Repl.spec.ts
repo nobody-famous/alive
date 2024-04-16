@@ -11,6 +11,9 @@ import {
     macroexpand,
     macroexpand1,
     openScratchPad,
+    refreshAsdfSystems,
+    refreshPackages,
+    refreshThreads,
     sendToRepl,
     tryCompileWithDiags,
 } from '../Repl'
@@ -348,5 +351,32 @@ describe('Repl tests', () => {
 
             expect(lsp.loadAsdfSystem).not.toHaveBeenCalled()
         })
+    })
+
+    it('refreshThreads', async () => {
+        const lsp = { listThreads: jest.fn() }
+        const ui = { updateThreads: jest.fn() }
+
+        await refreshThreads(ui, lsp)
+
+        expect(ui.updateThreads).toHaveBeenCalled()
+    })
+
+    it('refreshAsdfSystems', async () => {
+        const lsp = { listAsdfSystems: jest.fn() }
+        const ui = { updateAsdfSystems: jest.fn() }
+
+        await refreshAsdfSystems(ui, lsp)
+
+        expect(ui.updateAsdfSystems).toHaveBeenCalled()
+    })
+
+    it('refreshPackages', async () => {
+        const lsp = { listPackages: jest.fn() }
+        const ui = { updatePackages: jest.fn() }
+
+        await refreshPackages(ui, lsp)
+
+        expect(ui.updatePackages).toHaveBeenCalled()
     })
 })
