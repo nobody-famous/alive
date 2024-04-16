@@ -2,6 +2,7 @@ export const on = jest.fn()
 export const connect = jest.fn()
 export const editorChanged = jest.fn()
 export const evalFn = jest.fn()
+export const evalWithOutput = jest.fn()
 export const inspect = jest.fn()
 export const inspectClosed = jest.fn()
 export const inspectEval = jest.fn()
@@ -22,6 +23,7 @@ export const LSP = jest.fn(() => ({
     connect,
     editorChanged,
     eval: evalFn,
+    evalWithOutput,
     inspect,
     inspectClosed,
     inspectEval,

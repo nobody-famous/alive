@@ -1,36 +1,38 @@
 import * as path from 'path'
-import { TextEncoder } from 'util'
+import { TextEncoder, format } from 'util'
 import * as vscode from 'vscode'
-import { log } from '../Log'
 import { ExtensionState, LispSymbol } from '../Types'
+import { UI } from '../UI'
 import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, tryCompile, updateDiagnostics, useEditor } from '../Utils'
 import { LSP } from '../backend/LSP'
-import { UI } from '../UI'
 
 export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
     ui.clearRepl()
 }
 
-export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'eval'>) {
-    useEditor([COMMON_LISP_ID], async (editor) => {
+export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'evalWithOutput'>) {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
         if (info !== undefined) {
             await vscode.workspace.saveAll()
-            await lsp.eval(info.text, info.package)
+            await lsp.evalWithOutput(info.text, info.package)
         }
     })
 }
 
-export async function inlineEval(lsp: Pick<LSP, 'getEvalInfo' | 'doEval'>, state: ExtensionState): Promise<void> {
-    useEditor([COMMON_LISP_ID], async (editor) => {
+export async function inlineEval(
+    lsp: Pick<LSP, 'getEvalInfo' | 'eval'>,
+    state: Pick<ExtensionState, 'hoverText'>
+): Promise<void> {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
-        if (editor === undefined || info === undefined) {
+        if (info === undefined) {
             return
         }
 
-        const result = await lsp.doEval(info.text, info.package)
+        const result = await lsp.eval(info.text, info.package)
 
         if (result === undefined) {
             return
@@ -43,53 +45,63 @@ export async function inlineEval(lsp: Pick<LSP, 'getEvalInfo' | 'doEval'>, state
 }
 
 export async function selectSexpr(lsp: Pick<LSP, 'getTopExprRange'>) {
-    useEditor([COMMON_LISP_ID], async (editor) => {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
         const range = await lsp.getTopExprRange(editor.document.uri.toString(), editor.selection)
 
         if (range === undefined) {
             return
         }
 
-        editor.selection = new vscode.Selection(range?.start, range?.end)
+        editor.selection = new vscode.Selection(range.start, range.end)
     })
 }
 
 export async function refreshPackages(ui: Pick<UI, 'updatePackages'>, lsp: Pick<LSP, 'listPackages'>) {
-    const pkgs = await lsp.listPackages()
+    await withCatchError(async () => {
+        const pkgs = await lsp.listPackages()
 
-    ui.updatePackages(pkgs)
+        ui.updatePackages(pkgs)
+    })
 }
 
 export async function refreshAsdfSystems(ui: Pick<UI, 'updateAsdfSystems'>, lsp: Pick<LSP, 'listAsdfSystems'>) {
-    const systems = await lsp.listAsdfSystems()
+    await withCatchError(async () => {
+        const systems = await lsp.listAsdfSystems()
 
-    ui.updateAsdfSystems(systems)
+        ui.updateAsdfSystems(systems)
+    })
 }
 
 export async function refreshThreads(ui: Pick<UI, 'updateThreads'>, lsp: Pick<LSP, 'listThreads'>) {
-    const threads = await lsp.listThreads()
+    await withCatchError(async () => {
+        const threads = await lsp.listThreads()
 
-    ui.updateThreads(threads)
+        ui.updateThreads(threads)
+    })
 }
 
 export async function loadAsdfSystem(lsp: Pick<LSP, 'listAsdfSystems' | 'loadAsdfSystem'>) {
-    const names = await lsp.listAsdfSystems()
-    const name = await vscode.window.showQuickPick(names ?? [])
+    await withCatchError(async () => {
+        const names = await lsp.listAsdfSystems()
+        const name = await vscode.window.showQuickPick(names ?? [])
 
-    if (typeof name !== 'string') {
-        return
-    }
+        if (typeof name !== 'string') {
+            return
+        }
 
-    await vscode.workspace.saveAll()
-    await lsp.loadAsdfSystem(name)
+        await vscode.workspace.saveAll()
+        await lsp.loadAsdfSystem(name)
+    })
 }
 
 export async function inspect(lsp: Pick<LSP, 'inspectSymbol'>, symbol: LispSymbol) {
-    await lsp.inspectSymbol(symbol)
+    await withCatchError(async () => {
+        await lsp.inspectSymbol(symbol)
+    })
 }
 
 export async function inspectMacro(lsp: Pick<LSP, 'getMacroInfo' | 'inspectMacro'>) {
-    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+    await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         const info = await lsp.getMacroInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
 
         if (info === undefined) {
@@ -102,14 +114,14 @@ export async function inspectMacro(lsp: Pick<LSP, 'getMacroInfo' | 'inspectMacro
 }
 
 export async function loadFile(lsp: Pick<LSP, 'loadFile'>) {
-    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+    await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         await editor.document.save()
         await lsp.loadFile(editor.document.uri.fsPath)
     })
 }
 
-export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: ExtensionState) {
-    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<ExtensionState, 'compileRunning'>) {
+    await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         if (state.compileRunning) {
             return
         }
@@ -125,15 +137,11 @@ export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Extensio
     })
 }
 
-export async function tryCompileFile(
+export async function tryCompileWithDiags(
     lsp: Pick<LSP, 'tryCompileFile'>,
-    state: {
-        compileRunning: boolean
-        diagnostics: Pick<vscode.DiagnosticCollection, 'set'>
-        workspacePath: string
-    }
+    state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>
 ) {
-    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+    await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         const resp = await tryCompile(state, lsp, editor.document)
 
         if (resp !== undefined) {
@@ -142,40 +150,22 @@ export async function tryCompileFile(
     })
 }
 
-export async function openScratchPad(state: ExtensionState) {
-    const subdir = path.join('.vscode', 'alive')
-    const folder = getFolderPath(state, subdir)
-    const fileName = path.join(folder, 'scratch.lisp')
+export async function openScratchPad(state: Pick<ExtensionState, 'workspacePath'>) {
+    await withCatchError(async () => {
+        const subdir = path.join('.vscode', 'alive')
+        const folder = getFolderPath(state, subdir)
+        const fileName = path.join(folder, 'scratch.lisp')
 
-    // Make sure the folder exists
-    await createFolder(vscode.Uri.file(folder))
+        // Make sure the folder exists
+        await createFolder(vscode.Uri.file(folder))
 
-    // Make sure the file exists
-    const content = await readFileContent(fileName)
-    await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), new TextEncoder().encode(content))
+        // Make sure the file exists
+        const content = await readFileContent(fileName)
+        await vscode.workspace.fs.writeFile(vscode.Uri.file(fileName), new TextEncoder().encode(content))
 
-    // Open an editor with the file
-    const doc = await vscode.workspace.openTextDocument(fileName)
-    await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
-}
-
-async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, pkg: string) => Promise<string | undefined>) {
-    useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        const info = await lsp.getMacroInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
-
-        if (info === undefined) {
-            return
-        }
-
-        try {
-            const newText = await fn(info?.text, info?.package)
-
-            if (typeof newText === 'string') {
-                editor.edit((builder) => builder.replace(info.range, newText))
-            }
-        } catch (err) {
-            log('Failed to expand macro: ${err}')
-        }
+        // Open an editor with the file
+        const doc = await vscode.workspace.openTextDocument(fileName)
+        await vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
     })
 }
 
@@ -185,6 +175,30 @@ export async function macroexpand(lsp: Pick<LSP, 'macroexpand' | 'getMacroInfo'>
 
 export async function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getMacroInfo'>) {
     await doMacroExpand(lsp, lsp.macroexpand1)
+}
+
+async function withCatchError(fn: () => Promise<void>) {
+    try {
+        await fn()
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+async function doMacroExpand(lsp: Pick<LSP, 'getMacroInfo'>, fn: (text: string, pkg: string) => Promise<string | undefined>) {
+    await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
+        const info = await lsp.getMacroInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
+
+        if (info === undefined) {
+            return
+        }
+
+        const newText = await fn(info.text, info.package)
+
+        if (typeof newText === 'string') {
+            editor.edit((builder) => builder.replace(info.range, newText))
+        }
+    })
 }
 
 async function readFileContent(path: string): Promise<string> {

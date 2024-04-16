@@ -140,7 +140,7 @@ export function hasValidLangId(doc: Pick<vscode.TextDocument, 'languageId'>, ids
     return ids.includes(doc.languageId)
 }
 
-export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) => void) {
+export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) => Promise<void>) {
     const editor = vscode.window.activeTextEditor
 
     if (editor === undefined || !hasValidLangId(editor.document, ids)) {
@@ -148,7 +148,7 @@ export async function useEditor(ids: string[], fn: (editor: vscode.TextEditor) =
     }
 
     try {
-        fn(editor)
+        await fn(editor)
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }
@@ -166,12 +166,7 @@ export function diagnosticsEnabled() {
 export function startCompileTimer(
     ui: Pick<UI, 'updatePackages'>,
     lsp: Pick<LSP, 'tryCompileFile' | 'listPackages'>,
-    state: {
-        compileRunning: boolean
-        compileTimeoutID: NodeJS.Timeout | undefined
-        diagnostics: VscodeDiags
-        workspacePath: string
-    }
+    state: Pick<ExtensionState, 'compileRunning' | 'compileTimeoutID' | 'diagnostics' | 'workspacePath'>
 ) {
     if (state.compileTimeoutID !== undefined) {
         clearTimeout(state.compileTimeoutID)
@@ -179,7 +174,7 @@ export function startCompileTimer(
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.tryCompileFile(lsp, state)
+        await cmds.tryCompileWithDiags(lsp, state)
         await cmds.refreshPackages(ui, lsp)
     }, 500)
 }
