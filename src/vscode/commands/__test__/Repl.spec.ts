@@ -6,6 +6,7 @@ import {
     inlineEval,
     inspect,
     inspectMacro,
+    loadAsdfSystem,
     loadFile,
     macroexpand,
     macroexpand1,
@@ -328,5 +329,24 @@ describe('Repl tests', () => {
         await inspect(lsp, { name: 'foo', package: 'bar' })
 
         expect(lsp.inspectSymbol).toHaveBeenCalled()
+    })
+
+    describe('loadAsdfSystem', () => {
+        it('Select system', async () => {
+            const lsp = { listAsdfSystems: jest.fn(), loadAsdfSystem: jest.fn() }
+
+            vscodeMock.window.showQuickPick.mockReturnValueOnce('some name')
+            await loadAsdfSystem(lsp)
+
+            expect(lsp.loadAsdfSystem).toHaveBeenCalled()
+        })
+
+        it('Nothing picked', async () => {
+            const lsp = { listAsdfSystems: jest.fn(), loadAsdfSystem: jest.fn() }
+
+            await loadAsdfSystem(lsp)
+
+            expect(lsp.loadAsdfSystem).not.toHaveBeenCalled()
+        })
     })
 })
