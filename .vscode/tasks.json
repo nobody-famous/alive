@@ -33,7 +33,7 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/providers/__test__/Hover.spec.ts",
+                "src/vscode/views/__test__/AsdfSystemsTree.spec.ts",
                 // "-t",
                 // "editor.edit"
             ],

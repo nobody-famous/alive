@@ -9,6 +9,10 @@ export enum ViewColumn {
     Two = 2,
 }
 
+export enum TreeItemCollapsibleState {
+    None = 0,
+}
+
 export class Uri {
     static file = jest.fn()
 }
@@ -71,7 +75,16 @@ export class MarkdownString {
     }
 }
 
+export class EventEmitter {
+    fn = jest.fn()
+    event = jest.fn((fn) => {
+        this.fn = fn
+    })
+    fire = jest.fn(() => this.fn())
+}
+
 export class Position {}
 export class Range {}
 export class Selection {}
 export class Diagnostic {}
+export class TreeItem {}
