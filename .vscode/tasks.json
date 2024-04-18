@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/commands/__test__/Repl.spec.ts",
-                "-t",
-                "editor.edit"
+                "src/vscode/providers/__test__/Hover.spec.ts",
+                // "-t",
+                // "editor.edit"
             ],
             "problemMatcher": [
                 "$tsc"

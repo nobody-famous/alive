@@ -9,8 +9,8 @@ export enum ViewColumn {
     Two = 2,
 }
 
-export const Uri = {
-    file: jest.fn(),
+export class Uri {
+    static file = jest.fn()
 }
 
 export const languages = {
@@ -53,6 +53,22 @@ export const commands = {
 
 export const extensions = {
     getExtension: jest.fn(() => ({ extensionPath: 'some path' })),
+}
+
+export class Hover {
+    contents: MarkdownString[] = []
+
+    constructor(contents: MarkdownString) {
+        this.contents.push(contents)
+    }
+}
+
+export class MarkdownString {
+    value: string
+
+    constructor(value: string) {
+        this.value = value
+    }
 }
 
 export class Position {}
