@@ -25,6 +25,7 @@ export const languages = {
 export const window = {
     createOutputChannel: () => ({ appendLine: () => {}, append: () => {}, show: () => {} }),
     createQuickPick: jest.fn(),
+    createWebviewPanel: jest.fn(),
     showQuickPick: jest.fn(),
     showErrorMessage: jest.fn(),
     showInformationMessage: jest.fn(),

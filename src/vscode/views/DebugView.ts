@@ -71,7 +71,7 @@ export class DebugView extends EventEmitter {
             vscode.commands.executeCommand('setContext', 'clDebugViewActive', this.panel?.active)
         })
 
-        this.renderHtml()
+        this.renderHtml(this.panel)
     }
 
     stop() {
@@ -91,7 +91,10 @@ export class DebugView extends EventEmitter {
 
     setEvalResponse(ndx: number, text: string) {
         this.frameEval[ndx] = text
-        this.renderHtml()
+
+        if (this.panel !== undefined) {
+            this.renderHtml(this.panel)
+        }
     }
 
     private inspectCondCommand() {}
@@ -137,7 +140,9 @@ export class DebugView extends EventEmitter {
 
         this.frameExpanded[num] = !this.frameExpanded[num]
 
-        this.renderHtml()
+        if (this.panel !== undefined) {
+            this.renderHtml(this.panel)
+        }
     }
 
     private restartCommand(msg: jsMessage) {
@@ -218,7 +223,7 @@ export class DebugView extends EventEmitter {
 
     private renderRestartItem(ndx: number, info: RestartInfo) {
         return `
-            <div class="list-item clickable" onclick="restart(${ndx})">
+            <div class="list-item restart-item clickable" onclick="restart(${ndx})">
                 ${ndx}: [${strToHtml(info.name)}] ${strToHtml(info.description)}
             </div>
         `
@@ -247,16 +252,11 @@ export class DebugView extends EventEmitter {
         `
     }
 
-    private renderHtml() {
-        if (this.panel === undefined) {
-            vscode.window.showInformationMessage('Panel not undefined')
-            return
-        }
-
+    private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.css'))
 
-        this.panel.webview.html = `
+        panel.webview.html = `
             <html>
             <head>
                 <link rel="stylesheet" href="${this.panel?.webview.asWebviewUri(cssPath)}">

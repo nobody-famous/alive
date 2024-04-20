@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/views/__test__/AsdfSystemsTree.spec.ts",
+                "src/vscode/views/__test__/DebugView.spec.ts",
                 // "-t",
-                // "editor.edit"
+                // "restarts"
             ],
             "problemMatcher": [
                 "$tsc"
