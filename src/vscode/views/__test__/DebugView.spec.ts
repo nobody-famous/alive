@@ -40,6 +40,19 @@ describe('DebugView tests', () => {
         expect(panel.webview.html).not.toContain('restart-item')
     })
 
+    it('Stop', () => {
+        const info = Object.assign({}, fakeDebugInfo, { restarts: [{ name: 'foo', description: 'foo restart' }] })
+        const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, info)
+        const panel = createPanel()
+
+        vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
+        view.run()
+        expect(panel.dispose).not.toHaveBeenCalled()
+
+        view.stop()
+        expect(panel.dispose).toHaveBeenCalled()
+    })
+
     it('Restarts', () => {
         const info = Object.assign({}, fakeDebugInfo, { restarts: [{ name: 'foo', description: 'foo restart' }] })
         const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, info)
@@ -49,5 +62,21 @@ describe('DebugView tests', () => {
         view.run()
 
         expect(panel.webview.html).toContain('restart-item')
+    })
+
+    it('Stacktrace', () => {
+        const info = Object.assign({}, fakeDebugInfo, {
+            stackTrace: [
+                { function: 'foo', file: 'bar', position: { line: 5, character: 10 } },
+                { function: 'foo', file: null, position: null },
+            ],
+        })
+        const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, info)
+        const panel = createPanel()
+
+        vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
+        view.run()
+
+        expect(panel.webview.html).toContain('stacktrace-item')
     })
 })

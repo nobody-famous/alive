@@ -194,7 +194,7 @@ export class DebugView extends EventEmitter {
             const selectClass = bt.file !== null && bt.position !== null ? 'clickable' : ''
 
             str += `
-                <div class="list-item">
+                <div class="list-item stacktrace-item">
                     <div class="list-item-ndx">${ndx}</div>
                     <div class="list-item-loc ${selectClass}"
                         onclick="jump_to('${strToHtml(bt.file ?? '')}', ${bt.position?.line}, ${bt.position?.character})"
