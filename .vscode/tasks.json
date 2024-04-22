@@ -35,7 +35,7 @@
                 "jest",
                 "src/vscode/views/__test__/DebugView.spec.ts",
                 "-t",
-                "Commands"
+                "onDispose"
             ],
             "problemMatcher": [
                 "$tsc"

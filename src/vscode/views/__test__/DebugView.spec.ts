@@ -45,6 +45,9 @@ describe('DebugView tests', () => {
         const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, info)
         const panel = createPanel()
 
+        view.stop()
+        expect(panel.dispose).not.toHaveBeenCalled()
+
         vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
         view.run()
         expect(panel.dispose).not.toHaveBeenCalled()
@@ -115,5 +118,54 @@ describe('DebugView tests', () => {
                 expect(view.emit).toHaveBeenCalled()
             })
         })
+
+        it('restart', () => {
+            const { view, cb } = getCallback()
+
+            cb({ command: 'restart' })
+            expect(view.emit).not.toHaveBeenCalled()
+
+            cb({ command: 'restart', number: 5 })
+            expect(view.emit).toHaveBeenCalled()
+        })
+
+        it('inspectCond', () => {
+            const { cb } = getCallback()
+
+            cb({ command: 'inspect_cond' })
+        })
+    })
+
+    it('onDidChangeViewState', () => {
+        const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, fakeDebugInfo)
+        const panel = createPanel()
+        let cb: () => void = jest.fn()
+
+        vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
+        panel.onDidChangeViewState.mockImplementationOnce((fn) => {
+            cb = fn
+        })
+
+        view.run()
+        cb()
+
+        expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
+    })
+
+    it('onDispose', () => {
+        const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, fakeDebugInfo)
+        const panel = createPanel()
+        let cb: () => void = jest.fn()
+
+        vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
+        panel.onDidDispose.mockImplementationOnce((fn) => {
+            cb = fn
+        })
+
+        view.emit = jest.fn()
+        view.run()
+        cb()
+
+        expect(view.emit).toHaveBeenCalledWith('debugClosed')
     })
 })
