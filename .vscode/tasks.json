@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/views/__test__/DebugView.spec.ts",
-                // "-t",
-                // "restarts"
+                "-t",
+                "Commands"
             ],
             "problemMatcher": [
                 "$tsc"

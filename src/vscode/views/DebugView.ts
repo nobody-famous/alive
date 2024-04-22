@@ -4,7 +4,7 @@ import * as vscode from 'vscode'
 import { AliveContext, DebugInfo, RestartInfo } from '../Types'
 import { strToHtml } from '../Utils'
 
-interface jsMessage {
+export interface jsMessage {
     command: string
     [index: string]: unknown
 }
@@ -86,14 +86,6 @@ export class DebugView extends EventEmitter {
 
         if (file !== undefined && line !== undefined && char !== undefined) {
             this.emit('jump-to', file, line, char)
-        }
-    }
-
-    setEvalResponse(ndx: number, text: string) {
-        this.frameEval[ndx] = text
-
-        if (this.panel !== undefined) {
-            this.renderHtml(this.panel)
         }
     }
 

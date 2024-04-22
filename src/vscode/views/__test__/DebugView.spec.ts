@@ -1,5 +1,5 @@
 import { AliveContext, DebugInfo } from '../../Types'
-import { DebugView } from '../DebugView'
+import { DebugView, jsMessage } from '../DebugView'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -75,8 +75,45 @@ describe('DebugView tests', () => {
         const panel = createPanel()
 
         vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
+        view.emit = jest.fn()
         view.run()
 
         expect(panel.webview.html).toContain('stacktrace-item')
+    })
+
+    describe('Commands', () => {
+        const getCallback = () => {
+            const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, fakeDebugInfo)
+            const panel = createPanel()
+            let cb: (msg: jsMessage) => void = jest.fn()
+
+            panel.webview.onDidReceiveMessage.mockImplementationOnce((fn) => {
+                cb = fn
+            })
+
+            vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
+            view.emit = jest.fn()
+            view.run()
+
+            return { view, cb }
+        }
+
+        describe('jumpTo', () => {
+            it('No data', () => {
+                const { view, cb } = getCallback()
+
+                cb({ command: 'jump_to' })
+
+                expect(view.emit).not.toHaveBeenCalled()
+            })
+
+            it('Have data', () => {
+                const { view, cb } = getCallback()
+
+                cb({ command: 'jump_to', file: 'foo', line: 5, char: 10 })
+
+                expect(view.emit).toHaveBeenCalled()
+            })
+        })
     })
 })
