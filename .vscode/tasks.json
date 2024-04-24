@@ -35,7 +35,7 @@
                 "jest",
                 "src/vscode/views/__test__/Inspector.spec.ts",
                 "-t",
-                "renderFields"
+                "onDidReceiveMessage"
             ],
             "problemMatcher": [
                 "$tsc"
