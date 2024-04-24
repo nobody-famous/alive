@@ -3,6 +3,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
+import { isObject } from '../Guards'
 
 export class Inspector extends EventEmitter {
     extensionPath: string
@@ -132,42 +133,36 @@ export class Inspector extends EventEmitter {
         `
     }
 
-    private renderFields() {
-        if (typeof this.info.result !== 'object') {
+    private renderFields(result: unknown) {
+        if (!isObject(result) || result.value === undefined) {
             return
         }
 
-        const resultObj = this.info.result as { [index: string]: unknown }
-
-        if (resultObj.value === undefined) {
-            return
-        }
-
-        const divs = Object.keys(resultObj).map((key) => {
+        const divs = Object.keys(result).map((key) => {
             if (key === 'value') {
                 return ''
             }
 
-            const entry = resultObj[key]
+            const entry = result[key]
             const str = typeof entry === 'string' ? strToHtml(entry) : JSON.stringify(entry)
 
             return this.renderRow(key, str)
         })
 
-        divs.push(this.renderRow('value', this.renderValue(resultObj['value'])))
+        divs.push(this.renderRow('value', this.renderValue(result['value'])))
 
         return divs.join('')
     }
 
     private renderContent() {
-        return this.renderFields()
+        return this.renderFields(this.info.result)
     }
 
-    private renderExprHtml(jsPath: vscode.Uri, cssPath: vscode.Uri) {
+    private renderExprHtml(panel: vscode.WebviewPanel, jsPath: vscode.Uri, cssPath: vscode.Uri) {
         return `
         <html>
         <head>
-            <link rel="stylesheet" href="${this.panel?.webview.asWebviewUri(cssPath)}">
+            <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
         </head>
         <body>
             <div id="content">
@@ -198,19 +193,19 @@ export class Inspector extends EventEmitter {
                 </div>
             </div>
 
-            <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>
+            <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
         </body>
         </html>
     `
     }
 
-    private renderMacroHtml(jsPath: vscode.Uri, cssPath: vscode.Uri) {
+    private renderMacroHtml(panel: vscode.WebviewPanel, jsPath: vscode.Uri, cssPath: vscode.Uri) {
         const data = typeof this.info.result === 'string' ? this.info.result : ''
 
         return `
         <html>
         <head>
-            <link rel="stylesheet" href="${this.panel?.webview.asWebviewUri(cssPath)}">
+            <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
         </head>
         <body>
             <div id="content">
@@ -243,7 +238,7 @@ export class Inspector extends EventEmitter {
                 </div>
             </div>
 
-            <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>
+            <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
         </body>
         </html>
     `
@@ -254,6 +249,8 @@ export class Inspector extends EventEmitter {
         const cssPath = vscode.Uri.file(path.join(this.extensionPath, 'resource', 'inspector', 'inspect.css'))
 
         panel.webview.html =
-            this.info.resultType === 'macro' ? this.renderMacroHtml(jsPath, cssPath) : this.renderExprHtml(jsPath, cssPath)
+            this.info.resultType === 'macro'
+                ? this.renderMacroHtml(panel, jsPath, cssPath)
+                : this.renderExprHtml(panel, jsPath, cssPath)
     }
 }

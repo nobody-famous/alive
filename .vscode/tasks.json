@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/views/__test__/Inspector.spec.ts",
-                // "-t",
-                // "onDispose"
+                "-t",
+                "renderFields"
             ],
             "problemMatcher": [
                 "$tsc"
