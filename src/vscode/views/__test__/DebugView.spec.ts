@@ -1,5 +1,6 @@
 import { AliveContext, DebugInfo } from '../../Types'
 import { DebugView, jsMessage } from '../DebugView'
+import { createPanel } from './utils'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -14,16 +15,6 @@ describe('DebugView tests', () => {
         restarts: [],
         stackTrace: [],
     }
-    const createPanel = () => ({
-        dispose: jest.fn(),
-        onDidDispose: jest.fn(),
-        onDidChangeViewState: jest.fn(),
-        webview: {
-            html: '',
-            asWebviewUri: jest.fn(),
-            onDidReceiveMessage: jest.fn(),
-        },
-    })
 
     it('Dispose old panel', () => {
         const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, fakeDebugInfo)

@@ -1,34 +1,30 @@
+import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { EventEmitter } from 'events'
-import { AliveContext, InspectInfo, InspectResult } from '../Types'
+import { InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
 
 export class Inspector extends EventEmitter {
-    ctx: AliveContext
+    extensionPath: string
     viewCol: vscode.ViewColumn
     info: InspectInfo
     panel?: vscode.WebviewPanel
 
-    title?: string
-
-    constructor(ctx: AliveContext, viewCol: vscode.ViewColumn, result: InspectInfo) {
+    constructor(path: string, viewCol: vscode.ViewColumn, result: InspectInfo) {
         super()
 
-        this.ctx = ctx
+        this.extensionPath = path
         this.viewCol = viewCol
         this.info = result
     }
 
     show() {
-        this.title = this.info.text
-
         if (this.panel !== undefined) {
             this.stop()
         }
 
-        this.initPanel(this.title)
-        this.renderHtml()
+        this.panel = this.initPanel(this.info.text)
+        this.renderHtml(this.panel)
     }
 
     stop() {
@@ -39,13 +35,16 @@ export class Inspector extends EventEmitter {
 
     update(data: InspectResult) {
         this.info.result = data.result
-        this.renderHtml()
+
+        if (this.panel !== undefined) {
+            this.renderHtml(this.panel)
+        }
     }
 
     private initPanel(title: string) {
-        this.panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
+        const panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
 
-        this.panel.webview.onDidReceiveMessage((msg: { command: string; [index: string]: unknown }) => {
+        panel.webview.onDidReceiveMessage((msg: { command: string; [index: string]: unknown }) => {
             switch (msg.command.toUpperCase()) {
                 case 'VALUE':
                     return this.emit('inspect-part', msg.index)
@@ -62,11 +61,13 @@ export class Inspector extends EventEmitter {
             }
         })
 
-        this.panel.onDidDispose(() => {
+        panel.onDidDispose(() => {
             this.emit('inspectorClosed')
         })
 
-        vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
+        vscode.commands.executeCommand('setContext', 'clInspectorActive', panel.active)
+
+        return panel
     }
 
     private renderArray(arr: Array<unknown>) {
@@ -248,16 +249,11 @@ export class Inspector extends EventEmitter {
     `
     }
 
-    private renderHtml() {
-        if (this.panel === undefined || this.title === undefined) {
-            vscode.window.showInformationMessage('Inspector not initialized')
-            return
-        }
+    private renderHtml(panel: vscode.WebviewPanel) {
+        const jsPath = vscode.Uri.file(path.join(this.extensionPath, 'resource', 'inspector', 'inspect.js'))
+        const cssPath = vscode.Uri.file(path.join(this.extensionPath, 'resource', 'inspector', 'inspect.css'))
 
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspector', 'inspect.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspector', 'inspect.css'))
-
-        this.panel.webview.html =
+        panel.webview.html =
             this.info.resultType === 'macro' ? this.renderMacroHtml(jsPath, cssPath) : this.renderExprHtml(jsPath, cssPath)
     }
 }

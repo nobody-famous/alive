@@ -249,7 +249,7 @@ export class UI extends EventEmitter implements UIEvents {
     }
 
     newInspector(info: InspectInfo) {
-        const inspector = new Inspector(this.state.ctx, vscode.ViewColumn.Two, info)
+        const inspector = new Inspector(this.state.ctx.extensionPath, vscode.ViewColumn.Two, info)
 
         this.inspectors.set(info.id, inspector)
 
