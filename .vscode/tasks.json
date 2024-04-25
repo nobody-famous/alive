@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/views/__test__/Inspector.spec.ts",
-                "-t",
-                "update"
+                "src/vscode/views/__test__/InspectorPanel.spec.ts",
+                // "-t",
+                // "update"
             ],
             "problemMatcher": [
                 "$tsc"
