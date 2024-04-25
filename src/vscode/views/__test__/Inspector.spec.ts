@@ -14,7 +14,7 @@ describe('Inspector tests', () => {
         package: 'Some package',
     }
 
-    const showPanel = (options: Record<string, unknown>) => {
+    const showInspector = (options: Record<string, unknown>) => {
         const info = Object.assign({}, defaultInfo, options)
         const panel = createPanel()
         const inspector = new Inspector('/some/path', vscodeMock.ViewColumn.Two, info)
@@ -22,22 +22,66 @@ describe('Inspector tests', () => {
         vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
         inspector.show()
 
-        return { panel, inspector }
+        return inspector
     }
 
     describe('Show', () => {
-        it('Not macro', () => {
-            const { panel } = showPanel({ resultType: 'not-macro' })
+        it('Already visible', () => {
+            const inspector = showInspector({ resultType: 'not-macro' })
+
+            vscodeMock.window.createWebviewPanel.mockReturnValueOnce(createPanel())
+            inspector.show()
 
             expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
-            expect(panel.webview.html).not.toContain('inspector-macro-data')
+        })
+
+        it('Not macro', () => {
+            const inspector = showInspector({ resultType: 'not-macro' })
+
+            expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
+            expect(inspector.panel?.webview.html).not.toContain('inspector-macro-data')
         })
 
         it('Macro', () => {
-            const { panel } = showPanel({ resultType: 'macro' })
+            const inspector = showInspector({ resultType: 'macro' })
 
             expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
-            expect(panel.webview.html).toContain('inspector-macro-data')
+            expect(inspector.panel?.webview.html).toContain('inspector-macro-data')
+        })
+
+        it('Macro result string', () => {
+            const inspector = showInspector({ resultType: 'macro', result: 'foo' })
+
+            expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
+            expect(inspector.panel?.webview.html).toContain('inspector-macro-data')
+        })
+    })
+
+    it('stop', () => {
+        const inspector = new Inspector('/some/path', vscodeMock.ViewColumn.Two, defaultInfo)
+
+        inspector.stop()
+
+        expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
+    })
+
+    describe('update', () => {
+        it('No panel', () => {
+            const inspector = new Inspector('/some/path', vscodeMock.ViewColumn.Two, defaultInfo)
+            const data = { id: 5, resultType: 'foo', result: {} }
+
+            inspector.update(data)
+
+            expect(inspector.panel).toBeUndefined()
+        })
+
+        it('With panel', () => {
+            const inspector = showInspector({})
+            const data = { id: 5, resultType: 'foo', result: {} }
+
+            inspector.update(data)
+
+            expect(inspector.panel?.webview.html).toContain('<html>')
         })
     })
 
@@ -108,37 +152,44 @@ describe('Inspector tests', () => {
 
     describe('renderFields', () => {
         it('Result not object', () => {
-            const { panel } = showPanel({ result: 5 })
+            const inspector = showInspector({ result: 5 })
 
-            expect(panel.webview.html).not.toContain('inspector-macro-data')
+            expect(inspector.panel?.webview.html).not.toContain('inspector-macro-data')
         })
 
         it('Result not object', () => {
-            const { panel } = showPanel({ result: { foo: 'bar', value: 5 } })
+            const inspector = showInspector({ result: { foo: 'bar', value: 5 } })
 
-            expect(panel.webview.html).toContain('inspector-row-key')
-            expect(panel.webview.html).toContain('inspector-row-value')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-key')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-value')
+        })
+
+        it('Result not object', () => {
+            const inspector = showInspector({ result: { foo: 10, value: 'value' } })
+
+            expect(inspector.panel?.webview.html).toContain('inspector-row-key')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-value')
         })
 
         it('Result value has array', () => {
-            const { panel } = showPanel({ result: { foo: 'bar', value: ['bar', 'baz'] } })
+            const inspector = showInspector({ result: { foo: 'bar', value: ['bar', 5] } })
 
-            expect(panel.webview.html).toContain('inspector-row-key')
-            expect(panel.webview.html).toContain('inspector-row-value')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-key')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-value')
         })
 
         it('Result value has object', () => {
-            const { panel } = showPanel({ result: { foo: 'bar', value: { bar: 'baz' } } })
+            const inspector = showInspector({ result: { foo: 'bar', value: { bar: 'baz', a: 5 } } })
 
-            expect(panel.webview.html).toContain('inspector-row-key')
-            expect(panel.webview.html).toContain('inspector-row-value')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-key')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-value')
         })
 
         it('Result value has null object', () => {
-            const { panel } = showPanel({ result: { foo: 'bar', value: null } })
+            const inspector = showInspector({ result: { foo: 'bar', value: null } })
 
-            expect(panel.webview.html).toContain('inspector-row-key')
-            expect(panel.webview.html).toContain('inspector-row-value')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-key')
+            expect(inspector.panel?.webview.html).toContain('inspector-row-value')
         })
     })
 })

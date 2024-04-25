@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
-import { isObject } from '../Guards'
+import { isObject, isString } from '../Guards'
 
 export class Inspector extends EventEmitter {
     extensionPath: string
@@ -73,7 +73,7 @@ export class Inspector extends EventEmitter {
 
     private renderArray(arr: Array<unknown>) {
         const entries = arr.map((value, index) => {
-            const strValue = strToHtml(typeof value === 'string' ? value : JSON.stringify(value))
+            const strValue = strToHtml(isString(value) ? value : JSON.stringify(value))
 
             return `
                 <div class="inspector-object-row">
@@ -98,7 +98,7 @@ export class Inspector extends EventEmitter {
         const valueObj = value as { [index: string]: unknown }
         const entries = Object.keys(valueObj).map((key) => {
             const v = valueObj[key]
-            const valueStr = typeof v === 'string' ? v : JSON.stringify(v)
+            const valueStr = isString(v) ? v : JSON.stringify(v)
 
             return `
                 <div class="inspector-object-row">
@@ -121,7 +121,7 @@ export class Inspector extends EventEmitter {
         } else if (typeof value === 'object') {
             return this.renderObject(value)
         } else {
-            const valueStr = typeof value === 'string' ? value : JSON.stringify(value)
+            const valueStr = isString(value) ? value : JSON.stringify(value)
             return `<div>${strToHtml(valueStr)}</div>`
         }
     }
@@ -144,7 +144,7 @@ export class Inspector extends EventEmitter {
             }
 
             const entry = result[key]
-            const str = typeof entry === 'string' ? strToHtml(entry) : JSON.stringify(entry)
+            const str = isString(entry) ? strToHtml(entry) : JSON.stringify(entry)
 
             return this.renderRow(key, str)
         })
@@ -200,7 +200,7 @@ export class Inspector extends EventEmitter {
     }
 
     private renderMacroHtml(panel: vscode.WebviewPanel, jsPath: vscode.Uri, cssPath: vscode.Uri) {
-        const data = typeof this.info.result === 'string' ? this.info.result : ''
+        const data = isString(this.info.result) ? this.info.result : ''
 
         return `
         <html>
