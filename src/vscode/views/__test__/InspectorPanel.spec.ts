@@ -33,4 +33,20 @@ describe('InspectorPanel tests', () => {
             expect(view.postMessage).toHaveBeenCalled()
         })
     })
+
+    describe('Messages', () => {
+        it('', () => {
+            const panel = new InspectorPanel({ subscriptions: [], extensionPath: '/some/path' })
+            const view = createFakeWebview()
+            let cb: ((msg: { command: string; text: string }) => void) | undefined
+
+            view.onDidReceiveMessage.mockImplementationOnce((fn) => {
+                cb = fn
+            })
+
+            panel.resolveWebviewView({ webview: view })
+
+            cb?.({ command: 'foo', text: 'bar' })
+        })
+    })
 })
