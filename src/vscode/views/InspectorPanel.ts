@@ -24,7 +24,6 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
 
         webviewView.webview.onDidReceiveMessage(
             (msg: { command: string; text?: string; pkg?: string }) => {
-                console.log('***** MSG', msg)
                 switch (msg.command) {
                     case 'eval':
                         return this.doEval(msg.text ?? '')
@@ -36,7 +35,7 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
             this.ctx.subscriptions
         )
 
-        webviewView.webview.html = this.getHtmlForView()
+        webviewView.webview.html = this.getHtmlForView(webviewView.webview)
     }
 
     setPackage(pkg: string) {
@@ -51,14 +50,14 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
         this.emit('inspect', this.package, text)
     }
 
-    private getHtmlForView(): string {
+    private getHtmlForView(webview: vscode.Webview): string {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspectorPanel', 'view.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspectorPanel', 'view.css'))
 
         return `<!DOCTYPE html>
                 <html>
                 <head>
-                    <link rel="stylesheet" href="${this.view?.webview.asWebviewUri(cssPath)}">
+                    <link rel="stylesheet" href="${webview.asWebviewUri(cssPath)}">
                 </head>
 
                 <body>
@@ -73,7 +72,7 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
                         </div>
                     </div>
 
-                    <script src="${this.view?.webview.asWebviewUri(jsPath)}"></script>
+                    <script src="${webview.asWebviewUri(jsPath)}"></script>
                 </body>
                 </html>
         `
