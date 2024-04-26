@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/views/__test__/LispRepl.spec.ts",
-                // "-t",
-                // "eval"
+                "-t",
+                "Messages"
             ],
             "problemMatcher": [
                 "$tsc"

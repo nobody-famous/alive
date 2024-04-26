@@ -1,17 +1,41 @@
 import { LispRepl } from '../LispRepl'
 import { createFakeWebview } from './utils'
 
+jest.useFakeTimers()
+
 describe('LispRepl tests', () => {
     const fakeContext = { subscriptions: [], extensionPath: '/some/path' }
 
     const createRepl = () => {
         const repl = new LispRepl(fakeContext)
         const webview = createFakeWebview()
+        let cb: ((msg: { command: string; text?: string }) => void) | undefined
 
+        webview.onDidReceiveMessage.mockImplementationOnce((fn) => {
+            cb = fn
+        })
         repl.resolveWebviewView({ webview, onDidChangeVisibility: jest.fn() })
 
-        return { repl, webview }
+        return { repl, webview, cb }
     }
+
+    it('changeVisibility', () => {
+        const repl = new LispRepl(fakeContext)
+        const webview = createFakeWebview()
+        let fn: (() => void) | undefined
+
+        repl.resolveWebviewView({
+            webview,
+            onDidChangeVisibility: (f) => {
+                fn = f
+                return { dispose: jest.fn() }
+            },
+        })
+
+        fn?.()
+
+        expect(webview.postMessage).toHaveBeenCalled()
+    })
 
     it('resolveWebviewView', () => {
         const { webview } = createRepl()
@@ -19,43 +43,147 @@ describe('LispRepl tests', () => {
         expect(webview.html).toContain('<html>')
     })
 
-    it('clear', () => {
-        const { repl, webview } = createRepl()
+    describe('clear', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
 
-        repl.clear()
+            repl.clear()
 
-        expect(webview.postMessage).toHaveBeenCalled()
+            expect(webview.postMessage).toHaveBeenCalled()
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext)
+
+            repl.clear()
+        })
     })
 
-    it('restoreState', () => {
-        const { repl, webview } = createRepl()
+    describe('restoreState', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
 
-        repl.restoreState()
+            repl.restoreState()
 
-        expect(webview.postMessage).toHaveBeenCalledTimes(2)
+            expect(webview.postMessage).toHaveBeenCalledTimes(2)
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext)
+
+            repl.restoreState()
+        })
     })
 
-    it('setPackage', () => {
-        const { repl, webview } = createRepl()
+    describe('setPackage', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
 
-        repl.setPackage('Some package')
+            repl.setPackage('Some package')
 
-        expect(webview.postMessage).toHaveBeenCalled()
+            expect(webview.postMessage).toHaveBeenCalled()
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext)
+
+            repl.setPackage('Some package')
+        })
     })
 
-    it('setInput', () => {
-        const { repl, webview } = createRepl()
+    describe('setInput', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
 
-        repl.setInput('Some input')
+            repl.setInput('Some input')
 
-        expect(webview.postMessage).toHaveBeenCalled()
+            expect(webview.postMessage).toHaveBeenCalled()
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext)
+
+            repl.setInput('Some input')
+        })
     })
 
-    it('clearInput', () => {
-        const { repl, webview } = createRepl()
+    describe('clearInput', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
 
-        repl.clearInput()
+            repl.clearInput()
 
-        expect(webview.postMessage).toHaveBeenCalled()
+            expect(webview.postMessage).toHaveBeenCalled()
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext)
+
+            repl.clearInput()
+        })
+    })
+
+    describe('getUserInput', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
+
+            repl.getUserInput()
+
+            expect(webview.postMessage).toHaveBeenCalled()
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext)
+
+            repl.getUserInput()
+        })
+    })
+
+    describe('addText', () => {
+        it('First try', () => {
+            const { repl, webview } = createRepl()
+
+            repl.addText('Some text')
+
+            jest.runAllTimers()
+
+            expect(webview.postMessage).toHaveBeenCalled()
+        })
+
+        it('Second try', () => {
+            const { repl, webview } = createRepl()
+
+            repl.addText('Some text')
+            repl.addText('Some more text')
+
+            jest.runAllTimers()
+
+            expect(webview.postMessage).toHaveBeenCalledTimes(1)
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext)
+
+            repl.addText('Some text')
+
+            jest.runAllTimers()
+        })
+    })
+
+    it('Messages', () => {
+        const { cb, repl } = createRepl()
+
+        repl.emit = jest.fn()
+        cb?.({ command: 'eval' })
+        expect(repl.emit).not.toHaveBeenCalled()
+
+        cb?.({ command: 'eval', text: 'foo' })
+        cb?.({ command: 'requestPackage' })
+        cb?.({ command: 'historyUp' })
+        cb?.({ command: 'historyDown' })
+        cb?.({ command: 'userInput' })
+        cb?.({ command: 'userInput', text: 'foo' })
+
+        expect(repl.emit).toHaveBeenCalledTimes(6)
     })
 })
