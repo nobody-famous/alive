@@ -8,3 +8,12 @@ export const createPanel = () => ({
         onDidReceiveMessage: jest.fn(),
     },
 })
+
+export const createFakeWebview = () => ({
+    options: {},
+    html: '',
+    onDidReceiveMessage: jest.fn(),
+    postMessage: jest.fn(),
+    asWebviewUri: jest.fn(),
+    cspSource: '',
+})

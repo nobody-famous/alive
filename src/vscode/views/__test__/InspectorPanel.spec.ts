@@ -1,30 +1,24 @@
 import { InspectorPanel } from '../InspectorPanel'
+import { createFakeWebview } from './utils'
 
 describe('InspectorPanel tests', () => {
-    const createFakeWebview = () => ({
-        options: {},
-        html: '',
-        onDidReceiveMessage: jest.fn(),
-        postMessage: jest.fn(),
-        asWebviewUri: jest.fn(),
-        cspSource: '',
-    })
+    const fakeContext = { subscriptions: [], extensionPath: '/some/path' }
 
     it('resolveWebviewView', () => {
-        const panel = new InspectorPanel({ subscriptions: [], extensionPath: '/some/path' })
+        const panel = new InspectorPanel(fakeContext)
 
         panel.resolveWebviewView({ webview: createFakeWebview() })
     })
 
     describe('setPackage', () => {
         it('No view', () => {
-            const panel = new InspectorPanel({ subscriptions: [], extensionPath: '/some/path' })
+            const panel = new InspectorPanel(fakeContext)
 
             panel.setPackage('Some package')
         })
 
         it('With view', () => {
-            const panel = new InspectorPanel({ subscriptions: [], extensionPath: '/some/path' })
+            const panel = new InspectorPanel(fakeContext)
             const view = createFakeWebview()
 
             panel.resolveWebviewView({ webview: view })
@@ -36,7 +30,7 @@ describe('InspectorPanel tests', () => {
 
     describe('Messages', () => {
         const getPanel = (msg: { command: string; text?: string }) => {
-            const panel = new InspectorPanel({ subscriptions: [], extensionPath: '/some/path' })
+            const panel = new InspectorPanel(fakeContext)
             const view = createFakeWebview()
             let cb: ((msg: { command: string; text?: string }) => void) | undefined
 

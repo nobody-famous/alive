@@ -5,10 +5,10 @@ import { AliveContext } from '../Types'
 
 export class InspectorPanel extends EventEmitter implements vscode.WebviewViewProvider {
     private view?: Pick<vscode.WebviewView, 'webview'>
-    private ctx: Pick<AliveContext, 'subscriptions' | 'extensionPath'>
+    private ctx: AliveContext
     private package: string
 
-    constructor(ctx: Pick<AliveContext, 'subscriptions' | 'extensionPath'>) {
+    constructor(ctx: AliveContext) {
         super()
 
         this.ctx = ctx
