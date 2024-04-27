@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/views/__test__/LispRepl.spec.ts",
+                "src/vscode/views/__test__/PackagesTree.spec.ts",
                 "-t",
-                "Messages"
+                "no element"
             ],
             "problemMatcher": [
                 "$tsc"

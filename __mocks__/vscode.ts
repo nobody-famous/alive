@@ -84,8 +84,15 @@ export class EventEmitter {
     fire = jest.fn(() => this.fn())
 }
 
+export class TreeItem {
+    label: string
+
+    constructor(label: string) {
+        this.label = label
+    }
+}
+
 export class Position {}
 export class Range {}
 export class Selection {}
 export class Diagnostic {}
-export class TreeItem {}
