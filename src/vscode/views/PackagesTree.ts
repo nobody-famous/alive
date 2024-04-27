@@ -1,11 +1,14 @@
 import * as vscode from 'vscode'
 import { Package } from '../Types'
-import { isString } from '../Guards'
+import { isObject, isString } from '../Guards'
 
 export class PackageNode extends vscode.TreeItem {
+    label: string
+
     constructor(key: string, collapse: vscode.TreeItemCollapsibleState) {
         super(key, collapse)
 
+        this.label = key
         this.contextValue = 'package'
     }
 }
@@ -60,7 +63,9 @@ export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.Tree
 
     getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
         if (element === undefined) {
-            return Array.from(this.pkgs).map(([key, pkg]) => this.pkgToNode(pkg))
+            return Array.from(this.pkgs)
+                .map(([key, pkg]) => this.pkgToNode(pkg))
+                .sort(this.compareNodes)
         } else if (isString(element.label)) {
             const pkg = this.pkgs.get(element.label)
 
@@ -68,6 +73,11 @@ export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.Tree
         }
 
         return []
+    }
+
+    private compareNodes = (a: PackageNode, b: PackageNode) => {
+        // Nodes are created from a map, so there's no duplicate labels and they can't be equal
+        return a.label < b.label ? -1 : 1
     }
 
     private pkgToNode = (pkg: Package) => {

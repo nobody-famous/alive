@@ -60,6 +60,7 @@ describe('PackagesTree tests', () => {
             const provider = new PackagesTreeProvider([
                 { name: 'foo', exports: [], nicknames: [] },
                 { name: 'bar', exports: ['baz'], nicknames: [] },
+                { name: 'g', exports: ['a'], nicknames: [] },
             ])
 
             const kids = provider.getChildren()
@@ -67,7 +68,9 @@ describe('PackagesTree tests', () => {
             expect(Array.isArray(kids)).toBe(true)
 
             if (Array.isArray(kids)) {
-                expect(kids.length).toBe(2)
+                expect(kids[0].label).toBe('bar')
+                expect(kids[1].label).toBe('foo')
+                expect(kids[2].label).toBe('g')
             }
         })
     })
