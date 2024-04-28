@@ -4,7 +4,7 @@ import EventEmitter = require('events')
 import { AliveContext } from '../Types'
 
 export class InspectorPanel extends EventEmitter implements vscode.WebviewViewProvider {
-    private view?: vscode.WebviewView
+    private view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
     private package: string
 
@@ -15,7 +15,7 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
         this.package = 'cl-user'
     }
 
-    resolveWebviewView(webviewView: vscode.WebviewView): void | Thenable<void> {
+    resolveWebviewView(webviewView: Pick<vscode.WebviewView, 'webview'>): void | Thenable<void> {
         this.view = webviewView
 
         webviewView.webview.options = {
@@ -35,7 +35,7 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
             this.ctx.subscriptions
         )
 
-        webviewView.webview.html = this.getHtmlForView()
+        webviewView.webview.html = this.getHtmlForView(webviewView.webview)
     }
 
     setPackage(pkg: string) {
@@ -50,14 +50,14 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
         this.emit('inspect', this.package, text)
     }
 
-    private getHtmlForView(): string {
+    private getHtmlForView(webview: vscode.Webview): string {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspectorPanel', 'view.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspectorPanel', 'view.css'))
 
         return `<!DOCTYPE html>
                 <html>
                 <head>
-                    <link rel="stylesheet" href="${this.view?.webview.asWebviewUri(cssPath)}">
+                    <link rel="stylesheet" href="${webview.asWebviewUri(cssPath)}">
                 </head>
 
                 <body>
@@ -72,7 +72,7 @@ export class InspectorPanel extends EventEmitter implements vscode.WebviewViewPr
                         </div>
                     </div>
 
-                    <script src="${this.view?.webview.asWebviewUri(jsPath)}"></script>
+                    <script src="${webview.asWebviewUri(jsPath)}"></script>
                 </body>
                 </html>
         `

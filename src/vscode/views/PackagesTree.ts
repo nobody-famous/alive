@@ -1,10 +1,14 @@
 import * as vscode from 'vscode'
 import { Package } from '../Types'
+import { isObject, isString } from '../Guards'
 
 export class PackageNode extends vscode.TreeItem {
+    label: string
+
     constructor(key: string, collapse: vscode.TreeItemCollapsibleState) {
         super(key, collapse)
 
+        this.label = key
         this.contextValue = 'package'
     }
 }
@@ -59,28 +63,26 @@ export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.Tree
 
     getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
         if (element === undefined) {
-            const keys = Array.from(this.pkgs.keys()).sort()
-
-            return keys.map((key) => {
-                const pkg = this.pkgs.get(key)
-
-                if (pkg === undefined) {
-                    return new vscode.TreeItem(key)
-                }
-
-                const state =
-                    pkg.exports?.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
-
-                return new PackageNode(key, state)
-            })
-        }
-
-        if (typeof element.label === 'string') {
+            return Array.from(this.pkgs)
+                .map(([key, pkg]) => this.pkgToNode(pkg))
+                .sort(this.compareNodes)
+        } else if (isString(element.label)) {
             const pkg = this.pkgs.get(element.label)
 
             return pkg?.exports.sort().map((item) => new ExportNode(item, pkg.name.toLowerCase()))
         }
 
         return []
+    }
+
+    private compareNodes = (a: PackageNode, b: PackageNode) => {
+        // Nodes are created from a map, so there's no duplicate labels and they can't be equal
+        return a.label < b.label ? -1 : 1
+    }
+
+    private pkgToNode = (pkg: Package) => {
+        const state = pkg.exports.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+
+        return new PackageNode(pkg.name.toLowerCase(), state)
     }
 }

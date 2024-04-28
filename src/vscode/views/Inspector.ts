@@ -1,34 +1,31 @@
+import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { EventEmitter } from 'events'
-import { AliveContext, InspectInfo, InspectResult } from '../Types'
+import { InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
+import { isObject, isString } from '../Guards'
 
 export class Inspector extends EventEmitter {
-    ctx: AliveContext
+    extensionPath: string
     viewCol: vscode.ViewColumn
     info: InspectInfo
     panel?: vscode.WebviewPanel
 
-    title?: string
-
-    constructor(ctx: AliveContext, viewCol: vscode.ViewColumn, result: InspectInfo) {
+    constructor(path: string, viewCol: vscode.ViewColumn, result: InspectInfo) {
         super()
 
-        this.ctx = ctx
+        this.extensionPath = path
         this.viewCol = viewCol
         this.info = result
     }
 
     show() {
-        this.title = this.info.text
-
         if (this.panel !== undefined) {
             this.stop()
         }
 
-        this.initPanel(this.title)
-        this.renderHtml()
+        this.panel = this.initPanel(this.info.text)
+        this.renderHtml(this.panel)
     }
 
     stop() {
@@ -39,13 +36,16 @@ export class Inspector extends EventEmitter {
 
     update(data: InspectResult) {
         this.info.result = data.result
-        this.renderHtml()
+
+        if (this.panel !== undefined) {
+            this.renderHtml(this.panel)
+        }
     }
 
     private initPanel(title: string) {
-        this.panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
+        const panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
 
-        this.panel.webview.onDidReceiveMessage((msg: { command: string; [index: string]: unknown }) => {
+        panel.webview.onDidReceiveMessage((msg: { command: string; [index: string]: unknown }) => {
             switch (msg.command.toUpperCase()) {
                 case 'VALUE':
                     return this.emit('inspect-part', msg.index)
@@ -62,16 +62,18 @@ export class Inspector extends EventEmitter {
             }
         })
 
-        this.panel.onDidDispose(() => {
+        panel.onDidDispose(() => {
             this.emit('inspectorClosed')
         })
 
-        vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
+        vscode.commands.executeCommand('setContext', 'clInspectorActive', panel.active)
+
+        return panel
     }
 
     private renderArray(arr: Array<unknown>) {
         const entries = arr.map((value, index) => {
-            const strValue = strToHtml(typeof value === 'string' ? value : JSON.stringify(value))
+            const strValue = strToHtml(isString(value) ? value : JSON.stringify(value))
 
             return `
                 <div class="inspector-object-row">
@@ -96,7 +98,7 @@ export class Inspector extends EventEmitter {
         const valueObj = value as { [index: string]: unknown }
         const entries = Object.keys(valueObj).map((key) => {
             const v = valueObj[key]
-            const valueStr = typeof v === 'string' ? v : JSON.stringify(v)
+            const valueStr = isString(v) ? v : JSON.stringify(v)
 
             return `
                 <div class="inspector-object-row">
@@ -119,7 +121,7 @@ export class Inspector extends EventEmitter {
         } else if (typeof value === 'object') {
             return this.renderObject(value)
         } else {
-            const valueStr = typeof value === 'string' ? value : JSON.stringify(value)
+            const valueStr = isString(value) ? value : JSON.stringify(value)
             return `<div>${strToHtml(valueStr)}</div>`
         }
     }
@@ -131,42 +133,36 @@ export class Inspector extends EventEmitter {
         `
     }
 
-    private renderFields() {
-        if (typeof this.info.result !== 'object') {
+    private renderFields(result: unknown) {
+        if (!isObject(result) || result.value === undefined) {
             return
         }
 
-        const resultObj = this.info.result as { [index: string]: unknown }
-
-        if (resultObj.value === undefined) {
-            return
-        }
-
-        const divs = Object.keys(resultObj).map((key) => {
+        const divs = Object.keys(result).map((key) => {
             if (key === 'value') {
                 return ''
             }
 
-            const entry = resultObj[key]
-            const str = typeof entry === 'string' ? strToHtml(entry) : JSON.stringify(entry)
+            const entry = result[key]
+            const str = isString(entry) ? strToHtml(entry) : JSON.stringify(entry)
 
             return this.renderRow(key, str)
         })
 
-        divs.push(this.renderRow('value', this.renderValue(resultObj['value'])))
+        divs.push(this.renderRow('value', this.renderValue(result['value'])))
 
         return divs.join('')
     }
 
     private renderContent() {
-        return this.renderFields()
+        return this.renderFields(this.info.result)
     }
 
-    private renderExprHtml(jsPath: vscode.Uri, cssPath: vscode.Uri) {
+    private renderExprHtml(panel: vscode.WebviewPanel, jsPath: vscode.Uri, cssPath: vscode.Uri) {
         return `
         <html>
         <head>
-            <link rel="stylesheet" href="${this.panel?.webview.asWebviewUri(cssPath)}">
+            <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
         </head>
         <body>
             <div id="content">
@@ -197,19 +193,19 @@ export class Inspector extends EventEmitter {
                 </div>
             </div>
 
-            <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>
+            <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
         </body>
         </html>
     `
     }
 
-    private renderMacroHtml(jsPath: vscode.Uri, cssPath: vscode.Uri) {
-        const data = typeof this.info.result === 'string' ? this.info.result : ''
+    private renderMacroHtml(panel: vscode.WebviewPanel, jsPath: vscode.Uri, cssPath: vscode.Uri) {
+        const data = isString(this.info.result) ? this.info.result : ''
 
         return `
         <html>
         <head>
-            <link rel="stylesheet" href="${this.panel?.webview.asWebviewUri(cssPath)}">
+            <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
         </head>
         <body>
             <div id="content">
@@ -242,22 +238,19 @@ export class Inspector extends EventEmitter {
                 </div>
             </div>
 
-            <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>
+            <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
         </body>
         </html>
     `
     }
 
-    private renderHtml() {
-        if (this.panel === undefined || this.title === undefined) {
-            vscode.window.showInformationMessage('Inspector not initialized')
-            return
-        }
+    private renderHtml(panel: vscode.WebviewPanel) {
+        const jsPath = vscode.Uri.file(path.join(this.extensionPath, 'resource', 'inspector', 'inspect.js'))
+        const cssPath = vscode.Uri.file(path.join(this.extensionPath, 'resource', 'inspector', 'inspect.css'))
 
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspector', 'inspect.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspector', 'inspect.css'))
-
-        this.panel.webview.html =
-            this.info.resultType === 'macro' ? this.renderMacroHtml(jsPath, cssPath) : this.renderExprHtml(jsPath, cssPath)
+        panel.webview.html =
+            this.info.resultType === 'macro'
+                ? this.renderMacroHtml(panel, jsPath, cssPath)
+                : this.renderExprHtml(panel, jsPath, cssPath)
     }
 }

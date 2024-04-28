@@ -40,6 +40,7 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
 
     update(items: HistoryItem[]) {
         this.items = items
+        this.currentIndex = -1
         this.event.fire()
     }
 
@@ -63,13 +64,8 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
         }
     }
 
-    clearIndex() {
-        this.currentIndex = -1
-    }
-
     clear() {
         this.update([])
-        this.clearIndex()
     }
 
     addItem(pkgName: string, text: string) {
@@ -80,12 +76,19 @@ export class ReplHistoryTreeProvider implements vscode.TreeDataProvider<vscode.T
     }
 
     removeItem(pkg: string, text: string) {
+        let removed = false
+
         for (let ndx = 0; ndx < this.items.length; ndx += 1) {
             const item = this.items[ndx]
 
             if (item !== undefined && item.pkgName === pkg && item.text === text) {
                 this.removeItemAtIndex(ndx)
+                removed = true
             }
+        }
+
+        if (removed) {
+            this.currentIndex = -1
         }
     }
 

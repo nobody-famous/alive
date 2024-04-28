@@ -9,6 +9,10 @@ export enum ViewColumn {
     Two = 2,
 }
 
+export enum TreeItemCollapsibleState {
+    None = 0,
+}
+
 export class Uri {
     static file = jest.fn()
 }
@@ -21,6 +25,7 @@ export const languages = {
 export const window = {
     createOutputChannel: () => ({ appendLine: () => {}, append: () => {}, show: () => {} }),
     createQuickPick: jest.fn(),
+    createWebviewPanel: jest.fn(),
     showQuickPick: jest.fn(),
     showErrorMessage: jest.fn(),
     showInformationMessage: jest.fn(),
@@ -68,6 +73,22 @@ export class MarkdownString {
 
     constructor(value: string) {
         this.value = value
+    }
+}
+
+export class EventEmitter {
+    fn = jest.fn()
+    event = jest.fn((fn) => {
+        this.fn = fn
+    })
+    fire = jest.fn(() => this.fn())
+}
+
+export class TreeItem {
+    label: string
+
+    constructor(label: string) {
+        this.label = label
     }
 }
 

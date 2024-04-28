@@ -3,8 +3,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { AliveContext, DebugInfo, RestartInfo } from '../Types'
 import { strToHtml } from '../Utils'
+import { isFiniteNumber } from '../Guards'
 
-interface jsMessage {
+export interface jsMessage {
     command: string
     [index: string]: unknown
 }
@@ -14,7 +15,6 @@ export class DebugView extends EventEmitter {
     title: string
     panel?: vscode.WebviewPanel
     info: DebugInfo
-    frameExpanded: { [index: number]: boolean | undefined } = {}
     frameEval: { [index: number]: string | undefined } = {}
     frameInput: { [index: number]: string | undefined } = {}
     viewCol: vscode.ViewColumn
@@ -40,19 +40,17 @@ export class DebugView extends EventEmitter {
             { enableScripts: true }
         )
 
-        this.panel.webview.onDidReceiveMessage(
+        this.setPanelCallbacks(this.panel)
+
+        this.renderHtml(this.panel)
+    }
+
+    private setPanelCallbacks(panel: vscode.WebviewPanel) {
+        panel.webview.onDidReceiveMessage(
             (msg: jsMessage) => {
                 switch (msg.command) {
                     case 'restart':
                         return this.restartCommand(msg)
-                    case 'bt_locals':
-                        return this.btLocalsCommand(msg)
-                    case 'frame_restart':
-                        return this.frameRestartCommand(msg)
-                    case 'frame_eval':
-                        return this.frameValueCommand(msg)
-                    case 'input_changed':
-                        return this.inputChangedCommand(msg)
                     case 'inspect_cond':
                         return this.inspectCondCommand()
                     case 'jump_to':
@@ -63,15 +61,13 @@ export class DebugView extends EventEmitter {
             this.ctx.subscriptions
         )
 
-        this.panel.onDidDispose(() => {
+        panel.onDidDispose(() => {
             this.emit('debugClosed')
         })
 
-        this.panel.onDidChangeViewState(() => {
-            vscode.commands.executeCommand('setContext', 'clDebugViewActive', this.panel?.active)
+        panel.onDidChangeViewState(() => {
+            vscode.commands.executeCommand('setContext', 'clDebugViewActive', panel.active)
         })
-
-        this.renderHtml()
     }
 
     stop() {
@@ -89,59 +85,10 @@ export class DebugView extends EventEmitter {
         }
     }
 
-    setEvalResponse(ndx: number, text: string) {
-        this.frameEval[ndx] = text
-        this.renderHtml()
-    }
-
     private inspectCondCommand() {}
 
-    private frameRestartCommand(msg: jsMessage) {
-        if (typeof msg.number === 'number') {
-            this.emit('frame-restart', msg.number)
-        }
-    }
-
-    private inputChangedCommand(msg: jsMessage) {
-        const num = typeof msg.number === 'number' ? msg.number : undefined
-        const text = typeof msg.text === 'string' ? msg.text : ''
-
-        if (num === undefined) {
-            return
-        }
-
-        this.frameInput[num] = text
-    }
-
-    private frameValueCommand(msg: jsMessage) {
-        const num = typeof msg.number === 'number' ? msg.number : undefined
-        const text = typeof msg.text === 'string' ? msg.text : ''
-
-        if (num === undefined || text.length === 0) {
-            return
-        }
-
-        this.emit('frame-eval', num, text)
-    }
-
-    private btLocalsCommand(msg: jsMessage) {
-        const num = typeof msg.number === 'number' ? msg.number : undefined
-
-        if (num === undefined) {
-            return
-        }
-
-        if (this.frameExpanded[num] === undefined) {
-            this.frameExpanded[num] = false
-        }
-
-        this.frameExpanded[num] = !this.frameExpanded[num]
-
-        this.renderHtml()
-    }
-
     private restartCommand(msg: jsMessage) {
-        if (typeof msg.number === 'number') {
+        if (isFiniteNumber(msg.number)) {
             this.emit('restart', msg.number)
         }
     }
@@ -189,7 +136,7 @@ export class DebugView extends EventEmitter {
             const selectClass = bt.file !== null && bt.position !== null ? 'clickable' : ''
 
             str += `
-                <div class="list-item">
+                <div class="list-item stacktrace-item">
                     <div class="list-item-ndx">${ndx}</div>
                     <div class="list-item-loc ${selectClass}"
                         onclick="jump_to('${strToHtml(bt.file ?? '')}', ${bt.position?.line}, ${bt.position?.character})"
@@ -218,7 +165,7 @@ export class DebugView extends EventEmitter {
 
     private renderRestartItem(ndx: number, info: RestartInfo) {
         return `
-            <div class="list-item clickable" onclick="restart(${ndx})">
+            <div class="list-item restart-item clickable" onclick="restart(${ndx})">
                 ${ndx}: [${strToHtml(info.name)}] ${strToHtml(info.description)}
             </div>
         `
@@ -247,19 +194,14 @@ export class DebugView extends EventEmitter {
         `
     }
 
-    private renderHtml() {
-        if (this.panel === undefined) {
-            vscode.window.showInformationMessage('Panel not undefined')
-            return
-        }
-
+    private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.css'))
 
-        this.panel.webview.html = `
+        panel.webview.html = `
             <html>
             <head>
-                <link rel="stylesheet" href="${this.panel?.webview.asWebviewUri(cssPath)}">
+                <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
             </head>
             <body>
                 <div id="content">
@@ -268,7 +210,7 @@ export class DebugView extends EventEmitter {
                     ${this.renderBacktrace()}
                 </div>
 
-                <script src="${this.panel?.webview.asWebviewUri(jsPath)}"></script>
+                <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
             </body>
             </html>
         `
