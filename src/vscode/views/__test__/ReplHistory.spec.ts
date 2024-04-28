@@ -102,4 +102,87 @@ describe('ReplHistory tests', () => {
             expect(kids[0].label).toBe('pkg')
         }
     })
+
+    it('removeNode', () => {
+        const history = new ReplHistoryTreeProvider([
+            { pkgName: 'foo', text: 'foo' },
+            { pkgName: 'bar', text: 'bar' },
+        ])
+        let kids = history.getChildren()
+
+        expect(Array.isArray(kids))
+        if (!Array.isArray(kids)) {
+            return
+        }
+
+        expect(isHistoryNode(kids[0])).toBe(true)
+        expect(isHistoryNode(kids[1])).toBe(true)
+        if (!isHistoryNode(kids[0]) || !isHistoryNode(kids[1])) {
+            return
+        }
+
+        history.removeNode(kids[1])
+        kids = history.getChildren()
+        expect(Array.isArray(kids)).toBe(true)
+        if (!Array.isArray(kids) || !isHistoryNode(kids[0])) {
+            return
+        }
+
+        expect(isHistoryNode(kids[0])).toBe(true)
+        expect(kids[0].label).toBe('foo')
+
+        history.removeNode(kids[0])
+        expect(history.getChildren()).toStrictEqual([])
+    })
+
+    it('moveToTop', () => {
+        const history = new ReplHistoryTreeProvider([
+            { pkgName: 'foo', text: 'foo' },
+            { pkgName: 'bar', text: 'bar' },
+        ])
+        let kids = history.getChildren()
+
+        expect(Array.isArray(kids))
+        if (!Array.isArray(kids) || !isHistoryNode(kids[1])) {
+            return
+        }
+
+        history.moveToTop(kids[1])
+
+        kids = history.getChildren()
+
+        expect(Array.isArray(kids))
+        if (!Array.isArray(kids) || !isHistoryNode(kids[0])) {
+            return
+        }
+
+        expect(kids.length).toBe(2)
+        expect(kids[0].label).toBe('bar')
+    })
+
+    it('moveItemToTop', () => {
+        const history = new ReplHistoryTreeProvider([
+            { pkgName: 'foo', text: 'foo' },
+            { pkgName: 'bar', text: 'bar' },
+        ])
+
+        history.moveItemToTop({ pkgName: 'bar', text: 'bar' })
+
+        const kids = history.getChildren()
+
+        expect(Array.isArray(kids))
+        if (!Array.isArray(kids) || !isHistoryNode(kids[0])) {
+            return
+        }
+
+        expect(kids.length).toBe(2)
+        expect(kids[0].label).toBe('bar')
+    })
+
+    it('getTreeItem', () => {
+        const history = new ReplHistoryTreeProvider([])
+        const item = {}
+
+        expect(history.getTreeItem(item)).toBe(item)
+    })
 })
