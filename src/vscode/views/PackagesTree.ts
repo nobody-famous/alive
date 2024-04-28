@@ -83,6 +83,6 @@ export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.Tree
     private pkgToNode = (pkg: Package) => {
         const state = pkg.exports.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
 
-        return new PackageNode(pkg.name, state)
+        return new PackageNode(pkg.name.toLowerCase(), state)
     }
 }

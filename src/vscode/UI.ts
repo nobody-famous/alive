@@ -297,9 +297,8 @@ export class UI extends EventEmitter implements UIEvents {
         this.replView.on('eval', async (pkg: string, text: string) => {
             this.historyTree.removeItem(pkg, text)
             this.historyTree.addItem(pkg, text)
-            this.emit('saveReplHistory', this.historyTree.getItems())
 
-            this.historyTree.clearIndex()
+            this.emit('saveReplHistory', this.historyTree.getItems())
             this.emit('eval', text, pkg, true)
         })
 

@@ -34,8 +34,8 @@
             "args": [
                 "jest",
                 "src/vscode/views/__test__/ReplHistory.spec.ts",
-                // "-t",
-                // "no element"
+                "-t",
+                "getCurrentItem"
             ],
             "problemMatcher": [
                 "$tsc"

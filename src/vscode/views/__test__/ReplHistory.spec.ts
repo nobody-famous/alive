@@ -28,10 +28,68 @@ describe('ReplHistory tests', () => {
         expect(history.getItems()).toBe(items)
     })
 
-    it('getCurrentItem', () => {
-        const history = new ReplHistoryTreeProvider([])
+    describe('getCurrentItem', () => {
+        it('No items', () => {
+            const history = new ReplHistoryTreeProvider([])
 
-        expect(history.getCurrentItem()).toBeUndefined()
+            expect(history.getCurrentItem()).toBeUndefined()
+        })
+
+        it('Increment index', () => {
+            const history = new ReplHistoryTreeProvider([
+                { pkgName: 'foo', text: 'foo' },
+                { pkgName: 'bar', text: 'bar' },
+            ])
+
+            history.incrementIndex()
+
+            expect(history.getCurrentItem()?.pkgName).toBe('foo')
+        })
+
+        it('Decrement index', () => {
+            const history = new ReplHistoryTreeProvider([
+                { pkgName: 'foo', text: 'foo' },
+                { pkgName: 'bar', text: 'bar' },
+            ])
+
+            history.incrementIndex()
+            history.incrementIndex()
+            history.decrementIndex()
+
+            expect(history.getCurrentItem()?.pkgName).toBe('foo')
+        })
+
+        it('Increment index + add', () => {
+            const history = new ReplHistoryTreeProvider([
+                { pkgName: 'foo', text: 'foo' },
+                { pkgName: 'bar', text: 'bar' },
+            ])
+
+            history.incrementIndex()
+            history.addItem('baz', 'baz')
+
+            expect(history.getCurrentItem()).toBeUndefined()
+        })
+
+        it('Increment index + remove', () => {
+            const history = new ReplHistoryTreeProvider([
+                { pkgName: 'foo', text: 'foo' },
+                { pkgName: 'bar', text: 'bar' },
+            ])
+
+            history.incrementIndex()
+            history.removeItem('bar', 'bar')
+
+            expect(history.getCurrentItem()).toBeUndefined()
+        })
+    })
+
+    it('clear', () => {
+        const history = new ReplHistoryTreeProvider([{ pkgName: 'foo', text: 'foo' }])
+
+        history.clear()
+
+        expect(history.getChildren()).toStrictEqual([])
     })
 
     it('getChildren', () => {
