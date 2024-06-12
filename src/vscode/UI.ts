@@ -37,6 +37,7 @@ export class UI extends EventEmitter implements UIEvents {
     private replView: LispRepl
     private inspectorPanel: InspectorPanel
     private inspectors: Map<number, Inspector>
+    private debugViews: Array<DebugView>
 
     constructor(state: UIState) {
         super()
@@ -49,6 +50,7 @@ export class UI extends EventEmitter implements UIEvents {
         this.replView = new LispRepl(state.ctx)
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
+        this.debugViews = []
     }
 
     init() {
@@ -76,6 +78,12 @@ export class UI extends EventEmitter implements UIEvents {
         this.replView.setInput(input)
     }
 
+    private removeDebugView(view: DebugView) {
+        const index = this.debugViews.findIndex((v) => v === view)
+
+        this.debugViews.splice(index, 1)
+    }
+
     async getRestartIndex(info: DebugInfo): Promise<number | undefined> {
         let index: number | undefined = undefined
 
@@ -83,6 +91,10 @@ export class UI extends EventEmitter implements UIEvents {
             const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
 
             view.on('restart', (num: number) => {
+                if (num < 0 || num >= info.restarts.length) {
+                    return
+                }
+
                 index = num
                 view.stop()
             })
@@ -97,6 +109,7 @@ export class UI extends EventEmitter implements UIEvents {
                       )
 
                 view.stop()
+                this.removeDebugView(view)
 
                 resolve(isFiniteNumber(num) ? num : undefined)
             })
@@ -114,8 +127,15 @@ export class UI extends EventEmitter implements UIEvents {
                 editor.revealRange(range)
             })
 
+            this.debugViews.push(view)
             view.run()
         })
+    }
+
+    selectRestart(restart: number) {
+        const view = this.debugViews.find((v) => v.panel?.visible)
+
+        view?.selectRestart(restart)
     }
 
     async getUserInput(): Promise<string> {

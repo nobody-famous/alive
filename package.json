@@ -419,7 +419,52 @@
             {
                 "command": "alive.restart_0",
                 "key": "alt+shift+0",
-                "when": "editorLangId == commonlisp && aliveDebugViewActive"
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_1",
+                "key": "alt+shift+1",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_2",
+                "key": "alt+shift+2",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_3",
+                "key": "alt+shift+3",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_4",
+                "key": "alt+shift+4",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_5",
+                "key": "alt+shift+5",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_6",
+                "key": "alt+shift+6",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_7",
+                "key": "alt+shift+7",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_8",
+                "key": "alt+shift+8",
+                "when": "aliveDebugViewActive"
+            },
+            {
+                "command": "alive.restart_9",
+                "key": "alt+shift+9",
+                "when": "aliveDebugViewActive"
             }
         ],
         "configuration": {
