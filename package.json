@@ -415,6 +415,11 @@
             {
                 "command": "alive.replHistory",
                 "key": "alt+shift+r"
+            },
+            {
+                "command": "alive.restart_0",
+                "key": "alt+shift+0",
+                "when": "editorLangId == commonlisp && aliveDebugViewActive"
             }
         ],
         "configuration": {

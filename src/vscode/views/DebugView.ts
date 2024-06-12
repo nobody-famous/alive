@@ -62,11 +62,12 @@ export class DebugView extends EventEmitter {
         )
 
         panel.onDidDispose(() => {
+            vscode.commands.executeCommand('setContext', 'aliveDebugViewActive', false)
             this.emit('debugClosed')
         })
 
-        panel.onDidChangeViewState(() => {
-            vscode.commands.executeCommand('setContext', 'clDebugViewActive', panel.active)
+        panel.onDidChangeViewState((evt: vscode.WebviewPanelOnDidChangeViewStateEvent) => {
+            vscode.commands.executeCommand('setContext', 'aliveDebugViewActive', panel.visible)
         })
     }
 
@@ -85,11 +86,15 @@ export class DebugView extends EventEmitter {
         }
     }
 
+    selectRestart(num: number) {
+        this.emit('restart', num)
+    }
+
     private inspectCondCommand() {}
 
     private restartCommand(msg: jsMessage) {
         if (isFiniteNumber(msg.number)) {
-            this.emit('restart', msg.number)
+            this.selectRestart(msg.number)
         }
     }
 

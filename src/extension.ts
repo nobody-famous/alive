@@ -119,6 +119,8 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(lsp)),
         vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(lsp)),
 
+        vscode.commands.registerCommand('alive.restart_0', () => cmds.selectRestart(ui, 0)),
+
         vscode.commands.registerCommand('alive.replHistory', async () => {
             const item = await ui.selectHistoryItem()
 
