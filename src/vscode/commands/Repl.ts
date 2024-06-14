@@ -177,6 +177,10 @@ export async function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getMacroInfo
     await doMacroExpand(lsp, lsp.macroexpand1)
 }
 
+export function selectRestart(ui: Pick<UI, 'selectRestart'>, restart: number) {
+    ui.selectRestart(restart)
+}
+
 async function withCatchError(fn: () => Promise<void>) {
     try {
         await fn()

@@ -15,6 +15,7 @@ import {
     refreshAsdfSystems,
     refreshPackages,
     refreshThreads,
+    selectRestart,
     selectSexpr,
     sendToRepl,
     tryCompileWithDiags,
@@ -456,5 +457,13 @@ describe('Repl tests', () => {
 
             expect(editor.selection).toMatchObject({})
         })
+    })
+
+    it('selectRestart', () => {
+        const ui = { selectRestart: jest.fn() }
+
+        selectRestart(ui, 3)
+
+        expect(ui.selectRestart).toHaveBeenCalledWith(3)
     })
 })

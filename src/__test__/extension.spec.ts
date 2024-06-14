@@ -594,7 +594,7 @@ describe('Extension tests', () => {
 
     describe('Commands', () => {
         it('Simple redirects', async () => {
-            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
 
             checkCallback(fns, 'alive.selectSexpr', cmdsMock.selectSexpr)
             checkCallback(fns, 'alive.sendToRepl', cmdsMock.sendToRepl)
@@ -612,6 +612,11 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.openScratchPad', cmdsMock.openScratchPad)
             checkCallback(fns, 'alive.macroexpand', cmdsMock.macroexpand)
             checkCallback(fns, 'alive.macroexpand1', cmdsMock.macroexpand1)
+
+            for (let index = 0; index <= 9; index++) {
+                fns[`alive.restart_${index}`]()
+                expect(cmdsMock.selectRestart).toHaveBeenCalledWith(expect.anything(), index)
+            }
         })
 
         describe('replHistory', () => {
@@ -622,7 +627,7 @@ describe('Extension tests', () => {
             })
 
             it('No items', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
 
                 await fns['alive.replHistory']()
 
@@ -630,7 +635,7 @@ describe('Extension tests', () => {
             })
 
             it('One item', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
 
                 uiMock.selectHistoryItem.mockReturnValueOnce({ text: 'foo', pkgName: 'bar' })
 
@@ -643,7 +648,7 @@ describe('Extension tests', () => {
         })
 
         it('clearReplHistory', async () => {
-            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
 
             fns['alive.clearReplHistory']?.()
 
@@ -659,7 +664,7 @@ describe('Extension tests', () => {
             toCall: jest.Mock
         ) => {
             it(label, async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
 
                 toMock.mockReturnValue(value)
                 toCall.mockReset()
@@ -736,7 +741,7 @@ describe('Extension tests', () => {
 
         describe('loadAsdfByName', () => {
             it('Invalid node', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
 
                 await fns['alive.loadAsdfByName']({})
 
@@ -745,7 +750,7 @@ describe('Extension tests', () => {
             })
 
             it('Valid node', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 25, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
 
                 await fns['alive.loadAsdfByName']({ label: 'foo' })
 

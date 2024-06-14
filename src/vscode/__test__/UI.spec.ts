@@ -399,7 +399,6 @@ describe('UI tests', () => {
         }
 
         it('Hide quickpick', async () => {
-
             const { task, fn } = await getHideFn()
 
             fn?.()
@@ -508,7 +507,14 @@ describe('UI tests', () => {
     describe('getRestartIndex', () => {
         it('restart index', async () => {
             const ui = new UI(createState())
-            const info = { message: 'foo', restarts: [], stackTrace: [] }
+            const info = {
+                message: 'foo',
+                restarts: [
+                    { name: 'foo', description: 'foo' },
+                    { name: 'bar', description: 'bar' },
+                ],
+                stackTrace: [],
+            }
             let task: Promise<number | undefined> | undefined = undefined
             const fns = await getAllCallbacks(debugMock.debugOn, 3, async () => {
                 task = ui.getRestartIndex(info)
@@ -516,11 +522,12 @@ describe('UI tests', () => {
 
             fns['jump-to']('bar', 5, 10)
             fns['restart'](5)
+            fns['restart'](1)
             fns['debugClosed']()
 
             const index = await task
 
-            expect(index).toBe(5)
+            expect(index).toBe(1)
             expect(vscodeMock.workspace.openTextDocument).toHaveBeenCalledWith('bar')
             expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
             expect(debugMock.debugRun).toHaveBeenCalled()
@@ -596,5 +603,40 @@ describe('UI tests', () => {
         const ui = new UI(createState())
 
         ui.init()
+    })
+
+    describe('selectRestart', () => {
+        it('No views', () => {
+            const ui = new UI(createState())
+            ui.selectRestart(3)
+        })
+
+        it('No panel for view', () => {
+            const ui = new UI(createState())
+            const info = { message: 'foo', restarts: [], stackTrace: [] }
+
+            ui.getRestartIndex(info)
+
+            const panel = debugMock.fake.panel
+            try {
+                debugMock.fake.panel = undefined
+                ui.selectRestart(3)
+            } finally {
+                debugMock.fake.panel = panel
+            }
+        })
+
+        it('Has view', () => {
+            const ui = new UI(createState())
+            const info = { message: 'foo', restarts: [], stackTrace: [] }
+
+            ui.getRestartIndex(info)
+            ui.selectRestart(3)
+
+            debugMock.debugPanel.visible = true
+            ui.selectRestart(3)
+
+            expect(debugMock.debugSelectRestart).toHaveBeenCalled()
+        })
     })
 })

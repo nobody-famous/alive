@@ -99,6 +99,10 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         lsp.editorChanged(activeDoc)
     }
 
+    for (let index = 0; index <= 9; index++) {
+        vscode.commands.registerCommand(`alive.restart_${index}`, () => cmds.selectRestart(ui, index))
+    }
+
     ctx.subscriptions.push(
         vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr(lsp)),
         vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(lsp)),
