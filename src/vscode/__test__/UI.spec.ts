@@ -604,4 +604,39 @@ describe('UI tests', () => {
 
         ui.init()
     })
+
+    describe('selectRestart', () => {
+        it('No views', () => {
+            const ui = new UI(createState())
+            ui.selectRestart(3)
+        })
+
+        it('No panel for view', () => {
+            const ui = new UI(createState())
+            const info = { message: 'foo', restarts: [], stackTrace: [] }
+
+            ui.getRestartIndex(info)
+
+            const panel = debugMock.fake.panel
+            try {
+                debugMock.fake.panel = undefined
+                ui.selectRestart(3)
+            } finally {
+                debugMock.fake.panel = panel
+            }
+        })
+
+        it('Has view', () => {
+            const ui = new UI(createState())
+            const info = { message: 'foo', restarts: [], stackTrace: [] }
+
+            ui.getRestartIndex(info)
+            ui.selectRestart(3)
+
+            debugMock.debugPanel.visible = true
+            ui.selectRestart(3)
+
+            expect(debugMock.debugSelectRestart).toHaveBeenCalled()
+        })
+    })
 })
