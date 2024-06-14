@@ -66,7 +66,7 @@ export class DebugView extends EventEmitter {
             this.emit('debugClosed')
         })
 
-        panel.onDidChangeViewState((evt: vscode.WebviewPanelOnDidChangeViewStateEvent) => {
+        panel.onDidChangeViewState(() => {
             vscode.commands.executeCommand('setContext', 'aliveDebugViewActive', panel.visible)
         })
     }
