@@ -177,7 +177,7 @@ export async function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getMacroInfo
     await doMacroExpand(lsp, lsp.macroexpand1)
 }
 
-export async function selectRestart(ui: UI, restart: number) {
+export function selectRestart(ui: Pick<UI, 'selectRestart'>, restart: number) {
     ui.selectRestart(restart)
 }
 
