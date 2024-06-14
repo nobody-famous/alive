@@ -612,6 +612,11 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.openScratchPad', cmdsMock.openScratchPad)
             checkCallback(fns, 'alive.macroexpand', cmdsMock.macroexpand)
             checkCallback(fns, 'alive.macroexpand1', cmdsMock.macroexpand1)
+
+            for (let index = 0; index <= 9; index++) {
+                fns[`alive.restart_${index}`]()
+                expect(cmdsMock.selectRestart).toHaveBeenCalledWith(expect.anything(), index)
+            }
         })
 
         describe('replHistory', () => {
