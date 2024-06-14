@@ -230,6 +230,10 @@ Clear the inline results.
 
 Expressions that are evaluated from the REPL window are added to the history. This command opens a quick pick selector with the history. The most recently used item is at the top, i.e. similar behavior to the Run Tasks command.
 
+### Select Restart (Alt+Shift+<Number>)
+
+Selects the restart with the given number for the currently visible debugger.
+
 ### Load ASDF System
 
 Tell the REPL to load an ASDF system. A list of known systems will be given to choose from.
