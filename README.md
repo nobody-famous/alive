@@ -29,6 +29,9 @@ The following must be installed prior to useing the Alive extension. It is okay 
     - `(ql:quickload "cl-json")`
     - `(ql:quickload "flexi-streams")`
 
+
+    Make sure you run `(ql:add-to-init-file)` or add `(load "~/quicklisp/setup.lisp")` to the `~/.sbclrc` file to make sure these dependencies are loaded on startup.
+
     <details>
     <summary>An example SBCL and Quicklisp session (where `...` stands for a bunch of stuff printed to the console)</summary>
 
