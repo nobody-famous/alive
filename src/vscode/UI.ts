@@ -12,23 +12,23 @@ import { Inspector } from './views/Inspector'
 import { isFiniteNumber } from './Guards'
 
 export declare interface UIEvents {
-    on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
-    on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
-    on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
-    on(event: 'inspectClosed', listener: (info: InspectInfo) => void): this
-    on(event: 'inspectEval', listener: (info: InspectInfo, text: string) => void): this
-    on(event: 'inspectRefresh', listener: (info: InspectInfo) => void): this
-    on(event: 'inspectRefreshMacro', listener: (info: InspectInfo) => void): this
-    on(event: 'inspectMacroInc', listener: (info: InspectInfo) => void): this
-    on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
-    on(event: 'diagnosticsRefresh', listener: (editors: vscode.TextEditor[]) => void): this
+    saveReplHistory: [history: HistoryItem[]]
+    eval: [text: string, pkgName: string, storeResult?: boolean]
+    inspect: [text: string, pkgName: string]
+    inspectClosed: [info: InspectInfo]
+    inspectEval: [info: InspectInfo, text: string]
+    inspectRefresh: [info: InspectInfo]
+    inspectRefreshMacro: [info: InspectInfo]
+    inspectMacroInc: [info: InspectInfo]
+    listPackages: [fn: (pkgs: Package[]) => void]
+    diagnosticsRefresh: [editors: readonly vscode.TextEditor[]]
 }
 
 export interface UIState {
     ctx: AliveContext
 }
 
-export class UI extends EventEmitter implements UIEvents {
+export class UI extends EventEmitter<UIEvents> {
     private state: UIState
     private historyTree: ReplHistoryTreeProvider
     private packageTree: PackagesTreeProvider

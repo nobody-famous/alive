@@ -1,5 +1,6 @@
 import { getAllCallbacks, getCallback } from '../../../TestHelpers'
-import { HistoryItem, RestartInfo } from '../Types'
+import { isArray, isPackage } from '../Guards'
+import { HistoryItem, Package, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
 
 const vscodeMock = jest.requireMock('vscode')
@@ -129,7 +130,7 @@ describe('UI tests', () => {
         })
 
         describe('requestPackage', () => {
-            const runTest = async (pkgs: unknown[], validate: () => void) => {
+            const runTest = async (pkgs: Package[], validate: () => void) => {
                 const state = createState()
                 const ui = new UI(state)
                 const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'requestPackage')
@@ -151,7 +152,7 @@ describe('UI tests', () => {
             it('One package', async () => {
                 vscodeMock.window.showQuickPick.mockImplementationOnce((names: string[]) => names[0])
 
-                await runTest([{ name: 'foo', nicknames: [] }], () => {
+                await runTest([{ name: 'foo', exports: [], nicknames: [] }], () => {
                     expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['foo'], expect.anything())
                     expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 })
@@ -160,7 +161,7 @@ describe('UI tests', () => {
             it('One package nickname', async () => {
                 vscodeMock.window.showQuickPick.mockImplementationOnce((names: string[]) => names[0])
 
-                await runTest([{ name: 'foo', nicknames: ['bar'] }], () => {
+                await runTest([{ name: 'foo', exports: [], nicknames: ['bar'] }], () => {
                     expect(vscodeMock.window.showQuickPick).toHaveBeenCalledWith(['bar', 'foo'], expect.anything())
                     expect(replMock.replSetPackage).toHaveBeenCalledWith('bar')
                 })
@@ -267,9 +268,10 @@ describe('UI tests', () => {
                 inspectMacroInc: false,
             }
 
-            for (const name of Object.keys(called)) {
-                ui.on(name, () => (called[name] = true))
-            }
+            ui.on('inspectEval', () => (called.inspectEval = true))
+            ui.on('inspectRefresh', () => (called.inspectRefresh = true))
+            ui.on('inspectRefreshMacro', () => (called.inspectRefreshMacro = true))
+            ui.on('inspectMacroInc', () => (called.inspectMacroInc = true))
 
             fns['inspector-eval']('foo')
             expect(called['inspectEval']).toBe(true)

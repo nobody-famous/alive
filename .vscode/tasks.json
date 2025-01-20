@@ -33,9 +33,9 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/UI.spec.ts",
+                "src/vscode/backend/__test__/LSP.spec.ts",
                 "-t",
-                "selectRestart"
+                "Success, invalid response"
             ],
             "problemMatcher": [
                 "$tsc"

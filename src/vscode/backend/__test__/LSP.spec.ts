@@ -998,10 +998,8 @@ describe('LSP tests', () => {
         })
 
         describe('doInspectMacro', () => {
-            const successTest = async (
-                fn: (lsp: LSP, info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => Promise<void>
-            ) => {
-                const info = { text: 'Some text', package: 'Some package', result: {} }
+            const successTest = async (fn: (lsp: LSP, info: InspectInfo) => Promise<void>) => {
+                const info = { id: 5, resultType: 'test', text: 'Some text', package: 'Some package', result: {} }
                 const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ text: 'Result text' })) })
 
                 lsp.emit = jest.fn()
@@ -1020,7 +1018,7 @@ describe('LSP tests', () => {
                     const { lsp } = await doConnect({ sendRequest: jest.fn(() => resp) })
 
                     lsp.emit = jest.fn()
-                    await lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result })
+                    await lsp.inspectMacroInc({ id: 5, resultType: 'macro', text: 'Some text', package: 'Some package', result })
 
                     expect(lsp.emit).not.toHaveBeenCalled()
                 }
@@ -1031,7 +1029,14 @@ describe('LSP tests', () => {
 
             it('Network error', async () => {
                 await networkErrorTest(
-                    (lsp) => lsp.inspectMacroInc({ text: 'Some text', package: 'Some package', result: [] }),
+                    (lsp) =>
+                        lsp.inspectMacroInc({
+                            id: 5,
+                            resultType: 'macro',
+                            text: 'Some text',
+                            package: 'Some package',
+                            result: [],
+                        }),
                     (resp) => expect(resp).toBeUndefined()
                 )
             })
@@ -1105,7 +1110,7 @@ describe('LSP tests', () => {
                 const { lsp } = await doConnect({ sendRequest: sendReq })
 
                 sendReq.mockReturnValueOnce({ id: 10 })
-                sendReq.mockReturnValueOnce('Valid response')
+                sendReq.mockReturnValueOnce(fakeInfo)
                 lsp.emit = jest.fn()
 
                 await lsp.inspectEval(fakeInfo, 'Some eval text')

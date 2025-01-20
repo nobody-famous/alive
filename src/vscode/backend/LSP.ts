@@ -21,21 +21,21 @@ import {
 } from '../Types'
 import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseNote, parsePos, strToMarkdown } from '../Utils'
 
-export declare interface LSPEvents {
-    on(event: 'refreshPackages', listener: () => void): this
-    on(event: 'refreshAsdfSystems', listener: () => void): this
-    on(event: 'refreshThreads', listener: () => void): this
-    on(event: 'refreshInspectors', listener: () => void): this
-    on(event: 'refreshDiagnostics', listener: () => void): this
-    on(event: 'startCompileTimer', listener: () => void): this
-    on(event: 'output', listener: (str: string) => void): this
-    on(event: 'getRestartIndex', listener: (info: DebugInfo, fn: (index: number | undefined) => void) => void): this
-    on(event: 'getUserInput', listener: (fn: (input: string) => void) => void): this
-    on(event: 'inspectResult', listener: (result: InspectInfo) => void): this
-    on(event: 'inspectUpdate', listener: (result: InspectResult) => void): this
+interface LSPEvents {
+    refreshPackages: []
+    refreshAsdfSystems: []
+    refreshThreads: []
+    refreshInspectors: []
+    refreshDiagnostics: []
+    startCompileTimer: []
+    output: [str: string]
+    getRestartIndex: [info: DebugInfo, fn: (index: number | undefined) => void]
+    getUserInput: [fn: (input: string) => void]
+    inspectResult: [result: InspectInfo]
+    inspectUpdate: [result: InspectResult]
 }
 
-export class LSP extends EventEmitter implements LSPEvents {
+export class LSP extends EventEmitter<LSPEvents> {
     private state: Pick<ExtensionState, 'hoverText'>
     private client: LanguageClient | undefined
 
@@ -199,7 +199,7 @@ export class LSP extends EventEmitter implements LSPEvents {
                     ? await this.inspectRefreshMacro(info)
                     : await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
 
-            if (isInspectResult(resp) || isString(resp)) {
+            if (isInspectResult(resp)) {
                 this.emit('inspectUpdate', resp)
             }
         } catch (err) {
@@ -207,7 +207,7 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    inspectRefreshMacro = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
+    inspectRefreshMacro = async (info: InspectInfo) => {
         const resp = await this.doInspectMacro(info.text, info)
 
         if (isString(resp)) {
@@ -215,7 +215,7 @@ export class LSP extends EventEmitter implements LSPEvents {
         }
     }
 
-    inspectMacroInc = async (info: Pick<InspectInfo, 'text' | 'package' | 'result'>) => {
+    inspectMacroInc = async (info: InspectInfo) => {
         const oldResult = isString(info.result) ? info.result : info.text
         const resp = await this.doInspectMacro(oldResult, info)
 

@@ -393,7 +393,7 @@ async function initPackagesTree(ui: Pick<UI, 'initPackagesTree'>, lsp: Pick<LSP,
     }
 }
 
-async function diagnosticsRefresh(lsp: Pick<LSP, 'tryCompileFile'>, state: ExtensionState, editors: vscode.TextEditor[]) {
+async function diagnosticsRefresh(lsp: Pick<LSP, 'tryCompileFile'>, state: ExtensionState, editors: readonly vscode.TextEditor[]) {
     for (const editor of editors) {
         if (editor.document.languageId !== COMMON_LISP_ID) {
             continue
