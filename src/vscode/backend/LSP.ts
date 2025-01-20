@@ -196,7 +196,7 @@ export class LSP extends EventEmitter implements LSPEvents {
         try {
             const resp =
                 info.resultType === 'macro'
-                    ? await this.doInspectMacro(info.text, info)
+                    ? await this.inspectRefreshMacro(info)
                     : await this.client?.sendRequest('$/alive/inspectRefresh', { id: info.id })
 
             if (isInspectResult(resp) || isString(resp)) {
