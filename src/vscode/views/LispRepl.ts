@@ -4,7 +4,15 @@ import * as os from 'os'
 import EventEmitter = require('events')
 import { AliveContext } from '../Types'
 
-export class LispRepl extends EventEmitter implements vscode.WebviewViewProvider {
+interface ReplEvents {
+    requestPackage: []
+    historyUp: []
+    historyDown: []
+    userInput: [string]
+    eval: [string, string]
+}
+
+export class LispRepl extends EventEmitter<ReplEvents> implements vscode.WebviewViewProvider {
     private view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
     private package: string

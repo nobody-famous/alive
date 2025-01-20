@@ -3,9 +3,24 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { InspectInfo, InspectResult } from '../Types'
 import { strToHtml } from '../Utils'
-import { isObject, isString } from '../Guards'
+import { isFiniteNumber, isObject, isString } from '../Guards'
 
-export class Inspector extends EventEmitter {
+interface InspectorEvents {
+    inspectorClosed: []
+    inspectPart: [number]
+    inspectorAction: [number]
+    inspectorEval: [string]
+    inspectorMacroInc: []
+    inspectorRefreshMacro: []
+    inspectorRefresh: []
+}
+
+export interface Message {
+    command: string
+    [index: string]: unknown
+}
+
+export class Inspector extends EventEmitter<InspectorEvents> {
     extensionPath: string
     viewCol: vscode.ViewColumn
     info: InspectInfo
@@ -45,20 +60,18 @@ export class Inspector extends EventEmitter {
     private initPanel(title: string) {
         const panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
 
-        panel.webview.onDidReceiveMessage((msg: { command: string; [index: string]: unknown }) => {
+        panel.webview.onDidReceiveMessage((msg: Message) => {
             switch (msg.command.toUpperCase()) {
                 case 'VALUE':
-                    return this.emit('inspect-part', msg.index)
+                    return this.inspectPart(msg)
                 case 'ACTION':
-                    return this.emit('inspector-action', msg.index)
+                    return this.inspectorAction(msg)
                 case 'EVAL':
-                    return this.emit('inspector-eval', msg.text)
+                    return this.inspectorEval(msg)
                 case 'EXPINC':
-                    return this.emit('inspector-macro-inc')
+                    return this.emit('inspectorMacroInc')
                 case 'REFRESH':
-                    return this.info.resultType === 'macro'
-                        ? this.emit('inspector-refresh-macro')
-                        : this.emit('inspector-refresh')
+                    return this.info.resultType === 'macro' ? this.emit('inspectorRefreshMacro') : this.emit('inspectorRefresh')
             }
         })
 
@@ -69,6 +82,24 @@ export class Inspector extends EventEmitter {
         vscode.commands.executeCommand('setContext', 'clInspectorActive', panel.active)
 
         return panel
+    }
+
+    private inspectPart(msg: Message) {
+        if (isFiniteNumber(msg.index)) {
+            this.emit('inspectPart', msg.index)
+        }
+    }
+
+    private inspectorAction(msg: Message) {
+        if (isFiniteNumber(msg.index)) {
+            this.emit('inspectorAction', msg.index)
+        }
+    }
+
+    private inspectorEval(msg: Message) {
+        if (isString(msg.text)) {
+            this.emit('inspectorEval', msg.text)
+        }
     }
 
     private renderArray(arr: Array<unknown>) {

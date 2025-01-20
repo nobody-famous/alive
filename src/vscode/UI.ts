@@ -114,7 +114,7 @@ export class UI extends EventEmitter<UIEvents> {
                 resolve(isFiniteNumber(num) ? num : undefined)
             })
 
-            view.on('jump-to', async (file: string, line: number, char: number) => {
+            view.on('jumpTo', async (file: string, line: number, char: number) => {
                 const doc = await vscode.workspace.openTextDocument(file)
                 const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One)
                 const pos = new vscode.Position(line, char)
@@ -277,10 +277,10 @@ export class UI extends EventEmitter<UIEvents> {
             this.inspectors.delete(info.id)
             this.emit('inspectClosed', info)
         })
-        inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
-        inspector.on('inspector-refresh', () => this.emit('inspectRefresh', info))
-        inspector.on('inspector-refresh-macro', () => this.emit('inspectRefreshMacro', info))
-        inspector.on('inspector-macro-inc', () => this.emit('inspectMacroInc', info))
+        inspector.on('inspectorEval', (text: string) => this.emit('inspectEval', info, text))
+        inspector.on('inspectorRefresh', () => this.emit('inspectRefresh', info))
+        inspector.on('inspectorRefreshMacro', () => this.emit('inspectRefreshMacro', info))
+        inspector.on('inspectorMacroInc', () => this.emit('inspectMacroInc', info))
 
         inspector.show()
     }

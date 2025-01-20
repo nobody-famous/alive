@@ -273,16 +273,16 @@ describe('UI tests', () => {
             ui.on('inspectRefreshMacro', () => (called.inspectRefreshMacro = true))
             ui.on('inspectMacroInc', () => (called.inspectMacroInc = true))
 
-            fns['inspector-eval']('foo')
+            fns['inspectorEval']('foo')
             expect(called['inspectEval']).toBe(true)
 
-            fns['inspector-refresh']()
+            fns['inspectorRefresh']()
             expect(called['inspectRefresh']).toBe(true)
 
-            fns['inspector-refresh-macro']()
+            fns['inspectorRefreshMacro']()
             expect(called['inspectRefreshMacro']).toBe(true)
 
-            fns['inspector-macro-inc']()
+            fns['inspectorMacroInc']()
             expect(called['inspectMacroInc']).toBe(true)
         })
     })
@@ -522,7 +522,7 @@ describe('UI tests', () => {
                 task = ui.getRestartIndex(info)
             })
 
-            fns['jump-to']('bar', 5, 10)
+            fns['jumpTo']('bar', 5, 10)
             fns['restart'](5)
             fns['restart'](1)
             fns['debugClosed']()
