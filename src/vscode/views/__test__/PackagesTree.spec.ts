@@ -4,7 +4,9 @@ import { ExportNode, PackageNode, PackagesTreeProvider, isExportNode, isPackageN
 describe('PackagesTree tests', () => {
     it('isPackageNode', () => {
         expect(isPackageNode(5)).toBe(false)
-        expect(isPackageNode(new PackageNode('Some key', TreeItemCollapsibleState.None))).toBe(true)
+        expect(
+            isPackageNode(new PackageNode('Some key', { kids: {}, label: '', packageName: '' }, TreeItemCollapsibleState.None))
+        ).toBe(true)
     })
 
     it('isExportNode', () => {
@@ -31,7 +33,7 @@ describe('PackagesTree tests', () => {
         it('No package', () => {
             const provider = new PackagesTreeProvider([])
 
-            expect(provider.getChildren(new TreeItem('foo'))).toBeUndefined()
+            expect(provider.getChildren(new TreeItem('foo'))).toStrictEqual([])
         })
 
         it('Have package', () => {
@@ -71,6 +73,39 @@ describe('PackagesTree tests', () => {
                 expect(kids[0].label).toBe('bar')
                 expect(kids[1].label).toBe('foo')
                 expect(kids[2].label).toBe('g')
+            }
+        })
+
+        it('Nested packages', async () => {
+            const provider = new PackagesTreeProvider([
+                { name: 'a/b/c', exports: [], nicknames: [] },
+                { name: 'foo/bar', exports: ['baz'], nicknames: [] },
+                { name: 'foo/d', exports: ['e'], nicknames: [] },
+            ])
+
+            const kids = await provider.getChildren()
+
+            expect(Array.isArray(kids)).toBe(true)
+
+            if (Array.isArray(kids)) {
+                expect(kids[0].label).toBe('a')
+                expect(kids[1].label).toBe('foo')
+            }
+
+            if (isPackageNode(kids?.[1])) {
+                const aKids = await provider.getChildren(kids[0])
+                expect(aKids).not.toBeNull()
+
+                const bKids = await provider.getChildren(aKids?.[0])
+                expect(bKids).not.toBeNull()
+                expect(bKids?.[0].label).toBe('c')
+
+                const fooKids = await provider.getChildren(kids[1])
+                expect(fooKids).not.toBeNull()
+
+                const barKids = await provider.getChildren(fooKids?.[0])
+                expect(barKids).not.toBeNull()
+                expect(barKids?.[0]?.label).toBe('baz')
             }
         })
     })
