@@ -46,6 +46,7 @@ export const workspace = {
     workspaceFolders: [],
     openTextDocument: jest.fn(),
     onDidOpenTextDocument: jest.fn(),
+    onDidChangeConfiguration: jest.fn(),
     onDidChangeTextDocument: jest.fn(),
     getConfiguration: jest.fn(),
     saveAll: jest.fn(),

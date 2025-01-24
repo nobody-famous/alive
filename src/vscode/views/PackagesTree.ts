@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { PackageTreeConfig } from '../../config'
 import { isArray, isString } from '../Guards'
 import { Package } from '../Types'
 
@@ -41,21 +42,48 @@ interface TreeNode {
     exports?: Array<string>
 }
 
+interface PackagesTreeState {
+    config: {
+        packageTree: PackageTreeConfig
+    }
+}
+
 export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+    private state: PackagesTreeState
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
     private rootNode: TreeNode = { kids: {}, label: '', packageName: '' }
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
-    constructor(pkgs: Package[]) {
+    constructor(pkgs: Package[], state: PackagesTreeState) {
+        this.state = state
         this.buildTree(pkgs)
+    }
+
+    private splitName(name: string) {
+        const sep = this.state.config.packageTree.separator
+
+        if (isString(sep)) {
+            return name.split(sep)
+        }
+
+        if (isArray(sep, isString)) {
+            for (const candidate of sep) {
+                const parts = name.split(candidate)
+                if (parts.length > 1) {
+                    return parts
+                }
+            }
+        }
+
+        return [name]
     }
 
     private buildTree(pkgs: Package[]) {
         this.rootNode = { kids: {}, label: '', packageName: '' }
 
         for (const pkg of pkgs) {
-            const parts = pkg.name.split('/')
+            const parts = this.splitName(pkg.name)
 
             let curNode = this.rootNode
             for (const part of parts) {
@@ -89,11 +117,13 @@ export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.Tree
                 return []
             }
 
+            const kids: vscode.TreeItem[] = Object.values(element.node.kids)
+                .map((node) => this.treeToNode(node))
+                .sort(this.compareNodes)
+
             return isArray(element.node.exports, isString)
-                ? element.node.exports.sort().map((item) => new ExportNode(item, element.node.packageName))
-                : Object.values(element.node.kids)
-                      .map((node) => this.treeToNode(node))
-                      .sort(this.compareNodes)
+                ? kids.concat(element.node.exports.sort().map((item) => new ExportNode(item, element.node.packageName)))
+                : kids
         }
 
         return []

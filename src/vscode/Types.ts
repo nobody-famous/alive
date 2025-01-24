@@ -1,5 +1,6 @@
 import { ChildProcessWithoutNullStreams } from 'child_process'
 import * as vscode from 'vscode'
+import { AliveConfig } from '../config'
 
 export interface AliveContext {
     subscriptions: { dispose: () => unknown }[]
@@ -8,6 +9,7 @@ export interface AliveContext {
 
 export interface ExtensionState {
     ctx: AliveContext
+    config: AliveConfig
     extension: vscode.Extension<unknown>
     diagnostics: Pick<vscode.DiagnosticCollection, 'set'>
     lspInstallPath?: string

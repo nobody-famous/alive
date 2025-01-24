@@ -2,6 +2,8 @@ import { TreeItem, TreeItemCollapsibleState } from 'vscode'
 import { ExportNode, PackageNode, PackagesTreeProvider, isExportNode, isPackageNode } from '../PackagesTree'
 
 describe('PackagesTree tests', () => {
+    const fakeState = { config: { packageTree: { separator: null } } }
+
     it('isPackageNode', () => {
         expect(isPackageNode(5)).toBe(false)
         expect(
@@ -15,7 +17,7 @@ describe('PackagesTree tests', () => {
     })
 
     it('update', () => {
-        const provider = new PackagesTreeProvider([])
+        const provider = new PackagesTreeProvider([], fakeState)
 
         provider.update([{ name: 'foo', exports: [], nicknames: [] }])
 
@@ -23,7 +25,7 @@ describe('PackagesTree tests', () => {
     })
 
     it('getTreeItem', () => {
-        const provider = new PackagesTreeProvider([])
+        const provider = new PackagesTreeProvider([], fakeState)
         const item = {}
 
         expect(provider.getTreeItem(item)).toBe(item)
@@ -31,26 +33,26 @@ describe('PackagesTree tests', () => {
 
     describe('getChildren', () => {
         it('No package', () => {
-            const provider = new PackagesTreeProvider([])
+            const provider = new PackagesTreeProvider([], fakeState)
 
             expect(provider.getChildren(new TreeItem('foo'))).toStrictEqual([])
         })
 
         it('Have package', () => {
-            const provider = new PackagesTreeProvider([{ name: 'foo', exports: [], nicknames: [] }])
+            const provider = new PackagesTreeProvider([{ name: 'foo', exports: [], nicknames: [] }], fakeState)
 
             expect(provider.getChildren(new TreeItem('foo'))).toStrictEqual([])
         })
 
         it('Have package with exports', () => {
-            const provider = new PackagesTreeProvider([{ name: 'foo', exports: ['bar'], nicknames: [] }])
+            const provider = new PackagesTreeProvider([{ name: 'foo', exports: ['bar'], nicknames: [] }], fakeState)
             const kids = provider.getChildren(new TreeItem('foo'))
 
             expect(Array.isArray(kids)).toBe(true)
         })
 
         it('Default', () => {
-            const provider = new PackagesTreeProvider([{ name: 'foo', exports: [], nicknames: [] }])
+            const provider = new PackagesTreeProvider([{ name: 'foo', exports: [], nicknames: [] }], fakeState)
             const item = new TreeItem('foo')
 
             item.label = undefined
@@ -59,11 +61,14 @@ describe('PackagesTree tests', () => {
         })
 
         it('No element', () => {
-            const provider = new PackagesTreeProvider([
-                { name: 'foo', exports: [], nicknames: [] },
-                { name: 'bar', exports: ['baz'], nicknames: [] },
-                { name: 'g', exports: ['a'], nicknames: [] },
-            ])
+            const provider = new PackagesTreeProvider(
+                [
+                    { name: 'foo', exports: [], nicknames: [] },
+                    { name: 'bar', exports: ['baz'], nicknames: [] },
+                    { name: 'g', exports: ['a'], nicknames: [] },
+                ],
+                fakeState
+            )
 
             const kids = provider.getChildren()
 
@@ -77,11 +82,14 @@ describe('PackagesTree tests', () => {
         })
 
         it('Nested packages', async () => {
-            const provider = new PackagesTreeProvider([
-                { name: 'a/b/c', exports: [], nicknames: [] },
-                { name: 'foo/bar', exports: ['baz'], nicknames: [] },
-                { name: 'foo/d', exports: ['e'], nicknames: [] },
-            ])
+            const provider = new PackagesTreeProvider(
+                [
+                    { name: 'a/b/c', exports: [], nicknames: [] },
+                    { name: 'foo/bar', exports: ['baz'], nicknames: [] },
+                    { name: 'foo/d', exports: ['e'], nicknames: [] },
+                ],
+                { ...fakeState, config: { packageTree: { separator: '/' } } }
+            )
 
             const kids = await provider.getChildren()
 

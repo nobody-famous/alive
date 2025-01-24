@@ -1,5 +1,4 @@
 import { getAllCallbacks, getCallback } from '../../../TestHelpers'
-import { isArray, isPackage } from '../Guards'
 import { HistoryItem, Package, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
 
@@ -33,6 +32,7 @@ jest.mock('../views/ThreadsTree')
 const createState = (): UIState => {
     const state: UIState = {
         ctx: { subscriptions: [], extensionPath: 'foo' },
+        config: { packageTree: { separator: null } },
     }
 
     return state

@@ -470,6 +470,15 @@
         "configuration": {
             "title": "Common Lisp",
             "properties": {
+                "alive.packageTree.separator": {
+                    "type": [
+                        "string",
+                        "array",
+                        "null"
+                    ],
+                    "description": "String, or list of strings, to nest packages in the package tree view",
+                    "default": null
+                },
                 "alive.format.indentWidth": {
                     "type": "number",
                     "default": 2,

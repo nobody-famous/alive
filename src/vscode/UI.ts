@@ -10,6 +10,7 @@ import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Packa
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 import { isFiniteNumber } from './Guards'
+import { PackageTreeConfig } from '../config'
 
 export declare interface UIEvents {
     saveReplHistory: [history: HistoryItem[]]
@@ -26,6 +27,7 @@ export declare interface UIEvents {
 
 export interface UIState {
     ctx: AliveContext
+    config: { packageTree: PackageTreeConfig }
 }
 
 export class UI extends EventEmitter<UIEvents> {
@@ -44,7 +46,7 @@ export class UI extends EventEmitter<UIEvents> {
 
         this.state = state
         this.historyTree = new ReplHistoryTreeProvider([])
-        this.packageTree = new PackagesTreeProvider([])
+        this.packageTree = new PackagesTreeProvider([], state)
         this.asdfTree = new AsdfSystemsTreeProvider([])
         this.threadsTree = new ThreadsTreeProvider([])
         this.replView = new LispRepl(state.ctx)
