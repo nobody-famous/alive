@@ -329,6 +329,14 @@ describe('Extension tests', () => {
             expect(lspMock.textDocumentChanged).toHaveBeenCalled()
         })
 
+        it('onDidChangeConfiguration', async () => {
+            const fn = await getHandler(vscodeMock.workspace.onDidChangeConfiguration)
+
+            fn?.()
+
+            expect(lspMock.listPackages).toHaveBeenCalled()
+        })
+
         it('onDidChangeActiveTextEditor', async () => {
             const fn = await getHandler(vscodeMock.window.onDidChangeActiveTextEditor)
 

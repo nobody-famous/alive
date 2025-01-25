@@ -81,40 +81,78 @@ describe('PackagesTree tests', () => {
             }
         })
 
-        it('Nested packages', async () => {
-            const provider = new PackagesTreeProvider(
-                [
-                    { name: 'a/b/c', exports: [], nicknames: [] },
-                    { name: 'foo/bar', exports: ['baz'], nicknames: [] },
-                    { name: 'foo/d', exports: ['e'], nicknames: [] },
-                ],
-                { ...fakeState, config: { packageTree: { separator: '/' } } }
-            )
+        describe('Nested packages', () => {
+            it('String separator', async () => {
+                const provider = new PackagesTreeProvider(
+                    [
+                        { name: 'a/b/c', exports: [], nicknames: [] },
+                        { name: 'foo/bar', exports: ['baz'], nicknames: [] },
+                        { name: 'foo/d', exports: ['e'], nicknames: [] },
+                    ],
+                    { ...fakeState, config: { packageTree: { separator: '/' } } }
+                )
 
-            const kids = await provider.getChildren()
+                const kids = await provider.getChildren()
 
-            expect(Array.isArray(kids)).toBe(true)
+                expect(Array.isArray(kids)).toBe(true)
 
-            if (Array.isArray(kids)) {
-                expect(kids[0].label).toBe('a')
-                expect(kids[1].label).toBe('foo')
-            }
+                if (Array.isArray(kids)) {
+                    expect(kids[0].label).toBe('a')
+                    expect(kids[1].label).toBe('foo')
+                }
 
-            if (isPackageNode(kids?.[1])) {
-                const aKids = await provider.getChildren(kids[0])
-                expect(aKids).not.toBeNull()
+                if (isPackageNode(kids?.[1])) {
+                    const aKids = await provider.getChildren(kids[0])
+                    expect(aKids).not.toBeNull()
 
-                const bKids = await provider.getChildren(aKids?.[0])
-                expect(bKids).not.toBeNull()
-                expect(bKids?.[0].label).toBe('c')
+                    const bKids = await provider.getChildren(aKids?.[0])
+                    expect(bKids).not.toBeNull()
+                    expect(bKids?.[0].label).toBe('c')
 
-                const fooKids = await provider.getChildren(kids[1])
-                expect(fooKids).not.toBeNull()
+                    const fooKids = await provider.getChildren(kids[1])
+                    expect(fooKids).not.toBeNull()
 
-                const barKids = await provider.getChildren(fooKids?.[0])
-                expect(barKids).not.toBeNull()
-                expect(barKids?.[0]?.label).toBe('baz')
-            }
+                    const barKids = await provider.getChildren(fooKids?.[0])
+                    expect(barKids).not.toBeNull()
+                    expect(barKids?.[0]?.label).toBe('baz')
+                }
+            })
+
+            it('Array of separators', async () => {
+                const provider = new PackagesTreeProvider(
+                    [
+                        { name: 'a/b/c', exports: [], nicknames: [] },
+                        { name: 'foo-bar', exports: ['baz'], nicknames: [] },
+                        { name: 'foo*d', exports: ['e'], nicknames: [] },
+                    ],
+                    { ...fakeState, config: { packageTree: { separator: ['/', '-', '*'] } } }
+                )
+
+                const kids = await provider.getChildren()
+
+                expect(Array.isArray(kids)).toBe(true)
+
+                if (Array.isArray(kids)) {
+                    expect(kids[0].label).toBe('a')
+                    expect(kids[1].label).toBe('foo')
+                }
+
+                if (isPackageNode(kids?.[1])) {
+                    const aKids = await provider.getChildren(kids[0])
+                    expect(aKids).not.toBeNull()
+
+                    const bKids = await provider.getChildren(aKids?.[0])
+                    expect(bKids).not.toBeNull()
+                    expect(bKids?.[0].label).toBe('c')
+
+                    const fooKids = await provider.getChildren(kids[1])
+                    expect(fooKids).not.toBeNull()
+
+                    const barKids = await provider.getChildren(fooKids?.[0])
+                    expect(barKids).not.toBeNull()
+                    expect(barKids?.[0]?.label).toBe('baz')
+                }
+            })
         })
     })
 })
