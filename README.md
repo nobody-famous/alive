@@ -8,7 +8,7 @@ The LSP server that the extension relies on currently only supports [Steel Bank 
 
 ## Extension Requirements
 
-The following must be installed prior to useing the Alive extension. It is okay for these to be installed after the extension is installed, although you may need to reload your VS Code window after doing so.
+The following must be installed prior to using the Alive extension. It is okay for these to be installed after the extension is installed, although you may need to reload your VS Code window after doing so.
 
 * [ASDF](https://asdf.common-lisp.dev/) (*not* [asdf](https://asdf-vm.com/)): version 3.3.3 or later.
 
@@ -101,7 +101,7 @@ For example:
 <img src="images/view-repl-hello-world.png" alt="REPL view"/>
 
 Forms entered by the user are also added to a history list.
-The up and down arrows can be used in the user intput area to choose a previous form to be (possibly edited and) reevaluated.
+The up and down arrows can be used in the user input area to choose a previous form to be (possibly edited and) reevaluated.
 The history list is also shown in the **REPL HISTORY** view in the Lisp Tree View described below.
 
 Forms sent for evaluation by the user are run in their own thread. The threads have names like `"N - $/alive/eval"` where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds.
@@ -128,7 +128,7 @@ There is also an inspector for macros, using the Inspect Macro command. An inspe
 
 ### Lisp Tree View
 
-The Lisp Tree View is invoked by clicking on the following icon in the Activty Bar on the left of the VSCode workbench:
+The Lisp Tree View is invoked by clicking on the following icon in the Activity Bar on the left of the VSCode workbench:
 
 <img src="images/lisp-icon-sm.png" alt="alt text"/>
 
