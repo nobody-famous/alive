@@ -69,10 +69,11 @@ This extension contributes the following settings:
 
 -   `alive.lsp.install.path`: Directory where the LSP source code is installed
 -   `alive.lsp.startCommand`: Command used to start the LSP server
--   `alive.format.indentWidth`: Default indentation width
 -   `alive.lsp.remote.host`: Host of the LSP server to connect to
 -   `alive.lsp.remote.port`: Port of the LSP server to connect to
+-   `alive.format.indentWidth`: Default indentation width
 -   `alive.enableDiagnostics`: If true (the default), automatically update diagnostics. If false, compile file or load file need to be used.
+-   `alive.packageTree.separator`: String, or list of strings, to split package names in the package view.
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
@@ -183,6 +184,8 @@ Clicking on a package in the list expands to show
 all of the symbols defined in that package below the package name.
 Clicking on the remove icon (<img src="images/remove-icon.png" alt="remove icon"/>)
 to the right of a symbol removes that symbol.
+
+The `alive.packageTree.separator` config setting can be used to better organize the view. If it's set to a single string, that string is used to split each package name and nests them. If it's set to an array of strings, the first one that successfully splits a package name is used for that name. Leaving it out, or setting it to `null`, uses the default of not nesting the package names.
 
 #### ASDF Systems
 

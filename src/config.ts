@@ -1,6 +1,10 @@
 import * as vscode from 'vscode'
 import { isArray, isBoolean, isFiniteNumber, isObject, isString } from './vscode/Guards'
 
+export interface PackageTreeConfig {
+    separator: string | Array<string> | null
+}
+
 export interface FormatConfig {
     indentWidth: number
 }
@@ -23,6 +27,7 @@ export interface LSPConfig {
 
 export interface AliveConfig {
     enableDiagnostics: boolean
+    packageTree: PackageTreeConfig
     format: FormatConfig
     lsp: LSPConfig
 }
@@ -30,6 +35,9 @@ export interface AliveConfig {
 export const readAliveConfig = (): AliveConfig => {
     const cfg: AliveConfig = {
         enableDiagnostics: true,
+        packageTree: {
+            separator: null,
+        },
         format: {
             indentWidth: 2,
         },
@@ -60,6 +68,16 @@ const readConfigValues = (userCfg: vscode.WorkspaceConfiguration, cfg: AliveConf
 
     if (isObject(userCfg.lsp)) {
         readLspValues(userCfg.lsp, cfg)
+    }
+
+    if (isObject(userCfg.packageTree)) {
+        readPackageTreeValues(userCfg.packageTree, cfg)
+    }
+}
+
+const readPackageTreeValues = (packageTree: Record<string, unknown>, cfg: AliveConfig) => {
+    if (isString(packageTree.separator) || isArray(packageTree.separator, isString)) {
+        cfg.packageTree.separator = packageTree.separator
     }
 }
 

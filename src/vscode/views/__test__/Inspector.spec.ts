@@ -1,5 +1,5 @@
 import { InspectInfo } from '../../Types'
-import { Inspector } from '../Inspector'
+import { Inspector, Message } from '../Inspector'
 import { createPanel } from './utils'
 
 const vscodeMock = jest.requireMock('vscode')
@@ -107,7 +107,7 @@ describe('Inspector tests', () => {
         it('onDidReceiveMessage', () => {
             const panel = createPanel()
             const inspector = new Inspector('/some/path', vscodeMock.ViewColumn.Two, defaultInfo)
-            let cb: ((msg: { command: string }) => void) | undefined
+            let cb: ((msg: Message) => void) | undefined
 
             panel.webview.onDidReceiveMessage.mockImplementationOnce((fn: () => void) => {
                 cb = fn
@@ -117,17 +117,17 @@ describe('Inspector tests', () => {
             inspector.emit = jest.fn()
 
             inspector.show()
-            cb?.({ command: 'VALUE' })
-            cb?.({ command: 'ACTION' })
-            cb?.({ command: 'EVAL' })
+            cb?.({ command: 'VALUE', index: 5 })
+            cb?.({ command: 'ACTION', index: 10 })
+            cb?.({ command: 'EVAL', text: 'foo' })
             cb?.({ command: 'EXPINC' })
             cb?.({ command: 'REFRESH' })
 
-            expect(inspector.emit).toHaveBeenCalledWith('inspect-part', undefined)
-            expect(inspector.emit).toHaveBeenCalledWith('inspector-action', undefined)
-            expect(inspector.emit).toHaveBeenCalledWith('inspector-eval', undefined)
-            expect(inspector.emit).toHaveBeenCalledWith('inspector-macro-inc')
-            expect(inspector.emit).toHaveBeenCalledWith('inspector-refresh')
+            expect(inspector.emit).toHaveBeenCalledWith('inspectPart', 5)
+            expect(inspector.emit).toHaveBeenCalledWith('inspectorAction', 10)
+            expect(inspector.emit).toHaveBeenCalledWith('inspectorEval', 'foo')
+            expect(inspector.emit).toHaveBeenCalledWith('inspectorMacroInc')
+            expect(inspector.emit).toHaveBeenCalledWith('inspectorRefresh')
         })
 
         it('onDidReceiveMessage macro', () => {
@@ -146,7 +146,7 @@ describe('Inspector tests', () => {
             inspector.show()
             cb?.({ command: 'REFRESH' })
 
-            expect(inspector.emit).toHaveBeenCalledWith('inspector-refresh-macro')
+            expect(inspector.emit).toHaveBeenCalledWith('inspectorRefreshMacro')
         })
     })
 

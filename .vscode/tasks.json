@@ -4,27 +4,21 @@
         {
             "type": "npm",
             "script": "compile",
-            "problemMatcher": [
-                "$tsc"
-            ],
+            "problemMatcher": ["$tsc"],
             "group": "build",
             "label": "Compile"
         },
         {
             "type": "npm",
             "script": "lint",
-            "problemMatcher": [
-                "$eslint-stylish"
-            ],
+            "problemMatcher": ["$eslint-stylish"],
             "group": "build",
             "label": "Lint"
         },
         {
             "type": "npm",
             "script": "test",
-            "problemMatcher": [
-                "$tsc"
-            ],
+            "problemMatcher": ["$tsc"],
             "label": "Test"
         },
         {
@@ -33,20 +27,17 @@
             "command": "npx",
             "args": [
                 "jest",
-                "src/vscode/__test__/UI.spec.ts",
-                "-t",
-                "selectRestart"
+                // "--coverage",
+                "src/vscode/views/__test__/PackagesTree.spec.ts"
+                // "-t",
+                // "Success, invalid response"
             ],
-            "problemMatcher": [
-                "$tsc"
-            ]
+            "problemMatcher": ["$tsc"]
         },
         {
             "type": "npm",
             "script": "watch",
-            "problemMatcher": [
-                "$tsc"
-            ],
+            "problemMatcher": ["$tsc"],
             "group": "build",
             "label": "Watch Build"
         }

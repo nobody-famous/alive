@@ -44,7 +44,6 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         return
     }
 
-    const aliveCfg = readAliveConfig()
     const workspacePath = await getWorkspaceOrFilePath()
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
@@ -53,6 +52,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
     const state: ExtensionState = {
         extension: extensionMetadata,
+        config: readAliveConfig(),
         diagnostics: vscode.languages.createDiagnosticCollection('Compiler Diagnostics'),
         hoverText: '',
         compileRunning: false,
@@ -64,14 +64,14 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
     const ui = createUI(state)
     const lsp = new LSP(state)
-    const remoteCfg = { ...aliveCfg.lsp.remote }
+    const remoteCfg = { ...state.config.lsp.remote }
     const hostPort = { host: '', port: 0 }
 
     registerUIEvents(ui, lsp, state)
     registerLSPEvents(ui, lsp, state)
 
     if (remoteCfg.host == null || remoteCfg.port == null) {
-        const srvPort = await startLocalServer(state, aliveCfg)
+        const srvPort = await startLocalServer(state)
 
         if (srvPort === undefined) {
             return
@@ -265,7 +265,9 @@ function handleDisconnect(state: Pick<ExtensionState, 'child'>) {
     }
 }
 
-async function startLocalServer(state: ExtensionState, config: AliveConfig): Promise<number | undefined> {
+async function startLocalServer(state: ExtensionState): Promise<number | undefined> {
+    const config = state.config
+
     if (!isString(config.lsp.downloadUrl)) {
         throw new Error('No download URL given for LSP server')
     }
@@ -303,6 +305,13 @@ function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
         null,
         state.ctx.subscriptions
     )
+
+    vscode.workspace.onDidChangeConfiguration(async () => {
+        state.config = readAliveConfig()
+
+        const pkgs = await lsp.listPackages()
+        ui.updatePackages(pkgs)
+    })
 
     vscode.window.onDidChangeActiveTextEditor(
         (editor?: vscode.TextEditor) => {
@@ -393,7 +402,11 @@ async function initPackagesTree(ui: Pick<UI, 'initPackagesTree'>, lsp: Pick<LSP,
     }
 }
 
-async function diagnosticsRefresh(lsp: Pick<LSP, 'tryCompileFile'>, state: ExtensionState, editors: vscode.TextEditor[]) {
+async function diagnosticsRefresh(
+    lsp: Pick<LSP, 'tryCompileFile'>,
+    state: ExtensionState,
+    editors: readonly vscode.TextEditor[]
+) {
     for (const editor of editors) {
         if (editor.document.languageId !== COMMON_LISP_ID) {
             continue

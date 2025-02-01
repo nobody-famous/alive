@@ -1,14 +1,17 @@
 import * as vscode from 'vscode'
+import { PackageTreeConfig } from '../../config'
+import { isArray, isString } from '../Guards'
 import { Package } from '../Types'
-import { isObject, isString } from '../Guards'
 
 export class PackageNode extends vscode.TreeItem {
-    label: string
+    public label: string
+    public node: TreeNode
 
-    constructor(key: string, collapse: vscode.TreeItemCollapsibleState) {
+    constructor(key: string, node: TreeNode, collapse: vscode.TreeItemCollapsibleState) {
         super(key, collapse)
 
         this.label = key
+        this.node = node
         this.contextValue = 'package'
     }
 }
@@ -32,28 +35,71 @@ export function isExportNode(data: unknown): data is ExportNode {
     return data instanceof ExportNode
 }
 
+interface TreeNode {
+    kids: { [index: string]: TreeNode }
+    packageName: string
+    label: string
+    exports?: Array<string>
+}
+
+interface PackagesTreeState {
+    config: {
+        packageTree: PackageTreeConfig
+    }
+}
+
 export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-    private pkgs: Map<string, Package>
+    private state: PackagesTreeState
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
+    private rootNode: TreeNode = { kids: {}, label: '', packageName: '' }
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
-    constructor(pkgs: Package[]) {
-        this.pkgs = this.buildMap(pkgs)
+    constructor(pkgs: Package[], state: PackagesTreeState) {
+        this.state = state
+        this.buildTree(pkgs)
     }
 
-    private buildMap(pkgs: Package[]) {
-        const map = new Map()
+    private splitName(name: string) {
+        const sep = this.state.config.packageTree.separator
 
-        for (const pkg of pkgs) {
-            map.set(pkg.name.toLowerCase(), pkg)
+        if (isString(sep)) {
+            return name.split(sep)
         }
 
-        return map
+        if (isArray(sep, isString)) {
+            for (const candidate of sep) {
+                const parts = name.split(candidate)
+                if (parts.length > 1) {
+                    return parts
+                }
+            }
+        }
+
+        return [name]
+    }
+
+    private buildTree(pkgs: Package[]) {
+        this.rootNode = { kids: {}, label: '', packageName: '' }
+
+        for (const pkg of pkgs) {
+            const parts = this.splitName(pkg.name)
+
+            let curNode = this.rootNode
+            for (const part of parts) {
+                const newNode = curNode.kids[part] ?? { label: part, packageName: pkg.name, kids: {} }
+
+                curNode.kids[part] = newNode
+                curNode = newNode
+            }
+
+            curNode.exports = pkg.exports
+            curNode.packageName = pkg.name
+        }
     }
 
     update(pkgs: Package[]) {
-        this.pkgs = this.buildMap(pkgs)
+        this.buildTree(pkgs)
         this.event.fire()
     }
 
@@ -63,13 +109,21 @@ export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.Tree
 
     getChildren(element?: vscode.TreeItem): vscode.ProviderResult<vscode.TreeItem[]> {
         if (element === undefined) {
-            return Array.from(this.pkgs)
-                .map(([key, pkg]) => this.pkgToNode(pkg))
+            return Object.values(this.rootNode.kids)
+                .map((node) => this.treeToNode(node))
                 .sort(this.compareNodes)
         } else if (isString(element.label)) {
-            const pkg = this.pkgs.get(element.label)
+            if (!isPackageNode(element)) {
+                return []
+            }
 
-            return pkg?.exports.sort().map((item) => new ExportNode(item, pkg.name.toLowerCase()))
+            const kids: vscode.TreeItem[] = Object.values(element.node.kids)
+                .map((node) => this.treeToNode(node))
+                .sort(this.compareNodes)
+
+            return isArray(element.node.exports, isString)
+                ? kids.concat(element.node.exports.sort().map((item) => new ExportNode(item, element.node.packageName)))
+                : kids
         }
 
         return []
@@ -80,9 +134,11 @@ export class PackagesTreeProvider implements vscode.TreeDataProvider<vscode.Tree
         return a.label < b.label ? -1 : 1
     }
 
-    private pkgToNode = (pkg: Package) => {
-        const state = pkg.exports.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+    private treeToNode = (treeNode: TreeNode) => {
+        const hasExports = isArray(treeNode.exports, isString) && treeNode.exports.length > 0
+        const hasKids = Object.keys(treeNode.kids).length > 0
+        const state = hasExports || hasKids ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
 
-        return new PackageNode(pkg.name.toLowerCase(), state)
+        return new PackageNode(treeNode.label.toLowerCase(), treeNode, state)
     }
 }
