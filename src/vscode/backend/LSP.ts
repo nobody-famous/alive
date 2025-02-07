@@ -285,16 +285,10 @@ export class LSP extends EventEmitter implements LSPEvents {
     evalWithOutput = async (text: string, pkgName: string, storeResult?: boolean): Promise<void> => {
         this.emit('output', `${EOL}${text}`)
 
-        const results = await this.eval(text, pkgName, storeResult)
+        const result = await this.eval(text, pkgName, storeResult)
 
-        if (results !== undefined) {
-            if (Array.isArray(results)) {
-                for (const res of results) {
-                    this.emit('output', res)
-                }
-            } else {
-                this.emit('output', results)
-            }
+        if (result !== undefined) {
+            this.emit('output', result)
         }
     }
 
