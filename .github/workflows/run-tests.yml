@@ -1,6 +1,6 @@
 name: Run Unit Tests
 
-on: pull_request
+on: push
 
 jobs:
   build:
