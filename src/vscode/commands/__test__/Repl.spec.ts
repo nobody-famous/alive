@@ -86,7 +86,7 @@ describe('Repl tests', () => {
 
         const runTest = async (
             evalInfo: EvalInfo | undefined,
-            evalResult: string | undefined,
+            evalResult: string | string[] | undefined,
             validate: (lsp: Pick<LSP, 'getEvalInfo' | 'eval'>) => void
         ) => {
             const lsp = { getEvalInfo: jest.fn(async () => evalInfo), eval: jest.fn(async () => evalResult) }
@@ -105,6 +105,11 @@ describe('Repl tests', () => {
 
         it('OK', async () => {
             await runTest({ text: 'some text', package: 'some package' }, 'some result', (lsp) => {
+                expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+                expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
+            })
+
+            await runTest({ text: 'some text', package: 'some package' }, ['first result', 'second result'], (lsp) => {
                 expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
                 expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
             })

@@ -924,13 +924,24 @@ describe('LSP tests', () => {
     })
 
     describe('eval', () => {
-        it('Success', async () => {
+        it('Success, single string', async () => {
             const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ text: 'Result text' })) })
 
             lsp.emit = jest.fn()
             await lsp.evalWithOutput('Some text', 'Some package')
 
             expect(lsp.emit).toHaveBeenCalledTimes(2)
+        })
+
+        it('Success, array of strings', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => ({ text: ['First text', 'Second text', 'Third text'] })),
+            })
+
+            lsp.emit = jest.fn()
+            await lsp.evalWithOutput('Some text', 'Some package')
+
+            expect(lsp.emit).toHaveBeenCalledTimes(4)
         })
 
         it('Failure', async () => {
