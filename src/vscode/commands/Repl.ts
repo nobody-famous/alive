@@ -32,13 +32,20 @@ export async function inlineEval(
             return
         }
 
-        const result = await lsp.eval(info.text, info.package)
+        const results = await lsp.eval(info.text, info.package)
 
-        if (result === undefined) {
+        if (results === undefined) {
             return
         }
 
-        state.hoverText = `=> ${strToMarkdown(result)}`
+        let evalOutput
+        if (Array.isArray(results)) {
+            evalOutput = results.join(', ')
+        } else {
+            evalOutput = results
+        }
+
+        state.hoverText = `=> ${strToMarkdown(evalOutput)}`
         await vscode.window.showTextDocument(editor.document, editor.viewColumn)
         vscode.commands.executeCommand('editor.action.showHover')
     })
