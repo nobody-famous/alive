@@ -8,7 +8,7 @@ The LSP server that the extension relies on currently only supports [Steel Bank 
 
 ## Extension Requirements
 
-The following must be installed prior to useing the Alive extension. It is okay for these to be installed after the extension is installed, although you may need to reload your VS Code window after doing so.
+The following must be installed prior to using the Alive extension. It is okay for these to be installed after the extension is installed, although you may need to reload your VS Code window after doing so.
 
 * [ASDF](https://asdf.common-lisp.dev/) (*not* [asdf](https://asdf-vm.com/)): version 3.3.3 or later.
 
@@ -69,10 +69,11 @@ This extension contributes the following settings:
 
 -   `alive.lsp.install.path`: Directory where the LSP source code is installed
 -   `alive.lsp.startCommand`: Command used to start the LSP server
--   `alive.format.indentWidth`: Default indentation width
 -   `alive.lsp.remote.host`: Host of the LSP server to connect to
 -   `alive.lsp.remote.port`: Port of the LSP server to connect to
+-   `alive.format.indentWidth`: Default indentation width
 -   `alive.enableDiagnostics`: If true (the default), automatically update diagnostics. If false, compile file or load file need to be used.
+-   `alive.packageTree.separator`: String, or list of strings, to split package names in the package view.
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
 
@@ -100,7 +101,7 @@ For example:
 <img src="images/view-repl-hello-world.png" alt="REPL view"/>
 
 Forms entered by the user are also added to a history list.
-The up and down arrows can be used in the user intput area to choose a previous form to be (possibly edited and) reevaluated.
+The up and down arrows can be used in the user input area to choose a previous form to be (possibly edited and) reevaluated.
 The history list is also shown in the **REPL HISTORY** view in the Lisp Tree View described below.
 
 Forms sent for evaluation by the user are run in their own thread. The threads have names like `"N - $/alive/eval"` where N is a number. The number is used to try to keep the names unique since getting the underlying system id of the threads isn't as easy as it sounds.
@@ -127,7 +128,7 @@ There is also an inspector for macros, using the Inspect Macro command. An inspe
 
 ### Lisp Tree View
 
-The Lisp Tree View is invoked by clicking on the following icon in the Activty Bar on the left of the VSCode workbench:
+The Lisp Tree View is invoked by clicking on the following icon in the Activity Bar on the left of the VSCode workbench:
 
 <img src="images/lisp-icon-sm.png" alt="alt text"/>
 
@@ -183,6 +184,8 @@ Clicking on a package in the list expands to show
 all of the symbols defined in that package below the package name.
 Clicking on the remove icon (<img src="images/remove-icon.png" alt="remove icon"/>)
 to the right of a symbol removes that symbol.
+
+The `alive.packageTree.separator` config setting can be used to better organize the view. If it's set to a single string, that string is used to split each package name and nests them. If it's set to an array of strings, the first one that successfully splits a package name is used for that name. Leaving it out, or setting it to `null`, uses the default of not nesting the package names.
 
 #### ASDF Systems
 

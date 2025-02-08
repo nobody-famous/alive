@@ -10,25 +10,27 @@ import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Packa
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 import { isFiniteNumber } from './Guards'
+import { PackageTreeConfig } from '../config'
 
 export declare interface UIEvents {
-    on(event: 'saveReplHistory', listener: (history: HistoryItem[]) => void): this
-    on(event: 'eval', listener: (text: string, pkgName: string, storeResult?: boolean) => void): this
-    on(event: 'inspect', listener: (text: string, pkgName: string) => void): this
-    on(event: 'inspectClosed', listener: (info: InspectInfo) => void): this
-    on(event: 'inspectEval', listener: (info: InspectInfo, text: string) => void): this
-    on(event: 'inspectRefresh', listener: (info: InspectInfo) => void): this
-    on(event: 'inspectRefreshMacro', listener: (info: InspectInfo) => void): this
-    on(event: 'inspectMacroInc', listener: (info: InspectInfo) => void): this
-    on(event: 'listPackages', listener: (fn: (pkgs: Package[]) => void) => void): this
-    on(event: 'diagnosticsRefresh', listener: (editors: vscode.TextEditor[]) => void): this
+    saveReplHistory: [history: HistoryItem[]]
+    eval: [text: string, pkgName: string, storeResult?: boolean]
+    inspect: [text: string, pkgName: string]
+    inspectClosed: [info: InspectInfo]
+    inspectEval: [info: InspectInfo, text: string]
+    inspectRefresh: [info: InspectInfo]
+    inspectRefreshMacro: [info: InspectInfo]
+    inspectMacroInc: [info: InspectInfo]
+    listPackages: [fn: (pkgs: Package[]) => void]
+    diagnosticsRefresh: [editors: readonly vscode.TextEditor[]]
 }
 
 export interface UIState {
     ctx: AliveContext
+    config: { packageTree: PackageTreeConfig }
 }
 
-export class UI extends EventEmitter implements UIEvents {
+export class UI extends EventEmitter<UIEvents> {
     private state: UIState
     private historyTree: ReplHistoryTreeProvider
     private packageTree: PackagesTreeProvider
@@ -44,7 +46,7 @@ export class UI extends EventEmitter implements UIEvents {
 
         this.state = state
         this.historyTree = new ReplHistoryTreeProvider([])
-        this.packageTree = new PackagesTreeProvider([])
+        this.packageTree = new PackagesTreeProvider([], state)
         this.asdfTree = new AsdfSystemsTreeProvider([])
         this.threadsTree = new ThreadsTreeProvider([])
         this.replView = new LispRepl(state.ctx)
@@ -114,7 +116,7 @@ export class UI extends EventEmitter implements UIEvents {
                 resolve(isFiniteNumber(num) ? num : undefined)
             })
 
-            view.on('jump-to', async (file: string, line: number, char: number) => {
+            view.on('jumpTo', async (file: string, line: number, char: number) => {
                 const doc = await vscode.workspace.openTextDocument(file)
                 const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One)
                 const pos = new vscode.Position(line, char)
@@ -277,10 +279,10 @@ export class UI extends EventEmitter implements UIEvents {
             this.inspectors.delete(info.id)
             this.emit('inspectClosed', info)
         })
-        inspector.on('inspector-eval', (text: string) => this.emit('inspectEval', info, text))
-        inspector.on('inspector-refresh', () => this.emit('inspectRefresh', info))
-        inspector.on('inspector-refresh-macro', () => this.emit('inspectRefreshMacro', info))
-        inspector.on('inspector-macro-inc', () => this.emit('inspectMacroInc', info))
+        inspector.on('inspectorEval', (text: string) => this.emit('inspectEval', info, text))
+        inspector.on('inspectorRefresh', () => this.emit('inspectRefresh', info))
+        inspector.on('inspectorRefreshMacro', () => this.emit('inspectRefreshMacro', info))
+        inspector.on('inspectorMacroInc', () => this.emit('inspectMacroInc', info))
 
         inspector.show()
     }

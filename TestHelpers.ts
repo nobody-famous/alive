@@ -3,7 +3,7 @@ export const getCallback = async (
     mockCount: number,
     initFn: () => Promise<void>,
     name: string
-): Promise<((...args: unknown[]) => void) | undefined> => {
+): Promise<((...args: unknown[]) => Promise<void>) | undefined> => {
     const fns = await getAllCallbacks(toMock, mockCount, initFn)
 
     return fns[name]
@@ -13,9 +13,9 @@ export const getAllCallbacks = async (
     toMock: jest.Mock,
     mockCount: number,
     initFn: () => Promise<void>
-): Promise<{ [index: string]: (...args: unknown[]) => void | Promise<void> }> => {
-    const callbacks: { [index: string]: (...args: unknown[]) => void } = {}
-    const onFn = (label: string, fn: (...args: unknown[]) => void) => {
+): Promise<{ [index: string]: (...args: unknown[]) => Promise<void> }> => {
+    const callbacks: { [index: string]: (...args: unknown[]) => Promise<void> } = {}
+    const onFn = (label: string, fn: (...args: unknown[]) => Promise<void>) => {
         callbacks[label] = fn
     }
 

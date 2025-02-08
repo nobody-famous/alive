@@ -295,6 +295,7 @@ describe('Utils Tests', () => {
             hasRef: jest.fn(),
             refresh: jest.fn(),
             [Symbol.toPrimitive]: () => 5,
+            [Symbol.dispose]: jest.fn(),
             ref: () => timeout,
             unref: () => timeout,
         }

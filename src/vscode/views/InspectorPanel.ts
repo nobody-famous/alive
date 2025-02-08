@@ -3,7 +3,12 @@ import * as path from 'path'
 import EventEmitter = require('events')
 import { AliveContext } from '../Types'
 
-export class InspectorPanel extends EventEmitter implements vscode.WebviewViewProvider {
+interface PanelEvents {
+    requestPackage: []
+    inspect: [string, string]
+}
+
+export class InspectorPanel extends EventEmitter<PanelEvents> implements vscode.WebviewViewProvider {
     private view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
     private package: string

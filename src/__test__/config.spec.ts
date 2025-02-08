@@ -23,5 +23,13 @@ describe('Config Tests', () => {
             runTest({ lsp: { remote: { port: 1234 } } }, (cfg) => expect(cfg.lsp.remote.port).toBe(1234))
             runTest({ lsp: { startCommand: ['bar'] } }, (cfg) => expect(cfg.lsp.startCommand).toMatchObject(['bar']))
         })
+
+        it('Package tree settings', () => {
+            runTest({}, (cfg) => expect(cfg.packageTree.separator).toBe(null))
+            runTest({ packageTree: { separator: '/' } }, (cfg) => expect(cfg.packageTree.separator).toBe('/'))
+            runTest({ packageTree: { separator: ['/', '-'] } }, (cfg) =>
+                expect(cfg.packageTree.separator).toStrictEqual(['/', '-'])
+            )
+        })
     })
 })

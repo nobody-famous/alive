@@ -10,7 +10,13 @@ export interface jsMessage {
     [index: string]: unknown
 }
 
-export class DebugView extends EventEmitter {
+interface DebugEvents {
+    debugClosed: []
+    jumpTo: [string, number, number]
+    restart: [number]
+}
+
+export class DebugView extends EventEmitter<DebugEvents> {
     ctx: AliveContext
     title: string
     panel?: vscode.WebviewPanel
@@ -82,7 +88,7 @@ export class DebugView extends EventEmitter {
         const char = typeof msg.char === 'number' ? msg.char : undefined
 
         if (file !== undefined && line !== undefined && char !== undefined) {
-            this.emit('jump-to', file, line, char)
+            this.emit('jumpTo', file, line, char)
         }
     }
 
