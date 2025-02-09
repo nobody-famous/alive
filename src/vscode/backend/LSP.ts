@@ -286,15 +286,14 @@ export class LSP extends EventEmitter<LSPEvents> {
         this.emit('output', `${EOL}> ${text}`)
 
         const results = await this.eval(text, pkgName, storeResult)
+        if (results === undefined) {
+            return
+        }
 
-        if (results !== undefined) {
-            if (Array.isArray(results)) {
-                for (const res of results) {
-                    this.emit('output', res)
-                }
-            } else {
-                this.emit('output', results)
-            }
+        const resultsArray = Array.isArray(results) ? results : [results]
+
+        for (const res of resultsArray) {
+            this.emit('output', res)
         }
     }
 
