@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/vscode/views/__test__/PackagesTree.spec.ts"
-                // "-t",
-                // "Success, invalid response"
+                "src/vscode/backend/__test__/LSP.spec.ts",
+                "-t",
+                "eval"
             ],
             "problemMatcher": ["$tsc"]
         },

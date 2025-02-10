@@ -38,12 +38,7 @@ export async function inlineEval(
             return
         }
 
-        let evalOutput
-        if (Array.isArray(results)) {
-            evalOutput = results.join(', ')
-        } else {
-            evalOutput = results
-        }
+        const evalOutput = Array.isArray(results) ? results.join(', ') : results
 
         state.hoverText = `=> ${strToMarkdown(evalOutput)}`
         await vscode.window.showTextDocument(editor.document, editor.viewColumn)
