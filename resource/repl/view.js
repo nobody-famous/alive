@@ -24,23 +24,14 @@ window.addEventListener('message', (event) => {
     const data = event.data
 
     switch (data.type) {
-        case 'setText':
-            setText(data.text)
-            break
         case 'setInput':
             setInput(data.text)
             break
         case 'setPackage':
             setPackage(data.name)
             break
-        case 'saveState':
-            saveState()
-            break
-        case 'restoreState':
-            restoreState()
-            break
-        case 'clear':
-            clear()
+        case 'scrollReplView':
+            scrollReplView()
             break
         case 'clearInput':
             clearInput()
@@ -69,14 +60,6 @@ document.getElementById('repl-input-text').onkeydown = (event) => {
     }
 }
 
-function clear() {
-    const textArea = document.getElementById('repl-text')
-
-    textArea.value = ''
-
-    saveState()
-}
-
 function clearInput() {
     const input = document.getElementById('repl-input-text')
 
@@ -89,15 +72,6 @@ function setInput(text) {
     input.value = text
 }
 
-function setText(text) {
-    const textArea = document.getElementById('repl-text')
-
-    textArea.value = text
-    textArea.scrollTop = textArea.scrollHeight
-
-    saveState()
-}
-
 function requestPackage() {
     vscode.postMessage({ command: 'requestPackage' })
 }
@@ -108,21 +82,20 @@ function setPackage(name) {
 
     pkg.innerHTML = name
     textInput.focus()
-    saveState()
 }
 
 function showUserInput() {
     const inputElem = document.getElementById('repl-user-input')
     const boxElem = document.getElementById('repl-user-input-box')
-    const textElem = document.getElementById('repl-text')
+    const replOutput = document.getElementById('repl-output')
 
-    if (inputElem !== undefined && boxElem !== undefined && textElem !== undefined) {
+    if (inputElem !== undefined && boxElem !== undefined && replOutput !== undefined) {
         boxElem.style.display = 'flex'
 
         inputElem.disabled = false
         inputElem.focus()
 
-        textElem.scrollTop = textElem.scrollHeight
+        replOutput.scrollTop = replOutput.scrollHeight
     }
 }
 
@@ -136,29 +109,11 @@ function hideUserInput() {
     }
 }
 
-function saveState() {
-    const textArea = document.getElementById('repl-text')
-    const pkg = document.getElementById('repl-package')
-    const state = {
-        replText: textArea.value,
-        pkg: pkg.innerHTML,
-    }
-
-    vscode.setState(state)
-}
-
-function restoreState() {
-    const textArea = document.getElementById('repl-text')
-    const pkg = document.getElementById('repl-package')
-    const state = vscode.getState()
-
-    if (textArea !== undefined && state?.replText !== undefined) {
-        textArea.value = state.replText
-        textArea.scrollTop = textArea.scrollHeight
-    }
-
-    if (pkg !== undefined && state?.pkg !== undefined) {
-        pkg.innerHTML = state.pkg
+function scrollReplView() {
+    const replOutput = document.getElementById('repl-output')
+    
+    if (replOutput) {
+        replOutput.scrollTop = replOutput.scrollHeight
     }
 }
 

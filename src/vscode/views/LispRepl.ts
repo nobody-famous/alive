@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as os from 'os'
 import EventEmitter = require('events')
 import { AliveContext } from '../Types'
+import { strToHtml } from '../Utils'
 
 interface ReplEvents {
     requestPackage: []
@@ -12,11 +12,17 @@ interface ReplEvents {
     eval: [string, string]
 }
 
+interface ReplOutput {
+    type: string
+    text: string
+    pkgName?: string
+}
+
 export class LispRepl extends EventEmitter<ReplEvents> implements vscode.WebviewViewProvider {
     private view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
     private package: string
-    private replText: string
+    private replOutput: Array<ReplOutput>
     private updateTextId: NodeJS.Timeout | undefined
 
     constructor(ctx: AliveContext) {
@@ -25,7 +31,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         this.ctx = ctx
         this.package = 'cl-user'
         this.updateTextId = undefined
-        this.replText = ''
+        this.replOutput = []
     }
 
     resolveWebviewView(webviewView: Pick<vscode.WebviewView, 'webview' | 'onDidChangeVisibility'>): void | Thenable<void> {
@@ -60,21 +66,14 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     clear() {
-        this.replText = ''
-
-        this.view?.webview.postMessage({
-            type: 'clear',
-        })
+        this.replOutput = []
+        this.updateWebview()
     }
 
     restoreState() {
+        this.updateWebview()
         this.view?.webview.postMessage({
-            type: 'restoreState',
-        })
-
-        this.view?.webview.postMessage({
-            type: 'setText',
-            text: this.replText,
+            type: 'scrollReplView',
         })
     }
 
@@ -99,21 +98,29 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         })
     }
 
-    addText(text: string) {
-        this.replText = `${this.replText}${text}${os.EOL}`
+    addInput(text: string, pkgName: string) {
+        this.replOutput.push({
+            type: 'input',
+            text,
+            pkgName,
+        })
 
-        if (this.updateTextId !== undefined) {
-            return
-        }
+        this.updateWebview()
+        this.view?.webview.postMessage({
+            type: 'scrollReplView'
+        })
+    }
 
-        this.updateTextId = setTimeout(() => {
-            this.updateTextId = undefined
+    addOutput(text: string) {
+        this.replOutput.push({
+            type: 'output',
+            text,
+        })
 
-            this.view?.webview.postMessage({
-                type: 'setText',
-                text: this.replText,
-            })
-        }, 150)
+        this.updateWebview()
+        this.view?.webview.postMessage({
+            type: 'scrollReplView'
+        })
     }
 
     getUserInput() {
@@ -122,12 +129,30 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         })
     }
 
+    private updateWebview() {
+        if (this.view) {
+            this.view.webview.html = this.getHtmlForView(this.view.webview)
+        }
+    }
+
     private doEval(text: string) {
         if (text.trim().length != 0) {
             this.emit('eval', this.package, text)
-        } else {
-            this.addText('')
         }
+    }
+
+    private renderReplOutput() {
+        return this.replOutput.map(({ text, type, pkgName }) => {
+            const textHtml = strToHtml(text)
+            const packageHtml = (type === 'input' && pkgName) ?
+                `<span class="repl-output-package">${strToHtml(pkgName)}</span> ` : ''
+
+            return `
+                <div class="repl-${type}-container">
+                    <div class="repl-output-item">${packageHtml}${textHtml}</div>
+                </div>
+            `.trim()
+        }).join('\n')
     }
 
     private getHtmlForView(webview: vscode.Webview): string {
@@ -141,7 +166,9 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                 </head>
 
                 <body onfocus="setFocus()">
-                    <textarea id="repl-text" class="repl-text" readonly></textarea>
+                    <div id="repl-output" class="repl-output">
+                        ${this.renderReplOutput()}
+                    </div>
                     <div class="repl-input-box">
                         <div class="repl-input-text-box" id="repl-user-input-box">
                             <div class="repl-input-label">
@@ -153,8 +180,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                         </div>
                         <div class="repl-input-text-box">
                             <div class="repl-input-label" onclick="requestPackage()">
-                                <span id="repl-package">${this.package}</span>
-                                >
+                                <span id="repl-package">${this.package}</span>>
                             </div>
                             <form id="repl-input-form" class="repl-input-form" action="">
                                 <input class="repl-input-text" id="repl-input-text" type="text">

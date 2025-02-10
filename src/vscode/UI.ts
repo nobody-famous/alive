@@ -350,7 +350,11 @@ export class UI extends EventEmitter<UIEvents> {
         })
     }
 
-    addReplText(str: string): void {
-        this.replView.addText(str)
+    addReplInput(str: string, pkgName: string): void {
+        this.replView.addInput(str, pkgName)
+    }
+
+    addReplOutput(str: string): void {
+        this.replView.addOutput(str)
     }
 }

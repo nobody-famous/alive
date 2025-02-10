@@ -273,20 +273,21 @@ describe('Extension tests', () => {
 
     describe('LSP events', () => {
         it('Simple redirects', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
 
             checkCallback(fns, 'refreshPackages', cmdsMock.refreshPackages)
             checkCallback(fns, 'refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
             checkCallback(fns, 'refreshThreads', cmdsMock.refreshThreads)
             checkCallback(fns, 'refreshInspectors', uiMock.refreshInspectors)
             checkCallback(fns, 'refreshDiagnostics', uiMock.refreshDiagnostics)
-            checkCallback(fns, 'output', uiMock.addReplText)
+            checkCallback(fns, 'input', uiMock.addReplInput)
+            checkCallback(fns, 'output', uiMock.addReplOutput)
             checkCallback(fns, 'inspectResult', uiMock.newInspector)
             checkCallback(fns, 'inspectUpdate', uiMock.updateInspector)
         })
 
         it('startCompileTimer', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
 
             fns['startCompileTimer']()
 
@@ -294,7 +295,7 @@ describe('Extension tests', () => {
         })
 
         it('getRestartIndex', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
 
             await fns['getRestartIndex']({}, () => {})
 
@@ -302,7 +303,7 @@ describe('Extension tests', () => {
         })
 
         it('getUserInput', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 11, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
 
             await fns['getUserInput'](() => {})
 

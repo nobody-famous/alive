@@ -28,6 +28,7 @@ interface LSPEvents {
     refreshInspectors: []
     refreshDiagnostics: []
     startCompileTimer: []
+    input: [str: string, pkgName: string]
     output: [str: string]
     getRestartIndex: [info: DebugInfo, fn: (index: number | undefined) => void]
     getUserInput: [fn: (input: string) => void]
@@ -270,6 +271,7 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     eval = async (text: string, pkgName: string, storeResult?: boolean): Promise<string | Array<string> | undefined> => {
         try {
+            this.emit('input', text, pkgName)
             const resp = await this.client?.sendRequest('$/alive/eval', { text, package: pkgName, storeResult })
 
             if (!isObject(resp) || (!isString(resp.text) && !isArray(resp.text, isString))) {
@@ -283,8 +285,6 @@ export class LSP extends EventEmitter<LSPEvents> {
     }
 
     evalWithOutput = async (text: string, pkgName: string, storeResult?: boolean): Promise<void> => {
-        this.emit('output', `${EOL}> ${text}`)
-
         const results = await this.eval(text, pkgName, storeResult)
 
         if (results !== undefined) {

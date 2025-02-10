@@ -10,7 +10,7 @@ body {
     background-color: var(--vscode-editor-background);
 }
 
-.repl-text {
+.repl-output {
     overflow: auto;
     flex-grow: 1;
     border-bottom: 1px solid var(--vscode-editor-foreground);
@@ -19,8 +19,24 @@ body {
     font-weight: var(--vscode-editor-font-weight);
 }
 
-.repl-text:focus {
-    border-bottom: 1px solid var(--vscode-editor-foreground);
+.repl-input-container {
+    margin-top: 0.5rem;
+}
+
+.repl-output-container {
+    margin: 0;
+}
+
+.repl-output-container:last-of-type {
+    margin-bottom: 0.5rem;
+}
+
+.repl-output-item {
+    margin: 0.2rem;
+}
+
+.repl-output-package {
+    color: var(--vscode-editorLink-activeForeground);
 }
 
 #repl-user-input-box {
@@ -80,6 +96,7 @@ body {
     height: 1.5rem;
     line-height: 1.5rem;
     width: 95%;
+    margin-left: .5rem;
 }
 
 input:focus,
