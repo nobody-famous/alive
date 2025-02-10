@@ -145,7 +145,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         return this.replOutput.map(({ text, type, pkgName }) => {
             const textHtml = strToHtml(text)
             const packageHtml = (type === 'input' && pkgName) ?
-                `<span class="repl-output-package">${strToHtml(pkgName)}</span> ` : ''
+                `<span class="repl-output-package">${strToHtml(pkgName)}&gt;</span> ` : ''
 
             return `
                 <div class="repl-${type}-container">
@@ -180,7 +180,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                         </div>
                         <div class="repl-input-text-box">
                             <div class="repl-input-label" onclick="requestPackage()">
-                                <span id="repl-package">${this.package}</span>>
+                                <span id="repl-package">${this.package}</span>&gt;
                             </div>
                             <form id="repl-input-form" class="repl-input-form" action="">
                                 <input class="repl-input-text" id="repl-input-text" type="text">
