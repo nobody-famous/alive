@@ -1,0 +1,121 @@
+html {
+  height: calc(100% - .3rem);
+}
+
+body, #root, .repl-container {
+  height: calc(100% - .1rem);
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  flex-direction: column;
+  display: flex;
+}
+
+.repl-output {
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.repl-input-container {
+  margin-top: .5rem;
+}
+
+.repl-output-container {
+  margin: 0;
+}
+
+.repl-output-container:last-of-type {
+  margin-bottom: .5rem;
+}
+
+.repl-output-item {
+  margin: .2rem;
+}
+
+.repl-output-package {
+  color: var(--vscode-editorLink-activeForeground);
+}
+
+.repl-input-box {
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+  flex-direction: column;
+  display: flex;
+}
+
+.repl-input-text-box {
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+  flex-direction: row;
+  align-items: center;
+  display: flex;
+}
+
+.repl-input-form {
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+  flex-grow: 1;
+}
+
+.repl-input-label {
+  text-align: right;
+  cursor: pointer;
+  height: 1.5rem;
+  line-height: 1.5rem;
+  display: inline-block;
+}
+
+.repl-input-text {
+  color: var(--vscode-editor-foreground);
+  caret-color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+  border: none;
+  width: 95%;
+  height: 1.5rem;
+  margin-left: .5rem;
+  line-height: 1.5rem;
+}
+
+input:focus, select:focus {
+  outline: none;
+}
+
+textarea {
+  width: 100%;
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+  border: none;
+  animation-name: blink;
+}
+
+textarea:focus {
+  border: none;
+  outline: none;
+}
+
+table {
+  width: 100%;
+}
+
+table #prompt {
+  white-space: nowrap;
+  vertical-align: top;
+  width: 1%;
+}
+
+table #prompt-input {
+  width: 100%;
+}
+/*# sourceMappingURL=index.css.map */

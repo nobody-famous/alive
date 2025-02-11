@@ -63,15 +63,19 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         webviewView.onDidChangeVisibility(() => this.restoreState())
 
         webviewView.webview.html = this.getHtmlForView(webviewView.webview)
+
+        setTimeout(() => {
+            this.setPackage(this.package)
+        }, 100)
     }
 
     clear() {
-        this.replOutput = []
-        this.updateWebview()
+        this.view?.webview.postMessage({
+            type: 'clear',
+        })
     }
 
     restoreState() {
-        this.updateWebview()
         this.view?.webview.postMessage({
             type: 'scrollReplView',
         })
@@ -99,27 +103,23 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     addInput(text: string, pkgName: string) {
-        this.replOutput.push({
-            type: 'input',
-            text,
-            pkgName,
-        })
-
-        this.updateWebview()
         this.view?.webview.postMessage({
-            type: 'scrollReplView'
+            type: 'appendOutput',
+            obj: {
+                type: 'input',
+                pkgName,
+                text,
+            }
         })
     }
 
     addOutput(text: string) {
-        this.replOutput.push({
-            type: 'output',
-            text,
-        })
-
-        this.updateWebview()
         this.view?.webview.postMessage({
-            type: 'scrollReplView'
+            type: 'appendOutput',
+            obj: {
+                type: 'output',
+                text,
+            }
         })
     }
 
@@ -129,68 +129,29 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         })
     }
 
-    private updateWebview() {
-        if (this.view) {
-            this.view.webview.html = this.getHtmlForView(this.view.webview)
-        }
-    }
-
     private doEval(text: string) {
         if (text.trim().length != 0) {
             this.emit('eval', this.package, text)
         }
     }
 
-    private renderReplOutput() {
-        return this.replOutput.map(({ text, type, pkgName }) => {
-            const textHtml = strToHtml(text)
-            const packageHtml = (type === 'input' && pkgName) ?
-                `<span class="repl-output-package">${strToHtml(pkgName)}&gt;</span> ` : ''
-
-            return `
-                <div class="repl-${type}-container">
-                    <div class="repl-output-item">${packageHtml}${textHtml}</div>
-                </div>
-            `.trim()
-        }).join('\n')
-    }
-
     private getHtmlForView(webview: vscode.Webview): string {
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'view.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'view.css'))
+        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'index.js'))
+        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'index.css'))
+        const scriptUri = webview.asWebviewUri(jsPath)
+        const stylesUri = webview.asWebviewUri(cssPath)
 
-        return `<!DOCTYPE html>
-                <html>
+        return `
+            <!DOCTYPE html>
+            <html>
                 <head>
-                    <link rel="stylesheet" href="${webview.asWebviewUri(cssPath)}">
+                    <link rel="stylesheet" type="text/css" href="${stylesUri}">
                 </head>
-
-                <body onfocus="setFocus()">
-                    <div id="repl-output" class="repl-output">
-                        ${this.renderReplOutput()}
-                    </div>
-                    <div class="repl-input-box">
-                        <div class="repl-input-text-box" id="repl-user-input-box">
-                            <div class="repl-input-label">
-                                Input >
-                            </div>
-                            <form id="repl-user-input-form" class="repl-input-form" action="">
-                                <input class="repl-input-text" id="repl-user-input" type="text" disabled>
-                            </form>
-                        </div>
-                        <div class="repl-input-text-box">
-                            <div class="repl-input-label" onclick="requestPackage()">
-                                <span id="repl-package">${this.package}</span>&gt;
-                            </div>
-                            <form id="repl-input-form" class="repl-input-form" action="">
-                                <input class="repl-input-text" id="repl-input-text" type="text">
-                            </form>
-                        </div>
-                    </div>
-
-                    <script src="${webview.asWebviewUri(jsPath)}"></script>
+                <body>
+                    <div id="root"></div>
+                    <script src="${scriptUri}"></script>
                 </body>
-                </html>
-        `
+            </html>
+        `.trim()
     }
 }

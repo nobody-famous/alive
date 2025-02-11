@@ -220,7 +220,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     }
 
     if (state.extension.packageJSON && state.extension.packageJSON.version) {
-        ui.addReplOutput(`; Alive REPL (v${state.extension.packageJSON.version})`)
+        setTimeout(() => ui.addReplOutput(`; Alive REPL (v${state.extension.packageJSON.version})`), 200)
     }
 }
 
