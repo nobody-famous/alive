@@ -88,7 +88,7 @@ describe('LSP tests', () => {
             lsp.emit = jest.fn()
 
             const funcMap = {
-                notification: await getAllCallbacks(fakeClient.onNotification, 3, () => lsp.connect(fakeHostPort)),
+                notification: await getAllCallbacks(fakeClient.onNotification, 4, () => lsp.connect(fakeHostPort)),
                 request: await getAllCallbacks(fakeClient.onRequest, 2, async () => lsp.connect(fakeHostPort)),
             }
 
@@ -118,6 +118,16 @@ describe('LSP tests', () => {
 
             funcMap.notification['$/alive/refresh']?.()
             expect(lsp.emit).toHaveBeenCalledTimes(5)
+        })
+
+        it('query-io', async () => {
+            const { lsp, funcMap } = await getClientFuncs()
+
+            funcMap.notification['$/alive/query-io']?.()
+            expect(lsp.emit).not.toHaveBeenCalled()
+
+            funcMap.notification['$/alive/query-io']?.({ data: 'foo' })
+            expect(lsp.emit).toHaveBeenCalledWith('queryText', expect.anything())
         })
 
         it('userInput', async () => {

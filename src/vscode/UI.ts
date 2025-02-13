@@ -40,6 +40,7 @@ export class UI extends EventEmitter<UIEvents> {
     private inspectorPanel: InspectorPanel
     private inspectors: Map<number, Inspector>
     private debugViews: Array<DebugView>
+    private queryText: string
 
     constructor(state: UIState) {
         super()
@@ -53,6 +54,7 @@ export class UI extends EventEmitter<UIEvents> {
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
         this.debugViews = []
+        this.queryText = ''
     }
 
     init() {
@@ -141,22 +143,9 @@ export class UI extends EventEmitter<UIEvents> {
     }
 
     async getUserInput(): Promise<string> {
-        const waitForInput = () => {
-            return new Promise<string>((resolve) => {
-                const recvInput = (text: string) => {
-                    this.replView.off('userInput', recvInput)
-                    resolve(text)
-                }
+        const input = await vscode.window.showInputBox({ title: this.queryText })
 
-                this.replView.on('userInput', recvInput)
-            })
-        }
-
-        await vscode.commands.executeCommand('lispRepl.focus')
-
-        this.replView.getUserInput()
-
-        return waitForInput()
+        return input ?? ''
     }
 
     updateThreads(threads: Thread[]): void {
@@ -352,5 +341,9 @@ export class UI extends EventEmitter<UIEvents> {
 
     addReplText(str: string): void {
         this.replView.addText(str)
+    }
+
+    setQueryText(str: string): void {
+        this.queryText = str
     }
 }

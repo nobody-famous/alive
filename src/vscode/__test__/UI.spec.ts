@@ -1,3 +1,4 @@
+import { title } from 'process'
 import { getAllCallbacks, getCallback } from '../../../TestHelpers'
 import { HistoryItem, Package, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
@@ -307,6 +308,20 @@ describe('UI tests', () => {
         expect(text).toBe('foo')
     })
 
+    it('setQueryText', async () => {
+        const ui = new UI(createState())
+        let boxTitle: string = ''
+
+        vscodeMock.window.showInputBox.mockImplementationOnce(({ title }: { title: string }) => {
+            boxTitle = title
+        })
+
+        ui.setQueryText('foo')
+        await ui.getUserInput()
+
+        expect(boxTitle).toBe('foo')
+    })
+
     describe('selectHistoryItem', () => {
         interface QP {
             items: HistoryItem[]
@@ -486,24 +501,11 @@ describe('UI tests', () => {
 
     it('getUserInput', async () => {
         const ui = new UI(createState())
-        let onName: string | undefined = undefined
 
-        const callFn = async () => {
-            replMock.replOn.mockImplementationOnce((name: string, fn: (text: string) => void) => {
-                onName = name
-                fn('foo')
-            })
+        vscodeMock.window.showInputBox.mockReturnValueOnce('foo')
+        const text = await ui.getUserInput()
 
-            return await ui.getUserInput()
-        }
-
-        const text = await callFn()
-
-        expect(onName).toBe('userInput')
         expect(text).toBe('foo')
-        expect(replMock.replGetUserInput).toHaveBeenCalled()
-        expect(replMock.replOff).toHaveBeenCalledWith('userInput', expect.anything())
-        expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
     })
 
     describe('getRestartIndex', () => {
