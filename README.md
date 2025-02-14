@@ -75,10 +75,16 @@ This extension contributes the following settings:
 -   `alive.enableDiagnostics`: If true (the default), automatically update diagnostics. If false, compile file or load file need to be used.
 -   `alive.packageTree.separator`: String, or list of strings, to split package names in the package view.
 
-Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following symantic tokens are added:
+Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following semantic tokens are added:
 
 -   `parenthesis`: Color to use for parenthesis
 -   `symbol`: Color to use for symbols
+
+## VSCode Settings
+
+-   `editor.formatOnType`: When set to true, will indent the new line per lisp formatting when enter is pressed
+-   `editor.wordSeparators`: Sets a regex used to determine word boundaries. A decent setting is ```"editor.wordSeparators": "`|;:'\",()"```
+
 
 ## REPL Integration
 
