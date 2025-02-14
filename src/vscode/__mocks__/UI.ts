@@ -19,6 +19,7 @@ export const refreshInspectors = jest.fn()
 export const registerProviders = jest.fn()
 export const removeHistoryNode = jest.fn()
 export const selectHistoryItem = jest.fn()
+export const setQueryText = jest.fn()
 export const setReplInput = jest.fn()
 export const setReplPackage = jest.fn()
 export const updateInspector = jest.fn()
@@ -45,6 +46,7 @@ export const UI = jest.fn(() => ({
     registerProviders,
     removeHistoryNode,
     selectHistoryItem,
+    setQueryText,
     setReplInput,
     setReplPackage,
     updateInspector,

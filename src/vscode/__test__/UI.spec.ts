@@ -1,3 +1,4 @@
+import { title } from 'process'
 import { getAllCallbacks, getCallback } from '../../../TestHelpers'
 import { HistoryItem, Package, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
@@ -59,7 +60,7 @@ describe('UI tests', () => {
         describe('eval', () => {
             it('No history', async () => {
                 const ui = new UI(createState())
-                const evalFn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'eval')
+                const evalFn = await getCallback(replMock.replOn, () => ui.initRepl(), 'eval')
 
                 let evalPkg: string | undefined
                 let evalText: string | undefined
@@ -80,7 +81,7 @@ describe('UI tests', () => {
         describe('historyUp', () => {
             it('No history', async () => {
                 const ui = new UI(createState())
-                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
+                const fn = await getCallback(replMock.replOn, () => ui.initRepl(), 'historyUp')
 
                 fn?.()
 
@@ -90,7 +91,7 @@ describe('UI tests', () => {
 
             it('Have history', async () => {
                 const ui = new UI(createState())
-                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyUp')
+                const fn = await getCallback(replMock.replOn, () => ui.initRepl(), 'historyUp')
 
                 historyMock.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
@@ -106,7 +107,7 @@ describe('UI tests', () => {
         describe('historyDown', () => {
             it('No history', async () => {
                 const ui = new UI(createState())
-                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
+                const fn = await getCallback(replMock.replOn, () => ui.initRepl(), 'historyDown')
 
                 fn?.()
 
@@ -116,7 +117,7 @@ describe('UI tests', () => {
 
             it('Have history', async () => {
                 const ui = new UI(createState())
-                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'historyDown')
+                const fn = await getCallback(replMock.replOn, () => ui.initRepl(), 'historyDown')
 
                 historyMock.getCurrentItem.mockReturnValueOnce({ pkgName: 'foo', text: 'bar' })
 
@@ -133,7 +134,7 @@ describe('UI tests', () => {
             const runTest = async (pkgs: Package[], validate: () => void) => {
                 const state = createState()
                 const ui = new UI(state)
-                const fn = await getCallback(replMock.replOn, 4, () => ui.initRepl(), 'requestPackage')
+                const fn = await getCallback(replMock.replOn, () => ui.initRepl(), 'requestPackage')
 
                 ui.on('listPackages', async (fn) => fn(pkgs))
 
@@ -172,7 +173,7 @@ describe('UI tests', () => {
     describe('initInspectorPanel', () => {
         it('inspect', async () => {
             const ui = new UI(createState())
-            const fn = await getCallback(inspectorPanelMock.inspectPanelOn, 2, async () => ui.initInspectorPanel(), 'inspect')
+            const fn = await getCallback(inspectorPanelMock.inspectPanelOn, async () => ui.initInspectorPanel(), 'inspect')
 
             let pkg: string = ''
             let text: string = ''
@@ -190,12 +191,7 @@ describe('UI tests', () => {
 
         it('Inspector requestPackage', async () => {
             const ui = new UI(createState())
-            const fn = await getCallback(
-                inspectorPanelMock.inspectPanelOn,
-                2,
-                async () => ui.initInspectorPanel(),
-                'requestPackage'
-            )
+            const fn = await getCallback(inspectorPanelMock.inspectPanelOn, async () => ui.initInspectorPanel(), 'requestPackage')
 
             ui.on('listPackages', (fn) => fn([]))
 
@@ -250,7 +246,7 @@ describe('UI tests', () => {
 
             inspectorMock.Inspector.mockImplementationOnce(() => fake)
 
-            const fn = await getCallback(fake.on, 5, async () => ui.newInspector(info), 'inspectorClosed')
+            const fn = await getCallback(fake.on, async () => ui.newInspector(info), 'inspectorClosed')
 
             ui.on('inspectClosed', cb)
             fn?.()
@@ -260,7 +256,7 @@ describe('UI tests', () => {
 
         it('callbacks', async () => {
             const ui = new UI(createState())
-            const fns = await getAllCallbacks(inspectorMock.inspectorOn, 54, async () => ui.newInspector(info))
+            const fns = await getAllCallbacks(inspectorMock.inspectorOn, async () => ui.newInspector(info))
             const called: { [index: string]: boolean } = {
                 inspectEval: false,
                 inspectRefresh: false,
@@ -315,6 +311,20 @@ describe('UI tests', () => {
         ui.addReplOutput('foo')
 
         expect(text).toBe('foo')
+    })
+
+    it('setQueryText', async () => {
+        const ui = new UI(createState())
+        let boxTitle: string = ''
+
+        vscodeMock.window.showInputBox.mockImplementationOnce(({ title }: { title: string }) => {
+            boxTitle = title
+        })
+
+        ui.setQueryText('foo')
+        await ui.getUserInput()
+
+        expect(boxTitle).toBe('foo')
     })
 
     describe('selectHistoryItem', () => {
@@ -496,24 +506,11 @@ describe('UI tests', () => {
 
     it('getUserInput', async () => {
         const ui = new UI(createState())
-        let onName: string | undefined = undefined
 
-        const callFn = async () => {
-            replMock.replOn.mockImplementationOnce((name: string, fn: (text: string) => void) => {
-                onName = name
-                fn('foo')
-            })
+        vscodeMock.window.showInputBox.mockReturnValueOnce('foo')
+        const text = await ui.getUserInput()
 
-            return await ui.getUserInput()
-        }
-
-        const text = await callFn()
-
-        expect(onName).toBe('userInput')
         expect(text).toBe('foo')
-        expect(replMock.replGetUserInput).toHaveBeenCalled()
-        expect(replMock.replOff).toHaveBeenCalledWith('userInput', expect.anything())
-        expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
     })
 
     describe('getRestartIndex', () => {
@@ -528,7 +525,7 @@ describe('UI tests', () => {
                 stackTrace: [],
             }
             let task: Promise<number | undefined> | undefined = undefined
-            const fns = await getAllCallbacks(debugMock.debugOn, 3, async () => {
+            const fns = await getAllCallbacks(debugMock.debugOn, async () => {
                 task = ui.getRestartIndex(info)
             })
 
@@ -554,7 +551,7 @@ describe('UI tests', () => {
                 stackTrace: [],
             }
             let task: Promise<number | undefined> | undefined = undefined
-            const fns = await getAllCallbacks(debugMock.debugOn, 3, async () => {
+            const fns = await getAllCallbacks(debugMock.debugOn, async () => {
                 task = ui.getRestartIndex(info)
             })
 

@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { AliveConfig, readAliveConfig } from './config'
+import { readAliveConfig } from './config'
 import { isFiniteNumber, isHistoryItem, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
 import { ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
@@ -24,17 +24,6 @@ import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
 import { isHistoryNode } from './vscode/views/ReplHistory'
 import { isThreadNode } from './vscode/views/ThreadsTree'
 
-// Word separator characters for CommonLisp.
-// These determine how a double-click will extend over a symbol.
-// Instead of defining what is contained in a symbol,
-// VSCode defines what is NOT in a symbol (or whatever).
-//
-// Using current (2023-04-27) version of config item minus hyphen.
-// Could also get() the default setting at load time and remove the hyphen
-// but it seems like a good idea to take control of this configuration item
-// in order to be independent of any future changes to the default setting.
-const wordSeparators = '`|;:\'",()'
-
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
 
@@ -47,8 +36,6 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     const workspacePath = await getWorkspaceOrFilePath()
 
     log(`Workspace Path: ${toLog(workspacePath)}`)
-
-    await updateEditorConfig()
 
     const state: ExtensionState = {
         extension: extensionMetadata,
@@ -232,20 +219,6 @@ function createUI(state: ExtensionState) {
     ui.initInspector()
 
     return ui
-}
-
-async function updateEditorConfig() {
-    if (!Array.isArray(vscode.workspace.workspaceFolders) || vscode.workspace.workspaceFolders.length === 0) {
-        return
-    }
-
-    const editorConfig = vscode.workspace.getConfiguration('editor')
-    await editorConfig.update('formatOnType', true, false, true)
-
-    const lispConfig = vscode.workspace.getConfiguration('', { languageId: COMMON_LISP_ID })
-    await lispConfig.update('editor.wordSeparators', wordSeparators, false, true)
-
-    log(`Format On Type: ${editorConfig.get('formatOnType')}`)
 }
 
 function handleDisconnect(state: Pick<ExtensionState, 'child'>) {
@@ -446,6 +419,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state))
     lsp.on('input', (str, pkgName) => ui.addReplInput(str, pkgName))
     lsp.on('output', (str) => ui.addReplOutput(str))
+    lsp.on('queryText', (str) => ui.setQueryText(str))
     lsp.on('getRestartIndex', async (info, fn) => fn(await ui.getRestartIndex(info)))
     lsp.on('getUserInput', async (fn) => fn(await ui.getUserInput()))
     lsp.on('inspectResult', (result: InspectInfo) => ui.newInspector(result))

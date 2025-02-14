@@ -212,7 +212,7 @@ describe('Extension tests', () => {
 
     describe('UI events', () => {
         it('Simple redirects', async () => {
-            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+            const fns = await getAllCallbacks(uiMock.on, async () => await activate(ctx))
 
             checkCallback(fns, 'eval', lspMock.evalWithOutput)
             checkCallback(fns, 'inspect', lspMock.inspect)
@@ -224,7 +224,7 @@ describe('Extension tests', () => {
         })
 
         it('listPackages', async () => {
-            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+            const fns = await getAllCallbacks(uiMock.on, async () => await activate(ctx))
 
             await fns['listPackages'](() => {})
 
@@ -232,7 +232,7 @@ describe('Extension tests', () => {
         })
 
         const refreshTest = async (validate: () => void) => {
-            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+            const fns = await getAllCallbacks(uiMock.on, async () => await activate(ctx))
             const editors = [
                 { document: { languageId: 'foo' } },
                 { document: { languageId: COMMON_LISP_ID } },
@@ -262,7 +262,7 @@ describe('Extension tests', () => {
         })
 
         it('saveReplHistory', async () => {
-            const fns = await getAllCallbacks(uiMock.on, 10, async () => await activate(ctx))
+            const fns = await getAllCallbacks(uiMock.on, async () => await activate(ctx))
 
             fsMock.promises = { writeFile: jest.fn() }
             await fns.saveReplHistory()
@@ -273,7 +273,7 @@ describe('Extension tests', () => {
 
     describe('LSP events', () => {
         it('Simple redirects', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, async () => await activate(ctx))
 
             checkCallback(fns, 'refreshPackages', cmdsMock.refreshPackages)
             checkCallback(fns, 'refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
@@ -282,12 +282,13 @@ describe('Extension tests', () => {
             checkCallback(fns, 'refreshDiagnostics', uiMock.refreshDiagnostics)
             checkCallback(fns, 'input', uiMock.addReplInput)
             checkCallback(fns, 'output', uiMock.addReplOutput)
+            checkCallback(fns, 'queryText', uiMock.setQueryText)
             checkCallback(fns, 'inspectResult', uiMock.newInspector)
             checkCallback(fns, 'inspectUpdate', uiMock.updateInspector)
         })
 
         it('startCompileTimer', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, async () => await activate(ctx))
 
             fns['startCompileTimer']()
 
@@ -295,7 +296,7 @@ describe('Extension tests', () => {
         })
 
         it('getRestartIndex', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, async () => await activate(ctx))
 
             await fns['getRestartIndex']({}, () => {})
 
@@ -303,7 +304,7 @@ describe('Extension tests', () => {
         })
 
         it('getUserInput', async () => {
-            const fns = await getAllCallbacks(lspMock.on, 12, async () => await activate(ctx))
+            const fns = await getAllCallbacks(lspMock.on, async () => await activate(ctx))
 
             await fns['getUserInput'](() => {})
 
@@ -565,45 +566,9 @@ describe('Extension tests', () => {
         })
     })
 
-    describe('updateEditorConfig', () => {
-        afterEach(() => {
-            vscodeMock.workspace.workspaceFolders = []
-        })
-
-        it('No folders', async () => {
-            await activate(ctx)
-            expect(vscodeMock.workspace.getConfiguration).not.toHaveBeenCalled()
-        })
-
-        it('Have folders', async () => {
-            const fakeEditorCfg = { update: jest.fn(), get: jest.fn() }
-            const fakeLispCfg = { update: jest.fn() }
-
-            vscodeMock.workspace.workspaceFolders = ['foo', 'bar']
-            vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => fakeEditorCfg)
-            vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => fakeLispCfg)
-
-            await activate(ctx)
-
-            expect(vscodeMock.workspace.getConfiguration).toHaveBeenCalled()
-            expect(fakeEditorCfg.update).toHaveBeenCalledWith(
-                'formatOnType',
-                expect.anything(),
-                expect.anything(),
-                expect.anything()
-            )
-            expect(fakeLispCfg.update).toHaveBeenCalledWith(
-                'editor.wordSeparators',
-                expect.anything(),
-                expect.anything(),
-                expect.anything()
-            )
-        })
-    })
-
     describe('Commands', () => {
         it('Simple redirects', async () => {
-            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
             checkCallback(fns, 'alive.selectSexpr', cmdsMock.selectSexpr)
             checkCallback(fns, 'alive.sendToRepl', cmdsMock.sendToRepl)
@@ -636,7 +601,7 @@ describe('Extension tests', () => {
             })
 
             it('No items', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
                 await fns['alive.replHistory']()
 
@@ -644,7 +609,7 @@ describe('Extension tests', () => {
             })
 
             it('One item', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
                 uiMock.selectHistoryItem.mockReturnValueOnce({ text: 'foo', pkgName: 'bar' })
 
@@ -657,7 +622,7 @@ describe('Extension tests', () => {
         })
 
         it('clearReplHistory', async () => {
-            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
             fns['alive.clearReplHistory']?.()
 
@@ -673,7 +638,7 @@ describe('Extension tests', () => {
             toCall: jest.Mock
         ) => {
             it(label, async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
                 toMock.mockReturnValue(value)
                 toCall.mockReset()
@@ -750,7 +715,7 @@ describe('Extension tests', () => {
 
         describe('loadAsdfByName', () => {
             it('Invalid node', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
                 await fns['alive.loadAsdfByName']({})
 
@@ -759,7 +724,7 @@ describe('Extension tests', () => {
             })
 
             it('Valid node', async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, 35, async () => await activate(ctx))
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
                 await fns['alive.loadAsdfByName']({ label: 'foo' })
 

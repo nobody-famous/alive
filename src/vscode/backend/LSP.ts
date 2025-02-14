@@ -30,6 +30,7 @@ interface LSPEvents {
     startCompileTimer: []
     input: [str: string, pkgName: string]
     output: [str: string]
+    queryText: [str: string]
     getRestartIndex: [info: DebugInfo, fn: (index: number | undefined) => void]
     getUserInput: [fn: (input: string) => void]
     inspectResult: [result: InspectInfo]
@@ -80,6 +81,10 @@ export class LSP extends EventEmitter<LSPEvents> {
             this.sendOutput(params)
         })
 
+        this.client.onNotification('$/alive/query-io', (params: unknown) => {
+            this.sendQueryText(params)
+        })
+
         this.client.onNotification('$/alive/refresh', () => {
             this.emitRefresh()
         })
@@ -109,7 +114,6 @@ export class LSP extends EventEmitter<LSPEvents> {
             }
 
             const input = await requestInput()
-
             return { text: input }
         })
     }
@@ -148,6 +152,14 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
 
         this.emit('output', params.data)
+    }
+
+    private sendQueryText = (params: unknown) => {
+        if (!isObject(params) || !isString(params.data)) {
+            return
+        }
+
+        this.emit('queryText', params.data)
     }
 
     inspectClosed = async (info: InspectInfo) => {
