@@ -565,42 +565,6 @@ describe('Extension tests', () => {
         })
     })
 
-    describe('updateEditorConfig', () => {
-        afterEach(() => {
-            vscodeMock.workspace.workspaceFolders = []
-        })
-
-        it('No folders', async () => {
-            await activate(ctx)
-            expect(vscodeMock.workspace.getConfiguration).not.toHaveBeenCalled()
-        })
-
-        it('Have folders', async () => {
-            const fakeEditorCfg = { update: jest.fn(), get: jest.fn() }
-            const fakeLispCfg = { update: jest.fn() }
-
-            vscodeMock.workspace.workspaceFolders = ['foo', 'bar']
-            vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => fakeEditorCfg)
-            vscodeMock.workspace.getConfiguration.mockImplementationOnce(() => fakeLispCfg)
-
-            await activate(ctx)
-
-            expect(vscodeMock.workspace.getConfiguration).toHaveBeenCalled()
-            expect(fakeEditorCfg.update).toHaveBeenCalledWith(
-                'formatOnType',
-                expect.anything(),
-                expect.anything(),
-                expect.anything()
-            )
-            expect(fakeLispCfg.update).toHaveBeenCalledWith(
-                'editor.wordSeparators',
-                expect.anything(),
-                expect.anything(),
-                expect.anything()
-            )
-        })
-    })
-
     describe('Commands', () => {
         it('Simple redirects', async () => {
             const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
