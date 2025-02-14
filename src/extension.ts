@@ -441,6 +441,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
     lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state))
     lsp.on('output', (str) => ui.addReplText(str))
+    lsp.on('queryText', (str) => ui.setQueryText(str))
     lsp.on('getRestartIndex', async (info, fn) => fn(await ui.getRestartIndex(info)))
     lsp.on('getUserInput', async (fn) => fn(await ui.getUserInput()))
     lsp.on('inspectResult', (result: InspectInfo) => ui.newInspector(result))

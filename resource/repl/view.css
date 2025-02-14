@@ -12,6 +12,7 @@ body {
 
 .repl-text {
     overflow: auto;
+    resize: none;
     flex-grow: 1;
     border-bottom: 1px solid var(--vscode-editor-foreground);
     font-family: var(--vscode-editor-font-family);
