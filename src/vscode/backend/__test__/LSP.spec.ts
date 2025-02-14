@@ -88,8 +88,8 @@ describe('LSP tests', () => {
             lsp.emit = jest.fn()
 
             const funcMap = {
-                notification: await getAllCallbacks(fakeClient.onNotification, 4, () => lsp.connect(fakeHostPort)),
-                request: await getAllCallbacks(fakeClient.onRequest, 2, async () => lsp.connect(fakeHostPort)),
+                notification: await getAllCallbacks(fakeClient.onNotification, () => lsp.connect(fakeHostPort)),
+                request: await getAllCallbacks(fakeClient.onRequest, async () => lsp.connect(fakeHostPort)),
             }
 
             return { lsp, funcMap }
