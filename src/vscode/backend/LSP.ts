@@ -107,7 +107,7 @@ export class LSP extends EventEmitter<LSPEvents> {
 
         this.client.onRequest('$/alive/userInput', async () => {
             const requestInput = () => {
-                return new Promise<string>((resolve, reject) => {
+                return new Promise<string>((resolve) => {
                     this.emit('getUserInput', (input: string) => resolve(input))
                 })
             }
