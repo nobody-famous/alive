@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.4.6",
+    "version": "0.4.7",
     "publisher": "rheller",
     "license": "Unlicense",
     "repository": {
