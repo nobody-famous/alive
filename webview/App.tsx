@@ -1,74 +1,70 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { throttle } from './utils'
+
+declare var acquireVsCodeApi: any
 
 export default function AliveREPL() {
     const [vscodeApi, setVscodeApi] = useState(null)
-    const executeOnce = useRef(null)
+    const scrollReplRef = useRef(null)
 
     const [packageName, setPackageName] = useState('')
     const [inputText, setInputText] = useState('')
-    const [newOutputItem, setNewOutputItem] = useState(null)
     const [outputItems, setOutputItems] = useState([])
 
     const inputRef = useRef(null)
     const replOutputRef = useRef(null)
+    const calledOnce = React.useRef(false)
+
+    const messageHandler = (event) => {
+        const data = event.data
+
+        switch (data.type) {
+            case 'setInput':
+                setInputText(data.text)
+                break
+            case 'clearInput':
+                setInputText('')
+                break
+            case 'setOutput':
+                setOutputItems(data.items)
+                scrollReplRef.current()
+                break
+            case 'appendOutput':
+                setOutputItems(prevOutputItems => [...prevOutputItems, data.obj])
+                scrollReplRef.current()
+                break
+            case 'clear':
+                setOutputItems([])
+                break;
+            case 'setPackage':
+                setPackageName(data.name)
+                inputRef.current?.focus()
+                break
+            default:
+                break
+        }
+    }
 
     useEffect(() => {
+        if (calledOnce.current) return
+        calledOnce.current = true
+
+        // VSCode instance can be acquired only once
         setVscodeApi(acquireVsCodeApi())
 
-        // When new output is added, scroll with a delay of 100ms
-        executeOnce.current = throttle(() => scrollReplView(), 100)
+        // Scroll the output view with a delay
+        scrollReplRef.current = throttle(() => scrollReplView(), 80)
     }, [])
 
     useEffect(() => {
-        const messageHandler = (event) => {
-            const data = event.data
-
-            switch (data.type) {
-                case 'setInput':
-                    setInputText(data.text)
-                    break
-                case 'appendOutput':
-                    setNewOutputItem(data.obj)
-                    break
-                case 'setPackage':
-                    setPackageName(data.name)
-                    inputRef.current?.focus()
-                    break
-                case 'scrollReplView':
-                    scrollReplView()
-                    break
-                case 'clear':
-                    setOutputItems([])
-                    break;
-                case 'clearInput':
-                    setInputText('')
-                    break
-                default:
-                    break
-            }
-        }
-
         window.addEventListener('message', messageHandler)
         return () => window.removeEventListener('message', messageHandler)
-    }, [])
-
-    useEffect(() => {
-        if (newOutputItem) {
-            setOutputItems([...outputItems, newOutputItem])
-            setNewOutputItem(null)
-            executeOnce.current()
-        }
-    }, [newOutputItem])
+    }, [messageHandler])
 
     const handleSubmit = (event) => {
         event.preventDefault()
         vscodeApi.postMessage({ command: 'eval', text: inputText })
         setInputText('')
-    }
-
-    const strToHtml = (str) => {
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
     }
 
     const handleKeyUp = (event) => {
@@ -104,7 +100,7 @@ export default function AliveREPL() {
                     <div key={`repl-output-container-${idx}`} className={`repl-${type}-container`}>
                         <div className="repl-output-item">
                             {(type === 'input' && pkgName) &&
-                                <span className="repl-output-package">{strToHtml(pkgName)}&gt; </span>}
+                                <span className="repl-output-package">{pkgName}&gt; </span>}
                             {text}
                         </div>
                     </div>

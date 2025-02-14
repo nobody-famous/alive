@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import EventEmitter = require('events')
 import { AliveContext } from '../Types'
-import { strToHtml } from '../Utils'
+import { getNonce } from '../Utils'
 
 interface ReplEvents {
     requestPackage: []
@@ -23,14 +23,12 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     private ctx: AliveContext
     private package: string
     private replOutput: Array<ReplOutput>
-    private updateTextId: NodeJS.Timeout | undefined
 
     constructor(ctx: AliveContext) {
         super()
 
         this.ctx = ctx
         this.package = 'cl-user'
-        this.updateTextId = undefined
         this.replOutput = []
     }
 
@@ -62,22 +60,25 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
 
         webviewView.onDidChangeVisibility(() => this.restoreState())
 
-        webviewView.webview.html = this.getHtmlForView(webviewView.webview)
+        webviewView.webview.html = this.getWebviewContent(webviewView.webview)
 
         setTimeout(() => {
             this.setPackage(this.package)
-        }, 100)
+        }, 200)
     }
 
     clear() {
+        this.replOutput = []
         this.view?.webview.postMessage({
             type: 'clear',
         })
     }
 
     restoreState() {
+        this.setPackage(this.package)
         this.view?.webview.postMessage({
-            type: 'scrollReplView',
+            type: 'setOutput',
+            items: this.replOutput
         })
     }
 
@@ -103,23 +104,27 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     addInput(text: string, pkgName: string) {
+        const outputObj = {
+            type: 'input',
+            pkgName,
+            text,
+        }
+        this.replOutput.push(outputObj)
         this.view?.webview.postMessage({
             type: 'appendOutput',
-            obj: {
-                type: 'input',
-                pkgName,
-                text,
-            }
+            obj: outputObj
         })
     }
 
     addOutput(text: string) {
+        const outputObj = {
+            type: 'output',
+            text,
+        }
+        this.replOutput.push(outputObj)
         this.view?.webview.postMessage({
             type: 'appendOutput',
-            obj: {
-                type: 'output',
-                text,
-            }
+            obj: outputObj
         })
     }
 
@@ -135,21 +140,24 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         }
     }
 
-    private getHtmlForView(webview: vscode.Webview): string {
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'index.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'index.css'))
+    private getWebviewContent(webview: vscode.Webview): string {
+        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'index.js'))
+        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'index.css'))
         const scriptUri = webview.asWebviewUri(jsPath)
         const stylesUri = webview.asWebviewUri(cssPath)
+
+        const nonce = getNonce()
 
         return `
             <!DOCTYPE html>
             <html>
                 <head>
+                    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
                     <link rel="stylesheet" type="text/css" href="${stylesUri}">
                 </head>
                 <body>
                     <div id="root"></div>
-                    <script src="${scriptUri}"></script>
+                    <script nonce="${nonce}" src="${scriptUri}"></script>
                 </body>
             </html>
         `.trim()

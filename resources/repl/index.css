@@ -1,76 +1,76 @@
+/* webview/styles.css */
 html {
-  height: calc(100% - .3rem);
+  height: calc(100% - 0.3rem);
 }
-
-body, #root, .repl-container {
-  height: calc(100% - .1rem);
+body {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 0.1rem);
   color: var(--vscode-editor-foreground);
   background-color: var(--vscode-editor-background);
-  flex-direction: column;
-  display: flex;
+  padding: 0 10px;
 }
-
+#root,
+.repl-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 0.1rem);
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+}
 .repl-output {
+  overflow: auto;
+  flex-grow: 1;
   border-bottom: 1px solid var(--vscode-editorWidget-border);
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
   font-weight: var(--vscode-editor-font-weight);
-  flex-grow: 1;
-  overflow: auto;
+  padding: 0.5em 0;
 }
-
 .repl-input-container {
-  margin-top: .5rem;
+  margin-top: 0.5rem;
 }
-
 .repl-output-container {
   margin: 0;
 }
-
 .repl-output-container:last-of-type {
-  margin-bottom: .5rem;
+  margin-bottom: 0.5rem;
 }
-
 .repl-output-item {
-  margin: .2rem;
+  margin: 0.2rem;
+  white-space: pre;
 }
-
 .repl-output-package {
   color: var(--vscode-editorLink-activeForeground);
 }
-
 .repl-input-box {
-  font-family: var(--vscode-editor-font-family);
-  font-size: var(--vscode-editor-font-size);
-  font-weight: var(--vscode-editor-font-weight);
-  flex-direction: column;
   display: flex;
-}
-
-.repl-input-text-box {
+  flex-direction: column;
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
   font-weight: var(--vscode-editor-font-weight);
+}
+.repl-input-text-box {
+  display: flex;
   flex-direction: row;
   align-items: center;
-  display: flex;
-}
-
-.repl-input-form {
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
   font-weight: var(--vscode-editor-font-weight);
-  flex-grow: 1;
 }
-
+.repl-input-form {
+  flex-grow: 1;
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+}
 .repl-input-label {
   text-align: right;
-  cursor: pointer;
+  display: inline-block;
   height: 1.5rem;
   line-height: 1.5rem;
-  display: inline-block;
+  cursor: pointer;
 }
-
 .repl-input-text {
   color: var(--vscode-editor-foreground);
   caret-color: var(--vscode-editor-foreground);
@@ -79,43 +79,13 @@ body, #root, .repl-container {
   font-size: var(--vscode-editor-font-size);
   font-weight: var(--vscode-editor-font-weight);
   border: none;
-  width: 95%;
   height: 1.5rem;
-  margin-left: .5rem;
   line-height: 1.5rem;
+  width: 95%;
+  margin-left: 0.3rem;
 }
-
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
-}
-
-textarea {
-  width: 100%;
-  color: var(--vscode-editor-foreground);
-  background-color: var(--vscode-editor-background);
-  font-family: var(--vscode-editor-font-family);
-  font-size: var(--vscode-editor-font-size);
-  font-weight: var(--vscode-editor-font-weight);
-  border: none;
-  animation-name: blink;
-}
-
-textarea:focus {
-  border: none;
-  outline: none;
-}
-
-table {
-  width: 100%;
-}
-
-table #prompt {
-  white-space: nowrap;
-  vertical-align: top;
-  width: 1%;
-}
-
-table #prompt-input {
-  width: 100%;
 }
 /*# sourceMappingURL=index.css.map */
