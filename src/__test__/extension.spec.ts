@@ -602,10 +602,11 @@ describe('Extension tests', () => {
 
             it('With symbol', async () => {
                 const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+                const symbol = { name: 'foo', package: 'bar' }
 
-                await fns['alive.inspect']({ name: 'foo', package: 'bar' })
+                await fns['alive.inspect'](symbol)
 
-                expect(cmdsMock.inspect).toHaveBeenCalled()
+                expect(cmdsMock.inspect).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(symbol))
             })
         })
 
