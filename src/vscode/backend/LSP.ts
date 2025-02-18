@@ -443,6 +443,8 @@ export class LSP extends EventEmitter<LSPEvents> {
         try {
             const resp = await this.client?.sendRequest(method, { path })
 
+            this.emit('refreshInspectors')
+
             if (!isObject(resp) || !Array.isArray(resp.messages)) {
                 return { notes: [] }
             }

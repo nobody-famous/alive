@@ -580,7 +580,6 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.clearInlineResults', cmdsMock.clearInlineResults)
             checkCallback(fns, 'alive.inlineEval', cmdsMock.inlineEval)
             checkCallback(fns, 'alive.loadFile', cmdsMock.loadFile)
-            checkCallback(fns, 'alive.inspect', cmdsMock.inspect)
             checkCallback(fns, 'alive.inspectMacro', cmdsMock.inspectMacro)
             checkCallback(fns, 'alive.openScratchPad', cmdsMock.openScratchPad)
             checkCallback(fns, 'alive.macroexpand', cmdsMock.macroexpand)
@@ -590,6 +589,25 @@ describe('Extension tests', () => {
                 fns[`alive.restart_${index}`]()
                 expect(cmdsMock.selectRestart).toHaveBeenCalledWith(expect.anything(), index)
             }
+        })
+
+        describe('inspect', () => {
+            it('No symbol', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+
+                await fns['alive.inspect']()
+
+                expect(cmdsMock.inspect).not.toHaveBeenCalled()
+            })
+
+            it('With symbol', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+                const symbol = { name: 'foo', package: 'bar' }
+
+                await fns['alive.inspect'](symbol)
+
+                expect(cmdsMock.inspect).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(symbol))
+            })
         })
 
         describe('replHistory', () => {
