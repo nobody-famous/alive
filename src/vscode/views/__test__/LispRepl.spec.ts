@@ -43,38 +43,6 @@ describe('LispRepl tests', () => {
         expect(webview.html).toContain('<html>')
     })
 
-    describe('clear', () => {
-        it('Has view', () => {
-            const { repl, webview } = createRepl()
-
-            repl.clear()
-
-            expect(webview.postMessage).toHaveBeenCalled()
-        })
-
-        it('No view', () => {
-            const repl = new LispRepl(fakeContext)
-
-            repl.clear()
-        })
-    })
-
-    describe('restoreState', () => {
-        it('Has view', () => {
-            const { repl, webview } = createRepl()
-
-            repl.restoreState()
-
-            expect(webview.postMessage).toHaveBeenCalledTimes(2)
-        })
-
-        it('No view', () => {
-            const repl = new LispRepl(fakeContext)
-
-            repl.restoreState()
-        })
-    })
-
     describe('setPackage', () => {
         it('Has view', () => {
             const { repl, webview } = createRepl()
@@ -139,11 +107,11 @@ describe('LispRepl tests', () => {
         })
     })
 
-    describe('addText', () => {
+    describe('addOutput', () => {
         it('First try', () => {
             const { repl, webview } = createRepl()
 
-            repl.addText('Some text')
+            repl.addOutput('Some text')
 
             jest.runAllTimers()
 
@@ -153,18 +121,18 @@ describe('LispRepl tests', () => {
         it('Second try', () => {
             const { repl, webview } = createRepl()
 
-            repl.addText('Some text')
-            repl.addText('Some more text')
+            repl.addOutput('Some text')
+            repl.addOutput('Some more text')
 
             jest.runAllTimers()
 
-            expect(webview.postMessage).toHaveBeenCalledTimes(1)
+            expect(webview.postMessage).toHaveBeenCalledTimes(2)
         })
 
         it('No view', () => {
             const repl = new LispRepl(fakeContext)
 
-            repl.addText('Some text')
+            repl.addOutput('Some text')
 
             jest.runAllTimers()
         })

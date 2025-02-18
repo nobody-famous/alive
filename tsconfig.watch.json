@@ -6,6 +6,7 @@
     },
     "include": [
         "src/**/*.ts",
+        "webview/**/*.{ts,tsx}",
         "test/**/*.ts"
     ],
     "exclude": [

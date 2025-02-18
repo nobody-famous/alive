@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as os from 'os'
 import EventEmitter = require('events')
 import { AliveContext } from '../Types'
+import { getNonce } from '../Utils'
 
 interface ReplEvents {
     requestPackage: []
@@ -12,20 +12,24 @@ interface ReplEvents {
     eval: [string, string]
 }
 
+interface ReplOutput {
+    type: string
+    text: string
+    pkgName?: string
+}
+
 export class LispRepl extends EventEmitter<ReplEvents> implements vscode.WebviewViewProvider {
     private view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
     private package: string
-    private replText: string
-    private updateTextId: NodeJS.Timeout | undefined
+    private replOutput: Array<ReplOutput>
 
     constructor(ctx: AliveContext) {
         super()
 
         this.ctx = ctx
         this.package = 'cl-user'
-        this.updateTextId = undefined
-        this.replText = ''
+        this.replOutput = []
     }
 
     resolveWebviewView(webviewView: Pick<vscode.WebviewView, 'webview' | 'onDidChangeVisibility'>): void | Thenable<void> {
@@ -56,25 +60,25 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
 
         webviewView.onDidChangeVisibility(() => this.restoreState())
 
-        webviewView.webview.html = this.getHtmlForView(webviewView.webview)
+        webviewView.webview.html = this.getWebviewContent(webviewView.webview)
+
+        setTimeout(() => {
+            this.setPackage(this.package)
+        }, 200)
     }
 
     clear() {
-        this.replText = ''
-
+        this.replOutput = []
         this.view?.webview.postMessage({
             type: 'clear',
         })
     }
 
     restoreState() {
+        this.setPackage(this.package)
         this.view?.webview.postMessage({
-            type: 'restoreState',
-        })
-
-        this.view?.webview.postMessage({
-            type: 'setText',
-            text: this.replText,
+            type: 'setOutput',
+            items: this.replOutput
         })
     }
 
@@ -99,21 +103,29 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         })
     }
 
-    addText(text: string) {
-        this.replText = `${this.replText}${text}${os.EOL}`
-
-        if (this.updateTextId !== undefined) {
-            return
+    addInput(text: string, pkgName: string) {
+        const outputObj = {
+            type: 'input',
+            pkgName,
+            text,
         }
+        this.replOutput.push(outputObj)
+        this.view?.webview.postMessage({
+            type: 'appendOutput',
+            obj: outputObj
+        })
+    }
 
-        this.updateTextId = setTimeout(() => {
-            this.updateTextId = undefined
-
-            this.view?.webview.postMessage({
-                type: 'setText',
-                text: this.replText,
-            })
-        }, 150)
+    addOutput(text: string) {
+        const outputObj = {
+            type: 'output',
+            text,
+        }
+        this.replOutput.push(outputObj)
+        this.view?.webview.postMessage({
+            type: 'appendOutput',
+            obj: outputObj
+        })
     }
 
     getUserInput() {
@@ -125,46 +137,29 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     private doEval(text: string) {
         if (text.trim().length != 0) {
             this.emit('eval', this.package, text)
-        } else {
-            this.addText('')
         }
     }
 
-    private getHtmlForView(webview: vscode.Webview): string {
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'view.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'repl', 'view.css'))
+    private getWebviewContent(webview: vscode.Webview): string {
+        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'index.js'))
+        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'index.css'))
+        const scriptUri = webview.asWebviewUri(jsPath)
+        const stylesUri = webview.asWebviewUri(cssPath)
 
-        return `<!DOCTYPE html>
-                <html>
+        const nonce = getNonce()
+
+        return `
+            <!DOCTYPE html>
+            <html>
                 <head>
-                    <link rel="stylesheet" href="${webview.asWebviewUri(cssPath)}">
+                    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+                    <link rel="stylesheet" type="text/css" href="${stylesUri}">
                 </head>
-
-                <body onfocus="setFocus()">
-                    <textarea id="repl-text" class="repl-text" readonly></textarea>
-                    <div class="repl-input-box">
-                        <div class="repl-input-text-box" id="repl-user-input-box">
-                            <div class="repl-input-label">
-                                Input >
-                            </div>
-                            <form id="repl-user-input-form" class="repl-input-form" action="">
-                                <input class="repl-input-text" id="repl-user-input" type="text" disabled>
-                            </form>
-                        </div>
-                        <div class="repl-input-text-box">
-                            <div class="repl-input-label" onclick="requestPackage()">
-                                <span id="repl-package">${this.package}</span>
-                                >
-                            </div>
-                            <form id="repl-input-form" class="repl-input-form" action="">
-                                <input class="repl-input-text" id="repl-input-text" type="text">
-                            </form>
-                        </div>
-                    </div>
-
-                    <script src="${webview.asWebviewUri(jsPath)}"></script>
+                <body>
+                    <div id="root"></div>
+                    <script nonce="${nonce}" src="${scriptUri}"></script>
                 </body>
-                </html>
-        `
+            </html>
+        `.trim()
     }
 }

@@ -2,23 +2,79 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Watch Build",
+            "dependsOn": [
+                "npm: watch:tsc",
+                "npm: watch:esbuild"
+            ],
+            "presentation": {
+                "reveal": "never"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "npm",
+            "script": "watch:esbuild",
+            "group": "build",
+            "problemMatcher": {
+                "owner": "typescript",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}"
+                ],
+                "pattern": "$tsc",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*Watching for file changes.*",
+                    "endsPattern": ".*Compilation complete.*"
+                }
+            },
+            "isBackground": true,
+            "label": "npm: watch:esbuild",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
+        {
+            "type": "npm",
+            "script": "watch:tsc",
+            "group": "build",
+            "problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "label": "npm: watch:tsc",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
+        {
             "type": "npm",
             "script": "compile",
-            "problemMatcher": ["$tsc"],
+            "problemMatcher": [
+                "$tsc"
+            ],
             "group": "build",
             "label": "Compile"
         },
         {
             "type": "npm",
             "script": "lint",
-            "problemMatcher": ["$eslint-stylish"],
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
             "group": "build",
             "label": "Lint"
         },
         {
             "type": "npm",
             "script": "test",
-            "problemMatcher": ["$tsc"],
+            "problemMatcher": [
+                "$tsc"
+            ],
             "label": "Test"
         },
         {
@@ -32,14 +88,9 @@
                 "-t",
                 "eval"
             ],
-            "problemMatcher": ["$tsc"]
-        },
-        {
-            "type": "npm",
-            "script": "watch",
-            "problemMatcher": ["$tsc"],
-            "group": "build",
-            "label": "Watch Build"
+            "problemMatcher": [
+                "$tsc"
+            ]
         }
     ]
 }
