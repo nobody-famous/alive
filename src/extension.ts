@@ -26,6 +26,7 @@ import { isThreadNode } from './vscode/views/ThreadsTree'
 
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
+    vscode.commands.executeCommand('setContext', 'aliveExtensionActive', true)
 
     const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
     if (extensionMetadata === undefined) {
@@ -209,6 +210,10 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     if (activeDoc !== undefined) {
         vscode.window.showTextDocument(activeDoc)
     }
+}
+
+export const deactivate = () => {
+    vscode.commands.executeCommand('setContext', 'aliveExtensionActive', false)
 }
 
 function createUI(state: ExtensionState) {

@@ -414,7 +414,8 @@
             },
             {
                 "command": "alive.replHistory",
-                "key": "alt+shift+r"
+                "key": "alt+shift+r",
+                "when": "aliveExtensionActive"
             },
             {
                 "command": "alive.restart_0",
