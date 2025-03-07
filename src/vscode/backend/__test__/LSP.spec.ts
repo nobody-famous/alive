@@ -421,7 +421,7 @@ describe('LSP tests', () => {
                 sendRequest: jest.fn(() => ({ package: 'Some package' })),
             })
 
-            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+            const info = await lsp.getSurroundingInfo(() => 'Some text', 'uri', {
                 active: new vscodeMock.Position(),
                 start: new vscodeMock.Position(),
                 end: new vscodeMock.Position(),
@@ -444,7 +444,7 @@ describe('LSP tests', () => {
                 }),
             })
 
-            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+            const info = await lsp.getSurroundingInfo(() => 'Some text', 'uri', {
                 active: new vscodeMock.Position(),
                 start: new vscodeMock.Position(),
                 end: new vscodeMock.Position(),
@@ -460,7 +460,7 @@ describe('LSP tests', () => {
                 sendRequest: jest.fn(() => ({ package: 'Some package' })),
             })
 
-            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+            const info = await lsp.getSurroundingInfo(() => 'Some text', 'uri', {
                 active: new vscodeMock.Position(),
                 start: new vscodeMock.Position(),
                 end: new vscodeMock.Position(),
@@ -475,7 +475,7 @@ describe('LSP tests', () => {
                 sendRequest: jest.fn(() => ({ package: 5 })),
             })
 
-            const info = await lsp.getMacroInfo(() => 'Some text', 'uri', {
+            const info = await lsp.getSurroundingInfo(() => 'Some text', 'uri', {
                 active: new vscodeMock.Position(),
                 start: new vscodeMock.Position(),
                 end: new vscodeMock.Position(),

@@ -1,5 +1,5 @@
 import { Selection } from 'vscode'
-import { EvalInfo, MacroInfo } from '../../Types'
+import { EvalInfo, SurroundingInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
 import {
     clearRepl,
@@ -131,20 +131,20 @@ describe('Repl tests', () => {
     })
 
     describe('Macro Expand', () => {
-        type MacroLSP = Pick<LSP, 'macroexpand' | 'macroexpand1' | 'getMacroInfo'>
+        type MacroLSP = Pick<LSP, 'macroexpand' | 'macroexpand1' | 'getSurroundingInfo'>
 
         beforeEach(() => {})
 
         const runTest = async (
             fn: (lsp: MacroLSP) => void,
-            macroInfo: MacroInfo | undefined,
+            macroInfo: SurroundingInfo | undefined,
             macroResult: string | undefined,
             validate: (lsp: MacroLSP, editor: FakeEditor) => void
         ) => {
             const lsp: MacroLSP = {
                 macroexpand: jest.fn(async () => macroResult),
                 macroexpand1: jest.fn(),
-                getMacroInfo: jest.fn(async () => macroInfo),
+                getSurroundingInfo: jest.fn(async () => macroInfo),
             }
             const editor = createFakeEditor()
             let editorFn: ((editor: unknown) => Promise<void>) | undefined
@@ -160,7 +160,7 @@ describe('Repl tests', () => {
         }
 
         it('macroexpand with info', async () => {
-            const info: MacroInfo = {
+            const info: SurroundingInfo = {
                 range: new vscodeMock.Range(),
                 text: 'some text',
                 package: 'some package',
@@ -168,12 +168,12 @@ describe('Repl tests', () => {
 
             await runTest(macroexpand, info, undefined, (lsp) => {
                 expect(lsp.macroexpand).toHaveBeenCalled()
-                expect(lsp.getMacroInfo).toHaveBeenCalled()
+                expect(lsp.getSurroundingInfo).toHaveBeenCalled()
             })
         })
 
         it('macroexpand with new text', async () => {
-            const info: MacroInfo = {
+            const info: SurroundingInfo = {
                 range: new vscodeMock.Range(),
                 text: 'some text',
                 package: 'some package',
@@ -181,13 +181,13 @@ describe('Repl tests', () => {
 
             await runTest(macroexpand, info, 'new text', (lsp, editor) => {
                 expect(lsp.macroexpand).toHaveBeenCalled()
-                expect(lsp.getMacroInfo).toHaveBeenCalled()
+                expect(lsp.getSurroundingInfo).toHaveBeenCalled()
                 expect(editor.edit).toHaveBeenCalled()
             })
         })
 
         it('editor.edit function', async () => {
-            const info: MacroInfo = {
+            const info: SurroundingInfo = {
                 range: new vscodeMock.Range(),
                 text: 'some text',
                 package: 'some package',
@@ -195,7 +195,7 @@ describe('Repl tests', () => {
             const lsp: MacroLSP = {
                 macroexpand: jest.fn(),
                 macroexpand1: jest.fn(async () => 'new text'),
-                getMacroInfo: jest.fn(async () => info),
+                getSurroundingInfo: jest.fn(async () => info),
             }
             let builderFn: ((builder: { replace: () => void }) => void) | undefined
             const editor = {
@@ -220,7 +220,7 @@ describe('Repl tests', () => {
         })
 
         it('macroexpand1', async () => {
-            await runTest(macroexpand1, undefined, undefined, (lsp) => expect(lsp.getMacroInfo).toHaveBeenCalled())
+            await runTest(macroexpand1, undefined, undefined, (lsp) => expect(lsp.getSurroundingInfo).toHaveBeenCalled())
         })
     })
 
@@ -337,11 +337,11 @@ describe('Repl tests', () => {
 
     describe('inspectMacro', () => {
         const runTest = async (
-            info: MacroInfo | undefined,
-            validate: (lsp: Pick<LSP, 'getMacroInfo' | 'inspectMacro'>) => void
+            info: SurroundingInfo | undefined,
+            validate: (lsp: Pick<LSP, 'getSurroundingInfo' | 'inspectMacro'>) => void
         ) => {
             const lsp = {
-                getMacroInfo: jest.fn(async () => info),
+                getSurroundingInfo: jest.fn(async () => info),
                 inspectMacro: jest.fn(),
             }
             let editorFn: ((editor: unknown) => Promise<void>) | undefined

@@ -225,6 +225,14 @@
                 "title": "Alive: Inline Eval"
             },
             {
+                "command": "alive.evalSurrounding",
+                "title": "Alive: Eval Surrounding Form"
+            },
+            {
+                "command": "alive.inlineEvalSurrounding",
+                "title": "Alive: Inline Eval Surrounding Form"
+            },
+            {
                 "command": "alive.clearInlineResults",
                 "title": "Alive: Clear Inline Results"
             },

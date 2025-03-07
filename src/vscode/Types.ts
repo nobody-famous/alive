@@ -95,7 +95,7 @@ export interface EvalInfo {
     package: string
 }
 
-export interface MacroInfo {
+export interface SurroundingInfo {
     range: vscode.Range
     text: string
     package: string
