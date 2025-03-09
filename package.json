@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.4.6",
+    "version": "0.4.7",
     "publisher": "rheller",
     "license": "Unlicense",
     "repository": {
@@ -223,6 +223,14 @@
             {
                 "command": "alive.inlineEval",
                 "title": "Alive: Inline Eval"
+            },
+            {
+                "command": "alive.evalSurrounding",
+                "title": "Alive: Eval Surrounding Form"
+            },
+            {
+                "command": "alive.inlineEvalSurrounding",
+                "title": "Alive: Inline Eval Surrounding Form"
             },
             {
                 "command": "alive.clearInlineResults",
