@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer'
 import { getAllCallbacks } from '../../TestHelpers'
-import { activate } from '../extension'
+import { activate, deactivate } from '../extension'
 import { COMMON_LISP_ID } from '../vscode/Utils'
 import { HistoryItem, HostPort } from '../vscode/Types'
 import { LspSpawnOpts } from '../vscode/backend/LspProcess'
@@ -106,6 +106,14 @@ describe('Extension tests', () => {
 
             expect(lspMock.editorChanged).toHaveBeenCalled()
             expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+        })
+
+        it('Deactivate', async () => {
+            await activate(ctx)
+            expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('setContext', 'aliveExtensionActive', true)
+
+            deactivate()
+            expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('setContext', 'aliveExtensionActive', false)
         })
     })
 
@@ -579,6 +587,8 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.clearRepl', cmdsMock.clearRepl)
             checkCallback(fns, 'alive.clearInlineResults', cmdsMock.clearInlineResults)
             checkCallback(fns, 'alive.inlineEval', cmdsMock.inlineEval)
+            checkCallback(fns, 'alive.evalSurrounding', cmdsMock.evalSurrounding)
+            checkCallback(fns, 'alive.inlineEvalSurrounding', cmdsMock.inlineEvalSurrounding)
             checkCallback(fns, 'alive.loadFile', cmdsMock.loadFile)
             checkCallback(fns, 'alive.inspectMacro', cmdsMock.inspectMacro)
             checkCallback(fns, 'alive.openScratchPad', cmdsMock.openScratchPad)

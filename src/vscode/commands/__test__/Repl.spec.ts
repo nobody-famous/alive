@@ -4,7 +4,9 @@ import { LSP } from '../../backend/LSP'
 import {
     clearRepl,
     compileFile,
+    evalSurrounding,
     inlineEval,
+    inlineEvalSurrounding,
     inspect,
     inspectMacro,
     loadAsdfSystem,
@@ -55,26 +57,65 @@ describe('Repl tests', () => {
     })
 
     describe('sendToRepl', () => {
-        const runTest = async (evalInfo: unknown, validate: () => void) => {
-            const lsp = { getEvalInfo: jest.fn().mockReturnValue(evalInfo), evalWithOutput: jest.fn() }
+        beforeEach(() => {
+            vscodeMock.workspace.saveAll.mockReset()
+        })
+
+        const runTest = async (
+            lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'evalWithOutput'>,
+            fn: (lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'evalWithOutput'>) => Promise<void>,
+            validate: () => void
+        ) => {
             let editorFn: ((editor: unknown) => Promise<void>) | undefined
 
             utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
                 editorFn = fn
             })
 
-            await sendToRepl(lsp)
+            await fn(lsp)
             await editorFn?.(createFakeEditor())
 
             validate()
         }
 
         it('No info', async () => {
-            await runTest(undefined, () => expect(vscodeMock.workspace.saveAll).not.toHaveBeenCalled())
+            const lsp = {
+                getEvalInfo: jest.fn().mockReturnValue(undefined),
+                evalWithOutput: jest.fn(),
+                getSurroundingInfo: jest.fn(),
+            }
+
+            await runTest(lsp, sendToRepl, () => expect(vscodeMock.workspace.saveAll).not.toHaveBeenCalled())
         })
 
         it('Have info', async () => {
-            await runTest({}, () => expect(vscodeMock.workspace.saveAll).toHaveBeenCalled())
+            const lsp = {
+                getEvalInfo: jest.fn().mockReturnValue({}),
+                evalWithOutput: jest.fn(),
+                getSurroundingInfo: jest.fn(),
+            }
+
+            await runTest(lsp, sendToRepl, () => expect(vscodeMock.workspace.saveAll).toHaveBeenCalled())
+        })
+
+        it('No info surrounding', async () => {
+            const lsp = {
+                getEvalInfo: jest.fn(),
+                evalWithOutput: jest.fn(),
+                getSurroundingInfo: jest.fn().mockReturnValue(undefined),
+            }
+
+            await runTest(lsp, evalSurrounding, () => expect(vscodeMock.workspace.saveAll).not.toHaveBeenCalled())
+        })
+
+        it('Have info surrounding', async () => {
+            const lsp = {
+                getEvalInfo: jest.fn(),
+                evalWithOutput: jest.fn(),
+                getSurroundingInfo: jest.fn().mockReturnValue({}),
+            }
+
+            await runTest(lsp, evalSurrounding, () => expect(vscodeMock.workspace.saveAll).toHaveBeenCalled())
         })
     })
 
@@ -85,11 +126,10 @@ describe('Repl tests', () => {
         })
 
         const runTest = async (
-            evalInfo: EvalInfo | undefined,
-            evalResult: string | string[] | undefined,
-            validate: (lsp: Pick<LSP, 'getEvalInfo' | 'eval'>) => void
+            lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'eval'>,
+            fn: (lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'eval'>, state: { hoverText: string }) => void,
+            validate: () => void
         ) => {
-            const lsp = { getEvalInfo: jest.fn(async () => evalInfo), eval: jest.fn(async () => evalResult) }
             const state = { hoverText: '' }
             let editorFn: ((editor: unknown) => Promise<void>) | undefined
 
@@ -97,33 +137,127 @@ describe('Repl tests', () => {
                 editorFn = fn
             })
 
-            await inlineEval(lsp, state)
+            await fn(lsp, state)
             await editorFn?.(createFakeEditor())
 
-            validate(lsp)
+            validate()
         }
 
         it('OK', async () => {
-            await runTest({ text: 'some text', package: 'some package' }, 'some result', (lsp) => {
-                expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
-                expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
-            })
+            await runTest(
+                {
+                    getEvalInfo: jest.fn(async () => ({ text: 'some text', package: 'some package' })),
+                    getSurroundingInfo: jest.fn(),
+                    eval: jest.fn(async () => 'some result'),
+                },
+                inlineEval,
+                () => {
+                    expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+                    expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
+                }
+            )
 
-            await runTest({ text: 'some text', package: 'some package' }, ['first result', 'second result'], (lsp) => {
-                expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
-                expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
-            })
+            await runTest(
+                {
+                    getEvalInfo: jest.fn(async () => ({ text: 'some text', package: 'some package' })),
+                    getSurroundingInfo: jest.fn(),
+                    eval: jest.fn(async () => ['first result', 'second result']),
+                },
+                inlineEval,
+                () => {
+                    expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+                    expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
+                }
+            )
         })
 
         it('No info', async () => {
-            await runTest(undefined, undefined, (lsp: Pick<LSP, 'getEvalInfo'>) => {
+            const lsp = {
+                getEvalInfo: jest.fn(async () => undefined),
+                getSurroundingInfo: jest.fn(),
+                eval: jest.fn(async () => undefined),
+            }
+
+            await runTest(lsp, inlineEval, () => {
                 expect(lsp.getEvalInfo).toHaveBeenCalled()
                 expect(vscodeMock.window.showTextDocument).not.toHaveBeenCalled()
             })
         })
 
         it('No eval result', async () => {
-            await runTest({ text: 'some text', package: 'some package' }, undefined, (lsp) => {
+            const lsp = {
+                getEvalInfo: jest.fn(async () => ({ text: 'some text', package: 'some package' })),
+                getSurroundingInfo: jest.fn(),
+                eval: jest.fn(async () => undefined),
+            }
+
+            await runTest(lsp, inlineEval, () => {
+                expect(lsp.eval).toHaveBeenCalled()
+                expect(vscodeMock.window.showTextDocument).not.toHaveBeenCalled()
+            })
+        })
+
+        it('OK Surrounding', async () => {
+            await runTest(
+                {
+                    getEvalInfo: jest.fn(),
+                    eval: jest.fn(async () => 'some result'),
+                    getSurroundingInfo: jest.fn(async () => ({
+                        range: new vscodeMock.Range(),
+                        text: 'some text',
+                        package: 'some package',
+                    })),
+                },
+                inlineEvalSurrounding,
+                () => {
+                    expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+                    expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
+                }
+            )
+
+            await runTest(
+                {
+                    getEvalInfo: jest.fn(),
+                    getSurroundingInfo: jest.fn(async () => ({
+                        range: new vscodeMock.Range(),
+                        text: 'some text',
+                        package: 'some package',
+                    })),
+                    eval: jest.fn(async () => ['first result', 'second result']),
+                },
+                inlineEvalSurrounding,
+                () => {
+                    expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+                    expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
+                }
+            )
+        })
+
+        it('No info surounding', async () => {
+            const lsp = {
+                getEvalInfo: jest.fn(),
+                getSurroundingInfo: jest.fn(),
+                eval: jest.fn(async () => undefined),
+            }
+
+            await runTest(lsp, inlineEvalSurrounding, () => {
+                expect(lsp.getSurroundingInfo).toHaveBeenCalled()
+                expect(vscodeMock.window.showTextDocument).not.toHaveBeenCalled()
+            })
+        })
+
+        it('No eval result surrounding', async () => {
+            const lsp = {
+                getEvalInfo: jest.fn(),
+                getSurroundingInfo: jest.fn(async () => ({
+                    range: new vscodeMock.Range(),
+                    text: 'some text',
+                    package: 'some package',
+                })),
+                eval: jest.fn(async () => undefined),
+            }
+
+            await runTest(lsp, inlineEvalSurrounding, () => {
                 expect(lsp.eval).toHaveBeenCalled()
                 expect(vscodeMock.window.showTextDocument).not.toHaveBeenCalled()
             })
