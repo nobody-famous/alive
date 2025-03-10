@@ -1,13 +1,17 @@
 import { LispRepl } from '../LispRepl'
 import { createFakeWebview } from './utils'
 
+const vscodeMock = jest.requireMock('vscode')
+jest.mock('vscode')
+
 jest.useFakeTimers()
 
 describe('LispRepl tests', () => {
     const fakeContext = { subscriptions: [], extensionPath: '/some/path' }
+    const extension = vscodeMock.extension.getExtension()
 
     const createRepl = () => {
-        const repl = new LispRepl(fakeContext)
+        const repl = new LispRepl(fakeContext, extension)
         const webview = createFakeWebview()
         let cb: ((msg: { command: string; text?: string }) => void) | undefined
 
@@ -20,7 +24,7 @@ describe('LispRepl tests', () => {
     }
 
     it('changeVisibility', () => {
-        const repl = new LispRepl(fakeContext)
+        const repl = new LispRepl(fakeContext, extension)
         const webview = createFakeWebview()
         let fn: (() => void) | undefined
 
@@ -53,7 +57,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.setPackage('Some package')
         })
@@ -69,7 +73,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.setInput('Some input')
         })
@@ -85,7 +89,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.clearInput()
         })
@@ -101,7 +105,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.getUserInput()
         })
@@ -130,7 +134,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.addOutput('Some text')
 

@@ -91,6 +91,7 @@ body {
   font-size: var(--vscode-editor-font-size);
   font-weight: var(--vscode-editor-font-weight);
   border: none;
+  padding: 0;
   height: 1.5rem;
   line-height: 1.5rem;
   width: 95%;
