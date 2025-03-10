@@ -34,7 +34,7 @@ const createState = (): UIState => {
     const state: UIState = {
         ctx: { subscriptions: [], extensionPath: 'foo' },
         config: { packageTree: { separator: null } },
-        extension: vscodeMock.extension.getExtension(),
+        extension: vscodeMock.extensions.getExtension(),
     }
 
     return state

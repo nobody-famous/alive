@@ -8,7 +8,7 @@ jest.useFakeTimers()
 
 describe('LispRepl tests', () => {
     const fakeContext = { subscriptions: [], extensionPath: '/some/path' }
-    const extension = vscodeMock.extension.getExtension()
+    const extension = vscodeMock.extensions.getExtension()
 
     const createRepl = () => {
         const repl = new LispRepl(fakeContext, extension)
