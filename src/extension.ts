@@ -393,7 +393,7 @@ async function diagnosticsRefresh(
     }
 }
 
-function printReplInit(ui: UI, state: ExtensionState) {
+function showReplVersionInfo(ui: UI, state: ExtensionState) {
     if (state.extension.packageJSON && state.extension.packageJSON.version) {
         ui.addReplOutput(`; Alive REPL (v${state.extension.packageJSON.version})`)
     }
@@ -410,7 +410,7 @@ function registerUIEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     ui.on('inspectRefreshMacro', (info) => lsp.inspectRefreshMacro(info))
     ui.on('inspectMacroInc', (info) => lsp.inspectMacroInc(info))
     ui.on('diagnosticsRefresh', (editors) => diagnosticsRefresh(lsp, state, editors))
-    ui.on('printReplInit', () => printReplInit(ui, state))
+    ui.on('showReplVersionInfo', () => showReplVersionInfo(ui, state))
 }
 
 function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {

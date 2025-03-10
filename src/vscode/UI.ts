@@ -23,7 +23,7 @@ export declare interface UIEvents {
     inspectMacroInc: [info: InspectInfo]
     listPackages: [fn: (pkgs: Package[]) => void]
     diagnosticsRefresh: [editors: readonly vscode.TextEditor[]]
-    printReplInit: []
+    showReplVersionInfo: []
 }
 
 export interface UIState {
@@ -340,8 +340,8 @@ export class UI extends EventEmitter<UIEvents> {
             updateReplInput()
         })
 
-        this.replView.on('printReplInit', () => {
-            this.emit('printReplInit')
+        this.replView.on('showReplVersionInfo', () => {
+            this.emit('showReplVersionInfo')
         })
     }
 

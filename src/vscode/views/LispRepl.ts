@@ -9,7 +9,7 @@ interface ReplEvents {
     historyDown: []
     userInput: [string]
     eval: [string, string]
-    printReplInit: []
+    showReplVersionInfo: []
 }
 
 interface ReplOutput {
@@ -55,7 +55,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                     case 'userInput':
                         return this.emit('userInput', msg.text ?? '')
                     case 'viewDidMounted':
-                        return this.emit('printReplInit')
+                        return this.emit('showReplVersionInfo')
                 }
             },
             undefined,
