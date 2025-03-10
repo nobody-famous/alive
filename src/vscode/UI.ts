@@ -23,11 +23,13 @@ export declare interface UIEvents {
     inspectMacroInc: [info: InspectInfo]
     listPackages: [fn: (pkgs: Package[]) => void]
     diagnosticsRefresh: [editors: readonly vscode.TextEditor[]]
+    printReplInit: []
 }
 
 export interface UIState {
     ctx: AliveContext
     config: { packageTree: PackageTreeConfig }
+    extension: vscode.Extension<unknown>
 }
 
 export class UI extends EventEmitter<UIEvents> {
@@ -50,7 +52,7 @@ export class UI extends EventEmitter<UIEvents> {
         this.packageTree = new PackagesTreeProvider([], state)
         this.asdfTree = new AsdfSystemsTreeProvider([])
         this.threadsTree = new ThreadsTreeProvider([])
-        this.replView = new LispRepl(state.ctx)
+        this.replView = new LispRepl(state.ctx, state.extension)
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
         this.debugViews = []
@@ -336,6 +338,10 @@ export class UI extends EventEmitter<UIEvents> {
         this.replView.on('historyDown', () => {
             this.historyTree.decrementIndex()
             updateReplInput()
+        })
+
+        this.replView.on('printReplInit', () => {
+            this.emit('printReplInit')
         })
     }
 

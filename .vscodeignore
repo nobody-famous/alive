@@ -11,3 +11,5 @@ coverage/
 **/*.ts
 !file.ts
 **/*.js.map
+src/
+node_modules/

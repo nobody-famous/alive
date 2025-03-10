@@ -2,7 +2,6 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import EventEmitter = require('events')
 import { AliveContext } from '../Types'
-import { getNonce } from '../Utils'
 
 interface ReplEvents {
     requestPackage: []
@@ -10,6 +9,7 @@ interface ReplEvents {
     historyDown: []
     userInput: [string]
     eval: [string, string]
+    printReplInit: []
 }
 
 interface ReplOutput {
@@ -21,13 +21,15 @@ interface ReplOutput {
 export class LispRepl extends EventEmitter<ReplEvents> implements vscode.WebviewViewProvider {
     private view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
+    private extension: vscode.Extension<unknown>
     private package: string
     private replOutput: Array<ReplOutput>
 
-    constructor(ctx: AliveContext) {
+    constructor(ctx: AliveContext, extension: vscode.Extension<unknown>) {
         super()
 
         this.ctx = ctx
+        this.extension = extension
         this.package = 'cl-user'
         this.replOutput = []
     }
@@ -52,6 +54,8 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                         return this.emit('historyDown')
                     case 'userInput':
                         return this.emit('userInput', msg.text ?? '')
+                    case 'viewDidMounted':
+                        return this.emit('printReplInit')
                 }
             },
             undefined,
@@ -61,10 +65,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         webviewView.onDidChangeVisibility(() => this.restoreState())
 
         webviewView.webview.html = this.getWebviewContent(webviewView.webview)
-
-        setTimeout(() => {
-            this.setPackage(this.package)
-        }, 200)
     }
 
     clear() {
@@ -145,19 +145,17 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'index.css'))
         const scriptUri = webview.asWebviewUri(jsPath)
         const stylesUri = webview.asWebviewUri(cssPath)
-
-        const nonce = getNonce()
+        const version = this.extension.packageJSON.version || ''
 
         return `
             <!DOCTYPE html>
             <html>
                 <head>
-                    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
                     <link rel="stylesheet" type="text/css" href="${stylesUri}">
                 </head>
                 <body>
-                    <div id="root"></div>
-                    <script nonce="${nonce}" src="${scriptUri}"></script>
+                    <div id="root" data-init-package="${this.package}" data-extension-version="${version}"></div>
+                    <script src="${scriptUri}"></script>
                 </body>
             </html>
         `.trim()

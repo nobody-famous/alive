@@ -1,49 +1,55 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { throttle } from './utils'
 
-declare var acquireVsCodeApi: any
+declare const acquireVsCodeApi: any
+
+interface ReplOutputItem {
+    type: string
+    text: string
+    pkgName?: string
+}
 
 export default function AliveREPL() {
-    const [vscodeApi, setVscodeApi] = useState(null)
-    const scrollReplRef = useRef(null)
+    const [vscodeApi, setVscodeApi] = useState<any>(null)
 
     const [packageName, setPackageName] = useState('')
     const [inputText, setInputText] = useState('')
-    const [outputItems, setOutputItems] = useState([])
+    const [outputItems, setOutputItems] = useState<ReplOutputItem[]>([])
 
-    const inputRef = useRef(null)
-    const replOutputRef = useRef(null)
-    const calledOnce = React.useRef(false)
+    const scrollReplRef = useRef<Function>(null)
+    const inputRef = useRef<HTMLInputElement>(null)
+    const replOutputRef = useRef<HTMLDivElement>(null)
+    const calledOnce = useRef(false)
 
-    const messageHandler = (event) => {
-        const data = event.data
+    const messageHandler = useCallback((event: MessageEvent) => {
+        const data = event.data;
 
         switch (data.type) {
             case 'setInput':
-                setInputText(data.text)
-                break
+                setInputText(data.text);
+                break;
             case 'clearInput':
-                setInputText('')
-                break
+                setInputText('');
+                break;
             case 'setOutput':
-                setOutputItems(data.items)
-                scrollReplRef.current()
-                break
+                setOutputItems(data.items);
+                scrollReplRef.current?.();
+                break;
             case 'appendOutput':
-                setOutputItems(prevOutputItems => [...prevOutputItems, data.obj])
-                scrollReplRef.current()
-                break
+                setOutputItems(prevOutputItems => [...prevOutputItems, data.obj]);
+                scrollReplRef.current?.();
+                break;
             case 'clear':
-                setOutputItems([])
+                setOutputItems([]);
                 break;
             case 'setPackage':
-                setPackageName(data.name)
-                inputRef.current?.focus()
-                break
+                setPackageName(data.name);
+                inputRef.current?.focus();
+                break;
             default:
-                break
+                break;
         }
-    }
+    }, []); // Empty array makes the handler stable
 
     useEffect(() => {
         if (calledOnce.current) return
@@ -54,6 +60,24 @@ export default function AliveREPL() {
 
         // Scroll the output view with a delay
         scrollReplRef.current = throttle(() => scrollReplView(), 80)
+
+        // Get initial package name and extension version from root element
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            const initPackage = rootElement.getAttribute('data-init-package')
+            if (initPackage) {
+                setPackageName(initPackage)
+            }
+
+            const extensionVersion = rootElement.getAttribute('data-extension-version')
+            if (extensionVersion) {
+                console.log("inside")
+                setOutputItems((prevOutputItems) => {
+                    const versionInfo = `; Alive REPL (v${extensionVersion})`
+                    return [...prevOutputItems, { type: 'output', text: versionInfo }]
+                })
+            }
+        }
     }, [])
 
     useEffect(() => {

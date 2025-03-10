@@ -205,10 +205,6 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     if (activeDoc !== undefined) {
         vscode.window.showTextDocument(activeDoc)
     }
-
-    if (state.extension.packageJSON && state.extension.packageJSON.version) {
-        setTimeout(() => ui.addReplOutput(`; Alive REPL (v${state.extension.packageJSON.version})`), 250)
-    }
 }
 
 function createUI(state: ExtensionState) {
@@ -397,6 +393,12 @@ async function diagnosticsRefresh(
     }
 }
 
+function printReplInit(ui: UI, state: ExtensionState) {
+    if (state.extension.packageJSON && state.extension.packageJSON.version) {
+        ui.addReplOutput(`; Alive REPL (v${state.extension.packageJSON.version})`)
+    }
+}
+
 function registerUIEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
     ui.on('listPackages', async (fn) => fn(await lsp.listPackages()))
@@ -408,6 +410,7 @@ function registerUIEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     ui.on('inspectRefreshMacro', (info) => lsp.inspectRefreshMacro(info))
     ui.on('inspectMacroInc', (info) => lsp.inspectMacroInc(info))
     ui.on('diagnosticsRefresh', (editors) => diagnosticsRefresh(lsp, state, editors))
+    ui.on('printReplInit', () => printReplInit(ui, state))
 }
 
 function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
