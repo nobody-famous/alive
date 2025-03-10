@@ -100,20 +100,13 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     addText(text: string) {
+        console.log('***** ADD TEXT', text)
         this.replText = `${this.replText}${text}${os.EOL}`
 
-        if (this.updateTextId !== undefined) {
-            return
-        }
-
-        this.updateTextId = setTimeout(() => {
-            this.updateTextId = undefined
-
-            this.view?.webview.postMessage({
-                type: 'setText',
-                text: this.replText,
-            })
-        }, 150)
+        this.view?.webview.postMessage({
+            type: 'setText',
+            text: this.replText,
+        })
     }
 
     getUserInput() {

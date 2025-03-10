@@ -11,6 +11,7 @@ body {
 }
 
 .repl-text {
+    background: blue;
     overflow: auto;
     resize: none;
     flex-grow: 1;
