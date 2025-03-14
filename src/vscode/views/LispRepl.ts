@@ -9,7 +9,6 @@ interface ReplEvents {
     historyDown: []
     userInput: [string]
     eval: [string, string]
-    showReplVersionInfo: []
 }
 
 interface ReplOutput {
@@ -24,6 +23,8 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     private extension: vscode.Extension<unknown>
     private package: string
     private replOutput: Array<ReplOutput>
+    private webviewReady: boolean = false
+    private hasBeenCleared: boolean = false
 
     constructor(ctx: AliveContext, extension: vscode.Extension<unknown>) {
         super()
@@ -36,6 +37,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
 
     resolveWebviewView(webviewView: Pick<vscode.WebviewView, 'webview' | 'onDidChangeVisibility'>): void | Thenable<void> {
         this.view = webviewView
+        this.webviewReady = false
 
         webviewView.webview.options = {
             enableScripts: true,
@@ -54,20 +56,22 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                         return this.emit('historyDown')
                     case 'userInput':
                         return this.emit('userInput', msg.text ?? '')
-                    case 'viewDidMounted':
-                        return this.emit('showReplVersionInfo')
+                    case 'webviewReady':
+                        this.webviewReady = true
+                        return this.restoreState()
                 }
             },
             undefined,
             this.ctx.subscriptions
         )
 
-        webviewView.onDidChangeVisibility(() => this.restoreState())
+        webviewView.onDidChangeVisibility(() => this.restoreState)
 
         webviewView.webview.html = this.getWebviewContent(webviewView.webview)
     }
 
     clear() {
+        this.hasBeenCleared = true
         this.replOutput = []
         this.view?.webview.postMessage({
             type: 'clear',
@@ -75,10 +79,15 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     restoreState() {
+        if (!this.webviewReady) {
+            return
+        }
+        
         this.setPackage(this.package)
         this.view?.webview.postMessage({
-            type: 'setOutput',
-            items: this.replOutput
+            type: 'restoreState',
+            items: this.replOutput,
+            hasBeenCleared: this.hasBeenCleared,
         })
     }
 

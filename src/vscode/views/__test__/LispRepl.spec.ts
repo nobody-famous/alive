@@ -24,7 +24,7 @@ describe('LispRepl tests', () => {
     }
 
     it('changeVisibility', () => {
-        const repl = new LispRepl(fakeContext, extension)
+        const { cb, repl } = createRepl()
         const webview = createFakeWebview()
         let fn: (() => void) | undefined
 
@@ -35,6 +35,8 @@ describe('LispRepl tests', () => {
                 return { dispose: jest.fn() }
             },
         })
+
+        cb?.({ command: 'webviewReady' })
 
         fn?.()
 

@@ -23,7 +23,6 @@ export declare interface UIEvents {
     inspectMacroInc: [info: InspectInfo]
     listPackages: [fn: (pkgs: Package[]) => void]
     diagnosticsRefresh: [editors: readonly vscode.TextEditor[]]
-    showReplVersionInfo: []
 }
 
 export interface UIState {
@@ -338,10 +337,6 @@ export class UI extends EventEmitter<UIEvents> {
         this.replView.on('historyDown', () => {
             this.historyTree.decrementIndex()
             updateReplInput()
-        })
-
-        this.replView.on('showReplVersionInfo', () => {
-            this.emit('showReplVersionInfo')
         })
     }
 
