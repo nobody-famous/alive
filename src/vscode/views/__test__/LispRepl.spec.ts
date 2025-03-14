@@ -1,13 +1,17 @@
 import { LispRepl } from '../LispRepl'
 import { createFakeWebview } from './utils'
 
+const vscodeMock = jest.requireMock('vscode')
+jest.mock('vscode')
+
 jest.useFakeTimers()
 
 describe('LispRepl tests', () => {
     const fakeContext = { subscriptions: [], extensionPath: '/some/path' }
+    const extension = vscodeMock.extensions.getExtension()
 
     const createRepl = () => {
-        const repl = new LispRepl(fakeContext)
+        const repl = new LispRepl(fakeContext, extension)
         const webview = createFakeWebview()
         let cb: ((msg: { command: string; text?: string }) => void) | undefined
 
@@ -20,7 +24,7 @@ describe('LispRepl tests', () => {
     }
 
     it('changeVisibility', () => {
-        const repl = new LispRepl(fakeContext)
+        const { cb, repl } = createRepl()
         const webview = createFakeWebview()
         let fn: (() => void) | undefined
 
@@ -31,6 +35,8 @@ describe('LispRepl tests', () => {
                 return { dispose: jest.fn() }
             },
         })
+
+        cb?.({ command: 'webviewReady' })
 
         fn?.()
 
@@ -43,38 +49,6 @@ describe('LispRepl tests', () => {
         expect(webview.html).toContain('<html>')
     })
 
-    describe('clear', () => {
-        it('Has view', () => {
-            const { repl, webview } = createRepl()
-
-            repl.clear()
-
-            expect(webview.postMessage).toHaveBeenCalled()
-        })
-
-        it('No view', () => {
-            const repl = new LispRepl(fakeContext)
-
-            repl.clear()
-        })
-    })
-
-    describe('restoreState', () => {
-        it('Has view', () => {
-            const { repl, webview } = createRepl()
-
-            repl.restoreState()
-
-            expect(webview.postMessage).toHaveBeenCalledTimes(2)
-        })
-
-        it('No view', () => {
-            const repl = new LispRepl(fakeContext)
-
-            repl.restoreState()
-        })
-    })
-
     describe('setPackage', () => {
         it('Has view', () => {
             const { repl, webview } = createRepl()
@@ -85,7 +59,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.setPackage('Some package')
         })
@@ -101,7 +75,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.setInput('Some input')
         })
@@ -117,7 +91,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.clearInput()
         })
@@ -133,17 +107,17 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
             repl.getUserInput()
         })
     })
 
-    describe('addText', () => {
+    describe('addOutput', () => {
         it('First try', () => {
             const { repl, webview } = createRepl()
 
-            repl.addText('Some text')
+            repl.addOutput('Some text')
 
             jest.runAllTimers()
 
@@ -153,18 +127,18 @@ describe('LispRepl tests', () => {
         it('Second try', () => {
             const { repl, webview } = createRepl()
 
-            repl.addText('Some text')
-            repl.addText('Some more text')
+            repl.addOutput('Some text')
+            repl.addOutput('Some more text')
 
             jest.runAllTimers()
 
-            expect(webview.postMessage).toHaveBeenCalledTimes(1)
+            expect(webview.postMessage).toHaveBeenCalledTimes(2)
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext)
+            const repl = new LispRepl(fakeContext, extension)
 
-            repl.addText('Some text')
+            repl.addOutput('Some text')
 
             jest.runAllTimers()
         })

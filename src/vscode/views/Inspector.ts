@@ -276,8 +276,8 @@ export class Inspector extends EventEmitter<InspectorEvents> {
     }
 
     private renderHtml(panel: vscode.WebviewPanel) {
-        const jsPath = vscode.Uri.file(path.join(this.extensionPath, 'resource', 'inspector', 'inspect.js'))
-        const cssPath = vscode.Uri.file(path.join(this.extensionPath, 'resource', 'inspector', 'inspect.css'))
+        const jsPath = vscode.Uri.file(path.join(this.extensionPath, 'resources', 'inspector', 'inspect.js'))
+        const cssPath = vscode.Uri.file(path.join(this.extensionPath, 'resources', 'inspector', 'inspect.css'))
 
         panel.webview.html =
             this.info.resultType === 'macro'

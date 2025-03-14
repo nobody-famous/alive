@@ -4,6 +4,12 @@
         "outDir": "out",
         "sourceMap": true
     },
-    "include": ["src/**/*.ts"],
-    "exclude": ["node_modules", "**/__mocks__/*"]
+    "include": [
+        "src/**/*.ts",
+        "webview/**/*.{ts,tsx}"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/__mocks__/*"
+    ]
 }

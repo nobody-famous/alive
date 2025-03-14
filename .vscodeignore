@@ -2,3 +2,16 @@
 .vscode-test/**
 .gitignore
 vsc-extension-quickstart.md
+.github/
+esbuild.config.json
+tsconfig*.json
+*.md
+__mocks__/
+coverage/
+**/*.ts
+!file.ts
+**/*.js.map
+src/
+node_modules/
+images/
+resources/
