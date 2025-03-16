@@ -104,25 +104,6 @@ export class DebugView extends EventEmitter<DebugEvents> {
         }
     }
 
-    private renderCondList() {
-        let str = ''
-
-        str += `<div class="list-item">${strToHtml(this.info.message)}</div>`
-
-        return str
-    }
-
-    private renderCondition() {
-        return `
-            <div id="condition">
-                <div class="title">Condition</div>
-                <div class="list-box">
-                    ${this.renderCondList()}
-                </div>
-            </div>
-        `
-    }
-
     private renderBtList() {
         let str = ''
         let ndx = this.info.stackTrace.length
@@ -194,17 +175,6 @@ export class DebugView extends EventEmitter<DebugEvents> {
         return str
     }
 
-    private renderRestarts() {
-        return `
-            <div id="restarts">
-                <div class="title">Restarts</div>
-                <div class="list-box">
-                    ${this.renderRestartList()}
-                </div>
-            </div>
-        `
-    }
-
     private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.css'))
@@ -215,9 +185,33 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
             </head>
             <body>
+                <template id="condition">
+                    <div>
+                        <div class="title">Condition</div>
+                        <div class="list-box">
+                            <div class="list-item"><slot></slot></div>
+                        </div>
+                    </div>
+                </template>
+
+                <template id="restarts">
+                    <style>
+                        #restarts {
+                            margin-bottom: 1.5rem;
+                        }
+                    </style>
+
+                    <div id="restarts">
+                        <div class="title">Restarts</div>
+                        <div class="list-box">
+                            ${this.renderRestartList()}
+                        </div>
+                    </div>
+                </template>
+
                 <div id="content">
-                    ${this.renderCondition()}
-                    ${this.renderRestarts()}
+                    <debug-condition>${strToHtml(this.info.message)}</debug-condition>
+                    <debug-restarts></debug-restarts>
                     ${this.renderBacktrace()}
                 </div>
 

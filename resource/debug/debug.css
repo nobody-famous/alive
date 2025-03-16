@@ -17,6 +17,14 @@
     font-weight: bold;
 }
 
+body.vscode-dark {
+    --list-background: #222;
+}
+
+body.vscode-light {
+    --list-background: #eee;
+}
+
 body.vscode-dark .list-box {
     margin-left: 0.5rem;
     padding: 0.5rem;
