@@ -12,6 +12,24 @@ function inspect_cond() {
     vscode.postMessage({ command: 'inspect_cond' })
 }
 
+function setRestarts(restarts) {
+    const div = document.getElementById('restarts')
+
+    for (const [index, restart] of restarts.entries()) {
+        div.addItem(index, restart)
+    }
+}
+
+window.addEventListener('message', (event) => {
+    const data = event.data
+
+    switch (data.type) {
+        case 'hydrate':
+            setRestarts(data.restarts)
+            break
+    }
+})
+
 const style = new CSSStyleSheet()
 
 style.replaceSync(`
@@ -47,7 +65,7 @@ customElements.define(
         constructor() {
             super()
 
-            const template = document.getElementById('condition')
+            const template = document.getElementById('condition-template')
             const shadow = this.attachShadow({ mode: 'open' })
 
             shadow.adoptedStyleSheets = [style]
@@ -62,11 +80,53 @@ customElements.define(
         constructor() {
             super()
 
-            const template = document.getElementById('restarts')
-            const shadow = this.attachShadow({ mode: 'open' })
+            const template = document.getElementById('restarts-template')
 
-            shadow.adoptedStyleSheets = [style]
-            shadow.appendChild(template.content.cloneNode(true))
+            this.shadow = this.attachShadow({ mode: 'open' })
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.appendChild(template.content.cloneNode(true))
+        }
+
+        addItem(index, item) {
+            const box = this.shadow.getElementById('box')
+            const elem = document.createElement('debug-restart-item')
+
+            elem.setInfo(index, item)
+
+            box.appendChild(elem)
+        }
+    }
+)
+
+function strToHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+}
+
+customElements.define(
+    'debug-restart-item',
+    class ConditionElement extends HTMLElement {
+        constructor() {
+            super()
+
+            const template = document.getElementById('restart-item-template')
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.appendChild(template.content.cloneNode(true))
+
+            this.addEventListener('click', () => {
+                if (Number.isInteger(this.index)) {
+                    restart(this.index)
+                }
+            })
+        }
+
+        setInfo(index, item) {
+            const text = `${index}: [${strToHtml(item.name)}] ${strToHtml(item.description)}`
+            const box = this.shadow.getElementById('box')
+
+            this.index = index
+            box.textContent = text
         }
     }
 )

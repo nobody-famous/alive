@@ -49,6 +49,11 @@ export class DebugView extends EventEmitter<DebugEvents> {
         this.setPanelCallbacks(this.panel)
 
         this.renderHtml(this.panel)
+
+        this.panel.webview.postMessage({
+            type: 'hydrate',
+            restarts: this.info.restarts,
+        })
     }
 
     private setPanelCallbacks(panel: vscode.WebviewPanel) {
@@ -185,7 +190,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
             </head>
             <body>
-                <template id="condition">
+                <template id="condition-template">
                     <div>
                         <div class="title">Condition</div>
                         <div class="list-box">
@@ -194,24 +199,26 @@ export class DebugView extends EventEmitter<DebugEvents> {
                     </div>
                 </template>
 
-                <template id="restarts">
+                <template id="restarts-template">
                     <style>
                         #restarts {
                             margin-bottom: 1.5rem;
                         }
                     </style>
 
-                    <div id="restarts">
+                    <div id="restarts-div">
                         <div class="title">Restarts</div>
-                        <div class="list-box">
-                            ${this.renderRestartList()}
-                        </div>
+                        <div id="box" class="list-box"></div>
                     </div>
+                </template>
+                
+                <template id="restart-item-template">
+                    <div id="box" class="list-item restart-item clickable"></div>
                 </template>
 
                 <div id="content">
                     <debug-condition>${strToHtml(this.info.message)}</debug-condition>
-                    <debug-restarts></debug-restarts>
+                    <debug-restarts id="restarts"></debug-restarts>
                     ${this.renderBacktrace()}
                 </div>
 
