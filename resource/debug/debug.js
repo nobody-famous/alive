@@ -90,17 +90,15 @@ customElements.define(
         addItem(index, item) {
             const box = this.shadow.getElementById('box')
             const elem = document.createElement('debug-restart-item')
+            const text = `${index}: [${item.name}] ${item.description}`
 
-            elem.setInfo(index, item)
+            elem.setText(text)
+            elem.setIndex(index)
 
             box.appendChild(elem)
         }
     }
 )
-
-function strToHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
-}
 
 customElements.define(
     'debug-restart-item',
@@ -121,12 +119,13 @@ customElements.define(
             })
         }
 
-        setInfo(index, item) {
-            const text = `${index}: [${strToHtml(item.name)}] ${strToHtml(item.description)}`
-            const box = this.shadow.getElementById('box')
+        setIndex(value) {
+            this.index = value
+        }
 
-            this.index = index
-            box.textContent = text
+        setText(value) {
+            const box = this.shadow.getElementById('box')
+            box.textContent = value
         }
     }
 )

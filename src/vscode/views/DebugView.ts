@@ -160,26 +160,6 @@ export class DebugView extends EventEmitter<DebugEvents> {
         `
     }
 
-    private renderRestartItem(ndx: number, info: RestartInfo) {
-        return `
-            <div class="list-item restart-item clickable" onclick="restart(${ndx})">
-                ${ndx}: [${strToHtml(info.name)}] ${strToHtml(info.description)}
-            </div>
-        `
-    }
-
-    private renderRestartList() {
-        let str = ''
-        let ndx = 0
-
-        for (const restart of this.info.restarts) {
-            str += this.renderRestartItem(ndx, restart)
-            ndx += 1
-        }
-
-        return str
-    }
-
     private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.css'))
