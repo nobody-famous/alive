@@ -20,12 +20,21 @@ function setRestarts(restarts) {
     }
 }
 
+function setBacktrace(backtrace) {
+    const div = document.getElementById('backtrace')
+
+    for (const [index, item] of backtrace.entries()) {
+        div.addItem(index, item)
+    }
+}
+
 window.addEventListener('message', (event) => {
     const data = event.data
 
     switch (data.type) {
         case 'hydrate':
             setRestarts(data.restarts)
+            setBacktrace(data.backtrace)
             break
     }
 })
@@ -49,6 +58,10 @@ style.replaceSync(`
         flex-direction: row;
         margin-top: 0.25rem;
         margin-bottom: 0.25rem;
+    }
+    .list-item-ndx {
+        flex-shrink: 1;
+        margin-right: 0.5rem;
     }
     .clickable {
         cursor: pointer;
@@ -141,6 +154,92 @@ customElements.define(
         setText(value) {
             const box = this.shadow.getElementById('box')
             box.textContent = value
+        }
+    }
+)
+
+customElements.define(
+    'debug-backtrace',
+    class extends HTMLElement {
+        constructor() {
+            super()
+
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div id="backtrace">
+                    <div class="title">Backtrace</div>
+                    <div id="box" class="list-box"></div>
+                </div>
+            `
+        }
+
+        addItem(index, item) {
+            const box = this.shadow.getElementById('box')
+            const elem = document.createElement('debug-backtrace-item')
+
+            elem.setIndex(index)
+            elem.setItem(item)
+
+            box.appendChild(elem)
+        }
+    }
+)
+
+customElements.define(
+    'debug-backtrace-item',
+    class extends HTMLElement {
+        constructor() {
+            super()
+
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="list-item stacktrace-item">
+                    <div id="index-field" class="list-item-ndx"></div>
+                    <div id="loc-field" class="list-item-loc">
+                        <div id="fn-field" class="list-item-fn"></div>
+                        <div id="file-field" class="list-item-file"></div>
+                    </div>
+                </div>
+            `
+            this.addEventListener('click', () => {
+                if (this.item?.file != null && this.item?.position != null) {
+                    jump_to(this.item.file, this.item.position.line, this.item.position.character)
+                }
+            })
+        }
+
+        setIndex(value) {
+            const elem = this.shadow.getElementById('index-field')
+            elem.textContent = value
+        }
+
+        posStr(file, pos) {
+            if (file == null) {
+                return ''
+            }
+
+            const str = pos != null ? `:${pos.line + 1}:${pos.character + 1}` : ''
+
+            return `${file}${str}`
+        }
+
+        setItem(item) {
+            const locElem = this.shadow.getElementById('loc-field')
+            const fnElem = this.shadow.getElementById('fn-field')
+            const fileElem = this.shadow.getElementById('file-field')
+
+            this.item = item
+
+            if (this.item.file != null && this.item.position != null) {
+                locElem.classList.add('clickable')
+            }
+
+            fnElem.textContent = this.item.function
+            fileElem.textContent = this.posStr(this.item.file, this.item.position)
         }
     }
 )

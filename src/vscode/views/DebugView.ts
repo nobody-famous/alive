@@ -53,6 +53,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
         this.panel.webview.postMessage({
             type: 'hydrate',
             restarts: this.info.restarts,
+            backtrace: this.info.stackTrace,
         })
     }
 
@@ -109,57 +110,6 @@ export class DebugView extends EventEmitter<DebugEvents> {
         }
     }
 
-    private renderBtList() {
-        let str = ''
-        let ndx = this.info.stackTrace.length
-
-        const posStr = (file: string | null, pos: vscode.Position | null) => {
-            if (file === null) {
-                return ''
-            }
-
-            let str = strToHtml(file)
-
-            if (pos != null) {
-                const lineStr = `${pos.line + 1}`
-                const charStr = `${pos.character + 1}`
-                str += `:${lineStr}:${charStr}`
-            }
-
-            return str
-        }
-
-        for (const bt of this.info.stackTrace) {
-            const selectClass = bt.file !== null && bt.position !== null ? 'clickable' : ''
-
-            str += `
-                <div class="list-item stacktrace-item">
-                    <div class="list-item-ndx">${ndx}</div>
-                    <div class="list-item-loc ${selectClass}"
-                        onclick="jump_to('${strToHtml(bt.file ?? '')}', ${bt.position?.line}, ${bt.position?.character})"
-                    >
-                        <div class="list-item-fn">${strToHtml(bt.function)}</div>
-                        <div class="list-item-file">${posStr(bt.file, bt.position)}</div>
-                    </div>
-                </div>
-            `
-            ndx -= 1
-        }
-
-        return str
-    }
-
-    private renderBacktrace() {
-        return `
-            <div id="backtrace">
-                <div class="title">Backtrace</div>
-                <div class="list-box">
-                    ${this.renderBtList()}
-                </div>
-            </div>
-        `
-    }
-
     private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.css'))
@@ -173,7 +123,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 <div id="content">
                     <debug-condition>${strToHtml(this.info.message)}</debug-condition>
                     <debug-restarts id="restarts"></debug-restarts>
-                    ${this.renderBacktrace()}
+                    <debug-backtrace id="backtrace"></debug-backtrace>
                 </div>
 
                 <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
