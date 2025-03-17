@@ -61,30 +61,45 @@ style.replaceSync(`
 
 customElements.define(
     'debug-condition',
-    class ConditionElement extends HTMLElement {
+    class extends HTMLElement {
         constructor() {
             super()
 
-            const template = document.getElementById('condition-template')
             const shadow = this.attachShadow({ mode: 'open' })
 
             shadow.adoptedStyleSheets = [style]
-            shadow.appendChild(template.content.cloneNode(true))
+            shadow.innerHTML = `
+                <div>
+                    <div class="title">Condition</div>
+                    <div class="list-box">
+                        <div class="list-item"><slot></slot></div>
+                    </div>
+                </div>
+            `
         }
     }
 )
 
 customElements.define(
     'debug-restarts',
-    class ConditionElement extends HTMLElement {
+    class extends HTMLElement {
         constructor() {
             super()
 
-            const template = document.getElementById('restarts-template')
-
             this.shadow = this.attachShadow({ mode: 'open' })
             this.shadow.adoptedStyleSheets = [style]
-            this.shadow.appendChild(template.content.cloneNode(true))
+            this.shadow.innerHTML = `
+                <style>
+                    #restarts {
+                        margin-bottom: 1.5rem;
+                    }
+                </style>
+
+                <div id="restarts-div">
+                    <div class="title">Restarts</div>
+                    <div id="box" class="list-box"></div>
+                </div>
+            `
         }
 
         addItem(index, item) {
@@ -102,15 +117,15 @@ customElements.define(
 
 customElements.define(
     'debug-restart-item',
-    class ConditionElement extends HTMLElement {
+    class extends HTMLElement {
         constructor() {
             super()
 
-            const template = document.getElementById('restart-item-template')
             this.shadow = this.attachShadow({ mode: 'open' })
-
             this.shadow.adoptedStyleSheets = [style]
-            this.shadow.appendChild(template.content.cloneNode(true))
+            this.shadow.innerHTML = `
+                <div id="box" class="list-item restart-item clickable"></div>
+            `
 
             this.addEventListener('click', () => {
                 if (Number.isInteger(this.index)) {

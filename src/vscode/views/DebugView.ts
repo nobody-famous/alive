@@ -170,32 +170,6 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
             </head>
             <body>
-                <template id="condition-template">
-                    <div>
-                        <div class="title">Condition</div>
-                        <div class="list-box">
-                            <div class="list-item"><slot></slot></div>
-                        </div>
-                    </div>
-                </template>
-
-                <template id="restarts-template">
-                    <style>
-                        #restarts {
-                            margin-bottom: 1.5rem;
-                        }
-                    </style>
-
-                    <div id="restarts-div">
-                        <div class="title">Restarts</div>
-                        <div id="box" class="list-box"></div>
-                    </div>
-                </template>
-                
-                <template id="restart-item-template">
-                    <div id="box" class="list-item restart-item clickable"></div>
-                </template>
-
                 <div id="content">
                     <debug-condition>${strToHtml(this.info.message)}</debug-condition>
                     <debug-restarts id="restarts"></debug-restarts>
