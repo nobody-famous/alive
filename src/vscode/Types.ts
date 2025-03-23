@@ -82,6 +82,7 @@ export interface SourceLocation {
     function: string
     file: string | null
     position: vscode.Position | null
+    vars: Record<string, string> | null
 }
 
 export interface DebugInfo {

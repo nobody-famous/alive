@@ -63,6 +63,9 @@ style.replaceSync(`
         flex-shrink: 1;
         margin-right: 0.5rem;
     }
+    .list-item-vars {
+        margin-left: 1rem;
+    }
     .clickable {
         cursor: pointer;
     }
@@ -202,6 +205,7 @@ customElements.define(
                     <div id="loc-field" class="list-item-loc">
                         <div id="fn-field" class="list-item-fn"></div>
                         <div id="file-field" class="list-item-file"></div>
+                        <div id="vars-box" class="list-item-vars"></div>
                     </div>
                 </div>
             `
@@ -231,6 +235,7 @@ customElements.define(
             const locElem = this.shadow.getElementById('loc-field')
             const fnElem = this.shadow.getElementById('fn-field')
             const fileElem = this.shadow.getElementById('file-field')
+            const varsElem = this.shadow.getElementById('vars-box')
 
             this.item = item
 
@@ -240,6 +245,12 @@ customElements.define(
 
             fnElem.textContent = this.item.function
             fileElem.textContent = this.posStr(this.item.file, this.item.position)
+
+            for (const [name, value] of Object.entries(item.vars ?? {})) {
+                const elem = document.createElement('div')
+                elem.textContent = `${name}: ${value}`
+                varsElem.appendChild(elem)
+            }
         }
     }
 )
