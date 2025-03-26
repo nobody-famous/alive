@@ -4,7 +4,7 @@ import * as vscode from 'vscode'
 import { readAliveConfig } from './config'
 import { isFiniteNumber, isHistoryItem, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
-import { ExtensionState, HistoryItem, InspectInfo, InspectResult } from './vscode/Types'
+import { ExtensionState, HistoryItem, InspectInfo, InspectResult, isLispSymbol } from './vscode/Types'
 import { UI } from './vscode/UI'
 import {
     COMMON_LISP_ID,
@@ -26,6 +26,7 @@ import { isThreadNode } from './vscode/views/ThreadsTree'
 
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
+    vscode.commands.executeCommand('setContext', 'aliveExtensionActive', true)
 
     const extensionMetadata = vscode.extensions.getExtension('rheller.alive')
     if (extensionMetadata === undefined) {
@@ -103,12 +104,18 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.clearRepl', () => cmds.clearRepl(ui)),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
         vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(lsp, state)),
+        vscode.commands.registerCommand('alive.evalSurrounding', () => cmds.evalSurrounding(lsp)),
+        vscode.commands.registerCommand('alive.inlineEvalSurrounding', () => cmds.inlineEvalSurrounding(lsp, state)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(lsp)),
-        vscode.commands.registerCommand('alive.inspect', (symbol) => cmds.inspect(lsp, symbol)),
         vscode.commands.registerCommand('alive.inspectMacro', () => cmds.inspectMacro(lsp)),
         vscode.commands.registerCommand('alive.openScratchPad', () => cmds.openScratchPad(state)),
         vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(lsp)),
         vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(lsp)),
+        vscode.commands.registerCommand('alive.inspect', async (symbol) => {
+            if (isLispSymbol(symbol)) {
+                await cmds.inspect(lsp, symbol)
+            }
+        }),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
             const item = await ui.selectHistoryItem()
@@ -205,6 +212,10 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
     if (activeDoc !== undefined) {
         vscode.window.showTextDocument(activeDoc)
     }
+}
+
+export const deactivate = () => {
+    vscode.commands.executeCommand('setContext', 'aliveExtensionActive', false)
 }
 
 function createUI(state: ExtensionState) {

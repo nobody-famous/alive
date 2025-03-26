@@ -84,9 +84,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/vscode/backend/__test__/LSP.spec.ts",
+                "src/vscode/commands/__test__/Repl.spec.ts",
                 "-t",
-                "eval"
+                "evalSurrounding"
             ],
             "problemMatcher": [
                 "$tsc"

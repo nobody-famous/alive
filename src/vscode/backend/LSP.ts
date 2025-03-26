@@ -15,7 +15,7 @@ import {
     InspectInfo,
     InspectResult,
     LispSymbol,
-    MacroInfo,
+    SurroundingInfo,
     Package,
     Thread,
 } from '../Types'
@@ -445,6 +445,8 @@ export class LSP extends EventEmitter<LSPEvents> {
         try {
             const resp = await this.client?.sendRequest(method, { path })
 
+            this.emit('refreshInspectors')
+
             if (!isObject(resp) || !Array.isArray(resp.messages)) {
                 return { notes: [] }
             }
@@ -532,11 +534,11 @@ export class LSP extends EventEmitter<LSPEvents> {
         return await this.doMacroExpand('$/alive/macroexpand1', text, pkgName)
     }
 
-    getMacroInfo = async (
+    getSurroundingInfo = async (
         getTextFn: (range?: vscode.Range) => string,
         uri: string,
         selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
-    ): Promise<MacroInfo | undefined> => {
+    ): Promise<SurroundingInfo | undefined> => {
         const { range, text, pkg } = await this.doGetInfo(
             async () => await this.getSurroundingExprRange(uri, selection),
             getTextFn,

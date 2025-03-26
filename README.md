@@ -226,13 +226,21 @@ Selects the surrounding top level expression for the current cursor position.
 
 Sends selected text to the REPL. If nothing is selected, sends the top level form at the cursor position.
 
+### Eval Surrounding Form
+
+Sends selected text to the REPL. If nothing is selected, sends the immediate closing form at the cursor position.
+
 ### Load File (Alt+Shift+L)
 
 Load the current file into the REPL.
 
 ### Inline Evaluation (Alt+Shift+E)
 
-Evaluate the enclosing form, showing the result inline. If there is a selection, evaluates the selected code.
+Evaluate the enclosing top-level form, showing the result inline. If there is a selection, evaluates the selected code.
+
+### Inline Eval Surrounding Form
+
+Evaluate the immediate enclosing form at the cursor, showing the result inline. If there is a selection, evaluates the selected code.
 
 ### Clear Inline Results (Alt+Shift+C)
 

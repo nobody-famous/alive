@@ -1,6 +1,7 @@
 import { ChildProcessWithoutNullStreams } from 'child_process'
 import * as vscode from 'vscode'
 import { AliveConfig } from '../config'
+import { isObject, isString } from './Guards'
 
 export interface AliveContext {
     subscriptions: { dispose: () => unknown }[]
@@ -94,7 +95,7 @@ export interface EvalInfo {
     package: string
 }
 
-export interface MacroInfo {
+export interface SurroundingInfo {
     range: vscode.Range
     text: string
     package: string
@@ -114,4 +115,8 @@ export interface InspectInfo extends InspectResult {
 export interface LispSymbol {
     name: string
     package: string
+}
+
+export function isLispSymbol(data: unknown): data is LispSymbol {
+    return isObject(data) && isString(data.name) && isString(data.package)
 }

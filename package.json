@@ -229,6 +229,14 @@
                 "title": "Alive: Inline Eval"
             },
             {
+                "command": "alive.evalSurrounding",
+                "title": "Alive: Eval Surrounding Form"
+            },
+            {
+                "command": "alive.inlineEvalSurrounding",
+                "title": "Alive: Inline Eval Surrounding Form"
+            },
+            {
                 "command": "alive.clearInlineResults",
                 "title": "Alive: Clear Inline Results"
             },
@@ -418,7 +426,8 @@
             },
             {
                 "command": "alive.replHistory",
-                "key": "alt+shift+r"
+                "key": "alt+shift+r",
+                "when": "aliveExtensionActive"
             },
             {
                 "command": "alive.restart_0",
