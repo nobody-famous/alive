@@ -317,12 +317,11 @@ export class UI extends EventEmitter<UIEvents> {
             await this.requestPackage(this.replView)
         })
 
-        const updateReplInput = () => {
-            const item = this.historyTree.getCurrentItem()
+        const updateReplInputWithHistory = () => {
+            const historyItem = this.historyTree.getCurrentItem()
 
-            if (item !== undefined) {
-                this.replView.setPackage(item.pkgName)
-                this.replView.setInput(item.text)
+            if (historyItem !== undefined) {
+                this.replView.setInput(historyItem.text)
             } else {
                 this.replView.clearInput()
             }
@@ -330,12 +329,12 @@ export class UI extends EventEmitter<UIEvents> {
 
         this.replView.on('historyUp', () => {
             this.historyTree.incrementIndex()
-            updateReplInput()
+            updateReplInputWithHistory()
         })
 
         this.replView.on('historyDown', () => {
             this.historyTree.decrementIndex()
-            updateReplInput()
+            updateReplInputWithHistory()
         })
     }
 

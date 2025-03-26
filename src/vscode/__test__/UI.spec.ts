@@ -99,7 +99,6 @@ describe('UI tests', () => {
 
                 expect(historyMock.incrementIndex).toHaveBeenCalled()
                 expect(replMock.replClearInput).not.toHaveBeenCalled()
-                expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
             })
         })
@@ -125,7 +124,6 @@ describe('UI tests', () => {
 
                 expect(historyMock.decrementIndex).toHaveBeenCalled()
                 expect(replMock.replClearInput).not.toHaveBeenCalled()
-                expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
             })
         })
