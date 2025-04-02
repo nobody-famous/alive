@@ -18,7 +18,7 @@ interface ReplOutput {
 }
 
 export class LispRepl extends EventEmitter<ReplEvents> implements vscode.WebviewViewProvider {
-    private view?: Pick<vscode.WebviewView, 'webview'>
+    public view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
     private extension: vscode.Extension<unknown>
     private package: string

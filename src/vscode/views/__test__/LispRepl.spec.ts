@@ -160,4 +160,134 @@ describe('LispRepl tests', () => {
 
         expect(repl.emit).toHaveBeenCalledTimes(6)
     })
+
+    describe('clear', () => {
+        it('should clear REPL output and notify webview', () => {
+            const { repl, webview } = createRepl()
+
+            repl.addOutput('test output')
+            repl.addInput('test input', 'cl-user')
+
+            repl.clear()
+
+            expect(webview.postMessage).toHaveBeenCalledWith({
+                type: 'clear',
+            })
+
+            repl.restoreState()
+            expect(webview.postMessage).toHaveBeenLastCalledWith({
+                type: 'clear',
+            })
+        })
+    
+        it('should clear REPL output and skip webview notification when view is undefined', () => {
+            const { repl, webview } = createRepl()
+    
+            repl.view = undefined;
+            repl.addOutput('test output')
+            repl.addInput('test input', 'cl-user')
+    
+            repl.clear()
+    
+            expect(webview.postMessage).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('restoreState', () => {
+        it('should not restore state if webview is not ready', () => {
+            const { repl, webview } = createRepl()
+            
+            jest.clearAllMocks()
+            repl.restoreState()
+            
+            expect(webview.postMessage).not.toHaveBeenCalled()
+        })
+
+        it('should restore state when webview is ready', () => {
+            const { repl, webview, cb } = createRepl()
+            
+            jest.clearAllMocks()
+            
+            cb?.({ command: 'webviewReady' })
+            
+            repl.restoreState()
+            
+            expect(webview.postMessage).toHaveBeenCalledWith({
+                type: 'setPackage',
+                name: 'cl-user',
+            })
+            expect(webview.postMessage).toHaveBeenCalledWith({
+                type: 'restoreState',
+                items: [],
+                hasBeenCleared: false,
+            })
+        })
+
+        it('should handle undefined view', () => {
+            const { repl, webview, cb } = createRepl()
+            
+            cb?.({ command: 'webviewReady' })
+            
+            Object.defineProperty(repl, 'view', { value: undefined })
+            
+            expect(() => repl.restoreState()).not.toThrow()
+        })
+    })
+
+    describe('getUserInput', () => {
+        it('should request user input from webview', () => {
+            const { repl, webview } = createRepl()
+
+            repl.getUserInput()
+
+            expect(webview.postMessage).toHaveBeenCalledWith({
+                type: 'getUserInput',
+            })
+        })
+    })
+
+    describe('addInput', () => {
+        it('should add input with package name when view exists', () => {
+            const { repl, webview } = createRepl()
+            
+            repl.addInput('test input', 'cl-user')
+            
+            expect(webview.postMessage).toHaveBeenCalledWith({
+                type: 'appendOutput',
+                obj: {
+                    type: 'input',
+                    pkgName: 'cl-user',
+                    text: 'test input'
+                }
+            })
+        })
+
+        it('should handle undefined view', () => {
+            const repl = new LispRepl(fakeContext, extension)
+            
+            expect(() => repl.addInput('test input', 'cl-user')).not.toThrow()
+        })
+    })
+
+    describe('getWebviewContent', () => {
+        it('should handle undefined version', () => {
+            const { repl, webview } = createRepl()
+            
+            repl.resolveWebviewView({ webview, onDidChangeVisibility: jest.fn() })
+            
+            expect(webview.html).toContain('data-extension-version="0.1"')
+        })
+
+        it('should handle missing version in package.json', () => {
+            const extensionWithoutVersion = { ...extension }
+            delete extensionWithoutVersion.packageJSON.version
+            
+            const repl = new LispRepl(fakeContext, extensionWithoutVersion)
+            const webview = createFakeWebview()
+            
+            repl.resolveWebviewView({ webview, onDidChangeVisibility: jest.fn() })
+            
+            expect(webview.html).toContain('data-extension-version=""')
+        })
+    })
 })
