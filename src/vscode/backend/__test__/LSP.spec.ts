@@ -974,6 +974,56 @@ describe('LSP tests', () => {
 
             expect(lsp.emit).toHaveBeenCalledTimes(1)
         })
+
+        it('With output response', async () => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => ({ text: 'Result text' })) })
+
+            lsp.emit = jest.fn()
+            await lsp.eval('Some text', 'Some package', false, true)
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+
+        it('should handle array response', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => ({
+                    text: ['result1', 'result2']
+                }))
+            })
+
+            const result = await lsp.eval('(+ 1 2)', 'cl-user')
+            expect(result).toEqual(['result1', 'result2'])
+        })
+
+        it('should handle string response', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => ({
+                    text: 'result'
+                }))
+            })
+
+            const result = await lsp.eval('(+ 1 2)', 'cl-user')
+            expect(result).toBe('result')
+        })
+
+        it('should handle invalid response', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => ({
+                    text: 123 // invalid type
+                }))
+            })
+
+            const result = await lsp.eval('(+ 1 2)', 'cl-user')
+            expect(result).toBeUndefined()
+        })
+
+        it('should handle non-object response', async () => {
+            const { lsp } = await doConnect({
+                sendRequest: jest.fn(() => "not an object")
+            })
+
+            const result = await lsp.eval('(+ 1 2)', 'cl-user')
+            expect(result).toBeUndefined()
+        })
     })
 
     describe('inspect', () => {

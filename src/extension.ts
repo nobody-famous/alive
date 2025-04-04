@@ -158,11 +158,11 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
             await vscode.workspace.saveAll()
 
-            ui.addReplText(`Loading ASDF System ${node.label}`)
+            ui.addReplOutput(`Loading ASDF System ${node.label}`)
 
             await lsp.loadAsdfSystem(node.label)
 
-            ui.addReplText(`Done Loading ASDF System ${node.label}`)
+            ui.addReplOutput(`Done Loading ASDF System ${node.label}`)
         }),
 
         vscode.commands.registerCommand('alive.killThread', (node) => {
@@ -424,7 +424,8 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshInspectors', () => ui.refreshInspectors())
     lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
     lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state))
-    lsp.on('output', (str) => ui.addReplText(str))
+    lsp.on('input', (str, pkgName) => ui.addReplInput(str, pkgName))
+    lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))
     lsp.on('getRestartIndex', async (info, fn) => fn(await ui.getRestartIndex(info)))
     lsp.on('getUserInput', async (fn) => fn(await ui.getUserInput()))
