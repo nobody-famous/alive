@@ -49,12 +49,6 @@ export class DebugView extends EventEmitter<DebugEvents> {
         this.setPanelCallbacks(this.panel)
 
         this.renderHtml(this.panel)
-
-        this.panel.webview.postMessage({
-            type: 'hydrate',
-            restarts: this.info.restarts,
-            backtrace: this.info.stackTrace,
-        })
     }
 
     private setPanelCallbacks(panel: vscode.WebviewPanel) {
@@ -67,6 +61,10 @@ export class DebugView extends EventEmitter<DebugEvents> {
                         return this.inspectCondCommand()
                     case 'jump_to':
                         return this.jumpTo(msg)
+                    case 'send_restarts':
+                        return this.sendRestarts()
+                    case 'send_backtrace':
+                        return this.sendBacktrace()
                 }
             },
             undefined,
@@ -80,6 +78,20 @@ export class DebugView extends EventEmitter<DebugEvents> {
 
         panel.onDidChangeViewState(() => {
             vscode.commands.executeCommand('setContext', 'aliveDebugViewActive', panel.visible)
+        })
+    }
+
+    sendRestarts() {
+        this.panel?.webview.postMessage({
+            type: 'restarts',
+            restarts: this.info.restarts,
+        })
+    }
+
+    sendBacktrace() {
+        this.panel?.webview.postMessage({
+            type: 'backtrace',
+            backtrace: this.info.stackTrace,
         })
     }
 

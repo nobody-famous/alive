@@ -32,8 +32,10 @@ window.addEventListener('message', (event) => {
     const data = event.data
 
     switch (data.type) {
-        case 'hydrate':
+        case 'restarts':
             setRestarts(data.restarts)
+            break
+        case 'backtrace':
             setBacktrace(data.backtrace)
             break
     }
@@ -118,6 +120,10 @@ customElements.define(
             `
         }
 
+        connectedCallback() {
+            vscode.postMessage({ command: 'send_restarts' })
+        }
+
         addItem(index, item) {
             const box = this.shadow.getElementById('box')
             const elem = document.createElement('debug-restart-item')
@@ -176,6 +182,10 @@ customElements.define(
                     <div id="box" class="list-box"></div>
                 </div>
             `
+        }
+
+        connectedCallback() {
+            vscode.postMessage({ command: 'send_backtrace' })
         }
 
         addItem(index, item) {

@@ -281,7 +281,12 @@ export class LSP extends EventEmitter<LSPEvents> {
         }))
     }
 
-    eval = async (text: string, pkgName: string, storeResult?: boolean, withOutput: boolean = false): Promise<string | Array<string> | undefined> => {
+    eval = async (
+        text: string,
+        pkgName: string,
+        storeResult?: boolean,
+        withOutput: boolean = false
+    ): Promise<string | Array<string> | undefined> => {
         try {
             if (withOutput) {
                 this.emit('input', text, pkgName)
