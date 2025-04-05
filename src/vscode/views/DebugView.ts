@@ -111,8 +111,8 @@ export class DebugView extends EventEmitter<DebugEvents> {
     }
 
     private renderHtml(panel: vscode.WebviewPanel) {
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'debug', 'debug.css'))
+        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.js'))
+        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.css'))
 
         panel.webview.html = `
             <html>

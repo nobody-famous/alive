@@ -1,5 +1,6 @@
 export const on = jest.fn()
-export const addReplText = jest.fn()
+export const addReplInput = jest.fn()
+export const addReplOutput = jest.fn()
 export const clearReplHistory = jest.fn()
 export const getHistoryItems = jest.fn()
 export const getRestartIndex = jest.fn()
@@ -25,7 +26,8 @@ export const updateInspector = jest.fn()
 
 export const UI = jest.fn(() => ({
     on,
-    addReplText,
+    addReplInput,
+    addReplOutput,
     clearReplHistory,
     getHistoryItems,
     getRestartIndex,

@@ -56,8 +56,8 @@ export class InspectorPanel extends EventEmitter<PanelEvents> implements vscode.
     }
 
     private getHtmlForView(webview: vscode.Webview): string {
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspectorPanel', 'view.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resource', 'inspectorPanel', 'view.css'))
+        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'inspectorPanel', 'view.js'))
+        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'inspectorPanel', 'view.css'))
 
         return `<!DOCTYPE html>
                 <html>

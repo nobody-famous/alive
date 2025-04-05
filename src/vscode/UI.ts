@@ -28,6 +28,7 @@ export declare interface UIEvents {
 export interface UIState {
     ctx: AliveContext
     config: { packageTree: PackageTreeConfig }
+    extension: vscode.Extension<unknown>
 }
 
 export class UI extends EventEmitter<UIEvents> {
@@ -50,7 +51,7 @@ export class UI extends EventEmitter<UIEvents> {
         this.packageTree = new PackagesTreeProvider([], state)
         this.asdfTree = new AsdfSystemsTreeProvider([])
         this.threadsTree = new ThreadsTreeProvider([])
-        this.replView = new LispRepl(state.ctx)
+        this.replView = new LispRepl(state.ctx, state.extension)
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
         this.debugViews = []
@@ -317,12 +318,11 @@ export class UI extends EventEmitter<UIEvents> {
             await this.requestPackage(this.replView)
         })
 
-        const updateReplInput = () => {
-            const item = this.historyTree.getCurrentItem()
+        const updateReplInputWithHistory = () => {
+            const historyItem = this.historyTree.getCurrentItem()
 
-            if (item !== undefined) {
-                this.replView.setPackage(item.pkgName)
-                this.replView.setInput(item.text)
+            if (historyItem !== undefined) {
+                this.replView.setInput(historyItem.text)
             } else {
                 this.replView.clearInput()
             }
@@ -330,17 +330,21 @@ export class UI extends EventEmitter<UIEvents> {
 
         this.replView.on('historyUp', () => {
             this.historyTree.incrementIndex()
-            updateReplInput()
+            updateReplInputWithHistory()
         })
 
         this.replView.on('historyDown', () => {
             this.historyTree.decrementIndex()
-            updateReplInput()
+            updateReplInputWithHistory()
         })
     }
 
-    addReplText(str: string): void {
-        this.replView.addText(str)
+    addReplInput(str: string, pkgName: string): void {
+        this.replView.addInput(str, pkgName)
+    }
+
+    addReplOutput(str: string): void {
+        this.replView.addOutput(str)
     }
 
     setQueryText(str: string): void {

@@ -34,6 +34,7 @@ const createState = (): UIState => {
     const state: UIState = {
         ctx: { subscriptions: [], extensionPath: 'foo' },
         config: { packageTree: { separator: null } },
+        extension: vscodeMock.extensions.getExtension(),
     }
 
     return state
@@ -99,7 +100,6 @@ describe('UI tests', () => {
 
                 expect(historyMock.incrementIndex).toHaveBeenCalled()
                 expect(replMock.replClearInput).not.toHaveBeenCalled()
-                expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
             })
         })
@@ -125,7 +125,6 @@ describe('UI tests', () => {
 
                 expect(historyMock.decrementIndex).toHaveBeenCalled()
                 expect(replMock.replClearInput).not.toHaveBeenCalled()
-                expect(replMock.replSetPackage).toHaveBeenCalledWith('foo')
                 expect(replMock.replSetInput).toHaveBeenCalledWith('bar')
             })
         })
@@ -293,12 +292,22 @@ describe('UI tests', () => {
         expect(cb).toHaveBeenCalled()
     })
 
-    it('addReplText', () => {
+    it('addReplInput', () => {
         const ui = new UI(createState())
         let text = ''
 
-        replMock.replAddText.mockImplementationOnce((str: string) => (text = str))
-        ui.addReplText('foo')
+        replMock.replAddInputText.mockImplementationOnce((str: string, pkgName: string) => (text = `${pkgName}> ${str}`))
+        ui.addReplInput('foo', 'user')
+
+        expect(text).toBe('user> foo')
+    })
+
+    it('addReplOutput', () => {
+        const ui = new UI(createState())
+        let text = ''
+
+        replMock.replAddOutputText.mockImplementationOnce((str: string) => (text = str))
+        ui.addReplOutput('foo')
 
         expect(text).toBe('foo')
     })
