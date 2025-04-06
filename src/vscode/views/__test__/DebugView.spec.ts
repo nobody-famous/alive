@@ -55,7 +55,7 @@ describe('DebugView tests', () => {
         vscodeMock.window.createWebviewPanel.mockReturnValueOnce(panel)
         view.run()
 
-        expect(panel.webview.html).toContain('restart-item')
+        expect(panel.webview.html).toContain('debug-restarts')
     })
 
     it('Stacktrace', () => {
@@ -72,7 +72,7 @@ describe('DebugView tests', () => {
         view.emit = jest.fn()
         view.run()
 
-        expect(panel.webview.html).toContain('stacktrace-item')
+        expect(panel.webview.html).toContain('debug-backtrace')
     })
 
     describe('Commands', () => {
@@ -108,6 +108,29 @@ describe('DebugView tests', () => {
 
                 expect(view.emit).toHaveBeenCalled()
             })
+        })
+
+        it('No panel', () => {
+            const view = new DebugView(fakeContext, 'Title', vscodeMock.ViewColumn.Two, fakeDebugInfo)
+
+            view.sendRestarts()
+            view.sendBacktrace()
+        })
+
+        it('sendRestarts', () => {
+            const { view, cb } = getCallback()
+
+            cb({ command: 'send_restarts' })
+
+            expect(view.panel?.webview.postMessage).toHaveBeenCalled()
+        })
+
+        it('sendBacktrace', () => {
+            const { view, cb } = getCallback()
+
+            cb({ command: 'send_backtrace' })
+
+            expect(view.panel?.webview.postMessage).toHaveBeenCalled()
         })
 
         it('restart', () => {

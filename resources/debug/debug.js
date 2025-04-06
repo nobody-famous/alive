@@ -67,6 +67,14 @@ style.replaceSync(`
     }
     .list-item-vars {
         margin-left: 1rem;
+        display: grid;
+        grid-template-columns: min-content auto;
+        column-gap: 0.5rem;
+        row-gap: 0.25rem;
+    }
+    .list-item-var-name {
+    }
+    .list-item-var-value {
     }
     .clickable {
         cursor: pointer;
@@ -257,9 +265,17 @@ customElements.define(
             fileElem.textContent = this.posStr(this.item.file, this.item.position)
 
             for (const [name, value] of Object.entries(item.vars ?? {})) {
-                const elem = document.createElement('div')
-                elem.textContent = `${name}: ${value}`
-                varsElem.appendChild(elem)
+                const nameElem = document.createElement('div')
+                const valueElem = document.createElement('div')
+
+                nameElem.classList.add('list-item-var-name')
+                valueElem.classList.add('list-item-var-value')
+
+                nameElem.textContent = name
+                valueElem.textContent = value
+
+                varsElem.appendChild(nameElem)
+                varsElem.appendChild(valueElem)
             }
         }
     }
