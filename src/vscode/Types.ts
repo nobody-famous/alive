@@ -80,8 +80,9 @@ export interface RestartInfo {
 
 export interface SourceLocation {
     function: string
-    file: string | null
-    position: vscode.Position | null
+    file: string | null | undefined
+    position: vscode.Position | null | undefined
+    vars: Record<string, string> | null | undefined
 }
 
 export interface DebugInfo {

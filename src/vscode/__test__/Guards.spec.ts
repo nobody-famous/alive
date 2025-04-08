@@ -58,9 +58,13 @@ describe('Type guard tests', () => {
 
     it('isSourceLocation', () => {
         expect(isSourceLocation({ function: 'foo', file: 'bar', position: { line: 5, character: 10 } })).toBe(true)
-        expect(isSourceLocation({ function: 'foo', file: 'bar' })).toBe(false)
-        expect(isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } })).toBe(false)
+        expect(isSourceLocation({ function: 'foo', file: 'bar' })).toBe(true)
+        expect(isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } })).toBe(true)
         expect(isSourceLocation({ file: 'bar', position: { line: 5, character: 10 } })).toBe(false)
+        expect(isSourceLocation({ function: 'foo', vars: { foo: 10 } })).toBe(false)
+        expect(isSourceLocation({ function: 'foo', vars: { foo: 'bar' } })).toBe(true)
+        expect(isSourceLocation(5)).toBe(false)
+        expect(isSourceLocation({ function: 10, file: 'bar' })).toBe(false)
     })
 
     it('isStackTrace', () => {
@@ -68,7 +72,7 @@ describe('Type guard tests', () => {
         expect(isStackTrace([{ function: 'foo', file: null, position: { line: 5, character: 10 } }])).toBe(true)
         expect(isStackTrace([{ function: 'foo', file: 'bar', position: null }])).toBe(true)
         expect(isStackTrace([])).toBe(true)
-        expect(isStackTrace([{ function: 'foo', file: 'bar' }])).toBe(false)
+        expect(isStackTrace([{ function: 'foo', file: 'bar' }])).toBe(true)
         expect(isStackTrace({ file: 'bar', position: { line: 5, character: 10 } })).toBe(false)
     })
 

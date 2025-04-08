@@ -6,6 +6,7 @@ export const createPanel = () => ({
         html: '',
         asWebviewUri: jest.fn(),
         onDidReceiveMessage: jest.fn(),
+        postMessage: jest.fn(),
     },
 })
 

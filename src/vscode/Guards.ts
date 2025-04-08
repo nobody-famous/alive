@@ -30,8 +30,9 @@ export function isSourceLocation(item: unknown): item is SourceLocation {
     return (
         isObject(item) &&
         isString(item.function) &&
-        (item.file === null || isString(item.file)) &&
-        (item.position === null || isPosition(item.position))
+        (item.file == null || isString(item.file)) &&
+        (item.position == null || isPosition(item.position)) &&
+        (item.vars == null || (isObject(item.vars) && Object.values(item.vars).every(isString)))
     )
 }
 

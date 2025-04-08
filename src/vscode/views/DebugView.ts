@@ -61,6 +61,10 @@ export class DebugView extends EventEmitter<DebugEvents> {
                         return this.inspectCondCommand()
                     case 'jump_to':
                         return this.jumpTo(msg)
+                    case 'send_restarts':
+                        return this.sendRestarts()
+                    case 'send_backtrace':
+                        return this.sendBacktrace()
                 }
             },
             undefined,
@@ -74,6 +78,20 @@ export class DebugView extends EventEmitter<DebugEvents> {
 
         panel.onDidChangeViewState(() => {
             vscode.commands.executeCommand('setContext', 'aliveDebugViewActive', panel.visible)
+        })
+    }
+
+    sendRestarts() {
+        this.panel?.webview.postMessage({
+            type: 'restarts',
+            restarts: this.info.restarts,
+        })
+    }
+
+    sendBacktrace() {
+        this.panel?.webview.postMessage({
+            type: 'backtrace',
+            backtrace: this.info.stackTrace,
         })
     }
 
@@ -104,107 +122,6 @@ export class DebugView extends EventEmitter<DebugEvents> {
         }
     }
 
-    private renderCondList() {
-        let str = ''
-
-        str += `<div class="list-item">${strToHtml(this.info.message)}</div>`
-
-        return str
-    }
-
-    private renderCondition() {
-        return `
-            <div id="condition">
-                <div class="title">Condition</div>
-                <div class="list-box">
-                    ${this.renderCondList()}
-                </div>
-            </div>
-        `
-    }
-
-    private renderBtList() {
-        let str = ''
-        let ndx = this.info.stackTrace.length
-
-        const posStr = (file: string | null, pos: vscode.Position | null) => {
-            if (file === null) {
-                return ''
-            }
-
-            let str = strToHtml(file)
-
-            if (pos != null) {
-                const lineStr = `${pos.line + 1}`
-                const charStr = `${pos.character + 1}`
-                str += `:${lineStr}:${charStr}`
-            }
-
-            return str
-        }
-
-        for (const bt of this.info.stackTrace) {
-            const selectClass = bt.file !== null && bt.position !== null ? 'clickable' : ''
-
-            str += `
-                <div class="list-item stacktrace-item">
-                    <div class="list-item-ndx">${ndx}</div>
-                    <div class="list-item-loc ${selectClass}"
-                        onclick="jump_to('${strToHtml(bt.file ?? '')}', ${bt.position?.line}, ${bt.position?.character})"
-                    >
-                        <div class="list-item-fn">${strToHtml(bt.function)}</div>
-                        <div class="list-item-file">${posStr(bt.file, bt.position)}</div>
-                    </div>
-                </div>
-            `
-            ndx -= 1
-        }
-
-        return str
-    }
-
-    private renderBacktrace() {
-        return `
-            <div id="backtrace">
-                <div class="title">Backtrace</div>
-                <div class="list-box">
-                    ${this.renderBtList()}
-                </div>
-            </div>
-        `
-    }
-
-    private renderRestartItem(ndx: number, info: RestartInfo) {
-        return `
-            <div class="list-item restart-item clickable" onclick="restart(${ndx})">
-                ${ndx}: [${strToHtml(info.name)}] ${strToHtml(info.description)}
-            </div>
-        `
-    }
-
-    private renderRestartList() {
-        let str = ''
-        let ndx = 0
-
-        for (const restart of this.info.restarts) {
-            str += this.renderRestartItem(ndx, restart)
-            ndx += 1
-        }
-
-        return str
-    }
-
-    private renderRestarts() {
-        return `
-            <div id="restarts">
-                <div class="title">Restarts</div>
-                <div class="list-box">
-                    ${this.renderRestartList()}
-                </div>
-            </div>
-        `
-    }
-
     private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.css'))
@@ -216,9 +133,9 @@ export class DebugView extends EventEmitter<DebugEvents> {
             </head>
             <body>
                 <div id="content">
-                    ${this.renderCondition()}
-                    ${this.renderRestarts()}
-                    ${this.renderBacktrace()}
+                    <debug-condition>${strToHtml(this.info.message)}</debug-condition>
+                    <debug-restarts id="restarts"></debug-restarts>
+                    <debug-backtrace id="backtrace"></debug-backtrace>
                 </div>
 
                 <script src="${panel.webview.asWebviewUri(jsPath)}"></script>
