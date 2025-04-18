@@ -1,0 +1,4 @@
+body {
+    color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+}

@@ -82,7 +82,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         if (!this.webviewReady) {
             return
         }
-        
+
         this.setPackage(this.package)
         this.view?.webview.postMessage({
             type: 'restoreState',
@@ -121,7 +121,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         this.replOutput.push(outputObj)
         this.view?.webview.postMessage({
             type: 'appendOutput',
-            obj: outputObj
+            obj: outputObj,
         })
     }
 
@@ -133,7 +133,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         this.replOutput.push(outputObj)
         this.view?.webview.postMessage({
             type: 'appendOutput',
-            obj: outputObj
+            obj: outputObj,
         })
     }
 
@@ -150,11 +150,11 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     private getWebviewContent(webview: vscode.Webview): string {
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'index.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'index.css'))
+        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.js'))
+        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.css'))
         const scriptUri = webview.asWebviewUri(jsPath)
         const stylesUri = webview.asWebviewUri(cssPath)
-        const version = this.extension.packageJSON.version || ''
+        const version = this.extension.packageJSON.version ?? ''
 
         return `
             <!DOCTYPE html>
@@ -163,7 +163,8 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                     <link rel="stylesheet" type="text/css" href="${stylesUri}">
                 </head>
                 <body>
-                    <div id="root" data-init-package="${this.package}" data-extension-version="${version}"></div>
+                    <repl-container init-package="${this.package}" extension-version="${version}"></repl-container>
+
                     <script src="${scriptUri}"></script>
                 </body>
             </html>
