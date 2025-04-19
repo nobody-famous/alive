@@ -26,23 +26,34 @@ customElements.define(
         constructor() {
             super()
 
-            this.package = ''
-            this.version = ''
+            this.shadow = this.attachShadow({ mode: 'open' })
 
-            const shadow = this.attachShadow({ mode: 'open' })
-
-            shadow.adoptedStyleSheets = [style]
-            shadow.innerHTML = `
-                <div class="repl-container">REPL Stuff Goes Here</div>
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="repl-container">
+                    <div class="repl-output">REPL Output Goes Here</div>
+                    <div class="repl-input-texxt-box">REPL Input Box Goes Here</div>
+                </div>
             `
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
-            console.log('***** ATTRIBUTE CHANGED', name, newValue)
+            const elem = this.getElementForAttr(name)
+
+            if (elem === undefined) {
+                return
+            }
+
+            elem.innerText = newValue
+        }
+
+        getElementForAttr(name) {
             if (name === 'init-package') {
-                this.package = newValue
+                return this.shadow.getElementById('package')
             } else if (name === 'extension-version') {
-                this.version = newValue
+                return this.shadow.getElementById('version')
+            } else {
+                return undefined
             }
         }
     }
