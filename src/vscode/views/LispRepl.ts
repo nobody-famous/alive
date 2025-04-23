@@ -93,10 +93,10 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
             items: this.replOutput,
             hasBeenCleared: this.hasBeenCleared,
         })
-        this.view?.webview.postMessage({
-            type: 'setText',
-            text: this.replText,
-        })
+        // this.view?.webview.postMessage({
+        //     type: 'setText',
+        //     text: this.replText,
+        // })
     }
 
     setPackage(pkg: string) {
@@ -131,12 +131,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
             type: 'appendOutput',
             obj: outputObj,
         })
-
-        this.replText = `${this.replText}${pkgName}> ${text}${os.EOL}`
-        this.view?.webview.postMessage({
-            type: 'setText',
-            text: this.replText,
-        })
     }
 
     addOutput(text: string) {
@@ -148,12 +142,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         this.view?.webview.postMessage({
             type: 'appendOutput',
             obj: outputObj,
-        })
-
-        this.replText = `${this.replText}${text}${os.EOL}`
-        this.view?.webview.postMessage({
-            type: 'setText',
-            text: this.replText,
         })
     }
 
@@ -202,7 +190,8 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                 </head>
 
                 <body onfocus="setFocus()">
-                    <textarea id="repl-text" class="repl-text" readonly></textarea>
+                    <!-- <textarea id="repl-text" class="repl-text" readonly></textarea> -->
+                    <div class="repl-output" id="repl-output"></div>
                     <div class="repl-input-box">
                         <div class="repl-input-text-box" id="repl-user-input-box">
                             <div class="repl-input-label">

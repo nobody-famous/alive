@@ -1,31 +1,11 @@
 const vscode = acquireVsCodeApi()
 
-document.getElementById('repl-input-form').onsubmit = (event) => {
-    event.preventDefault()
-
-    const textInput = document.getElementById('repl-input-text')
-
-    vscode.postMessage({ command: 'eval', text: textInput.value })
-    textInput.value = ''
-}
-
-document.getElementById('repl-user-input-form').onsubmit = (event) => {
-    event.preventDefault()
-
-    const textInput = document.getElementById('repl-user-input')
-
-    vscode.postMessage({ command: 'userInput', text: textInput.value })
-
-    textInput.value = ''
-    hideUserInput()
-}
-
 window.addEventListener('message', (event) => {
     const data = event.data
 
     switch (data.type) {
-        case 'setText':
-            setText(data.text)
+        case 'appendOutput':
+            appendOutput(data.obj.type, data.obj.pkgName, data.obj.text)
             break
         case 'setInput':
             setInput(data.text)
@@ -50,6 +30,26 @@ window.addEventListener('message', (event) => {
             break
     }
 })
+
+document.getElementById('repl-input-form').onsubmit = (event) => {
+    event.preventDefault()
+
+    const textInput = document.getElementById('repl-input-text')
+
+    vscode.postMessage({ command: 'eval', text: textInput.value })
+    textInput.value = ''
+}
+
+document.getElementById('repl-user-input-form').onsubmit = (event) => {
+    event.preventDefault()
+
+    const textInput = document.getElementById('repl-user-input')
+
+    vscode.postMessage({ command: 'userInput', text: textInput.value })
+
+    textInput.value = ''
+    hideUserInput()
+}
 
 document.getElementById('repl-input-text').onkeyup = (event) => {
     if (event.key === 'ArrowUp') {
@@ -89,13 +89,12 @@ function setInput(text) {
     input.value = text
 }
 
-function setText(text) {
-    const textArea = document.getElementById('repl-text')
+function appendOutput(type, pkg, text) {
+    const output = document.getElementById('repl-output')
+    const elem = document.createElement('div')
 
-    textArea.value = text
-    textArea.scrollTop = textArea.scrollHeight
-
-    saveState()
+    elem.innerText = typeof pkg === 'string' ? `${pkg}> ${text}` : text
+    output.appendChild(elem)
 }
 
 function requestPackage() {
@@ -167,36 +166,36 @@ function setFocus() {
     input?.focus()
 }
 
-// const style = new CSSStyleSheet()
+const style = new CSSStyleSheet()
 
-// style.replaceSync(`
-//     .repl-container {
-//         display: flex;
-//         height: 100%;
-//         flex-direction: column;
-//         color: var(--vscode-editor-foreground);
-//         background-color: var(--vscode-editor-background);
-//     }
+style.replaceSync(`
+    .repl-container {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        color: var(--vscode-editor-foreground);
+        background-color: var(--vscode-editor-background);
+    }
 
-//     .repl-output {
-//         overflow: auto;
-//         flex-grow: 1;
-//         border-bottom: 1px solid var(--vscode-editorWidget-border);
-//         font-family: var(--vscode-editor-font-family);
-//         font-size: var(--vscode-editor-font-size);
-//         font-weight: var(--vscode-editor-font-weight);
-//         padding: 0.5em 0;
-//     }
+    .repl-output {
+        overflow: auto;
+        flex-grow: 1;
+        border-bottom: 1px solid var(--vscode-editorWidget-border);
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        font-weight: var(--vscode-editor-font-weight);
+        padding: 0.5em 0;
+    }
 
-//     .repl-input-text-box {
-//         display: flex;
-//         flex-direction: row;
-//         align-items: center;
-//         font-family: var(--vscode-editor-font-family);
-//         font-size: var(--vscode-editor-font-size);
-//         font-weight: var(--vscode-editor-font-weight);
-//     }
-// `)
+    .repl-input-text-box {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        font-weight: var(--vscode-editor-font-weight);
+    }
+`)
 
 // customElements.define(
 //     'repl-container',
