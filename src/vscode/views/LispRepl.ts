@@ -1,6 +1,5 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as os from 'os'
 import EventEmitter = require('events')
 import { AliveContext } from '../Types'
 
@@ -13,7 +12,6 @@ interface ReplEvents {
 }
 
 interface ReplOutput {
-    type: string
     text: string
     pkgName?: string
 }
@@ -24,7 +22,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     private extension: vscode.Extension<unknown>
     private package: string
     private replOutput: Array<ReplOutput>
-    private replText: string
     private webviewReady: boolean = false
     private hasBeenCleared: boolean = false
 
@@ -35,7 +32,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         this.extension = extension
         this.package = 'cl-user'
         this.replOutput = []
-        this.replText = ''
     }
 
     resolveWebviewView(webviewView: Pick<vscode.WebviewView, 'webview' | 'onDidChangeVisibility'>): void | Thenable<void> {
@@ -68,7 +64,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
             this.ctx.subscriptions
         )
 
-        webviewView.onDidChangeVisibility(() => this.restoreState)
+        webviewView.onDidChangeVisibility(() => this.restoreState())
 
         webviewView.webview.html = this.getHtmlForView(webviewView.webview)
     }
@@ -76,13 +72,13 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     clear() {
         this.hasBeenCleared = true
         this.replOutput = []
-        this.replText = ''
         this.view?.webview.postMessage({
             type: 'clear',
         })
     }
 
     restoreState() {
+        console.log('***** RESTORE STATE', this.webviewReady)
         if (!this.webviewReady) {
             return
         }
@@ -93,10 +89,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
             items: this.replOutput,
             hasBeenCleared: this.hasBeenCleared,
         })
-        // this.view?.webview.postMessage({
-        //     type: 'setText',
-        //     text: this.replText,
-        // })
     }
 
     setPackage(pkg: string) {
@@ -122,7 +114,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
 
     addInput(text: string, pkgName: string) {
         const outputObj = {
-            type: 'input',
             pkgName,
             text,
         }
@@ -135,7 +126,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
 
     addOutput(text: string) {
         const outputObj = {
-            type: 'output',
             text,
         }
         this.replOutput.push(outputObj)

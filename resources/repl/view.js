@@ -5,7 +5,7 @@ window.addEventListener('message', (event) => {
 
     switch (data.type) {
         case 'appendOutput':
-            appendOutput(data.obj.type, data.obj.pkgName, data.obj.text)
+            appendOutput(data.obj.pkgName, data.obj.text)
             break
         case 'setInput':
             setInput(data.text)
@@ -89,12 +89,13 @@ function setInput(text) {
     input.value = text
 }
 
-function appendOutput(type, pkg, text) {
+function appendOutput(pkg, text) {
     const output = document.getElementById('repl-output')
     const elem = document.createElement('div')
 
     elem.innerText = typeof pkg === 'string' ? `${pkg}> ${text}` : text
     output.appendChild(elem)
+    elem.scrollIntoView()
 }
 
 function requestPackage() {
@@ -147,6 +148,7 @@ function saveState() {
 }
 
 function restoreState() {
+    console.log('***** RESTORE STATE')
     const textArea = document.getElementById('repl-text')
     const pkg = document.getElementById('repl-package')
     const state = vscode.getState()
