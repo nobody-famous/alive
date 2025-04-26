@@ -23,7 +23,7 @@ export const languages = {
 }
 
 export const window = {
-    createOutputChannel: () => ({ appendLine: () => { }, append: () => { }, show: () => { } }),
+    createOutputChannel: () => ({ appendLine: () => {}, append: () => {}, show: () => {} }),
     createQuickPick: jest.fn(),
     createWebviewPanel: jest.fn(),
     showInputBox: jest.fn(),
@@ -58,15 +58,6 @@ export const commands = {
     registerCommand: jest.fn(),
 }
 
-export const extensions = {
-    getExtension: jest.fn().mockReturnValue({
-        extensionPath: 'some path',
-        packageJSON: {
-            version: '0.1',
-        },
-    }),
-}
-
 export class Hover {
     contents: MarkdownString[] = []
 
@@ -99,7 +90,7 @@ export class TreeItem {
     }
 }
 
-export class Position { }
-export class Range { }
-export class Selection { }
-export class Diagnostic { }
+export class Position {}
+export class Range {}
+export class Selection {}
+export class Diagnostic {}

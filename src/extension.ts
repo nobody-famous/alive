@@ -424,7 +424,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshInspectors', () => ui.refreshInspectors())
     lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
     lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state))
-    lsp.on('input', (str, pkgName) => ui.addReplInput(str, pkgName))
+    lsp.on('input', (str, pkgName) => ui.addReplOutput(str, pkgName))
     lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))
     lsp.on('getRestartIndex', async (info, fn) => fn(await ui.getRestartIndex(info)))

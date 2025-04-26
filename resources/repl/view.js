@@ -5,7 +5,7 @@ window.addEventListener('message', (event) => {
 
     switch (data.type) {
         case 'appendOutput':
-            appendOutput(data.obj.pkgName, data.obj.text)
+            appendOutput(data.output.pkgName, data.output.text)
             break
         case 'setInput':
             setInput(data.text)
@@ -148,7 +148,6 @@ function saveState() {
 }
 
 function restoreState() {
-    console.log('***** RESTORE STATE')
     const textArea = document.getElementById('repl-text')
     const pkg = document.getElementById('repl-package')
     const state = vscode.getState()

@@ -19,19 +19,21 @@ interface ReplOutput {
 export class LispRepl extends EventEmitter<ReplEvents> implements vscode.WebviewViewProvider {
     public view?: Pick<vscode.WebviewView, 'webview'>
     private ctx: AliveContext
-    private extension: vscode.Extension<unknown>
     private package: string
     private replOutput: Array<ReplOutput>
     private webviewReady: boolean = false
     private hasBeenCleared: boolean = false
 
-    constructor(ctx: AliveContext, extension: vscode.Extension<unknown>) {
+    constructor(ctx: AliveContext, version: string) {
         super()
 
         this.ctx = ctx
-        this.extension = extension
         this.package = 'cl-user'
-        this.replOutput = []
+        this.replOutput = [
+            {
+                text: `; Alive REPL (v${version})`,
+            },
+        ]
     }
 
     resolveWebviewView(webviewView: Pick<vscode.WebviewView, 'webview' | 'onDidChangeVisibility'>): void | Thenable<void> {
@@ -78,7 +80,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     restoreState() {
-        console.log('***** RESTORE STATE', this.webviewReady)
         if (!this.webviewReady) {
             return
         }
@@ -112,26 +113,15 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         })
     }
 
-    addInput(text: string, pkgName: string) {
-        const outputObj = {
+    addOutput(text: string, pkgName?: string) {
+        const output = {
             pkgName,
             text,
         }
-        this.replOutput.push(outputObj)
+        this.replOutput.push(output)
         this.view?.webview.postMessage({
             type: 'appendOutput',
-            obj: outputObj,
-        })
-    }
-
-    addOutput(text: string) {
-        const outputObj = {
-            text,
-        }
-        this.replOutput.push(outputObj)
-        this.view?.webview.postMessage({
-            type: 'appendOutput',
-            obj: outputObj,
+            output,
         })
     }
 
@@ -147,27 +137,27 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         }
     }
 
-    private getWebviewContent(webview: vscode.Webview): string {
-        const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.js'))
-        const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.css'))
-        const scriptUri = webview.asWebviewUri(jsPath)
-        const stylesUri = webview.asWebviewUri(cssPath)
-        const version = this.extension.packageJSON.version ?? ''
+    // private getWebviewContent(webview: vscode.Webview): string {
+    //     const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.js'))
+    //     const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.css'))
+    //     const scriptUri = webview.asWebviewUri(jsPath)
+    //     const stylesUri = webview.asWebviewUri(cssPath)
+    //     const version = this.extension.packageJSON.version ?? ''
 
-        return `
-            <!DOCTYPE html>
-            <html>
-                <head>
-                    <link rel="stylesheet" type="text/css" href="${stylesUri}">
-                </head>
-                <body>
-                    <repl-container init-package="${this.package}" extension-version="${version}"></repl-container>
+    //     return `
+    //         <!DOCTYPE html>
+    //         <html>
+    //             <head>
+    //                 <link rel="stylesheet" type="text/css" href="${stylesUri}">
+    //             </head>
+    //             <body>
+    //                 <repl-container init-package="${this.package}" extension-version="${version}"></repl-container>
 
-                    <script src="${scriptUri}"></script>
-                </body>
-            </html>
-        `.trim()
-    }
+    //                 <script src="${scriptUri}"></script>
+    //             </body>
+    //         </html>
+    //     `.trim()
+    // }
 
     private getHtmlForView(webview: vscode.Webview): string {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.js'))

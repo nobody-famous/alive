@@ -33,8 +33,8 @@ jest.mock('../views/ThreadsTree')
 const createState = (): UIState => {
     const state: UIState = {
         ctx: { subscriptions: [], extensionPath: 'foo' },
+        extension: { packageJSON: { version: '1.0' } },
         config: { packageTree: { separator: null } },
-        extension: vscodeMock.extensions.getExtension(),
     }
 
     return state
@@ -297,7 +297,7 @@ describe('UI tests', () => {
         let text = ''
 
         replMock.replAddInputText.mockImplementationOnce((str: string, pkgName: string) => (text = `${pkgName}> ${str}`))
-        ui.addReplInput('foo', 'user')
+        ui.addReplOutput('foo', 'user')
 
         expect(text).toBe('user> foo')
     })
