@@ -3,9 +3,13 @@ html {
 }
 
 body {
-    display: flex;
-    flex-direction: column;
     height: calc(100% - 0.1rem);
+}
+
+repl-view {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
 }

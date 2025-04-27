@@ -31,43 +31,43 @@ window.addEventListener('message', (event) => {
     }
 })
 
-document.getElementById('repl-input-form').onsubmit = (event) => {
-    event.preventDefault()
+// document.getElementById('repl-input-form').onsubmit = (event) => {
+//     event.preventDefault()
 
-    const textInput = document.getElementById('repl-input-text')
+//     const textInput = document.getElementById('repl-input-text')
 
-    vscode.postMessage({ command: 'eval', text: textInput.value })
-    textInput.value = ''
-}
+//     vscode.postMessage({ command: 'eval', text: textInput.value })
+//     textInput.value = ''
+// }
 
-document.getElementById('repl-user-input-form').onsubmit = (event) => {
-    event.preventDefault()
+// document.getElementById('repl-user-input-form').onsubmit = (event) => {
+//     event.preventDefault()
 
-    const textInput = document.getElementById('repl-user-input')
+//     const textInput = document.getElementById('repl-user-input')
 
-    vscode.postMessage({ command: 'userInput', text: textInput.value })
+//     vscode.postMessage({ command: 'userInput', text: textInput.value })
 
-    textInput.value = ''
-    hideUserInput()
-}
+//     textInput.value = ''
+//     hideUserInput()
+// }
 
-document.getElementById('repl-input-text').onkeyup = (event) => {
-    if (event.key === 'ArrowUp') {
-        event.preventDefault()
-        vscode.postMessage({ command: 'historyUp' })
-    } else if (event.key === 'ArrowDown') {
-        event.preventDefault()
-        vscode.postMessage({ command: 'historyDown' })
-    }
-}
+// document.getElementById('repl-input-text').onkeyup = (event) => {
+//     if (event.key === 'ArrowUp') {
+//         event.preventDefault()
+//         vscode.postMessage({ command: 'historyUp' })
+//     } else if (event.key === 'ArrowDown') {
+//         event.preventDefault()
+//         vscode.postMessage({ command: 'historyDown' })
+//     }
+// }
 
-document.getElementById('repl-input-text').onkeydown = (event) => {
-    if (event.key === 'ArrowUp') {
-        event.preventDefault()
-    } else if (event.key === 'ArrowDown') {
-        event.preventDefault()
-    }
-}
+// document.getElementById('repl-input-text').onkeydown = (event) => {
+//     if (event.key === 'ArrowUp') {
+//         event.preventDefault()
+//     } else if (event.key === 'ArrowDown') {
+//         event.preventDefault()
+//     }
+// }
 
 function clear() {
     const textArea = document.getElementById('repl-text')
@@ -170,14 +170,6 @@ function setFocus() {
 const style = new CSSStyleSheet()
 
 style.replaceSync(`
-    .repl-container {
-        display: flex;
-        height: 100%;
-        flex-direction: column;
-        color: var(--vscode-editor-foreground);
-        background-color: var(--vscode-editor-background);
-    }
-
     .repl-output {
         overflow: auto;
         flex-grow: 1;
@@ -197,6 +189,61 @@ style.replaceSync(`
         font-weight: var(--vscode-editor-font-weight);
     }
 `)
+
+customElements.define(
+    'repl-output',
+    class extends HTMLElement {
+        constructor() {
+            super()
+
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="repl-output">
+                    REPL output goes here
+                </div>
+            `
+        }
+    }
+)
+
+customElements.define(
+    'repl-input',
+    class extends HTMLElement {
+        constructor() {
+            super()
+
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="repl-input">
+                    REPL input goes here
+                </div>
+            `
+        }
+    }
+)
+
+customElements.define(
+    'repl-view',
+    class extends HTMLElement {
+        constructor() {
+            super()
+
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="repl-view">
+                    <repl-output></repl-output>
+                    <repl-input></repl-input>
+                </div>
+            `
+        }
+    }
+)
 
 // customElements.define(
 //     'repl-container',
