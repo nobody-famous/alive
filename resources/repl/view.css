@@ -1,15 +1,15 @@
 html {
-    height: calc(100% - 0.3rem);
+    /* height: calc(100% - 0.3rem); */
+    height: calc(100%);
 }
 
 body {
-    height: calc(100% - 0.1rem);
+    /* height: calc(100% - 0.1rem); */
+    height: calc(100%);
 }
 
 repl-view {
-    display: flex;
     height: 100%;
-    flex-direction: column;
     color: var(--vscode-editor-foreground);
     background-color: var(--vscode-editor-background);
 }

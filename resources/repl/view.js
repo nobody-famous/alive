@@ -170,14 +170,23 @@ function setFocus() {
 const style = new CSSStyleSheet()
 
 style.replaceSync(`
-    .repl-output {
+    .repl-view {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    repl-output {
+        flex: 1;
         overflow: auto;
-        flex-grow: 1;
-        border-bottom: 1px solid var(--vscode-editorWidget-border);
         font-family: var(--vscode-editor-font-family);
         font-size: var(--vscode-editor-font-size);
         font-weight: var(--vscode-editor-font-weight);
-        padding: 0.5em 0;
+        border-bottom: 1px solid var(--vscode-editorWidget-border);
+    }
+
+    .repl-output {
+        height: 100%;
     }
 
     .repl-input-text-box {
