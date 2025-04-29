@@ -189,6 +189,10 @@ style.replaceSync(`
         height: 100%;
     }
 
+    .repl-input {
+        margin: 0.3rem 0;
+    }
+
     .repl-input-text-box {
         display: flex;
         flex-direction: row;
