@@ -189,17 +189,29 @@ style.replaceSync(`
         height: 100%;
     }
 
-    .repl-input {
-        margin: 0.3rem 0;
-    }
-
-    .repl-input-text-box {
+    .repl-input-box {
         display: flex;
-        flex-direction: row;
-        align-items: center;
+        flex-direction: column;
         font-family: var(--vscode-editor-font-family);
         font-size: var(--vscode-editor-font-size);
         font-weight: var(--vscode-editor-font-weight);
+    }
+
+    .repl-input-text-box {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: row;
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        font-weight: var(--vscode-editor-font-weight);
+    }
+
+    .repl-input-label {
+        text-align: right;
+        display: inline-block;
+        height: 1.5rem;
+        line-height: 1.5rem;
+        cursor: pointer;
     }
 `)
 
@@ -231,8 +243,18 @@ customElements.define(
 
             this.shadow.adoptedStyleSheets = [style]
             this.shadow.innerHTML = `
-                <div class="repl-input">
-                    REPL input goes here
+                <div class="repl-input-box">
+                    <div class="repl-input-text-box" id="repl-user-input-box">
+                        <div class="repl-input-label">
+                            Input >
+                        </div>
+                    </div>
+                    <div class="repl-input-text-box">
+                        <div class="repl-input-label" onclick="requestPackage()">
+                            <span id="repl-package">${this.package}</span>
+                            >
+                        </div>
+                    </div>
                 </div>
             `
         }
