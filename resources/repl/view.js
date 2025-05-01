@@ -170,7 +170,12 @@ function setFocus() {
 const style = new CSSStyleSheet()
 
 style.replaceSync(`
-    .repl-view {
+    input:focus,
+    select:focus {
+        outline: none;
+    }
+
+.repl-view {
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -213,6 +218,40 @@ style.replaceSync(`
         line-height: 1.5rem;
         cursor: pointer;
     }
+
+    .repl-input-text {
+        color: var(--vscode-editor-foreground);
+        caret-color: var(--vscode-editor-foreground);
+        background-color: var(--vscode-editor-background);
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        font-weight: var(--vscode-editor-font-weight);
+        border: none;
+        height: 1.5rem;
+        line-height: 1.5rem;
+        width: 95%;
+    }
+
+    .repl-input-form {
+        flex-grow: 1;
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        font-weight: var(--vscode-editor-font-weight);
+    }
+
+    #repl-user-input-box {
+        display: none;
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        font-weight: var(--vscode-editor-font-weight);
+    }
+
+    #repl-user-input-form {
+        flex-grow: 1;
+        font-family: var(--vscode-editor-font-family);
+        font-size: var(--vscode-editor-font-size);
+        font-weight: var(--vscode-editor-font-weight);
+    }
 `)
 
 customElements.define(
@@ -248,12 +287,18 @@ customElements.define(
                         <div class="repl-input-label">
                             Input >
                         </div>
+                        <form id="repl-user-input-form" class="repl-input-form" action="">
+                            <input class="repl-input-text" id="repl-user-input" type="text">
+                        </form>
                     </div>
                     <div class="repl-input-text-box">
                         <div class="repl-input-label" onclick="requestPackage()">
                             <span id="repl-package">${this.package}</span>
                             >
                         </div>
+                            <form id="repl-input-form" class="repl-input-form" action="">
+                                <input class="repl-input-text" id="repl-input-text" type="text">
+                            </form>
                     </div>
                 </div>
             `
