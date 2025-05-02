@@ -135,14 +135,13 @@ function hideUserInput() {
 }
 
 function saveState() {
-    const textArea = document.getElementById('repl-text')
-    const pkg = document.getElementById('repl-package')
-    const state = {
-        replText: textArea.value,
-        pkg: pkg.innerHTML,
-    }
-
-    vscode.setState(state)
+    // const textArea = document.getElementById('repl-text')
+    // const pkg = document.getElementById('repl-package')
+    // const state = {
+    //     replText: textArea.value,
+    //     pkg: pkg.innerHTML,
+    // }
+    // vscode.setState(state)
 }
 
 function restoreState() {
@@ -310,9 +309,18 @@ customElements.define(
             textInput.focus()
         }
 
-        // connectedCallback() {
-        //     vscode.postMessage({ command: 'inputConnected' })
-        // }
+        connectedCallback() {
+            this.shadow.getElementById('repl-input-form').onsubmit = (event) => {
+                event.preventDefault()
+
+                const textInput = this.shadow.getElementById('repl-input-text')
+
+                vscode.postMessage({ command: 'eval', text: textInput.value })
+                textInput.value = ''
+            }
+
+            vscode.postMessage({ command: 'inputConnected' })
+        }
     }
 )
 
