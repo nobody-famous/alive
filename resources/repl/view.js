@@ -103,11 +103,9 @@ function requestPackage() {
 }
 
 function setPackage(name) {
-    const pkg = document.getElementById('repl-package')
-    const textInput = document.getElementById('repl-input-text')
+    const view = document.getElementById('repl-view')
 
-    pkg.innerHTML = name
-    textInput.focus()
+    view?.setPackage(name)
     saveState()
 }
 
@@ -303,6 +301,18 @@ customElements.define(
                 </div>
             `
         }
+
+        setPackage(pkgName) {
+            const pkg = this.shadow.getElementById('repl-package')
+            const textInput = this.shadow.getElementById('repl-input-text')
+
+            pkg.innerHTML = pkgName
+            textInput.focus()
+        }
+
+        // connectedCallback() {
+        //     vscode.postMessage({ command: 'inputConnected' })
+        // }
     }
 )
 
@@ -316,11 +326,17 @@ customElements.define(
 
             this.shadow.adoptedStyleSheets = [style]
             this.shadow.innerHTML = `
-                <div class="repl-view">
+                <div class="repl-view" id="repl-view">
                     <repl-output></repl-output>
-                    <repl-input></repl-input>
+                    <repl-input id="input"></repl-input>
                 </div>
             `
+        }
+
+        setPackage(pkgName) {
+            const input = this.shadow.getElementById('input')
+
+            input?.setPackage(pkgName)
         }
     }
 )

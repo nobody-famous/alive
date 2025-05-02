@@ -170,7 +170,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                 </head>
 
                 <body onfocus="setFocus()">
-                    <repl-view></repl-view>
+                    <repl-view id="repl-view"></repl-view>
 
                     <script src="${webview.asWebviewUri(jsPath)}"></script>
                 </body>
