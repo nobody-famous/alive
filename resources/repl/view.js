@@ -90,12 +90,14 @@ function setInput(text) {
 }
 
 function appendOutput(pkg, text) {
-    const output = document.getElementById('repl-output')
-    const elem = document.createElement('div')
+    const view = document.getElementById('repl-view')
+    view.appendOutput(pkg, text)
+    // const output = document.getElementById('repl-output')
+    // const elem = document.createElement('div')
 
-    elem.innerText = typeof pkg === 'string' ? `${pkg}> ${text}` : text
-    output.appendChild(elem)
-    elem.scrollIntoView()
+    // elem.innerText = typeof pkg === 'string' ? `${pkg}> ${text}` : text
+    // output.appendChild(elem)
+    // elem.scrollIntoView()
 }
 
 function requestPackage() {
@@ -261,10 +263,21 @@ customElements.define(
 
             this.shadow.adoptedStyleSheets = [style]
             this.shadow.innerHTML = `
-                <div class="repl-output">
-                    REPL output goes here
-                </div>
+                <div class="repl-output" id="output"></div>
             `
+        }
+
+        append(pkgName, text) {
+            const output = this.shadow.getElementById('output')
+            const elem = document.createElement('div')
+
+            elem.innerText = typeof pkgName === 'string' ? `${pkgName}> ${text}` : text
+            output.appendChild(elem)
+            elem.scrollIntoView()
+        }
+
+        connectedCallback() {
+            vscode.postMessage({ command: 'outputConnected' })
         }
     }
 )
@@ -290,7 +303,7 @@ customElements.define(
                     </div>
                     <div class="repl-input-text-box">
                         <div class="repl-input-label" onclick="requestPackage()">
-                            <span id="repl-package">${this.package}</span>
+                            <span id="repl-package">${this.package ?? ''}</span>
                             >
                         </div>
                             <form id="repl-input-form" class="repl-input-form" action="">
@@ -305,8 +318,13 @@ customElements.define(
             const pkg = this.shadow.getElementById('repl-package')
             const textInput = this.shadow.getElementById('repl-input-text')
 
-            pkg.innerHTML = pkgName
+            pkg.innerText = pkgName
             textInput.focus()
+        }
+
+        getPackage() {
+            const pkg = this.shadow.getElementById('repl-package')
+            return pkg?.innerText
         }
 
         connectedCallback() {
@@ -335,7 +353,7 @@ customElements.define(
             this.shadow.adoptedStyleSheets = [style]
             this.shadow.innerHTML = `
                 <div class="repl-view" id="repl-view">
-                    <repl-output></repl-output>
+                    <repl-output id="output"></repl-output>
                     <repl-input id="input"></repl-input>
                 </div>
             `
@@ -343,8 +361,17 @@ customElements.define(
 
         setPackage(pkgName) {
             const input = this.shadow.getElementById('input')
-
             input?.setPackage(pkgName)
+        }
+
+        getPackage() {
+            const input = this.shadow.getElementById('input')
+            input?.getPackage()
+        }
+
+        appendOutput(pkgName, text) {
+            const output = this.shadow.getElementById('output')
+            output?.append(pkgName, text)
         }
     }
 )

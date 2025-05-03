@@ -60,6 +60,10 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                     case 'webviewReady':
                         this.webviewReady = true
                         return this.restoreState()
+                    case 'inputConnected':
+                        return this.setPackage(this.package)
+                    case 'outputConnected':
+                        return this.sendAllOutput()
                 }
             },
             undefined,
@@ -119,10 +123,20 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
             text,
         }
         this.replOutput.push(output)
+        this.sendOutput(output)
+    }
+
+    sendOutput(output: ReplOutput) {
         this.view?.webview.postMessage({
             type: 'appendOutput',
             output,
         })
+    }
+
+    sendAllOutput() {
+        for (const output of this.replOutput) {
+            this.sendOutput(output)
+        }
     }
 
     getUserInput() {
