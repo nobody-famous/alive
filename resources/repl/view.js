@@ -254,6 +254,61 @@ style.replaceSync(`
 `)
 
 customElements.define(
+    'repl-output-package',
+    class extends HTMLElement {
+        constructor() {
+            super()
+
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="repl-output-package-box">
+                    <span id="package"></span>
+                    <span>&gt;</span>
+                </div>
+            `
+        }
+
+        setPackage(pkg) {
+            const pkgElem = this.shadow.getElementById('package')
+
+            if (pkgElem) {
+                pkgElem.innerText = pkg
+            }
+        }
+    }
+)
+
+customElements.define(
+    'repl-output-item',
+    class extends HTMLElement {
+        constructor() {
+            super()
+
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="repl-output-item" id="item-box">
+                    <span class="repl-output-package"></span>
+                </div>
+            `
+        }
+
+        setText(text, pkg) {
+            const box = this.shadow.getElementById('item-box')
+            const pkgItem = typeof pkg === 'string' ? document.createElement('repl-output-package') : undefined
+            const textItem = document.createElement('span')
+
+            if (pkgItem) {
+                pkgItem.setPackage(pkg)
+            }
+        }
+    }
+)
+
+customElements.define(
     'repl-output',
     class extends HTMLElement {
         constructor() {
