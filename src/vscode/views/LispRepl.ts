@@ -60,8 +60,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                     case 'webviewReady':
                         this.webviewReady = true
                         return this.restoreState()
-                    case 'inputConnected':
-                        return this.setPackage(this.package)
                     case 'outputConnected':
                         return this.sendAllOutput()
                 }
@@ -184,7 +182,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                 </head>
 
                 <body onfocus="setFocus()">
-                    <repl-view id="repl-view"></repl-view>
+                    <repl-view id="repl-view" package="${this.package}"></repl-view>
 
                     <script src="${webview.asWebviewUri(jsPath)}"></script>
                 </body>

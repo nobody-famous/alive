@@ -256,9 +256,7 @@ style.replaceSync(`
 customElements.define(
     'repl-output-package',
     class extends HTMLElement {
-        constructor() {
-            super()
-
+        connectedCallback() {
             this.shadow = this.attachShadow({ mode: 'open' })
 
             this.shadow.adoptedStyleSheets = [style]
@@ -283,9 +281,7 @@ customElements.define(
 customElements.define(
     'repl-output-item',
     class extends HTMLElement {
-        constructor() {
-            super()
-
+        connectedCallback() {
             this.shadow = this.attachShadow({ mode: 'open' })
 
             this.shadow.adoptedStyleSheets = [style]
@@ -311,17 +307,6 @@ customElements.define(
 customElements.define(
     'repl-output',
     class extends HTMLElement {
-        constructor() {
-            super()
-
-            this.shadow = this.attachShadow({ mode: 'open' })
-
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
-                <div class="repl-output" id="output"></div>
-            `
-        }
-
         append(pkgName, text) {
             const output = this.shadow.getElementById('output')
             const elem = document.createElement('div')
@@ -332,6 +317,13 @@ customElements.define(
         }
 
         connectedCallback() {
+            this.shadow = this.attachShadow({ mode: 'open' })
+
+            this.shadow.adoptedStyleSheets = [style]
+            this.shadow.innerHTML = `
+                <div class="repl-output" id="output"></div>
+            `
+
             vscode.postMessage({ command: 'outputConnected' })
         }
     }
@@ -340,9 +332,21 @@ customElements.define(
 customElements.define(
     'repl-input',
     class extends HTMLElement {
-        constructor() {
-            super()
+        setPackage(pkgName) {
+            const pkg = this.shadow.getElementById('repl-package')
+            const textInput = this.shadow.getElementById('repl-input-text')
 
+            pkg.innerText = pkgName
+            textInput.focus()
+        }
+
+        getPackage() {
+            const pkg = this.shadow.getElementById('repl-package')
+            return pkg?.innerText
+        }
+
+        connectedCallback() {
+            this.package = this.getAttribute('package')
             this.shadow = this.attachShadow({ mode: 'open' })
 
             this.shadow.adoptedStyleSheets = [style]
@@ -367,22 +371,7 @@ customElements.define(
                     </div>
                 </div>
             `
-        }
 
-        setPackage(pkgName) {
-            const pkg = this.shadow.getElementById('repl-package')
-            const textInput = this.shadow.getElementById('repl-input-text')
-
-            pkg.innerText = pkgName
-            textInput.focus()
-        }
-
-        getPackage() {
-            const pkg = this.shadow.getElementById('repl-package')
-            return pkg?.innerText
-        }
-
-        connectedCallback() {
             this.shadow.getElementById('repl-input-form').onsubmit = (event) => {
                 event.preventDefault()
 
@@ -391,8 +380,6 @@ customElements.define(
                 vscode.postMessage({ command: 'eval', text: textInput.value })
                 textInput.value = ''
             }
-
-            vscode.postMessage({ command: 'inputConnected' })
         }
     }
 )
@@ -400,16 +387,15 @@ customElements.define(
 customElements.define(
     'repl-view',
     class extends HTMLElement {
-        constructor() {
-            super()
-
+        connectedCallback() {
+            const pkg = this.getAttribute('package')
             this.shadow = this.attachShadow({ mode: 'open' })
 
             this.shadow.adoptedStyleSheets = [style]
             this.shadow.innerHTML = `
                 <div class="repl-view" id="repl-view">
                     <repl-output id="output"></repl-output>
-                    <repl-input id="input"></repl-input>
+                    <repl-input id="input" package="${pkg}"></repl-input>
                 </div>
             `
         }
