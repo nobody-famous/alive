@@ -31,15 +31,6 @@ window.addEventListener('message', (event) => {
     }
 })
 
-// document.getElementById('repl-input-form').onsubmit = (event) => {
-//     event.preventDefault()
-
-//     const textInput = document.getElementById('repl-input-text')
-
-//     vscode.postMessage({ command: 'eval', text: textInput.value })
-//     textInput.value = ''
-// }
-
 // document.getElementById('repl-user-input-form').onsubmit = (event) => {
 //     event.preventDefault()
 
@@ -49,24 +40,6 @@ window.addEventListener('message', (event) => {
 
 //     textInput.value = ''
 //     hideUserInput()
-// }
-
-// document.getElementById('repl-input-text').onkeyup = (event) => {
-//     if (event.key === 'ArrowUp') {
-//         event.preventDefault()
-//         vscode.postMessage({ command: 'historyUp' })
-//     } else if (event.key === 'ArrowDown') {
-//         event.preventDefault()
-//         vscode.postMessage({ command: 'historyDown' })
-//     }
-// }
-
-// document.getElementById('repl-input-text').onkeydown = (event) => {
-//     if (event.key === 'ArrowUp') {
-//         event.preventDefault()
-//     } else if (event.key === 'ArrowDown') {
-//         event.preventDefault()
-//     }
 // }
 
 function clear() {
@@ -84,20 +57,13 @@ function clearInput() {
 }
 
 function setInput(text) {
-    const input = document.getElementById('repl-input-text')
-
-    input.value = text
+    const view = document.getElementById('repl-view')
+    view.setInput(text)
 }
 
 function appendOutput(pkg, text) {
     const view = document.getElementById('repl-view')
     view.appendOutput(pkg, text)
-    // const output = document.getElementById('repl-output')
-    // const elem = document.createElement('div')
-
-    // elem.innerText = typeof pkg === 'string' ? `${pkg}> ${text}` : text
-    // output.appendChild(elem)
-    // elem.scrollIntoView()
 }
 
 function requestPackage() {
@@ -345,6 +311,14 @@ customElements.define(
             return pkg?.innerText
         }
 
+        setText(text) {
+            const elem = this.shadow.getElementById('repl-input-text')
+
+            if (elem != null) {
+                elem.value = text
+            }
+        }
+
         connectedCallback() {
             this.package = this.getAttribute('package')
             this.shadow = this.attachShadow({ mode: 'open' })
@@ -380,6 +354,24 @@ customElements.define(
                 vscode.postMessage({ command: 'eval', text: textInput.value })
                 textInput.value = ''
             }
+
+            this.shadow.getElementById('repl-input-text').onkeyup = (event) => {
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault()
+                    vscode.postMessage({ command: 'historyUp' })
+                } else if (event.key === 'ArrowDown') {
+                    event.preventDefault()
+                    vscode.postMessage({ command: 'historyDown' })
+                }
+            }
+
+            this.shadow.getElementById('repl-input-text').onkeydown = (event) => {
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault()
+                } else if (event.key === 'ArrowDown') {
+                    event.preventDefault()
+                }
+            }
         }
     }
 )
@@ -414,46 +406,10 @@ customElements.define(
             const output = this.shadow.getElementById('output')
             output?.append(pkgName, text)
         }
+
+        setInput(text) {
+            const input = this.shadow.getElementById('input')
+            input?.setText(text)
+        }
     }
 )
-
-// customElements.define(
-//     'repl-container',
-//     class extends HTMLElement {
-//         static observedAttributes = ['init-package', 'extension-version']
-
-//         constructor() {
-//             super()
-
-//             this.shadow = this.attachShadow({ mode: 'open' })
-
-//             this.shadow.adoptedStyleSheets = [style]
-//             this.shadow.innerHTML = `
-//                 <div class="repl-container">
-//                     <div class="repl-output">REPL Output Goes Here</div>
-//                     <div class="repl-input-text-box">REPL Input Box Goes Here</div>
-//                 </div>
-//             `
-//         }
-
-//         attributeChangedCallback(name, oldValue, newValue) {
-//             const elem = this.getElementForAttr(name)
-
-//             if (elem === undefined) {
-//                 return
-//             }
-
-//             elem.innerText = newValue
-//         }
-
-//         getElementForAttr(name) {
-//             if (name === 'init-package') {
-//                 return this.shadow.getElementById('package')
-//             } else if (name === 'extension-version') {
-//                 return this.shadow.getElementById('version')
-//             } else {
-//                 return undefined
-//             }
-//         }
-//     }
-// )

@@ -149,28 +149,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         }
     }
 
-    // private getWebviewContent(webview: vscode.Webview): string {
-    //     const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.js'))
-    //     const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.css'))
-    //     const scriptUri = webview.asWebviewUri(jsPath)
-    //     const stylesUri = webview.asWebviewUri(cssPath)
-    //     const version = this.extension.packageJSON.version ?? ''
-
-    //     return `
-    //         <!DOCTYPE html>
-    //         <html>
-    //             <head>
-    //                 <link rel="stylesheet" type="text/css" href="${stylesUri}">
-    //             </head>
-    //             <body>
-    //                 <repl-container init-package="${this.package}" extension-version="${version}"></repl-container>
-
-    //                 <script src="${scriptUri}"></script>
-    //             </body>
-    //         </html>
-    //     `.trim()
-    // }
-
     private getHtmlForView(webview: vscode.Webview): string {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.css'))
@@ -189,43 +167,4 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                 </html>
         `
     }
-
-    // private getHtmlForView(webview: vscode.Webview): string {
-    //     const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.js'))
-    //     const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'repl', 'view.css'))
-
-    //     return `<!DOCTYPE html>
-    //             <html>
-    //             <head>
-    //                 <link rel="stylesheet" href="${webview.asWebviewUri(cssPath)}">
-    //             </head>
-
-    //             <body onfocus="setFocus()">
-    //                 <!-- <textarea id="repl-text" class="repl-text" readonly></textarea> -->
-    //                 <div class="repl-output" id="repl-output"></div>
-    //                 <div class="repl-input-box">
-    //                     <div class="repl-input-text-box" id="repl-user-input-box">
-    //                         <div class="repl-input-label">
-    //                             Input >
-    //                         </div>
-    //                         <form id="repl-user-input-form" class="repl-input-form" action="">
-    //                             <input class="repl-input-text" id="repl-user-input" type="text" disabled>
-    //                         </form>
-    //                     </div>
-    //                     <div class="repl-input-text-box">
-    //                         <div class="repl-input-label" onclick="requestPackage()">
-    //                             <span id="repl-package">${this.package}</span>
-    //                             >
-    //                         </div>
-    //                         <form id="repl-input-form" class="repl-input-form" action="">
-    //                             <input class="repl-input-text" id="repl-input-text" type="text">
-    //                         </form>
-    //                     </div>
-    //                 </div>
-
-    //                 <script src="${webview.asWebviewUri(jsPath)}"></script>
-    //             </body>
-    //             </html>
-    //     `
-    // }
 }
