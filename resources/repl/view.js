@@ -43,17 +43,12 @@ window.addEventListener('message', (event) => {
 // }
 
 function clear() {
-    const textArea = document.getElementById('repl-text')
-
-    textArea.value = ''
-
-    saveState()
+    const view = document.getElementById('repl-view')
+    view.clearOutput()
 }
 
 function clearInput() {
-    const input = document.getElementById('repl-input-text')
-
-    input.value = ''
+    setInput('')
 }
 
 function setInput(text) {
@@ -282,6 +277,11 @@ customElements.define(
             elem.scrollIntoView()
         }
 
+        clear() {
+            const output = this.shadow.getElementById('output')
+            output?.replaceChildren()
+        }
+
         connectedCallback() {
             this.shadow = this.attachShadow({ mode: 'open' })
 
@@ -410,6 +410,11 @@ customElements.define(
         setInput(text) {
             const input = this.shadow.getElementById('input')
             input?.setText(text)
+        }
+
+        clearOutput() {
+            const output = this.shadow.getElementById('output')
+            output?.clear()
         }
     }
 )
