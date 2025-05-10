@@ -7,6 +7,9 @@ window.addEventListener('message', (event) => {
         case 'appendOutput':
             appendOutput(data.output.pkgName, data.output.text)
             break
+        case 'setReplOutput':
+            setReplOutput(data.output)
+            break
         case 'setInput':
             setInput(data.text)
             break
@@ -39,6 +42,11 @@ function setInput(text) {
 function appendOutput(pkg, text) {
     const view = document.getElementById('repl-view')
     view.appendOutput(pkg, text)
+}
+
+function setReplOutput(output) {
+    const view = document.getElementById('repl-view')
+    view.setOutput(output)
 }
 
 function requestPackage() {
@@ -206,6 +214,23 @@ customElements.define(
             elem.scrollIntoView()
         }
 
+        setOutput(items) {
+            if (!Array.isArray(items)) {
+                return
+            }
+
+            const output = this.shadow.getElementById('output')
+            const elems = items.map(({ pkgName, text }) => {
+                const elem = document.createElement('div')
+                elem.innerText = typeof pkgName === 'string' ? `${pkgName}> ${text}` : text
+                return elem
+            })
+
+            output.replaceChildren(...elems)
+
+            elems[elems.length - 1]?.scrollIntoView()
+        }
+
         clear() {
             const output = this.shadow.getElementById('output')
             output?.replaceChildren()
@@ -326,6 +351,11 @@ customElements.define(
         appendOutput(pkgName, text) {
             const output = this.shadow.getElementById('output')
             output?.append(pkgName, text)
+        }
+
+        setOutput(items) {
+            const output = this.shadow.getElementById('output')
+            output?.setOutput(items)
         }
 
         setInput(text) {

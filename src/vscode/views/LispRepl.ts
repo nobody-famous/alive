@@ -21,7 +21,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     private ctx: AliveContext
     private package: string
     private replOutput: Array<ReplOutput>
-    private hasBeenCleared: boolean = false
 
     constructor(ctx: AliveContext, version: string) {
         super()
@@ -56,7 +55,7 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                     case 'userInput':
                         return this.emit('userInput', msg.text ?? '')
                     case 'outputConnected':
-                        return this.sendAllOutput()
+                        return this.setReplOutput()
                 }
             },
             undefined,
@@ -67,7 +66,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     clear() {
-        this.hasBeenCleared = true
         this.replOutput = []
         this.view?.webview.postMessage({
             type: 'clear',
@@ -111,10 +109,11 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         })
     }
 
-    sendAllOutput() {
-        for (const output of this.replOutput) {
-            this.sendOutput(output)
-        }
+    setReplOutput() {
+        this.view?.webview.postMessage({
+            type: 'setReplOutput',
+            output: this.replOutput,
+        })
     }
 
     private doEval(text: string) {
