@@ -288,7 +288,7 @@ describe('Extension tests', () => {
             checkCallback(fns, 'refreshThreads', cmdsMock.refreshThreads)
             checkCallback(fns, 'refreshInspectors', uiMock.refreshInspectors)
             checkCallback(fns, 'refreshDiagnostics', uiMock.refreshDiagnostics)
-            checkCallback(fns, 'input', uiMock.addReplInput)
+            checkCallback(fns, 'input', uiMock.addReplOutput)
             checkCallback(fns, 'output', uiMock.addReplOutput)
             checkCallback(fns, 'queryText', uiMock.setQueryText)
             checkCallback(fns, 'inspectResult', uiMock.newInspector)

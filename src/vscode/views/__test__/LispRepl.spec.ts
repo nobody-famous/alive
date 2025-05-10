@@ -11,7 +11,7 @@ describe('LispRepl tests', () => {
     const extension = vscodeMock.extensions.getExtension()
 
     const createRepl = () => {
-        const repl = new LispRepl(fakeContext, extension)
+        const repl = new LispRepl(fakeContext, 'v1.0')
         const webview = createFakeWebview()
         let cb: ((msg: { command: string; text?: string }) => void) | undefined
 
@@ -59,7 +59,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext, extension)
+            const repl = new LispRepl(fakeContext, 'v1.0')
 
             repl.setPackage('Some package')
         })
@@ -75,7 +75,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext, extension)
+            const repl = new LispRepl(fakeContext, 'v1.0')
 
             repl.setInput('Some input')
         })
@@ -91,7 +91,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext, extension)
+            const repl = new LispRepl(fakeContext, 'v1.0')
 
             repl.clearInput()
         })
@@ -107,7 +107,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext, extension)
+            const repl = new LispRepl(fakeContext, 'v1.0')
 
             repl.getUserInput()
         })
@@ -136,7 +136,7 @@ describe('LispRepl tests', () => {
         })
 
         it('No view', () => {
-            const repl = new LispRepl(fakeContext, extension)
+            const repl = new LispRepl(fakeContext, 'v1.0')
 
             repl.addOutput('Some text')
 
@@ -173,11 +173,6 @@ describe('LispRepl tests', () => {
             expect(webview.postMessage).toHaveBeenCalledWith({
                 type: 'clear',
             })
-
-            repl.restoreState()
-            expect(webview.postMessage).toHaveBeenLastCalledWith({
-                type: 'clear',
-            })
         })
 
         it('should clear REPL output and skip webview notification when view is undefined', () => {
@@ -190,47 +185,6 @@ describe('LispRepl tests', () => {
             repl.clear()
 
             expect(webview.postMessage).not.toHaveBeenCalled()
-        })
-    })
-
-    describe('restoreState', () => {
-        it('should not restore state if webview is not ready', () => {
-            const { repl, webview } = createRepl()
-
-            jest.clearAllMocks()
-            repl.restoreState()
-
-            expect(webview.postMessage).not.toHaveBeenCalled()
-        })
-
-        it('should restore state when webview is ready', () => {
-            const { repl, webview, cb } = createRepl()
-
-            jest.clearAllMocks()
-
-            cb?.({ command: 'webviewReady' })
-
-            repl.restoreState()
-
-            expect(webview.postMessage).toHaveBeenCalledWith({
-                type: 'setPackage',
-                name: 'cl-user',
-            })
-            expect(webview.postMessage).toHaveBeenCalledWith({
-                type: 'restoreState',
-                items: [],
-                hasBeenCleared: false,
-            })
-        })
-
-        it('should handle undefined view', () => {
-            const { repl, webview, cb } = createRepl()
-
-            cb?.({ command: 'webviewReady' })
-
-            Object.defineProperty(repl, 'view', { value: undefined })
-
-            expect(() => repl.restoreState()).not.toThrow()
         })
     })
 
@@ -254,8 +208,7 @@ describe('LispRepl tests', () => {
 
             expect(webview.postMessage).toHaveBeenCalledWith({
                 type: 'appendOutput',
-                obj: {
-                    type: 'input',
+                output: {
                     pkgName: 'cl-user',
                     text: 'test input',
                 },
@@ -263,31 +216,9 @@ describe('LispRepl tests', () => {
         })
 
         it('should handle undefined view', () => {
-            const repl = new LispRepl(fakeContext, extension)
+            const repl = new LispRepl(fakeContext, 'v1.0')
 
             expect(() => repl.addOutput('test input', 'cl-user')).not.toThrow()
-        })
-    })
-
-    describe('getWebviewContent', () => {
-        it('should handle undefined version', () => {
-            const { repl, webview } = createRepl()
-
-            repl.resolveWebviewView({ webview, onDidChangeVisibility: jest.fn() })
-
-            expect(webview.html).toContain('data-extension-version="0.1"')
-        })
-
-        it('should handle missing version in package.json', () => {
-            const extensionWithoutVersion = { ...extension }
-            delete extensionWithoutVersion.packageJSON.version
-
-            const repl = new LispRepl(fakeContext, extensionWithoutVersion)
-            const webview = createFakeWebview()
-
-            repl.resolveWebviewView({ webview, onDidChangeVisibility: jest.fn() })
-
-            expect(webview.html).toContain('data-extension-version=""')
         })
     })
 })

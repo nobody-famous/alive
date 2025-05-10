@@ -21,7 +21,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     private ctx: AliveContext
     private package: string
     private replOutput: Array<ReplOutput>
-    private webviewReady: boolean = false
     private hasBeenCleared: boolean = false
 
     constructor(ctx: AliveContext, version: string) {
@@ -38,7 +37,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
 
     resolveWebviewView(webviewView: Pick<vscode.WebviewView, 'webview' | 'onDidChangeVisibility'>): void | Thenable<void> {
         this.view = webviewView
-        this.webviewReady = false
 
         webviewView.webview.options = {
             enableScripts: true,
@@ -57,9 +55,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
                         return this.emit('historyDown')
                     case 'userInput':
                         return this.emit('userInput', msg.text ?? '')
-                    case 'webviewReady':
-                        this.webviewReady = true
-                        return this.restoreState()
                     case 'outputConnected':
                         return this.sendAllOutput()
                 }
@@ -82,10 +77,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     restoreState() {
-        if (!this.webviewReady) {
-            return
-        }
-
         this.setPackage(this.package)
         this.view?.webview.postMessage({
             type: 'restoreState',

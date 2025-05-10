@@ -58,6 +58,15 @@ export const commands = {
     registerCommand: jest.fn(),
 }
 
+export const extensions = {
+    getExtension: jest.fn().mockReturnValue({
+        extensionPath: 'some path',
+        packageJSON: {
+            version: '0.1',
+        },
+    }),
+}
+
 export class Hover {
     contents: MarkdownString[] = []
 

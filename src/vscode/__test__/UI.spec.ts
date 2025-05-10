@@ -296,7 +296,7 @@ describe('UI tests', () => {
         const ui = new UI(createState())
         let text = ''
 
-        replMock.replAddInputText.mockImplementationOnce((str: string, pkgName: string) => (text = `${pkgName}> ${str}`))
+        replMock.replAddOutputText.mockImplementationOnce((str: string, pkgName: string) => (text = `${pkgName}> ${str}`))
         ui.addReplOutput('foo', 'user')
 
         expect(text).toBe('user> foo')
