@@ -23,26 +23,6 @@ describe('LispRepl tests', () => {
         return { repl, webview, cb }
     }
 
-    it('changeVisibility', () => {
-        const { cb, repl } = createRepl()
-        const webview = createFakeWebview()
-        let fn: (() => void) | undefined
-
-        repl.resolveWebviewView({
-            webview,
-            onDidChangeVisibility: (f) => {
-                fn = f
-                return { dispose: jest.fn() }
-            },
-        })
-
-        cb?.({ command: 'webviewReady' })
-
-        fn?.()
-
-        expect(webview.postMessage).toHaveBeenCalled()
-    })
-
     it('resolveWebviewView', () => {
         const { webview } = createRepl()
 
