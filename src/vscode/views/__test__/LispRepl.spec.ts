@@ -97,22 +97,6 @@ describe('LispRepl tests', () => {
         })
     })
 
-    describe('getUserInput', () => {
-        it('Has view', () => {
-            const { repl, webview } = createRepl()
-
-            repl.getUserInput()
-
-            expect(webview.postMessage).toHaveBeenCalled()
-        })
-
-        it('No view', () => {
-            const repl = new LispRepl(fakeContext, 'v1.0')
-
-            repl.getUserInput()
-        })
-    })
-
     describe('addOutput', () => {
         it('First try', () => {
             const { repl, webview } = createRepl()
@@ -185,18 +169,6 @@ describe('LispRepl tests', () => {
             repl.clear()
 
             expect(webview.postMessage).not.toHaveBeenCalled()
-        })
-    })
-
-    describe('getUserInput', () => {
-        it('should request user input from webview', () => {
-            const { repl, webview } = createRepl()
-
-            repl.getUserInput()
-
-            expect(webview.postMessage).toHaveBeenCalledWith({
-                type: 'getUserInput',
-            })
         })
     })
 

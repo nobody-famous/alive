@@ -63,8 +63,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
             this.ctx.subscriptions
         )
 
-        webviewView.onDidChangeVisibility(() => this.restoreState())
-
         webviewView.webview.html = this.getHtmlForView(webviewView.webview)
     }
 
@@ -73,15 +71,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         this.replOutput = []
         this.view?.webview.postMessage({
             type: 'clear',
-        })
-    }
-
-    restoreState() {
-        this.setPackage(this.package)
-        this.view?.webview.postMessage({
-            type: 'restoreState',
-            items: this.replOutput,
-            hasBeenCleared: this.hasBeenCleared,
         })
     }
 
@@ -126,12 +115,6 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         for (const output of this.replOutput) {
             this.sendOutput(output)
         }
-    }
-
-    getUserInput() {
-        this.view?.webview.postMessage({
-            type: 'getUserInput',
-        })
     }
 
     private doEval(text: string) {
