@@ -55,13 +55,12 @@ function requestPackage() {
 
 function setPackage(name) {
     const view = document.getElementById('repl-view')
-
     view?.setPackage(name)
 }
 
 function setFocus() {
-    const input = document.getElementById('repl-input-text')
-    input?.focus()
+    const view = document.getElementById('repl-view')
+    view?.setFocus()
 }
 
 const style = new CSSStyleSheet()
@@ -265,6 +264,11 @@ customElements.define(
             return pkg?.innerText
         }
 
+        setFocus() {
+            const elem = this.shadow.getElementById('repl-input-text')
+            elem?.focus()
+        }
+
         setText(text) {
             const elem = this.shadow.getElementById('repl-input-text')
 
@@ -346,6 +350,11 @@ customElements.define(
         getPackage() {
             const input = this.shadow.getElementById('input')
             input?.getPackage()
+        }
+
+        setFocus() {
+            const input = this.shadow.getElementById('input')
+            input?.setFocus()
         }
 
         appendOutput(pkgName, text) {
