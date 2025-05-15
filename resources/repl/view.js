@@ -90,6 +90,14 @@ style.replaceSync(`
         height: 100%;
     }
 
+    .repl-output-package {
+        color: var(--vscode-editorLink-activeForeground);
+    }
+
+    .repl-output-text {
+        white-space: pre-wrap;
+    }
+
     .repl-input-box {
         display: flex;
         flex-direction: column;
@@ -179,24 +187,28 @@ customElements.define(
     'repl-output-item',
     class extends HTMLElement {
         connectedCallback() {
+            const pkg = this.getAttribute('package')
+            const text = this.getAttribute('text')
+            const pkgElem = typeof pkg === 'string' && pkg !== '' ? document.createElement('div') : undefined
+            const textElem = document.createElement('div')
+            const box = document.createElement('div')
+
+            box.classList.add('repl-output-item')
+
+            if (pkgElem !== undefined) {
+                pkgElem.classList.add('repl-output-package')
+                pkgElem.innerText = `${pkg}>`
+                box.appendChild(pkgElem)
+            }
+
+            textElem.classList.add('repl-output-text')
+            textElem.innerText = text
+            box.appendChild(textElem)
+
             this.shadow = this.attachShadow({ mode: 'open' })
 
             this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
-                <div class="repl-output-item" id="item-box">
-                    <span class="repl-output-package"></span>
-                </div>
-            `
-        }
-
-        setText(text, pkg) {
-            const box = this.shadow.getElementById('item-box')
-            const pkgItem = typeof pkg === 'string' ? document.createElement('repl-output-package') : undefined
-            const textItem = document.createElement('span')
-
-            if (pkgItem) {
-                pkgItem.setPackage(pkg)
-            }
+            this.shadow.appendChild(box)
         }
     }
 )
@@ -204,11 +216,17 @@ customElements.define(
 customElements.define(
     'repl-output',
     class extends HTMLElement {
+        createOutputItem(pkgName, text) {
+            const elem = document.createElement('repl-output-item')
+            elem.setAttribute('package', pkgName ?? '')
+            elem.setAttribute('text', text)
+            return elem
+        }
+
         append(pkgName, text) {
             const output = this.shadow.getElementById('output')
-            const elem = document.createElement('div')
+            const elem = this.createOutputItem(pkgName, text)
 
-            elem.innerText = typeof pkgName === 'string' ? `${pkgName}> ${text}` : text
             output.appendChild(elem)
             elem.scrollIntoView()
         }
@@ -219,11 +237,7 @@ customElements.define(
             }
 
             const output = this.shadow.getElementById('output')
-            const elems = items.map(({ pkgName, text }) => {
-                const elem = document.createElement('div')
-                elem.innerText = typeof pkgName === 'string' ? `${pkgName}> ${text}` : text
-                return elem
-            })
+            const elems = items.map(({ pkgName, text }) => this.createOutputItem(pkgName, text))
 
             output.replaceChildren(...elems)
 
