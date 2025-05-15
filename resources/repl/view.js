@@ -71,7 +71,7 @@ style.replaceSync(`
         outline: none;
     }
 
-.repl-view {
+    .repl-view {
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -91,10 +91,13 @@ style.replaceSync(`
     }
 
     .repl-output-package {
+        display: inline;
+        margin-right: 0.3rem;
         color: var(--vscode-editorLink-activeForeground);
     }
 
     .repl-output-text {
+        display: inline;
         white-space: pre-wrap;
     }
 
@@ -198,6 +201,8 @@ customElements.define(
             if (pkgElem !== undefined) {
                 pkgElem.classList.add('repl-output-package')
                 pkgElem.innerText = `${pkg}>`
+
+                box.style.marginTop = '1rem'
                 box.appendChild(pkgElem)
             }
 
