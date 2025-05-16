@@ -127,90 +127,62 @@
             {
                 "command": "alive.killThread",
                 "title": "Alive: Kill Thread",
-                "icon": {
-                    "light": "resources/light/close.svg",
-                    "dark": "resources/dark/close.svg"
-                }
+                "icon": "$(close)"
             },
             {
                 "command": "alive.clearRepl",
                 "title": "Alive: Clear REPL",
-                "icon": {
-                    "light": "resources/light/clear-all.svg",
-                    "dark": "resources/dark/clear-all.svg"
-                }
+                "icon": "$(clear-all)"
+            },
+            {
+                "command": "alive.toggleReplWordWrap",
+                "title": "Alive: Toggle REPL Word Wrap",
+                "icon": "$(word-wrap)"
             },
             {
                 "command": "alive.clearReplHistory",
                 "title": "Alive: Clear REPL History",
-                "icon": {
-                    "light": "resources/light/clear-all.svg",
-                    "dark": "resources/dark/clear-all.svg"
-                }
+                "icon": "$(clear-all)"
             },
             {
                 "command": "alive.evalHistory",
                 "title": "Alive: Eval REPL History Item",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
             },
             {
                 "command": "alive.editHistory",
                 "title": "Alive: Edit REPL History Item",
-                "icon": {
-                    "light": "resources/light/edit.svg",
-                    "dark": "resources/dark/edit.svg"
-                }
+                "icon": "$(edit)"
             },
             {
                 "command": "alive.removeHistory",
                 "title": "Alive: Remove REPL History Item",
-                "icon": {
-                    "light": "resources/light/remove.svg",
-                    "dark": "resources/dark/remove.svg"
-                }
+                "icon": "$(remove)"
             },
             {
                 "command": "alive.refreshPackages",
                 "title": "Alive: Refresh Packages",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
             },
             {
                 "command": "alive.removePackage",
                 "title": "Alive: Remove Package",
-                "icon": {
-                    "light": "resources/light/remove.svg",
-                    "dark": "resources/dark/remove.svg"
-                }
+                "icon": "$(remove)"
             },
             {
                 "command": "alive.removeExport",
                 "title": "Alive: Remove Export",
-                "icon": {
-                    "light": "resources/light/remove.svg",
-                    "dark": "resources/dark/remove.svg"
-                }
+                "icon": "$(remove)"
             },
             {
                 "command": "alive.refreshAsdfSystems",
                 "title": "Alive: Refresh ASDF Systems",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
             },
             {
                 "command": "alive.refreshThreads",
                 "title": "Alive: Refresh Threads",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
             },
             {
                 "command": "alive.selectSexpr",
@@ -251,10 +223,7 @@
             {
                 "command": "alive.loadAsdfByName",
                 "title": "Alive: Load ASDF System By Name",
-                "icon": {
-                    "light": "resources/light/add.svg",
-                    "dark": "resources/dark/add.svg"
-                }
+                "icon": "$(add)"
             },
             {
                 "command": "alive.loadFile",
@@ -322,6 +291,11 @@
                 },
                 {
                     "command": "alive.clearRepl",
+                    "when": "view == lispRepl",
+                    "group": "navigation"
+                },
+                {
+                    "command": "alive.toggleReplWordWrap",
                     "when": "view == lispRepl",
                     "group": "navigation"
                 },
@@ -554,6 +528,7 @@
         "typescript": "^5.7.3"
     },
     "dependencies": {
+        "@vscode/codicons": "^0.0.36",
         "axios": "^1.6.0",
         "node-stream-zip": "^1.15.0",
         "react": "^19.0.0",
