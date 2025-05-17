@@ -72,6 +72,12 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
         })
     }
 
+    toggleWordWrap() {
+        this.view?.webview.postMessage({
+            type: 'toggleWordWrap',
+        })
+    }
+
     setPackage(pkg: string) {
         this.package = pkg
         this.view?.webview.postMessage({

@@ -71,6 +71,10 @@ export class UI extends EventEmitter<UIEvents> {
         this.replView.clear()
     }
 
+    toggleReplWordWrap() {
+        this.replView.toggleWordWrap()
+    }
+
     clearReplHistory() {
         this.historyTree.clear()
     }

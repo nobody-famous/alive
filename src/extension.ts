@@ -95,18 +95,21 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.selectSexpr', () => cmds.selectSexpr(lsp)),
         vscode.commands.registerCommand('alive.sendToRepl', () => cmds.sendToRepl(lsp)),
         vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(lsp)),
+        vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(lsp)),
         vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(lsp, state)),
 
         vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(ui, lsp)),
-
         vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp)),
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(ui, lsp)),
+
         vscode.commands.registerCommand('alive.clearRepl', () => cmds.clearRepl(ui)),
+        vscode.commands.registerCommand('alive.toggleReplWordWrap', () => cmds.toggleReplWordWrap(ui)),
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
+
         vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(lsp, state)),
         vscode.commands.registerCommand('alive.evalSurrounding', () => cmds.evalSurrounding(lsp)),
         vscode.commands.registerCommand('alive.inlineEvalSurrounding', () => cmds.inlineEvalSurrounding(lsp, state)),
-        vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(lsp)),
+
         vscode.commands.registerCommand('alive.inspectMacro', () => cmds.inspectMacro(lsp)),
         vscode.commands.registerCommand('alive.openScratchPad', () => cmds.openScratchPad(state)),
         vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(lsp)),

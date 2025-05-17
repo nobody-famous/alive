@@ -22,12 +22,20 @@ window.addEventListener('message', (event) => {
         case 'clearInput':
             clearInput()
             break
+        case 'toggleWordWrap':
+            toggleWordWrap()
+            break
     }
 })
 
 function clear() {
     const view = document.getElementById('repl-view')
     view.clearOutput()
+}
+
+function toggleWordWrap() {
+    const view = document.getElementById('repl-view')
+    view.toggleWordWrap()
 }
 
 function clearInput() {
@@ -98,7 +106,6 @@ style.replaceSync(`
 
     .repl-output-text {
         display: inline;
-        white-space: pre-wrap;
     }
 
     .repl-input-box {
@@ -221,11 +228,27 @@ customElements.define(
 customElements.define(
     'repl-output',
     class extends HTMLElement {
+        constructor() {
+            super()
+            this.wordWrap = 'pre-wrap'
+        }
+
         createOutputItem(pkgName, text) {
             const elem = document.createElement('repl-output-item')
             elem.setAttribute('package', pkgName ?? '')
             elem.setAttribute('text', text)
+            elem.style.whiteSpace = this.wordWrap
             return elem
+        }
+
+        toggleWordWrap() {
+            this.wordWrap = this.wordWrap !== 'pre' ? 'pre' : 'pre-wrap'
+
+            const elems = this.shadow.querySelectorAll('repl-output-item')
+            for (const elem of elems) {
+                const text = elem.shadowRoot.querySelector('.repl-output-text')
+                text.style.whiteSpace = this.wordWrap
+            }
         }
 
         append(pkgName, text) {
@@ -394,6 +417,11 @@ customElements.define(
         clearOutput() {
             const output = this.shadow.getElementById('output')
             output?.clear()
+        }
+
+        toggleWordWrap() {
+            const output = this.shadow.getElementById('output')
+            output?.toggleWordWrap()
         }
     }
 )
