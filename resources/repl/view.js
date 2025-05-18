@@ -95,7 +95,6 @@ style.replaceSync(`
     }
 
     .repl-output {
-        height: 100%;
     }
 
     .repl-output-package {
