@@ -123,7 +123,9 @@ export class LispRepl extends EventEmitter<ReplEvents> implements vscode.Webview
     }
 
     private doEval(text: string) {
-        if (text.trim().length != 0) {
+        if (text.trim().length === 0) {
+            this.addOutput(' ')
+        } else {
             this.emit('eval', this.package, text)
         }
     }
