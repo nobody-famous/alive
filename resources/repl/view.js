@@ -1,4 +1,5 @@
 const vscode = acquireVsCodeApi()
+const defaultWordWrap = 'pre-wrap'
 
 window.addEventListener('message', (event) => {
     const data = event.data
@@ -34,8 +35,13 @@ function clear() {
 }
 
 function toggleWordWrap() {
+    const state = vscode.getState()
+
+    state.wordWrap = state.wordWrap !== 'pre' ? 'pre' : 'pre-wrap'
+    vscode.setState(state)
+
     const view = document.getElementById('repl-view')
-    view.toggleWordWrap()
+    view.updateWordWrap()
 }
 
 function clearInput() {
@@ -229,24 +235,33 @@ customElements.define(
     class extends HTMLElement {
         constructor() {
             super()
-            this.wordWrap = 'pre-wrap'
+
+            const state = vscode.getState()
+            if (typeof state?.wordWrap !== 'string') {
+                vscode.setState({
+                    wordWrap: defaultWordWrap,
+                })
+            }
         }
 
         createOutputItem(pkgName, text) {
+            const state = vscode.getState()
             const elem = document.createElement('repl-output-item')
+
             elem.setAttribute('package', pkgName ?? '')
             elem.setAttribute('text', text)
-            elem.style.whiteSpace = this.wordWrap
+            elem.style.whiteSpace = state?.wordWrap ?? defaultWordWrap
+
             return elem
         }
 
-        toggleWordWrap() {
-            this.wordWrap = this.wordWrap !== 'pre' ? 'pre' : 'pre-wrap'
-
+        updateWordWrap() {
+            const state = vscode.getState()
             const elems = this.shadow.querySelectorAll('repl-output-item')
+
             for (const elem of elems) {
                 const text = elem.shadowRoot.querySelector('.repl-output-text')
-                text.style.whiteSpace = this.wordWrap
+                text.style.whiteSpace = state.wordWrap
             }
         }
 
@@ -418,9 +433,9 @@ customElements.define(
             output?.clear()
         }
 
-        toggleWordWrap() {
+        updateWordWrap() {
             const output = this.shadow.getElementById('output')
-            output?.toggleWordWrap()
+            output?.updateWordWrap()
         }
     }
 )
