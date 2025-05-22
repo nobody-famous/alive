@@ -191,7 +191,7 @@ customElements.define(
         setPackage(pkg) {
             const pkgElem = this.shadow.getElementById('package')
 
-            if (pkgElem) {
+            if (pkgElem != null) {
                 pkgElem.innerText = pkg
             }
         }
