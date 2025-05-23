@@ -586,6 +586,7 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
             checkCallback(fns, 'alive.refreshThreads', cmdsMock.refreshThreads)
             checkCallback(fns, 'alive.clearRepl', cmdsMock.clearRepl)
+            checkCallback(fns, 'alive.toggleReplWordWrap', cmdsMock.toggleReplWordWrap)
             checkCallback(fns, 'alive.clearInlineResults', cmdsMock.clearInlineResults)
             checkCallback(fns, 'alive.inlineEval', cmdsMock.inlineEval)
             checkCallback(fns, 'alive.evalSurrounding', cmdsMock.evalSurrounding)

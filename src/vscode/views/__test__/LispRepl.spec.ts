@@ -1,14 +1,8 @@
 import { LispRepl } from '../LispRepl'
 import { createFakeWebview } from './utils'
 
-const vscodeMock = jest.requireMock('vscode')
-jest.mock('vscode')
-
-jest.useFakeTimers()
-
 describe('LispRepl tests', () => {
     const fakeContext = { subscriptions: [], extensionPath: '/some/path' }
-    const extension = vscodeMock.extensions.getExtension()
 
     const createRepl = () => {
         const repl = new LispRepl(fakeContext, 'v1.0')
@@ -83,8 +77,6 @@ describe('LispRepl tests', () => {
 
             repl.addOutput('Some text')
 
-            jest.runAllTimers()
-
             expect(webview.postMessage).toHaveBeenCalled()
         })
 
@@ -94,8 +86,6 @@ describe('LispRepl tests', () => {
             repl.addOutput('Some text')
             repl.addOutput('Some more text')
 
-            jest.runAllTimers()
-
             expect(webview.postMessage).toHaveBeenCalledTimes(2)
         })
 
@@ -103,8 +93,6 @@ describe('LispRepl tests', () => {
             const repl = new LispRepl(fakeContext, 'v1.0')
 
             repl.addOutput('Some text')
-
-            jest.runAllTimers()
         })
     })
 
@@ -113,6 +101,9 @@ describe('LispRepl tests', () => {
 
         repl.emit = jest.fn()
         cb?.({ command: 'eval' })
+        expect(repl.emit).not.toHaveBeenCalled()
+
+        cb?.({ command: 'outputConnected' })
         expect(repl.emit).not.toHaveBeenCalled()
 
         cb?.({ command: 'eval', text: 'foo' })
@@ -149,6 +140,44 @@ describe('LispRepl tests', () => {
             repl.clear()
 
             expect(webview.postMessage).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('toggleWordWrap', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
+
+            repl.toggleWordWrap()
+
+            expect(webview.postMessage).toHaveBeenCalledWith({
+                type: 'toggleWordWrap',
+            })
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext, 'v1.0')
+
+            repl.toggleWordWrap()
+        })
+    })
+
+    describe('setReplOutput', () => {
+        it('Has view', () => {
+            const { repl, webview } = createRepl()
+
+            repl.setReplOutput()
+
+            expect(webview.postMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'setReplOutput',
+                })
+            )
+        })
+
+        it('No view', () => {
+            const repl = new LispRepl(fakeContext, 'v1.0')
+
+            repl.setReplOutput()
         })
     })
 

@@ -57,6 +57,13 @@ describe('UI tests', () => {
         ui.clearRepl()
     })
 
+    it('toggleReplWordWrap', () => {
+        const state = createState()
+        const ui = new UI(state)
+
+        ui.toggleReplWordWrap()
+    })
+
     describe('initRepl', () => {
         describe('eval', () => {
             it('No history', async () => {

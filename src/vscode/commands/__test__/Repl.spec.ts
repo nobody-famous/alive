@@ -20,6 +20,7 @@ import {
     selectRestart,
     selectSexpr,
     sendToRepl,
+    toggleReplWordWrap,
     tryCompileWithDiags,
 } from '../Repl'
 
@@ -35,6 +36,13 @@ describe('Repl tests', () => {
 
         clearRepl(ui)
         expect(ui.clearRepl).toHaveBeenCalled()
+    })
+
+    it('toggleReplWordWrap', () => {
+        const ui = { toggleReplWordWrap: jest.fn() }
+
+        toggleReplWordWrap(ui)
+        expect(ui.toggleReplWordWrap).toHaveBeenCalled()
     })
 
     type FakeEditor = {
