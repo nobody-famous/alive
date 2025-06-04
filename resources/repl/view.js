@@ -1,5 +1,6 @@
 const vscode = acquireVsCodeApi()
 const defaultWordWrap = 'pre-wrap'
+const SCROLL_TIMEOUT = 50
 
 window.addEventListener('message', (event) => {
     const data = event.data
@@ -236,6 +237,9 @@ customElements.define(
         constructor() {
             super()
 
+            this.lastScroll = Date.now()
+            this.timeoutId = undefined
+
             const state = vscode.getState()
             if (typeof state?.wordWrap !== 'string') {
                 vscode.setState({
@@ -265,12 +269,37 @@ customElements.define(
             }
         }
 
+        isTooSoon() {
+            const diff = Date.now() - this.lastScroll
+
+            return diff < SCROLL_TIMEOUT
+        }
+
+        scrollToLast() {
+            const elems = this.shadow.querySelectorAll('repl-output-item')
+            const elem = elems[elems.length - 1]
+
+            elem.scrollIntoView()
+            this.lastScroll = Date.now()
+        }
+
         append(pkgName, text) {
             const output = this.shadow.getElementById('output')
             const elem = this.createOutputItem(pkgName, text)
 
             output.appendChild(elem)
-            elem.scrollIntoView()
+
+            if (this.timeoutId !== undefined) {
+                return
+            } else if (this.isTooSoon()) {
+                this.timeoutId = setTimeout(() => {
+                    this.scrollToLast()
+                    this.timeoutId = undefined
+                }, SCROLL_TIMEOUT)
+            } else {
+                elem.scrollIntoView()
+                this.lastScroll = Date.now()
+            }
         }
 
         setOutput(items) {
