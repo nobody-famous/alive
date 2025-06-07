@@ -1,0 +1,18 @@
+html {
+    height: calc(100%);
+}
+
+body {
+    height: calc(100%);
+}
+
+repl-view {
+    height: 100%;
+    color: var(--vscode-editor-foreground);
+    background-color: var(--vscode-editor-background);
+}
+
+input:focus,
+select:focus {
+    outline: none;
+}

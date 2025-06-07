@@ -291,11 +291,13 @@ describe('Utils Tests', () => {
     })
 
     it('startCompileTimer', async () => {
-        const timeout = {
+        const timeout: NodeJS.Timeout = {
             hasRef: jest.fn(),
             refresh: jest.fn(),
             [Symbol.toPrimitive]: () => 5,
             [Symbol.dispose]: jest.fn(),
+            _onTimeout: () => timeout,
+            close: () => timeout,
             ref: () => timeout,
             unref: () => timeout,
         }

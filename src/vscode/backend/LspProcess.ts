@@ -69,9 +69,8 @@ export async function spawnLspProcess({ lspInstallPath, workspacePath, command, 
 
 async function listenForServerPort(child: ChildProcessWithoutNullStreams): Promise<number | undefined> {
     const timer = startWarningTimer(() => {
-        vscode.window.showWarningMessage('LSP start is taking an unexpectedly long time')
-        lspOutputChannel.show()
-    }, 10000)
+        vscode.window.showWarningMessage('LSP server not started yet, check the Alive LSP output tab')
+    }, 20000)
 
     try {
         log('Start LSP server')

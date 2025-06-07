@@ -10,6 +10,10 @@ export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
     ui.clearRepl()
 }
 
+export function toggleReplWordWrap(ui: Pick<UI, 'toggleReplWordWrap'>) {
+    ui.toggleReplWordWrap()
+}
+
 export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'evalWithOutput'>) {
     await useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)

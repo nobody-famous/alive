@@ -27,8 +27,8 @@ export declare interface UIEvents {
 
 export interface UIState {
     ctx: AliveContext
+    extension: Pick<vscode.Extension<unknown>, 'packageJSON'>
     config: { packageTree: PackageTreeConfig }
-    extension: vscode.Extension<unknown>
 }
 
 export class UI extends EventEmitter<UIEvents> {
@@ -51,7 +51,7 @@ export class UI extends EventEmitter<UIEvents> {
         this.packageTree = new PackagesTreeProvider([], state)
         this.asdfTree = new AsdfSystemsTreeProvider([])
         this.threadsTree = new ThreadsTreeProvider([])
-        this.replView = new LispRepl(state.ctx, state.extension)
+        this.replView = new LispRepl(state.ctx, state.extension.packageJSON.version)
         this.inspectors = new Map()
         this.inspectorPanel = new InspectorPanel(state.ctx)
         this.debugViews = []
@@ -69,6 +69,10 @@ export class UI extends EventEmitter<UIEvents> {
 
     clearRepl() {
         this.replView.clear()
+    }
+
+    toggleReplWordWrap() {
+        this.replView.toggleWordWrap()
     }
 
     clearReplHistory() {
@@ -339,12 +343,8 @@ export class UI extends EventEmitter<UIEvents> {
         })
     }
 
-    addReplInput(str: string, pkgName: string): void {
-        this.replView.addInput(str, pkgName)
-    }
-
-    addReplOutput(str: string): void {
-        this.replView.addOutput(str)
+    addReplOutput(str: string, pkgName?: string): void {
+        this.replView.addOutput(str, pkgName)
     }
 
     setQueryText(str: string): void {
