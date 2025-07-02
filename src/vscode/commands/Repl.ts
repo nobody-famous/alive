@@ -5,6 +5,7 @@ import { ExtensionState, LispSymbol } from '../Types'
 import { UI } from '../UI'
 import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, tryCompile, updateDiagnostics, useEditor } from '../Utils'
 import { LSP } from '../backend/LSP'
+import { AliveConfig } from '../../config'
 
 export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
     ui.clearRepl()
@@ -181,10 +182,11 @@ export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<Ext
 
 export async function tryCompileWithDiags(
     lsp: Pick<LSP, 'tryCompileFile'>,
-    state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>
+    state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>,
+    config: Pick<AliveConfig, 'enableDiagnostics'>
 ) {
     await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        const resp = await tryCompile(state, lsp, editor.document)
+        const resp = await tryCompile(state, config, lsp, editor.document)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)

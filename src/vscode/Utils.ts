@@ -10,6 +10,7 @@ import { isFiniteNumber, isObject, isString } from './Guards'
 import { CompileFileNote, CompileFileResp, CompileLocation, ExtensionState } from './Types'
 import { UI } from './UI'
 import { LSP } from './backend/LSP'
+import { AliveConfig } from '../config'
 
 type VscodeDiags = Pick<vscode.DiagnosticCollection, 'set'>
 type VscodeUri = Pick<vscode.Uri, 'fsPath'>
@@ -166,7 +167,8 @@ export function diagnosticsEnabled() {
 export function startCompileTimer(
     ui: Pick<UI, 'updatePackages'>,
     lsp: Pick<LSP, 'tryCompileFile' | 'listPackages'>,
-    state: Pick<ExtensionState, 'compileRunning' | 'compileTimeoutID' | 'diagnostics' | 'workspacePath'>
+    state: Pick<ExtensionState, 'compileRunning' | 'compileTimeoutID' | 'diagnostics' | 'workspacePath'>,
+    config: Pick<AliveConfig, 'enableDiagnostics'>
 ) {
     if (state.compileTimeoutID !== undefined) {
         clearTimeout(state.compileTimeoutID)
@@ -174,13 +176,14 @@ export function startCompileTimer(
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.tryCompileWithDiags(lsp, state)
+        await cmds.tryCompileWithDiags(lsp, state, { enableDiagnostics: true })
         await cmds.refreshPackages(ui, lsp)
     }, 500)
 }
 
 export async function tryCompile(
     state: Pick<ExtensionState, 'compileRunning' | 'workspacePath'>,
+    config: Pick<AliveConfig, 'enableDiagnostics'>,
     lsp: Pick<LSP, 'tryCompileFile'>,
     doc: Pick<vscode.TextDocument, 'fileName' | 'getText'>
 ): Promise<CompileFileResp | void> {
@@ -191,16 +194,20 @@ export async function tryCompile(
     try {
         state.compileRunning = true
 
-        const toCompile = await createTempFile(state, doc)
-        const resp = await lsp.tryCompileFile(toCompile)
+        if (config.enableDiagnostics === true) {
+            const toCompile = await createTempFile(state, doc)
+            const resp = await lsp.tryCompileFile(toCompile)
 
-        resp?.notes.forEach((note) => {
-            if (note.location.file === toCompile) {
-                note.location.file = doc.fileName
-            }
-        })
+            resp?.notes.forEach((note) => {
+                if (note.location.file === toCompile) {
+                    note.location.file = doc.fileName
+                }
+            })
 
-        return resp
+            return resp
+        } else if (config.enableDiagnostics === 'autoSave') {
+            return await lsp.tryCompileFile(doc.fileName)
+        }
     } finally {
         state.compileRunning = false
     }
