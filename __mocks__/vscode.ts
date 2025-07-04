@@ -15,6 +15,7 @@ export enum TreeItemCollapsibleState {
 
 export class Uri {
     static file = jest.fn()
+    static parse = jest.fn()
 }
 
 export const languages = {
@@ -50,6 +51,7 @@ export const workspace = {
     onDidChangeConfiguration: jest.fn(),
     onDidChangeTextDocument: jest.fn(),
     getConfiguration: jest.fn(),
+    save: jest.fn(),
     saveAll: jest.fn(),
 }
 

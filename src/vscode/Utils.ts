@@ -176,7 +176,7 @@ export function startCompileTimer(
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.tryCompileWithDiags(lsp, state, { enableDiagnostics: true })
+        await cmds.tryCompileWithDiags(lsp, state, config)
         await cmds.refreshPackages(ui, lsp)
     }, 500)
 }
@@ -185,7 +185,7 @@ export async function tryCompile(
     state: Pick<ExtensionState, 'compileRunning' | 'workspacePath'>,
     config: Pick<AliveConfig, 'enableDiagnostics'>,
     lsp: Pick<LSP, 'tryCompileFile'>,
-    doc: Pick<vscode.TextDocument, 'fileName' | 'getText'>
+    doc: Pick<vscode.TextDocument, 'fileName' | 'getText' | 'uri' | 'isDirty'>
 ): Promise<CompileFileResp | void> {
     if (state.compileRunning) {
         return
@@ -205,7 +205,8 @@ export async function tryCompile(
             })
 
             return resp
-        } else if (config.enableDiagnostics === 'autoSave') {
+        } else if (config.enableDiagnostics === 'autoSave' && doc.isDirty) {
+            vscode.workspace.save(doc.uri)
             return await lsp.tryCompileFile(doc.fileName)
         }
     } finally {

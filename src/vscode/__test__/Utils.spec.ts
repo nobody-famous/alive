@@ -1,7 +1,7 @@
 import * as os from 'os'
 import * as path from 'path'
 
-import { Position } from 'vscode'
+import { Position, Uri } from 'vscode'
 import {
     convertSeverity,
     diagnosticsEnabled,
@@ -245,12 +245,32 @@ describe('Utils Tests', () => {
 
     describe('tryCompile', () => {
         const lsp = { tryCompileFile: jest.fn() }
-        const doc = { getText: () => '', fileName: 'bar' }
+        const doc = { getText: () => '', fileName: 'bar', uri: Uri.parse(''), isDirty: false }
 
         it('compileRunning', async () => {
             const resp = await tryCompile({ compileRunning: true, workspacePath: 'foo' }, { enableDiagnostics: true }, lsp, doc)
 
             expect(resp).toBeUndefined()
+        })
+
+        describe('enableDiagnostics', () => {
+            it('true', async () => {
+                await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: true }, lsp, doc)
+                expect(lsp.tryCompileFile).toHaveBeenCalled()
+            })
+
+            it('autoSave', async () => {
+                await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: 'autoSave' }, lsp, doc)
+                expect(lsp.tryCompileFile).not.toHaveBeenCalled()
+
+                await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: 'autoSave' }, lsp, {
+                    getText: () => '',
+                    fileName: 'bar',
+                    uri: Uri.parse(''),
+                    isDirty: true,
+                })
+                expect(lsp.tryCompileFile).toHaveBeenCalled()
+            })
         })
 
         it('compileRunning task', async () => {
