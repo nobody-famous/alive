@@ -47,6 +47,11 @@ export async function inlineEval(
         state.hoverText = `=> ${strToMarkdown(evalOutput)}`
         await vscode.window.showTextDocument(editor.document, editor.viewColumn)
         vscode.commands.executeCommand('editor.action.showHover')
+
+        // Clear the hover text after a 100 msec delay (to restore helping tooltips afterwards)
+        setTimeout(() => {
+            state.hoverText = ''
+        }, 100)
     })
 }
 
@@ -98,7 +103,6 @@ export async function traceFunc(
         await vscode.window.showTextDocument(editor.document, editor.viewColumn)
         vscode.commands.executeCommand('editor.action.showHover')
 
-        // Clear the hover text after a 100 msec delay (to restore helping tooltips afterwards)
         setTimeout(() => {
             state.hoverText = ''
         }, 100)
@@ -138,6 +142,10 @@ export async function inlineEvalSurrounding(
         state.hoverText = `=> ${strToMarkdown(evalOutput)}`
         await vscode.window.showTextDocument(editor.document, editor.viewColumn)
         vscode.commands.executeCommand('editor.action.showHover')
+
+        setTimeout(() => {
+            state.hoverText = ''
+        }, 100)
     })
 }
 
