@@ -26,7 +26,7 @@ export interface LSPConfig {
 }
 
 export interface AliveConfig {
-    enableDiagnostics: boolean
+    enableDiagnostics: boolean | 'autoSave'
     packageTree: PackageTreeConfig
     format: FormatConfig
     lsp: LSPConfig
@@ -62,7 +62,7 @@ export const readAliveConfig = (): AliveConfig => {
 }
 
 const readConfigValues = (userCfg: vscode.WorkspaceConfiguration, cfg: AliveConfig) => {
-    if (isBoolean(userCfg.enableDiagnostics)) {
+    if (isBoolean(userCfg.enableDiagnostics) || userCfg.enableDiagnostics === 'autoSave') {
         cfg.enableDiagnostics = userCfg.enableDiagnostics
     }
 
