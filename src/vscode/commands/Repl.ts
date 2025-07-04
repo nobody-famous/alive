@@ -50,6 +50,61 @@ export async function inlineEval(
     })
 }
 
+
+
+export async function traceFunc(
+    lsp: Pick<LSP, 'getEvalInfo' | 'eval'>,
+    state: Pick<ExtensionState, 'hoverText'>,
+    setflag: boolean
+): Promise<void> {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
+        const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
+
+        if (info === undefined) {
+            return
+        }
+
+        const position = editor.selection.active
+        const wordRange = editor.document.getWordRangeAtPosition(position)
+
+        if (!wordRange) {
+            state.hoverText = "Could not determine function name at cursor."
+            await vscode.window.showTextDocument(editor.document, editor.viewColumn)
+            vscode.commands.executeCommand('editor.action.showHover')
+            return
+        }
+
+        const functionName = editor.document.getText(wordRange)
+        const traceForm = `(${!setflag ? 'un' : ''}trace ${functionName})`
+
+        const result = await lsp.eval(traceForm, info.package)
+
+        let success = true
+        let message = ''
+
+        if (!result || (Array.isArray(result) && result.length === 0)) {
+            success = false
+        } else if (typeof result === 'string' && result.includes('undefined')) {
+            success = false
+        }
+
+        if (success) {
+            message = `${!setflag ? 'Untracing' : 'Tracing'} **${functionName}** function...`
+        } else {
+            message = `Could not trace **${functionName}**...`
+        }
+
+        state.hoverText = `=> ${strToMarkdown(message)}`
+        await vscode.window.showTextDocument(editor.document, editor.viewColumn)
+        vscode.commands.executeCommand('editor.action.showHover')
+
+        // Clear the hover text after a 100 msec delay (to restore helping tooltips afterwards)
+        setTimeout(() => {
+            state.hoverText = ''
+        }, 100)
+    })
+}
+
 export async function evalSurrounding(lsp: Pick<LSP, 'getSurroundingInfo' | 'evalWithOutput'>): Promise<void> {
     await useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getSurroundingInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)

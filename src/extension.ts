@@ -107,6 +107,8 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.clearInlineResults', () => cmds.clearInlineResults(state)),
 
         vscode.commands.registerCommand('alive.inlineEval', () => cmds.inlineEval(lsp, state)),
+        vscode.commands.registerCommand('alive.traceFunc', () => cmds.traceFunc(lsp, state, true)),
+        vscode.commands.registerCommand('alive.untraceFunc', () => cmds.traceFunc(lsp, state, false)),
         vscode.commands.registerCommand('alive.evalSurrounding', () => cmds.evalSurrounding(lsp)),
         vscode.commands.registerCommand('alive.inlineEvalSurrounding', () => cmds.inlineEvalSurrounding(lsp, state)),
 
