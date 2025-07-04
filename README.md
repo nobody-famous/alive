@@ -230,6 +230,10 @@ Sends selected text to the REPL. If nothing is selected, sends the top level for
 
 Sends selected text to the REPL. If nothing is selected, sends the immediate closing form at the cursor position.
 
+### Trace/Untrace function (Alt+Shift+T/U)
+
+Sends trace/untrace definition to the REPL. To list already traced functions, enter (trace) in REPL.
+
 ### Load File (Alt+Shift+L)
 
 Load the current file into the REPL.
