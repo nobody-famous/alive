@@ -183,10 +183,11 @@ export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<Ext
 export async function tryCompileWithDiags(
     lsp: Pick<LSP, 'tryCompileFile'>,
     state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>,
-    config: Pick<AliveConfig, 'enableDiagnostics'>
+    config: Pick<AliveConfig, 'enableDiagnostics'>,
+    forceCompile: boolean
 ) {
     await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        const resp = await tryCompile(state, config, lsp, editor.document)
+        const resp = await tryCompile(state, config, lsp, editor.document, forceCompile)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)

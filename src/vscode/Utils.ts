@@ -161,7 +161,7 @@ export async function createFolder(folder: vscode.Uri) {
 
 export function diagnosticsEnabled() {
     const aliveConfig = vscode.workspace.getConfiguration('alive')
-    return typeof aliveConfig?.enableDiagnostics === 'boolean' ? aliveConfig.enableDiagnostics : true
+    return aliveConfig?.enableDiagnostics === true || aliveConfig?.enableDiagnostics === 'autoSave'
 }
 
 export function startCompileTimer(
@@ -176,7 +176,7 @@ export function startCompileTimer(
     }
 
     state.compileTimeoutID = setTimeout(async () => {
-        await cmds.tryCompileWithDiags(lsp, state, config)
+        await cmds.tryCompileWithDiags(lsp, state, config, false)
         await cmds.refreshPackages(ui, lsp)
     }, 500)
 }
@@ -185,7 +185,8 @@ export async function tryCompile(
     state: Pick<ExtensionState, 'compileRunning' | 'workspacePath'>,
     config: Pick<AliveConfig, 'enableDiagnostics'>,
     lsp: Pick<LSP, 'tryCompileFile'>,
-    doc: Pick<vscode.TextDocument, 'fileName' | 'getText' | 'uri' | 'isDirty'>
+    doc: Pick<vscode.TextDocument, 'fileName' | 'getText' | 'uri' | 'isDirty'>,
+    force: boolean = false
 ): Promise<CompileFileResp | void> {
     if (state.compileRunning) {
         return
@@ -205,7 +206,7 @@ export async function tryCompile(
             })
 
             return resp
-        } else if (config.enableDiagnostics === 'autoSave' && doc.isDirty) {
+        } else if (config.enableDiagnostics === 'autoSave' && (doc.isDirty || force)) {
             vscode.workspace.save(doc.uri)
             return await lsp.tryCompileFile(doc.fileName)
         }

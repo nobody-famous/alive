@@ -346,7 +346,9 @@ function openTextDocument(ui: UI, lsp: LSP, state: ExtensionState, doc: Pick<vsc
     }
 
     if (diagnosticsEnabled()) {
-        startCompileTimer(ui, lsp, state, state.config)
+        setTimeout(async () => {
+            await cmds.tryCompileWithDiags(lsp, state, state.config, true)
+        }, 50)
     }
 }
 
