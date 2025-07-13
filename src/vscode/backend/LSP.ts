@@ -350,7 +350,6 @@ export class LSP extends EventEmitter<LSPEvents> {
                 return []
             }
 
-            console.log('***** NAMES', resp.names)
             const names: string[] = []
 
             for (const name of resp.names) {
