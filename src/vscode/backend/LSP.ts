@@ -28,6 +28,7 @@ interface LSPEvents {
     refreshInspectors: []
     refreshDiagnostics: []
     startCompileTimer: []
+    compileImmediate: []
     input: [str: string, pkgName: string]
     output: [str: string]
     queryText: [str: string]
@@ -442,7 +443,7 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     editorChanged = (doc: Pick<vscode.TextDocument, 'languageId'>): void => {
         if (hasValidLangId(doc, [COMMON_LISP_ID]) && diagnosticsEnabled()) {
-            this.emit('startCompileTimer')
+            this.emit('compileImmediate')
         }
     }
 

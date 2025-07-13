@@ -75,31 +75,42 @@
             "lisp-explorer": [
                 {
                     "id": "replHistory",
-                    "name": "REPL History"
+                    "name": "REPL History",
+                    "icon": "${history)"
+                },
+                {
+                    "id": "tracedFunctions",
+                    "name": "Traced Functions",
+                    "icon": "${debug)"
                 },
                 {
                     "id": "lispInspector",
                     "type": "webview",
-                    "name": "Inspector"
+                    "name": "Inspector",
+                    "icon": "$(inspect)"
                 },
                 {
                     "id": "lispPackages",
-                    "name": "Packages"
+                    "name": "Packages",
+                    "icon": "$(package)"
                 },
                 {
                     "id": "asdfSystems",
-                    "name": "ASDF Systems"
+                    "name": "ASDF Systems",
+                    "icon": "$(tools)"
                 },
                 {
                     "id": "lispThreads",
-                    "name": "Threads"
+                    "name": "Threads",
+                    "icon": "$(tools)"
                 }
             ],
             "lisp-repl": [
                 {
                     "id": "lispRepl",
                     "type": "webview",
-                    "name": "REPL"
+                    "name": "REPL",
+                    "icon": "$(repl)"
                 }
             ]
         },

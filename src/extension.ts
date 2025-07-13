@@ -8,7 +8,6 @@ import { ExtensionState, HistoryItem, InspectInfo, InspectResult, isLispSymbol }
 import { UI } from './vscode/UI'
 import {
     COMMON_LISP_ID,
-    diagnosticsEnabled,
     getWorkspaceOrFilePath,
     hasValidLangId,
     startCompileTimer,
@@ -285,8 +284,6 @@ async function startLocalServer(state: ExtensionState): Promise<number | undefin
 }
 
 function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
-    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(ui, lsp, state, doc))
-
     vscode.workspace.onDidChangeTextDocument(
         (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event.document),
         null,
@@ -340,18 +337,6 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
     }
 }
 
-function openTextDocument(ui: UI, lsp: LSP, state: ExtensionState, doc: Pick<vscode.TextDocument, 'languageId'>) {
-    if (!hasValidLangId(doc, [COMMON_LISP_ID])) {
-        return
-    }
-
-    if (diagnosticsEnabled()) {
-        setTimeout(async () => {
-            await cmds.tryCompileWithDiags(lsp, state, state.config, true)
-        }, 50)
-    }
-}
-
 async function initTreeViews(
     ui: Pick<UI, 'initHistoryTree' | 'initThreadsTree' | 'initAsdfSystemsTree' | 'initPackagesTree'>,
     lsp: Pick<LSP, 'listThreads' | 'listAsdfSystems' | 'listPackages'>,
@@ -401,7 +386,7 @@ async function diagnosticsRefresh(
             continue
         }
 
-        const resp = await tryCompile(state, state.config, lsp, editor.document)
+        const resp = await tryCompile(state, state.config, lsp, editor.document, true)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
@@ -429,6 +414,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshInspectors', () => ui.refreshInspectors())
     lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
     lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state, state.config))
+    lsp.on('compileImmediate', () => cmds.tryCompileWithDiags(lsp, state, state.config, true))
     lsp.on('input', (str, pkgName) => ui.addReplOutput(str, pkgName))
     lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))
