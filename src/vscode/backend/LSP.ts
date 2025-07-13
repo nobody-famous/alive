@@ -23,6 +23,7 @@ import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseNote, parsePos
 
 interface LSPEvents {
     refreshPackages: []
+    refreshTracedFunctions: []
     refreshAsdfSystems: []
     refreshThreads: []
     refreshInspectors: []
@@ -121,6 +122,7 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     private emitRefresh() {
         this.emit('refreshPackages')
+        this.emit('refreshTracedFunctions')
         this.emit('refreshAsdfSystems')
         this.emit('refreshThreads')
         this.emit('refreshInspectors')
@@ -336,6 +338,30 @@ export class LSP extends EventEmitter<LSPEvents> {
             return systems
         } catch (err) {
             log(`Failed to list ASDF systems: ${toLog(err)}`)
+            return []
+        }
+    }
+
+    listTracedFunctions = async (): Promise<string[]> => {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listTracedFunctions')
+
+            if (!isObject(resp) || !Array.isArray(resp.names)) {
+                return []
+            }
+
+            console.log('***** NAMES', resp.names)
+            const names: string[] = []
+
+            for (const name of resp.names) {
+                if (typeof name === 'string') {
+                    names.push(name)
+                }
+            }
+
+            return names
+        } catch (err) {
+            log(`Failed to list traced functions: ${toLog(err)}`)
             return []
         }
     }

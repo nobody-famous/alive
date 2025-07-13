@@ -98,6 +98,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(lsp, state)),
 
         vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(ui, lsp)),
+        vscode.commands.registerCommand('alive.refreshTracedFunctions', () => cmds.refreshTracedFunctions(ui, lsp)),
         vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp)),
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(ui, lsp)),
 
@@ -338,11 +339,16 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
 }
 
 async function initTreeViews(
-    ui: Pick<UI, 'initHistoryTree' | 'initThreadsTree' | 'initAsdfSystemsTree' | 'initPackagesTree'>,
-    lsp: Pick<LSP, 'listThreads' | 'listAsdfSystems' | 'listPackages'>,
+    ui: Pick<UI, 'initHistoryTree' | 'initThreadsTree' | 'initTracedFunctionsTree' | 'initAsdfSystemsTree' | 'initPackagesTree'>,
+    lsp: Pick<LSP, 'listThreads' | 'listTracedFunctions' | 'listAsdfSystems' | 'listPackages'>,
     history: HistoryItem[]
 ) {
-    const tasks = [initThreadsTree(ui, lsp), initAsdfSystemsTree(ui, lsp), initPackagesTree(ui, lsp)]
+    const tasks = [
+        initThreadsTree(ui, lsp),
+        initTracedFunctionsTree(ui, lsp),
+        initAsdfSystemsTree(ui, lsp),
+        initPackagesTree(ui, lsp),
+    ]
 
     await Promise.allSettled(tasks)
 
@@ -355,6 +361,15 @@ async function initThreadsTree(ui: Pick<UI, 'initThreadsTree'>, lsp: Pick<LSP, '
         ui.initThreadsTree(threads)
     } catch (err) {
         log(`Failed to init threads tree: ${err}`)
+    }
+}
+
+async function initTracedFunctionsTree(ui: Pick<UI, 'initTracedFunctionsTree'>, lsp: Pick<LSP, 'listTracedFunctions'>) {
+    try {
+        const systems = await lsp.listTracedFunctions()
+        ui.initTracedFunctionsTree(systems)
+    } catch (err) {
+        log(`Failed to init traced functions tree: ${err}`)
     }
 }
 
@@ -409,6 +424,7 @@ function registerUIEvents(ui: UI, lsp: LSP, state: ExtensionState) {
 
 function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshPackages', () => cmds.refreshPackages(ui, lsp))
+    lsp.on('refreshTracedFunctions', () => cmds.refreshTracedFunctions(ui, lsp))
     lsp.on('refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp))
     lsp.on('refreshThreads', () => cmds.refreshThreads(ui, lsp))
     lsp.on('refreshInspectors', () => ui.refreshInspectors())

@@ -107,6 +107,14 @@ export async function refreshPackages(ui: Pick<UI, 'updatePackages'>, lsp: Pick<
     })
 }
 
+export async function refreshTracedFunctions(ui: Pick<UI, 'updateTracedFunctions'>, lsp: Pick<LSP, 'listTracedFunctions'>) {
+    await withCatchError(async () => {
+        const names = await lsp.listTracedFunctions()
+
+        ui.updateTracedFunctions(names)
+    })
+}
+
 export async function refreshAsdfSystems(ui: Pick<UI, 'updateAsdfSystems'>, lsp: Pick<LSP, 'listAsdfSystems'>) {
     await withCatchError(async () => {
         const systems = await lsp.listAsdfSystems()

@@ -11,6 +11,7 @@ import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 import { isFiniteNumber } from './Guards'
 import { PackageTreeConfig } from '../config'
+import { TracedFunctionTreeProvider } from './views/TracedFunctionsTree'
 
 export declare interface UIEvents {
     saveReplHistory: [history: HistoryItem[]]
@@ -34,6 +35,7 @@ export interface UIState {
 export class UI extends EventEmitter<UIEvents> {
     private state: UIState
     private historyTree: ReplHistoryTreeProvider
+    private tracedFnTree: TracedFunctionTreeProvider
     private packageTree: PackagesTreeProvider
     private asdfTree: AsdfSystemsTreeProvider
     private threadsTree: ThreadsTreeProvider
@@ -48,6 +50,7 @@ export class UI extends EventEmitter<UIEvents> {
 
         this.state = state
         this.historyTree = new ReplHistoryTreeProvider([])
+        this.tracedFnTree = new TracedFunctionTreeProvider([])
         this.packageTree = new PackagesTreeProvider([], state)
         this.asdfTree = new AsdfSystemsTreeProvider([])
         this.threadsTree = new ThreadsTreeProvider([])
@@ -153,6 +156,10 @@ export class UI extends EventEmitter<UIEvents> {
         return input ?? ''
     }
 
+    updateTracedFunctions(names: string[]): void {
+        this.tracedFnTree.update(names)
+    }
+
     updateThreads(threads: Thread[]): void {
         this.threadsTree.update(threads)
     }
@@ -182,6 +189,11 @@ export class UI extends EventEmitter<UIEvents> {
     initAsdfSystemsTree(systems: string[]): void {
         this.asdfTree.update(systems)
         vscode.window.registerTreeDataProvider('asdfSystems', this.asdfTree)
+    }
+
+    initTracedFunctionsTree(names: string[]): void {
+        this.tracedFnTree.update(names)
+        vscode.window.registerTreeDataProvider('tracedFunctions', this.tracedFnTree)
     }
 
     initThreadsTree(threads: Thread[]): void {
