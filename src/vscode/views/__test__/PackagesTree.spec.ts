@@ -1,5 +1,6 @@
 import { TreeItem, TreeItemCollapsibleState } from 'vscode'
-import { ExportNode, PackageNode, PackagesTreeProvider, isExportNode, isPackageNode } from '../PackagesTree'
+import { PackagesTreeProvider } from '../PackagesTree'
+import { isLeafNode, isPackageNode, LeafNode, PackageNode } from '../BasePackageTree'
 
 describe('PackagesTree tests', () => {
     const fakeState = { config: { packageTree: { separator: null } } }
@@ -11,9 +12,9 @@ describe('PackagesTree tests', () => {
         ).toBe(true)
     })
 
-    it('isExportNode', () => {
-        expect(isExportNode(5)).toBe(false)
-        expect(isExportNode(new ExportNode('key', 'pkg'))).toBe(true)
+    it('isLeafNode', () => {
+        expect(isLeafNode(5)).toBe(false)
+        expect(isLeafNode(new LeafNode('key', 'pkg'))).toBe(true)
     })
 
     it('update', () => {

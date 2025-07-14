@@ -19,9 +19,9 @@ import { downloadLspServer, getInstallPath, spawnLspProcess } from './vscode/bac
 import { disconnectChild } from './vscode/backend/ProcUtils'
 import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
-import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
 import { isHistoryNode } from './vscode/views/ReplHistory'
 import { isThreadNode } from './vscode/views/ThreadsTree'
+import { isLeafNode, isPackageNode } from './vscode/views/BasePackageTree'
 
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
@@ -147,7 +147,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         }),
 
         vscode.commands.registerCommand('alive.removeExport', (node) => {
-            if (!isExportNode(node) || typeof node.label !== 'string' || node.label === '') {
+            if (!isLeafNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
 
