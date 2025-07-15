@@ -9,16 +9,6 @@ interface TreeNode {
     leafs?: Array<string>
 }
 
-function isTreeNode(data: unknown): data is TreeNode {
-    return (
-        isObject(data) &&
-        isObject(data.kids) &&
-        isString(data.packageName) &&
-        isString(data.label) &&
-        (data.exports === undefined || isArray(data.exports, isString))
-    )
-}
-
 export class PackageNode extends vscode.TreeItem {
     public label: string
     public node: TreeNode
@@ -67,8 +57,9 @@ export abstract class BasePackageTree<T> implements vscode.TreeDataProvider<vsco
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
-    constructor(state: PackagesTreeState) {
+    constructor(data: T[], state: PackagesTreeState) {
         this.state = state
+        this.buildTree(data)
     }
 
     protected fireEvent() {
@@ -94,7 +85,7 @@ export abstract class BasePackageTree<T> implements vscode.TreeDataProvider<vsco
         return [name]
     }
 
-    protected buildTree(items: T[]) {
+    private buildTree(items: T[]) {
         this.rootNode = { kids: {}, label: '', packageName: '' }
 
         for (const item of items) {
@@ -119,10 +110,6 @@ export abstract class BasePackageTree<T> implements vscode.TreeDataProvider<vsco
     }
 
     private createLeafNodes(parent: TreeNode, nodes: vscode.TreeItem[]): vscode.TreeItem[] {
-        if (!isTreeNode(parent)) {
-            return nodes
-        }
-
         return isArray(parent.leafs, isString)
             ? nodes.concat(parent.leafs.sort().map((item) => new LeafNode(item, parent.packageName)))
             : nodes

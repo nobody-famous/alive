@@ -18,6 +18,7 @@ import {
     SurroundingInfo,
     Package,
     Thread,
+    TracedPackage,
 } from '../Types'
 import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseNote, parsePos, strToMarkdown } from '../Utils'
 
@@ -342,23 +343,32 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
     }
 
-    listTracedFunctions = async (): Promise<string[]> => {
+    listTracedFunctions = async (): Promise<TracedPackage[]> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/listTracedFunctions')
 
-            if (!isObject(resp) || !Array.isArray(resp.names)) {
+            if (!isObject(resp) || !Array.isArray(resp.traced)) {
                 return []
             }
 
-            const names: string[] = []
+            const pkgs: { [index: string]: Array<string> } = {}
 
-            for (const name of resp.names) {
-                if (typeof name === 'string') {
-                    names.push(name)
+            for (const item of resp.traced) {
+                if (!isObject(item) || !isString(item.package) || !isString(item.name)) {
+                    continue
                 }
+
+                if (!Array.isArray(pkgs[item.package])) {
+                    pkgs[item.package] = []
+                }
+
+                pkgs[item.package].push(item.name)
             }
 
-            return names
+            return Object.entries(pkgs).reduce((acc: TracedPackage[], [pkg, names]) => {
+                acc.push({ name: pkg, traced: names })
+                return acc
+            }, [])
         } catch (err) {
             log(`Failed to list traced functions: ${toLog(err)}`)
             return []

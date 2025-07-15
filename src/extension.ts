@@ -366,8 +366,8 @@ async function initThreadsTree(ui: Pick<UI, 'initThreadsTree'>, lsp: Pick<LSP, '
 
 async function initTracedFunctionsTree(ui: Pick<UI, 'initTracedFunctionsTree'>, lsp: Pick<LSP, 'listTracedFunctions'>) {
     try {
-        const systems = await lsp.listTracedFunctions()
-        ui.initTracedFunctionsTree(systems)
+        const traced = await lsp.listTracedFunctions()
+        ui.initTracedFunctionsTree(traced)
     } catch (err) {
         log(`Failed to init traced functions tree: ${err}`)
     }

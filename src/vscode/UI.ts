@@ -6,7 +6,7 @@ import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
 import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
-import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Package, Thread } from './Types'
+import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Package, Thread, TracedPackage } from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 import { isFiniteNumber } from './Guards'
@@ -50,7 +50,7 @@ export class UI extends EventEmitter<UIEvents> {
 
         this.state = state
         this.historyTree = new ReplHistoryTreeProvider([])
-        this.tracedFnTree = new TracedFunctionTreeProvider([])
+        this.tracedFnTree = new TracedFunctionTreeProvider([], state)
         this.packageTree = new PackagesTreeProvider([], state)
         this.asdfTree = new AsdfSystemsTreeProvider([])
         this.threadsTree = new ThreadsTreeProvider([])
@@ -156,8 +156,8 @@ export class UI extends EventEmitter<UIEvents> {
         return input ?? ''
     }
 
-    updateTracedFunctions(names: string[]): void {
-        this.tracedFnTree.update(names)
+    updateTracedFunctions(traced: TracedPackage[]): void {
+        this.tracedFnTree.update(traced)
     }
 
     updateThreads(threads: Thread[]): void {
@@ -191,8 +191,8 @@ export class UI extends EventEmitter<UIEvents> {
         vscode.window.registerTreeDataProvider('asdfSystems', this.asdfTree)
     }
 
-    initTracedFunctionsTree(names: string[]): void {
-        this.tracedFnTree.update(names)
+    initTracedFunctionsTree(traced: TracedPackage[]): void {
+        this.tracedFnTree.update(traced)
         vscode.window.registerTreeDataProvider('tracedFunctions', this.tracedFnTree)
     }
 
