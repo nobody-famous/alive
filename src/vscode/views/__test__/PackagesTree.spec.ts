@@ -1,6 +1,7 @@
 import { TreeItem, TreeItemCollapsibleState } from 'vscode'
 import { PackagesTreeProvider } from '../PackagesTree'
 import { isLeafNode, isPackageNode, LeafNode, PackageNode } from '../BasePackageTree'
+import { TracedFunctionTreeProvider } from '../TracedFunctionsTree'
 
 describe('PackagesTree tests', () => {
     const fakeState = { config: { packageTree: { separator: null } } }
@@ -155,5 +156,12 @@ describe('PackagesTree tests', () => {
                 }
             })
         })
+    })
+
+    it('TraceFunctionsTree', () => {
+        const tree = new TracedFunctionTreeProvider([], fakeState)
+
+        expect(tree.getItemName({ name: 'foo', traced: [] })).toBe('foo')
+        expect(tree.getItemChildren({ name: 'foo', traced: ['bar', 'bas'] })).toStrictEqual(['bar', 'bas'])
     })
 })
