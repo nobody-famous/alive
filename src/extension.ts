@@ -21,7 +21,7 @@ import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
 import { isHistoryNode } from './vscode/views/ReplHistory'
 import { isThreadNode } from './vscode/views/ThreadsTree'
-import { isLeafNode, isPackageNode } from './vscode/views/BasePackageTree'
+import { isLeafNode, isPackageNode } from './vscode/views/BasePackagesTree'
 
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')

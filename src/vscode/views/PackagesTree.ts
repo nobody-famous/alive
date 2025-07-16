@@ -1,7 +1,7 @@
 import { Package } from '../Types'
-import { BasePackageTree, PackagesTreeState } from './BasePackageTree'
+import { BasePackagesTree, PackagesTreeState } from './BasePackagesTree'
 
-export class PackagesTreeProvider extends BasePackageTree<Package> {
+export class PackagesTreeProvider extends BasePackagesTree<Package> {
     constructor(pkgs: Package[], state: PackagesTreeState) {
         super(pkgs, state)
     }

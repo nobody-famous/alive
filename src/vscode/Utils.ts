@@ -161,7 +161,11 @@ export async function createFolder(folder: vscode.Uri) {
 
 export function diagnosticsEnabled() {
     const aliveConfig = vscode.workspace.getConfiguration('alive')
-    return aliveConfig?.enableDiagnostics === true || aliveConfig?.enableDiagnostics === 'autoSave'
+    return (
+        aliveConfig?.enableDiagnostics == undefined ||
+        aliveConfig.enableDiagnostics === true ||
+        aliveConfig.enableDiagnostics === 'autoSave'
+    )
 }
 
 export function startCompileTimer(

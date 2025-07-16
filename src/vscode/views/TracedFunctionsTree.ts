@@ -1,7 +1,7 @@
 import { TracedPackage } from '../Types'
-import { BasePackageTree, PackagesTreeState } from './BasePackageTree'
+import { BasePackagesTree, PackagesTreeState } from './BasePackagesTree'
 
-export class TracedFunctionTreeProvider extends BasePackageTree<TracedPackage> {
+export class TracedFunctionTreeProvider extends BasePackagesTree<TracedPackage> {
     constructor(traced: TracedPackage[], state: PackagesTreeState) {
         super(traced, state)
     }

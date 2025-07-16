@@ -12,6 +12,13 @@ jest.mock('vscode')
 const netMock = jest.requireMock('net')
 jest.mock('net')
 
+const utilsMock = jest.requireMock('../../Utils')
+jest.mock('../../Utils', () => ({
+    ...jest.requireActual('../../Utils'),
+    diagnosticsEnabled: jest.fn(),
+    parseToInt:jest.fn((n) => +n)
+}))
+
 describe('LSP tests', () => {
     const createClientMock = () => ({
         start: jest.fn(),
@@ -117,7 +124,7 @@ describe('LSP tests', () => {
             const { lsp, funcMap } = await getClientFuncs()
 
             funcMap.notification['$/alive/refresh']?.()
-            expect(lsp.emit).toHaveBeenCalledTimes(5)
+            expect(lsp.emit).toHaveBeenCalledTimes(6)
         })
 
         it('query-io', async () => {
@@ -660,7 +667,8 @@ describe('LSP tests', () => {
             validate(lsp)
         }
 
-        runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
+        utilsMock.diagnosticsEnabled.mockReturnValueOnce(true)
+        runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('compileImmediate'))
         runTest('foo', (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
 
@@ -674,6 +682,7 @@ describe('LSP tests', () => {
             validate(lsp)
         }
 
+        utilsMock.diagnosticsEnabled.mockReturnValueOnce(true)
         runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
         runTest('foo', (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
@@ -986,8 +995,8 @@ describe('LSP tests', () => {
         it('should handle array response', async () => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({
-                    text: ['result1', 'result2']
-                }))
+                    text: ['result1', 'result2'],
+                })),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')
@@ -997,8 +1006,8 @@ describe('LSP tests', () => {
         it('should handle string response', async () => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({
-                    text: 'result'
-                }))
+                    text: 'result',
+                })),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')
@@ -1008,8 +1017,8 @@ describe('LSP tests', () => {
         it('should handle invalid response', async () => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({
-                    text: 123 // invalid type
-                }))
+                    text: 123, // invalid type
+                })),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')
@@ -1018,7 +1027,7 @@ describe('LSP tests', () => {
 
         it('should handle non-object response', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn(() => "not an object")
+                sendRequest: jest.fn(() => 'not an object'),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')

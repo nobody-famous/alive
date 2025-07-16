@@ -1,6 +1,6 @@
 import { TreeItem, TreeItemCollapsibleState } from 'vscode'
 import { PackagesTreeProvider } from '../PackagesTree'
-import { isLeafNode, isPackageNode, LeafNode, PackageNode } from '../BasePackageTree'
+import { isLeafNode, isPackageNode, LeafNode, PackageNode } from '../BasePackagesTree'
 import { TracedFunctionTreeProvider } from '../TracedFunctionsTree'
 
 describe('PackagesTree tests', () => {

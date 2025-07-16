@@ -30,7 +30,7 @@
                 // "--coverage",
                 "src/vscode/__test__/Utils.spec.ts",
                 "-t",
-                "enableDiagnostics"
+                "diagnosticsEnabled"
             ],
             "problemMatcher": ["$tsc"]
         },

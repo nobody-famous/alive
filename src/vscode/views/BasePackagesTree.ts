@@ -47,7 +47,7 @@ export interface PackagesTreeState {
     }
 }
 
-export abstract class BasePackageTree<T> implements vscode.TreeDataProvider<vscode.TreeItem> {
+export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vscode.TreeItem> {
     private state: PackagesTreeState
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
     protected rootNode: TreeNode = { kids: {}, packageName: '', label: '' }

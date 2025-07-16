@@ -14,8 +14,8 @@ jest.mock('vscode')
 const cmdsMock = jest.requireMock('../vscode/commands')
 jest.mock('../vscode/commands')
 
-const packagesMock = jest.requireMock('../vscode/views/PackagesTree')
-jest.mock('../vscode/views/PackagesTree')
+const packagesMock = jest.requireMock('../vscode/views/BasePackagesTree')
+jest.mock('../vscode/views/BasePackagesTree')
 
 const threadsMock = jest.requireMock('../vscode/views/ThreadsTree')
 jest.mock('../vscode/views/ThreadsTree')
@@ -358,42 +358,6 @@ describe('Extension tests', () => {
             fn?.({ document: {} })
             expect(lspMock.editorChanged).toHaveBeenCalled()
         })
-
-        describe('onDidOpenTextDocument', () => {
-            beforeEach(() => {
-                utilsMock.diagnosticsEnabled.mockReset()
-                utilsMock.startCompileTimer.mockReset()
-            })
-
-            it('Valid ID, have diagnostics', async () => {
-                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
-
-                utilsMock.hasValidLangId.mockImplementationOnce(() => true)
-                utilsMock.diagnosticsEnabled.mockImplementationOnce(() => true)
-                fn?.()
-
-                expect(utilsMock.startCompileTimer).toHaveBeenCalled()
-            })
-
-            it('Valid ID, without diagnostics', async () => {
-                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
-
-                utilsMock.hasValidLangId.mockImplementationOnce(() => true)
-                utilsMock.diagnosticsEnabled.mockImplementationOnce(() => false)
-                fn?.()
-
-                expect(utilsMock.startCompileTimer).not.toHaveBeenCalled()
-            })
-
-            it('Invalid ID', async () => {
-                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
-
-                utilsMock.hasValidLangId.mockImplementationOnce(() => false)
-                fn?.()
-
-                expect(utilsMock.diagnosticsEnabled).not.toHaveBeenCalled()
-            })
-        })
     })
 
     describe('startLocalServer', () => {
@@ -693,10 +657,10 @@ describe('Extension tests', () => {
         })
 
         describe('removeExport', () => {
-            packagesMock.isExportNode = jest.fn()
+            packagesMock.isLeafNode = jest.fn()
 
-            nodeTest('Invalid node', 'alive.removeExport', packagesMock.isExportNode, false, {}, lspMock.removeExport)
-            nodeTest('Valid node', 'alive.removeExport', packagesMock.isExportNode, true, { label: 'foo' }, lspMock.removeExport)
+            nodeTest('Invalid node', 'alive.removeExport', packagesMock.isLeafNode, false, {}, lspMock.removeExport)
+            nodeTest('Valid node', 'alive.removeExport', packagesMock.isLeafNode, true, { label: 'foo' }, lspMock.removeExport)
         })
 
         describe('killThread', () => {

@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
-import { EOL } from 'os'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { isArray, isInspectResult, isObject, isPackage, isRestartInfo, isStackTrace, isString, isThread } from '../Guards'
@@ -15,8 +14,8 @@ import {
     InspectInfo,
     InspectResult,
     LispSymbol,
-    SurroundingInfo,
     Package,
+    SurroundingInfo,
     Thread,
     TracedPackage,
 } from '../Types'
