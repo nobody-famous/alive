@@ -11,6 +11,7 @@ export const initHistoryTree = jest.fn()
 export const initInspector = jest.fn()
 export const initPackagesTree = jest.fn()
 export const initThreadsTree = jest.fn()
+export const initTracedFunctionsTree = jest.fn()
 export const moveHistoryNodeToTop = jest.fn()
 export const newInspector = jest.fn()
 export const updatePackages = jest.fn()
@@ -38,6 +39,7 @@ export const UI = jest.fn(() => ({
     initInspector,
     initPackagesTree,
     initThreadsTree,
+    initTracedFunctionsTree,
     moveHistoryNodeToTop,
     newInspector,
     updatePackages,

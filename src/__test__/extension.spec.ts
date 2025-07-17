@@ -195,6 +195,7 @@ describe('Extension tests', () => {
         uiMock.initPackagesTree.mockReset()
         uiMock.initAsdfSystemsTree.mockReset()
         uiMock.initThreadsTree.mockReset()
+        uiMock.initTracedFunctionsTree.mockReset()
 
         lspMock.listPackages.mockImplementationOnce(() => {
             throw new Error('Failed, as requested')
@@ -205,12 +206,16 @@ describe('Extension tests', () => {
         lspMock.listThreads.mockImplementationOnce(() => {
             throw new Error('Failed, as requested')
         })
+        lspMock.listTracedFunctions.mockImplementationOnce(() => {
+            throw new Error('Failed, as requested')
+        })
 
         await activate(ctx)
 
         expect(uiMock.initPackagesTree).not.toHaveBeenCalled()
         expect(uiMock.initAsdfSystemsTree).not.toHaveBeenCalled()
         expect(uiMock.initThreadsTree).not.toHaveBeenCalled()
+        expect(uiMock.initTracedFunctionsTree).not.toHaveBeenCalled()
     })
 
     const checkCallback = (fns: { [index: string]: () => void }, name: string, mockFn: jest.Mock) => {
@@ -284,10 +289,12 @@ describe('Extension tests', () => {
             const fns = await getAllCallbacks(lspMock.on, async () => await activate(ctx))
 
             checkCallback(fns, 'refreshPackages', cmdsMock.refreshPackages)
+            checkCallback(fns, 'refreshTracedFunctions', cmdsMock.refreshTracedFunctions)
             checkCallback(fns, 'refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
             checkCallback(fns, 'refreshThreads', cmdsMock.refreshThreads)
             checkCallback(fns, 'refreshInspectors', uiMock.refreshInspectors)
             checkCallback(fns, 'refreshDiagnostics', uiMock.refreshDiagnostics)
+            checkCallback(fns, 'compileImmediate', cmdsMock.tryCompileWithDiags)
             checkCallback(fns, 'input', uiMock.addReplOutput)
             checkCallback(fns, 'output', uiMock.addReplOutput)
             checkCallback(fns, 'queryText', uiMock.setQueryText)
@@ -547,6 +554,7 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.loadAsdfSystem', cmdsMock.loadAsdfSystem)
             checkCallback(fns, 'alive.compileFile', cmdsMock.compileFile)
             checkCallback(fns, 'alive.refreshPackages', cmdsMock.refreshPackages)
+            checkCallback(fns, 'alive.refreshTracedFunctions', cmdsMock.refreshTracedFunctions)
             checkCallback(fns, 'alive.refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
             checkCallback(fns, 'alive.refreshThreads', cmdsMock.refreshThreads)
             checkCallback(fns, 'alive.clearRepl', cmdsMock.clearRepl)
