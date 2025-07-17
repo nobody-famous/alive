@@ -16,7 +16,7 @@ const utilsMock = jest.requireMock('../../Utils')
 jest.mock('../../Utils', () => ({
     ...jest.requireActual('../../Utils'),
     diagnosticsEnabled: jest.fn(),
-    parseToInt:jest.fn((n) => +n)
+    parseToInt: jest.fn((n) => +n),
 }))
 
 describe('LSP tests', () => {
@@ -867,6 +867,50 @@ describe('LSP tests', () => {
                 )
                 await networkErrorTest(
                     (lsp) => lsp.listPackages(),
+                    (resp) => expect(resp).toMatchObject([]),
+                    false
+                )
+            })
+        })
+
+        describe('listTracedFunctions', () => {
+            it('Success', async () => {
+                await listTest(
+                    {
+                        traced: [
+                            { package: 'foo', name: 'bar' },
+                            { package: {}, name: [] },
+                            { package: 'bar', name: 'bas' },
+                        ],
+                    },
+                    (lsp) => lsp.listTracedFunctions(),
+                    (result) => {
+                        expect(result.length).toBe(2)
+                        expect(result[0].name).toBe('foo')
+                        expect(result[1].name).toBe('bar')
+                    }
+                )
+            })
+
+            it('Invalid data', async () => {
+                await listTest(
+                    [{ id: 5, name: 'foo' }],
+                    (lsp) => lsp.listTracedFunctions(),
+                    (result) => expect(result.length).toBe(0)
+                )
+            })
+
+            it('No client', async () => {
+                await noClientTest((lsp) => lsp.listTracedFunctions())
+            })
+
+            it('Network error', async () => {
+                await networkErrorTest(
+                    (lsp) => lsp.listTracedFunctions(),
+                    (resp) => expect(resp).toMatchObject([])
+                )
+                await networkErrorTest(
+                    (lsp) => lsp.listTracedFunctions(),
                     (resp) => expect(resp).toMatchObject([]),
                     false
                 )

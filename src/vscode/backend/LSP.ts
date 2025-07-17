@@ -364,6 +364,7 @@ export class LSP extends EventEmitter<LSPEvents> {
                 pkgs[item.package].push(item.name)
             }
 
+            console.log('***** RESP', pkgs)
             return Object.entries(pkgs).reduce((acc: TracedPackage[], [pkg, names]) => {
                 acc.push({ name: pkg, traced: names })
                 return acc
