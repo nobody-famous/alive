@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/vscode/__test__/Utils.spec.ts",
+                "src/vscode/__test__/UI.spec.ts",
                 "-t",
-                "diagnosticsEnabled"
+                "updateTracedFunctions"
             ],
             "problemMatcher": ["$tsc"]
         },
