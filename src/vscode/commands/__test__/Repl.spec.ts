@@ -1,5 +1,5 @@
 import { Selection } from 'vscode'
-import { EvalInfo, SurroundingInfo } from '../../Types'
+import { SurroundingInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
 import {
     clearRepl,
@@ -17,6 +17,7 @@ import {
     refreshAsdfSystems,
     refreshPackages,
     refreshThreads,
+    refreshTracedFunctions,
     selectRestart,
     selectSexpr,
     sendToRepl,
@@ -570,6 +571,15 @@ describe('Repl tests', () => {
         await refreshPackages(ui, lsp)
 
         expect(ui.updatePackages).toHaveBeenCalled()
+    })
+
+    it('refreshTracedFunctions', async () => {
+        const lsp = { listTracedFunctions: jest.fn() }
+        const ui = { updateTracedFunctions: jest.fn() }
+
+        await refreshTracedFunctions(ui, lsp)
+
+        expect(ui.updateTracedFunctions).toHaveBeenCalled()
     })
 
     describe('selectSexpr', () => {
