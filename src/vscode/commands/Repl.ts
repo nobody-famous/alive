@@ -230,6 +230,12 @@ export async function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getSurroundi
     await doMacroExpand(lsp, lsp.macroexpand1)
 }
 
+export async function traceFunction(lsp: Pick<LSP, 'traceFunction'>) {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
+        await lsp.traceFunction(editor.document.uri.toString(), editor.selection.active)
+    })
+}
+
 export function selectRestart(ui: Pick<UI, 'selectRestart'>, restart: number) {
     ui.selectRestart(restart)
 }

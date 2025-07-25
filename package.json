@@ -259,6 +259,10 @@
             {
                 "command": "alive.macroexpand1",
                 "title": "Alive: Macro Expand 1"
+            },
+            {
+                "command": "alive.traceFunction",
+                "title": "Alive: Trace Function"
             }
         ],
         "menus": {

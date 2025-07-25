@@ -574,6 +574,17 @@ export class LSP extends EventEmitter<LSPEvents> {
         return await this.doMacroExpand('$/alive/macroexpand1', text, pkgName)
     }
 
+    traceFunction = async (uri: string, pos: vscode.Position): Promise<void> => {
+        try {
+            await this.client?.sendRequest('$/alive/traceFunction', {
+                textDocument: { uri },
+                position: pos,
+            })
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
     getSurroundingInfo = async (
         getTextFn: (range?: vscode.Range) => string,
         uri: string,
