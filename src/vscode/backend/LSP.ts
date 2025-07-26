@@ -585,6 +585,17 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
     }
 
+    untraceFunction = async (uri: string, pos: vscode.Position): Promise<void> => {
+        try {
+            await this.client?.sendRequest('$/alive/untraceFunction', {
+                textDocument: { uri },
+                position: pos,
+            })
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
     getSurroundingInfo = async (
         getTextFn: (range?: vscode.Range) => string,
         uri: string,

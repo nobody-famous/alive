@@ -263,6 +263,10 @@
             {
                 "command": "alive.traceFunction",
                 "title": "Alive: Trace Function"
+            },
+            {
+                "command": "alive.untraceFunction",
+                "title": "Alive: Untrace Function"
             }
         ],
         "menus": {
