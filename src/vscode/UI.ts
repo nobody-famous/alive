@@ -253,7 +253,7 @@ export class UI extends EventEmitter<UIEvents> {
         })
     }
 
-    private requestPackage = async (obj: { setPackage: (pick: string) => void }) => {
+    requestPackage = async (obj: { setPackage: (pick: string) => void }) => {
         const pick = await this.selectPackage()
 
         if (pick !== undefined) {

@@ -265,6 +265,10 @@
                 "title": "Alive: Trace Function"
             },
             {
+                "command": "alive.tracePackage",
+                "title": "Alive: Trace Package"
+            },
+            {
                 "command": "alive.untraceFunction",
                 "title": "Alive: Untrace Function"
             }

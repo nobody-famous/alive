@@ -242,6 +242,16 @@ export async function untraceFunction(lsp: Pick<LSP, 'untraceFunction'>) {
     })
 }
 
+export async function tracePackage(ui: Pick<UI, 'requestPackage'>, lsp: Pick<LSP, 'tracePackage'>) {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
+        await ui.requestPackage({
+            setPackage: async (pick) => {
+                await lsp.tracePackage(pick)
+            },
+        })
+    })
+}
+
 export function selectRestart(ui: Pick<UI, 'selectRestart'>, restart: number) {
     ui.selectRestart(restart)
 }
