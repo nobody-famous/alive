@@ -176,6 +176,16 @@ describe('UI tests', () => {
                 })
             })
         })
+
+        it('requestTracedPackage', async () => {
+            const state = createState()
+            const ui = new UI(state)
+
+            tracedFnsMock.listPackages.mockReturnValueOnce([])
+            await ui.requestTracedPackages()
+
+            expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
+        })
     })
 
     describe('initInspectorPanel', () => {
