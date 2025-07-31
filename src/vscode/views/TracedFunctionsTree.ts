@@ -13,4 +13,8 @@ export class TracedFunctionTreeProvider extends BasePackagesTree<TracedPackage> 
     getItemChildren(item: TracedPackage): Array<string> {
         return item.traced
     }
+
+    listPackages(): Array<string> {
+        return Object.keys(this.rootNode.kids)
+    }
 }

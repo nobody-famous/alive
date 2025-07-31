@@ -117,6 +117,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.traceFunction', () => cmds.traceFunction(lsp)),
         vscode.commands.registerCommand('alive.untraceFunction', () => cmds.untraceFunction(lsp)),
         vscode.commands.registerCommand('alive.tracePackage', () => cmds.tracePackage(ui, lsp)),
+        vscode.commands.registerCommand('alive.untracePackage', () => cmds.untracePackage(ui, lsp)),
         vscode.commands.registerCommand('alive.inspect', async (symbol) => {
             if (isLispSymbol(symbol)) {
                 await cmds.inspect(lsp, symbol)

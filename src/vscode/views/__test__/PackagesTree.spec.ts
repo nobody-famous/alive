@@ -158,10 +158,27 @@ describe('PackagesTree tests', () => {
         })
     })
 
-    it('TraceFunctionsTree', () => {
-        const tree = new TracedFunctionTreeProvider([], fakeState)
+    describe('TraceFunctionsTree', () => {
+        it('getItem methods', () => {
+            const tree = new TracedFunctionTreeProvider([], fakeState)
 
-        expect(tree.getItemName({ name: 'foo', traced: [] })).toBe('foo')
-        expect(tree.getItemChildren({ name: 'foo', traced: ['bar', 'bas'] })).toStrictEqual(['bar', 'bas'])
+            expect(tree.getItemName({ name: 'foo', traced: [] })).toBe('foo')
+            expect(tree.getItemChildren({ name: 'foo', traced: ['bar', 'bas'] })).toStrictEqual(['bar', 'bas'])
+        })
+
+        it('listPackages', () => {
+            const tree = new TracedFunctionTreeProvider(
+                [
+                    { name: 'foo', traced: [] },
+                    { name: 'bar', traced: [] },
+                ],
+                fakeState
+            )
+
+            const pkgs = tree.listPackages()
+
+            expect(pkgs[0]).toBe('foo')
+            expect(pkgs[1]).toBe('bar')
+        })
     })
 })

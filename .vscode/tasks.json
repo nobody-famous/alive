@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/vscode/backend/__test__/LSP.spec.ts",
+                "src/vscode/views/__test__/PackagesTree.spec.ts",
                 "-t",
-                "listTracedFunctions"
+                "listPackages"
             ],
             "problemMatcher": ["$tsc"]
         },

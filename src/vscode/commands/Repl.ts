@@ -6,6 +6,7 @@ import { UI } from '../UI'
 import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, tryCompile, updateDiagnostics, useEditor } from '../Utils'
 import { LSP } from '../backend/LSP'
 import { AliveConfig } from '../../config'
+import { isString } from '../Guards'
 
 export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
     ui.clearRepl()
@@ -243,13 +244,19 @@ export async function untraceFunction(lsp: Pick<LSP, 'untraceFunction'>) {
 }
 
 export async function tracePackage(ui: Pick<UI, 'requestPackage'>, lsp: Pick<LSP, 'tracePackage'>) {
-    await useEditor([COMMON_LISP_ID], async (editor) => {
-        await ui.requestPackage({
-            setPackage: async (pick) => {
-                await lsp.tracePackage(pick)
-            },
-        })
+    await ui.requestPackage({
+        setPackage: async (pick) => {
+            await lsp.tracePackage(pick)
+        },
     })
+}
+
+export async function untracePackage(ui: Pick<UI, 'requestTracedPackage'>, lsp: Pick<LSP, 'untracePackage'>) {
+    const packageName = await ui.requestTracedPackage()
+
+    if (isString(packageName)) {
+        await lsp.untracePackage(packageName)
+    }
 }
 
 export function selectRestart(ui: Pick<UI, 'selectRestart'>, restart: number) {

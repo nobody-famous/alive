@@ -606,6 +606,16 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
     }
 
+    untracePackage = async (packageName: string): Promise<void> => {
+        try {
+            await this.client?.sendRequest('$/alive/untracePackage', {
+                package: packageName,
+            })
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
     getSurroundingInfo = async (
         getTextFn: (range?: vscode.Range) => string,
         uri: string,
