@@ -549,6 +549,133 @@ describe('LSP tests', () => {
         })
     })
 
+    describe('Trace', () => {
+        const runTest = async (fn: (lsp: LSP) => Promise<void>, sendFn: () => Promise<void>, messageName: string) => {
+            const sendRequest = jest.fn(sendFn)
+            const { lsp } = await doConnect({ sendRequest })
+
+            await fn(lsp)
+
+            expect(sendRequest).toHaveBeenCalledWith(messageName, expect.anything())
+        }
+
+        describe('traceFunction', () => {
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.traceFunction('some/uri', new vscodeMock.Position())
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.traceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => {},
+                    '$/alive/traceFunction'
+                )
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.traceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/traceFunction'
+                )
+            })
+        })
+
+        describe('untraceFunction', () => {
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.untraceFunction('some/uri', new vscodeMock.Position())
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untraceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => {},
+                    '$/alive/untraceFunction'
+                )
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untraceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/untraceFunction'
+                )
+            })
+        })
+
+        describe('tracePackage', () => {
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.tracePackage('foo')
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.tracePackage('foo')
+                    },
+                    async () => {},
+                    '$/alive/tracePackage'
+                )
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.tracePackage('foo')
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/tracePackage'
+                )
+            })
+        })
+
+        describe('untracePackage', () => {
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.untracePackage('foo')
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untracePackage('foo')
+                    },
+                    async () => {},
+                    '$/alive/untracePackage'
+                )
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untracePackage('foo')
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/untracePackage'
+                )
+            })
+        })
+    })
+
     describe('getEvalInfo', () => {
         const createSelection = (params?: unknown) => {
             return Object.assign(
