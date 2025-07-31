@@ -568,6 +568,10 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.openScratchPad', cmdsMock.openScratchPad)
             checkCallback(fns, 'alive.macroexpand', cmdsMock.macroexpand)
             checkCallback(fns, 'alive.macroexpand1', cmdsMock.macroexpand1)
+            checkCallback(fns, 'alive.traceFunction', cmdsMock.traceFunction)
+            checkCallback(fns, 'alive.untraceFunction', cmdsMock.untraceFunction)
+            checkCallback(fns, 'alive.tracePackage', cmdsMock.tracePackage)
+            checkCallback(fns, 'alive.untracePackage', cmdsMock.untracePackage)
 
             for (let index = 0; index <= 9; index++) {
                 fns[`alive.restart_${index}`]()
