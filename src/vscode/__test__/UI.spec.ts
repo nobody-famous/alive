@@ -182,7 +182,7 @@ describe('UI tests', () => {
             const ui = new UI(state)
 
             tracedFnsMock.listPackages.mockReturnValueOnce([])
-            await ui.requestTracedPackages()
+            await ui.requestTracedPackage()
 
             expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
         })

@@ -251,8 +251,8 @@ export async function tracePackage(ui: Pick<UI, 'requestPackage'>, lsp: Pick<LSP
     })
 }
 
-export async function untracePackage(ui: Pick<UI, 'requestTracedPackages'>, lsp: Pick<LSP, 'untracePackage'>) {
-    const packageName = await ui.requestTracedPackages()
+export async function untracePackage(ui: Pick<UI, 'requestTracedPackage'>, lsp: Pick<LSP, 'untracePackage'>) {
+    const packageName = await ui.requestTracedPackage()
 
     if (isString(packageName)) {
         await lsp.untracePackage(packageName)

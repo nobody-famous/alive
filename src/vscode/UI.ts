@@ -261,7 +261,7 @@ export class UI extends EventEmitter<UIEvents> {
         }
     }
 
-    requestTracedPackages = async () => {
+    requestTracedPackage = async () => {
         const packages = this.tracedFnTree.listPackages()
         return await vscode.window.showQuickPick(packages.sort(), { placeHolder: 'Select Package' })
     }
