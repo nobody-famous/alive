@@ -273,8 +273,14 @@
                 "title": "Alive: Untrace Function"
             },
             {
+                "command": "alive.untraceFunctionNode",
+                "title": "Alive: Untrace Function Node",
+                "icon": "$(remove)"
+            },
+            {
                 "command": "alive.untracePackage",
-                "title": "Alive: Untrace Package"
+                "title": "Alive: Untrace Package",
+                "icon": "$(remove)"
             }
         ],
         "menus": {
@@ -356,6 +362,11 @@
                 {
                     "command": "alive.evalHistory",
                     "when": "view == replHistory && viewItem == evalText",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.untraceFunctionNode",
+                    "when": "view == tracedFunctions && viewItem == tracedFunction",
                     "group": "inline"
                 },
                 {

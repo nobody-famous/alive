@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { PackageTreeConfig } from '../../config'
-import { isArray, isObject, isString } from '../Guards'
+import { isArray, isString } from '../Guards'
 
 interface TreeNode {
     kids: { [index: string]: TreeNode }
@@ -13,23 +13,23 @@ export class PackageNode extends vscode.TreeItem {
     public label: string
     public node: TreeNode
 
-    constructor(key: string, node: TreeNode, collapse: vscode.TreeItemCollapsibleState) {
+    constructor(context: string, key: string, node: TreeNode, collapse: vscode.TreeItemCollapsibleState) {
         super(key, collapse)
 
         this.label = key
         this.node = node
-        this.contextValue = 'package'
+        this.contextValue = context
     }
 }
 
 export class LeafNode extends vscode.TreeItem {
     public pkg: string
 
-    constructor(key: string, pkg: string) {
+    constructor(context: string, key: string, pkg: string) {
         super(key, vscode.TreeItemCollapsibleState.None)
 
         this.pkg = pkg
-        this.contextValue = 'leaf'
+        this.contextValue = context
     }
 }
 
@@ -49,6 +49,8 @@ export interface PackagesTreeState {
 
 export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vscode.TreeItem> {
     private state: PackagesTreeState
+    private packageContext: string
+    private leafContext: string
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
     protected rootNode: TreeNode = { kids: {}, packageName: '', label: '' }
 
@@ -57,8 +59,10 @@ export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vsc
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
-    constructor(data: T[], state: PackagesTreeState) {
+    constructor(packageContext: string, leafContext: string, data: T[], state: PackagesTreeState) {
         this.state = state
+        this.packageContext = packageContext
+        this.leafContext = leafContext
         this.buildTree(data)
     }
 
@@ -111,7 +115,7 @@ export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vsc
 
     private createLeafNodes(parent: TreeNode, nodes: vscode.TreeItem[]): vscode.TreeItem[] {
         return isArray(parent.leafs, isString)
-            ? nodes.concat(parent.leafs.sort().map((item) => new LeafNode(item, parent.packageName)))
+            ? nodes.concat(parent.leafs.sort().map((item) => new LeafNode(this.leafContext, item, parent.packageName)))
             : nodes
     }
 
@@ -152,6 +156,6 @@ export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vsc
         const hasKids = Object.keys(node.kids).length > 0
         const state = hasLeafs || hasKids ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
 
-        return new PackageNode(node.label.toLowerCase(), node, state)
+        return new PackageNode(this.packageContext, node.label.toLowerCase(), node, state)
     }
 }

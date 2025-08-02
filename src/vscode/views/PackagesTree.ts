@@ -3,7 +3,7 @@ import { BasePackagesTree, PackagesTreeState } from './BasePackagesTree'
 
 export class PackagesTreeProvider extends BasePackagesTree<Package> {
     constructor(pkgs: Package[], state: PackagesTreeState) {
-        super(pkgs, state)
+        super('package', 'export', pkgs, state)
     }
 
     getItemName(item: Package): string {

@@ -9,13 +9,15 @@ describe('PackagesTree tests', () => {
     it('isPackageNode', () => {
         expect(isPackageNode(5)).toBe(false)
         expect(
-            isPackageNode(new PackageNode('Some key', { kids: {}, label: '', packageName: '' }, TreeItemCollapsibleState.None))
+            isPackageNode(
+                new PackageNode('Some ctx', 'Some key', { kids: {}, label: '', packageName: '' }, TreeItemCollapsibleState.None)
+            )
         ).toBe(true)
     })
 
     it('isLeafNode', () => {
         expect(isLeafNode(5)).toBe(false)
-        expect(isLeafNode(new LeafNode('key', 'pkg'))).toBe(true)
+        expect(isLeafNode(new LeafNode('context', 'key', 'pkg'))).toBe(true)
     })
 
     it('update', () => {

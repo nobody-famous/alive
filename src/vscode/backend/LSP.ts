@@ -596,6 +596,17 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
     }
 
+    untraceFunctionByName = async (packageName: string, funcName: string): Promise<void> => {
+        try {
+            await this.client?.sendRequest('$/alive/untraceFunctionByName', {
+                package: packageName,
+                function: funcName,
+            })
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
     tracePackage = async (packageName: string): Promise<void> => {
         try {
             await this.client?.sendRequest('$/alive/tracePackage', {
