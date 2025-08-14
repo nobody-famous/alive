@@ -348,7 +348,7 @@ function openTextDocument(ui: UI, lsp: LSP, state: ExtensionState, doc: Pick<vsc
     }
 
     if (diagnosticsEnabled()) {
-        startCompileTimer(ui, lsp, state)
+        startCompileTimer(ui, lsp, state, state.config)
     }
 }
 
@@ -401,7 +401,7 @@ async function diagnosticsRefresh(
             continue
         }
 
-        const resp = await tryCompile(state, lsp, editor.document)
+        const resp = await tryCompile(state, state.config, lsp, editor.document)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
@@ -428,7 +428,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshThreads', () => cmds.refreshThreads(ui, lsp))
     lsp.on('refreshInspectors', () => ui.refreshInspectors())
     lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
-    lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state))
+    lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state, state.config))
     lsp.on('input', (str, pkgName) => ui.addReplOutput(str, pkgName))
     lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))

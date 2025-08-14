@@ -508,7 +508,15 @@
                     "default": ""
                 },
                 "alive.enableDiagnostics": {
-                    "type": "boolean",
+                    "type": [
+                        "boolean",
+                        "string"
+                    ],
+                    "enum": [
+                        true,
+                        false,
+                        "autoSave"
+                    ],
                     "default": true
                 },
                 "alive.lsp.downloadUrl": {

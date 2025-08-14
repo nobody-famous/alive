@@ -72,7 +72,7 @@ This extension contributes the following settings:
 -   `alive.lsp.remote.host`: Host of the LSP server to connect to
 -   `alive.lsp.remote.port`: Port of the LSP server to connect to
 -   `alive.format.indentWidth`: Default indentation width
--   `alive.enableDiagnostics`: If true (the default), automatically update diagnostics. If false, compile file or load file need to be used.
+-   `alive.enableDiagnostics`: If true (the default), automatically update diagnostics using a temporary file to not force saving the file or creating extra fasl files. If false, compile file or load file need to be used. If "autoSave", the file will be automatically saved and compiled.
 -   `alive.packageTree.separator`: String, or list of strings, to split package names in the package view.
 
 Syntax highlighting is done using semantic tokens. This is mainly to avoid regex hell. The following semantic tokens are added:

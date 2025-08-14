@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/vscode/commands/__test__/Repl.spec.ts",
+                "src/vscode/__test__/Utils.spec.ts",
                 "-t",
-                "evalSurrounding"
+                "enableDiagnostics"
             ],
             "problemMatcher": ["$tsc"]
         },

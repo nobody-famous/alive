@@ -1,7 +1,7 @@
 import * as os from 'os'
 import * as path from 'path'
 
-import { Position } from 'vscode'
+import { Position, Uri } from 'vscode'
 import {
     convertSeverity,
     diagnosticsEnabled,
@@ -245,22 +245,43 @@ describe('Utils Tests', () => {
 
     describe('tryCompile', () => {
         const lsp = { tryCompileFile: jest.fn() }
-        const doc = { getText: () => '', fileName: 'bar' }
+        const doc = { getText: () => '', fileName: 'bar', uri: Uri.parse(''), isDirty: false }
 
         it('compileRunning', async () => {
-            const resp = await tryCompile({ compileRunning: true, workspacePath: 'foo' }, lsp, doc)
+            const resp = await tryCompile({ compileRunning: true, workspacePath: 'foo' }, { enableDiagnostics: true }, lsp, doc)
 
             expect(resp).toBeUndefined()
         })
 
+        describe('enableDiagnostics', () => {
+            it('true', async () => {
+                await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: true }, lsp, doc)
+                expect(lsp.tryCompileFile).toHaveBeenCalled()
+            })
+
+            it('autoSave', async () => {
+                await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: 'autoSave' }, lsp, doc)
+                expect(lsp.tryCompileFile).not.toHaveBeenCalled()
+
+                await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: 'autoSave' }, lsp, {
+                    getText: () => '',
+                    fileName: 'bar',
+                    uri: Uri.parse(''),
+                    isDirty: true,
+                })
+                expect(lsp.tryCompileFile).toHaveBeenCalled()
+            })
+        })
+
         it('compileRunning task', async () => {
             const state = { compileRunning: false, workspacePath: 'foo' }
-            const task = tryCompile(state, lsp, doc)
+            const config = { enableDiagnostics: true }
+            const task = tryCompile(state, config, lsp, doc)
 
             expect(state.compileRunning).toBe(true)
 
             lsp.tryCompileFile.mockReturnValueOnce({ notes: [] })
-            expect(await tryCompile(state, lsp, doc)).toBeUndefined()
+            expect(await tryCompile(state, config, lsp, doc)).toBeUndefined()
             expect(await task).not.toBeUndefined()
 
             expect(state.compileRunning).toBe(false)
@@ -278,7 +299,7 @@ describe('Utils Tests', () => {
             ]
 
             lsp.tryCompileFile.mockReturnValueOnce({ notes })
-            await tryCompile(state, lsp, doc)
+            await tryCompile(state, { enableDiagnostics: true }, lsp, doc)
 
             expect(notes[0].location.file).toBe('bar')
             expect(notes[1].location.file).toBe('bar')
@@ -286,7 +307,9 @@ describe('Utils Tests', () => {
 
         it('No response', async () => {
             lsp.tryCompileFile.mockReturnValueOnce(undefined)
-            expect(await tryCompile({ compileRunning: false, workspacePath: 'foo' }, lsp, doc)).toBeUndefined()
+            expect(
+                await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: true }, lsp, doc)
+            ).toBeUndefined()
         })
     })
 
@@ -307,7 +330,13 @@ describe('Utils Tests', () => {
         startCompileTimer(
             { updatePackages: jest.fn() },
             { tryCompileFile: jest.fn(), listPackages: jest.fn() },
-            { compileTimeoutID: timeout, workspacePath: 'foo', compileRunning: false, diagnostics: { set: jest.fn() } }
+            {
+                compileTimeoutID: timeout,
+                workspacePath: 'foo',
+                compileRunning: false,
+                diagnostics: { set: jest.fn() },
+            },
+            { enableDiagnostics: true }
         )
 
         jest.runAllTimers()
