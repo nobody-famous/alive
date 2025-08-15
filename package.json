@@ -281,6 +281,11 @@
                 "command": "alive.untracePackage",
                 "title": "Alive: Untrace Package",
                 "icon": "$(remove)"
+            },
+            {
+                "command": "alive.untracePackageNode",
+                "title": "Alive: Untrace Package Node",
+                "icon": "$(remove)"
             }
         ],
         "menus": {
@@ -370,6 +375,11 @@
                     "group": "inline"
                 },
                 {
+                    "command": "alive.untracePackageNode",
+                    "when": "view == tracedFunctions && viewItem == tracedPackage",
+                    "group": "inline"
+                },
+                {
                     "command": "alive.loadAsdfByName",
                     "when": "view == asdfSystems",
                     "group": "inline"
@@ -435,6 +445,16 @@
             {
                 "command": "alive.replHistory",
                 "key": "alt+shift+r",
+                "when": "aliveExtensionActive"
+            },
+            {
+                "command": "alive.traceFunction",
+                "key": "alt+shift+t",
+                "when": "aliveExtensionActive"
+            },
+            {
+                "command": "alive.untraceFunction",
+                "key": "alt+shift+u",
                 "when": "aliveExtensionActive"
             },
             {

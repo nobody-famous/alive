@@ -125,6 +125,13 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
             lsp.untraceFunctionByName(node.pkg, node.label)
         }),
+        vscode.commands.registerCommand('alive.untracePackageNode', (node) => {
+            if (!isPackageNode(node) || typeof node.label !== 'string' || node.label === '') {
+                return
+            }
+
+            lsp.untracePackage(node.label)
+        }),
 
         vscode.commands.registerCommand('alive.inspect', async (symbol) => {
             if (isLispSymbol(symbol)) {
