@@ -576,10 +576,16 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     traceFunction = async (uri: string, pos: vscode.Position): Promise<void> => {
         try {
-            await this.client?.sendRequest('$/alive/traceFunction', {
+            const result = await this.client?.sendRequest('$/alive/traceFunction', {
                 textDocument: { uri },
                 position: pos,
             })
+
+            if (isObject(result) && typeof result.function === 'string') {
+                vscode.window.showInformationMessage(`Traced function ${result.function}`)
+            } else {
+                vscode.window.showErrorMessage(`Could not trace function`)
+            }
         } catch (err) {
             this.handleError(err)
         }
@@ -587,10 +593,16 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     untraceFunction = async (uri: string, pos: vscode.Position): Promise<void> => {
         try {
-            await this.client?.sendRequest('$/alive/untraceFunction', {
+            const result = await this.client?.sendRequest('$/alive/untraceFunction', {
                 textDocument: { uri },
                 position: pos,
             })
+
+            if (isObject(result) && typeof result.function === 'string') {
+                vscode.window.showInformationMessage(`Untraced function ${result.function}`)
+            } else {
+                vscode.window.showErrorMessage(`Could not untrace ${JSON.stringify(result)}`)
+            }
         } catch (err) {
             this.handleError(err)
         }
@@ -609,9 +621,13 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     tracePackage = async (packageName: string): Promise<void> => {
         try {
-            await this.client?.sendRequest('$/alive/tracePackage', {
+            const result = await this.client?.sendRequest('$/alive/tracePackage', {
                 package: packageName,
             })
+
+            if (typeof result === 'string') {
+                vscode.window.showInformationMessage(`Traced package ${result}`)
+            }
         } catch (err) {
             this.handleError(err)
         }
