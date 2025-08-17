@@ -3,7 +3,7 @@ import { BasePackagesTree, PackagesTreeState } from './BasePackagesTree'
 
 export class TracedFunctionTreeProvider extends BasePackagesTree<TracedPackage> {
     constructor(traced: TracedPackage[], state: PackagesTreeState) {
-        super('tracedPackage', 'tracedFunction', traced, state)
+        super('tracedPackage', 'tracedFunction', traced, state, false)
     }
 
     getItemName(item: TracedPackage): string {

@@ -51,6 +51,7 @@ export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vsc
     private state: PackagesTreeState
     private packageContext: string
     private leafContext: string
+    private isNestable: boolean
     private event: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem>()
     protected rootNode: TreeNode = { kids: {}, packageName: '', label: '' }
 
@@ -59,10 +60,11 @@ export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vsc
 
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this.event.event
 
-    constructor(packageContext: string, leafContext: string, data: T[], state: PackagesTreeState) {
+    constructor(packageContext: string, leafContext: string, data: T[], state: PackagesTreeState, isNestable: boolean = true) {
         this.state = state
         this.packageContext = packageContext
         this.leafContext = leafContext
+        this.isNestable = isNestable
         this.buildTree(data)
     }
 
@@ -89,20 +91,34 @@ export abstract class BasePackagesTree<T> implements vscode.TreeDataProvider<vsc
         return [name]
     }
 
+    private buildNestedTree(name: string) {
+        const parts = this.splitName(name)
+        let curNode = this.rootNode
+
+        for (const part of parts) {
+            const newNode = curNode.kids[part] ?? { label: part, packageName: name, kids: {} }
+
+            curNode.kids[part] = newNode
+            curNode = newNode
+        }
+
+        return curNode
+    }
+
+    private buildFlatTree(name: string): TreeNode {
+        const newNode = { label: name, packageName: name, kids: {} }
+
+        this.rootNode.kids[name] = newNode
+
+        return newNode
+    }
+
     private buildTree(items: T[]) {
         this.rootNode = { kids: {}, label: '', packageName: '' }
 
         for (const item of items) {
             const name = this.getItemName(item)
-            const parts = this.splitName(name)
-
-            let curNode = this.rootNode
-            for (const part of parts) {
-                const newNode = curNode.kids[part] ?? { label: part, packageName: name, kids: {} }
-
-                curNode.kids[part] = newNode
-                curNode = newNode
-            }
+            const curNode = this.isNestable ? this.buildNestedTree(name) : this.buildFlatTree(name)
 
             curNode.leafs = this.getItemChildren(item)
             curNode.packageName = name
