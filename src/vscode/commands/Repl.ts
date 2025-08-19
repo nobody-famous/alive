@@ -71,7 +71,8 @@ export async function traceFunc(
         }
 
         const position = editor.selection.active
-        const wordRange = editor.document.getWordRangeAtPosition(position)
+        // Define what a "word" is: any run of characters that are NOT 'space', '(' or ')'
+        const wordRange = editor.document.getWordRangeAtPosition(position, /[^\s()]+/)
 
         if (!wordRange) {
             state.hoverText = "Could not determine function name at cursor."
