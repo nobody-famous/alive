@@ -584,7 +584,7 @@ export class LSP extends EventEmitter<LSPEvents> {
             if (isObject(result) && typeof result.function === 'string') {
                 vscode.window.showInformationMessage(`Traced function ${result.function}`)
             } else {
-                vscode.window.showErrorMessage(`Could not trace function`)
+                vscode.window.showWarningMessage(`Could not trace function`)
             }
         } catch (err) {
             this.handleError(err)
@@ -601,7 +601,7 @@ export class LSP extends EventEmitter<LSPEvents> {
             if (isObject(result) && typeof result.function === 'string') {
                 vscode.window.showInformationMessage(`Untraced function ${result.function}`)
             } else {
-                vscode.window.showErrorMessage(`Could not untrace ${JSON.stringify(result)}`)
+                vscode.window.showWarningMessage(`Could not untrace ${JSON.stringify(result)}`)
             }
         } catch (err) {
             this.handleError(err)
