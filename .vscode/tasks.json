@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 "--coverage",
-                "src/vscode/commands/__test__/Repl.spec.ts",
-                // "-t",
-                // "traceFunction"
+                "src/__test__/extension.spec.ts",
+                "-t",
+                "untraceFunctionNode"
             ],
             "problemMatcher": ["$tsc"]
         },

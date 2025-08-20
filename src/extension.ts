@@ -169,7 +169,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
             if (!isLeafNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
-
+            
             lsp.removeExport(node.pkg, node.label)
         }),
 

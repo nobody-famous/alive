@@ -18,6 +18,8 @@ export const loadAsdfSystem = jest.fn()
 export const removeExport = jest.fn()
 export const removePackage = jest.fn()
 export const textDocumentChanged = jest.fn()
+export const untraceFunctionByName = jest.fn()
+export const untracePackage = jest.fn()
 
 export const LSP = jest.fn(() => ({
     on,
@@ -40,4 +42,6 @@ export const LSP = jest.fn(() => ({
     removeExport,
     removePackage,
     textDocumentChanged,
+    untraceFunctionByName,
+    untracePackage,
 }))
