@@ -27,10 +27,10 @@
             "command": "npx",
             "args": [
                 "jest",
-                // "--coverage",
-                "src/vscode/__test__/Utils.spec.ts",
+                "--coverage",
+                "src/__test__/extension.spec.ts",
                 "-t",
-                "enableDiagnostics"
+                "untraceFunctionNode"
             ],
             "problemMatcher": ["$tsc"]
         },

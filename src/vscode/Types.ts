@@ -63,6 +63,11 @@ export interface Package {
     nicknames: Array<string>
 }
 
+export interface TracedPackage {
+    name: string
+    traced: Array<string>
+}
+
 export interface Thread {
     id: string
     name: string

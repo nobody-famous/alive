@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events'
 import * as net from 'net'
-import { EOL } from 'os'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
 import { isArray, isInspectResult, isObject, isPackage, isRestartInfo, isStackTrace, isString, isThread } from '../Guards'
@@ -15,19 +14,22 @@ import {
     InspectInfo,
     InspectResult,
     LispSymbol,
-    SurroundingInfo,
     Package,
+    SurroundingInfo,
     Thread,
+    TracedPackage,
 } from '../Types'
 import { COMMON_LISP_ID, diagnosticsEnabled, hasValidLangId, parseNote, parsePos, strToMarkdown } from '../Utils'
 
 interface LSPEvents {
     refreshPackages: []
+    refreshTracedFunctions: []
     refreshAsdfSystems: []
     refreshThreads: []
     refreshInspectors: []
     refreshDiagnostics: []
     startCompileTimer: []
+    compileImmediate: []
     input: [str: string, pkgName: string]
     output: [str: string]
     queryText: [str: string]
@@ -120,6 +122,7 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     private emitRefresh() {
         this.emit('refreshPackages')
+        this.emit('refreshTracedFunctions')
         this.emit('refreshAsdfSystems')
         this.emit('refreshThreads')
         this.emit('refreshInspectors')
@@ -339,6 +342,38 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
     }
 
+    listTracedFunctions = async (): Promise<TracedPackage[]> => {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/listTracedFunctions')
+
+            if (!isObject(resp) || !Array.isArray(resp.traced)) {
+                return []
+            }
+
+            const pkgs: { [index: string]: Array<string> } = {}
+
+            for (const item of resp.traced) {
+                if (!isObject(item) || !isString(item.package) || !isString(item.name)) {
+                    continue
+                }
+
+                if (!Array.isArray(pkgs[item.package])) {
+                    pkgs[item.package] = []
+                }
+
+                pkgs[item.package].push(item.name)
+            }
+
+            return Object.entries(pkgs).reduce((acc: TracedPackage[], [pkg, names]) => {
+                acc.push({ name: pkg, traced: names })
+                return acc
+            }, [])
+        } catch (err) {
+            log(`Failed to list traced functions: ${toLog(err)}`)
+            return []
+        }
+    }
+
     listPackages = async (): Promise<Package[]> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/listPackages')
@@ -442,7 +477,7 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     editorChanged = (doc: Pick<vscode.TextDocument, 'languageId'>): void => {
         if (hasValidLangId(doc, [COMMON_LISP_ID]) && diagnosticsEnabled()) {
-            this.emit('startCompileTimer')
+            this.emit('compileImmediate')
         }
     }
 
@@ -537,6 +572,75 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     macroexpand1 = async (text: string, pkgName: string): Promise<string | undefined> => {
         return await this.doMacroExpand('$/alive/macroexpand1', text, pkgName)
+    }
+
+    traceFunction = async (uri: string, pos: vscode.Position): Promise<void> => {
+        try {
+            const result = await this.client?.sendRequest('$/alive/traceFunction', {
+                textDocument: { uri },
+                position: pos,
+            })
+
+            if (isObject(result) && typeof result.function === 'string') {
+                vscode.window.showInformationMessage(`Traced function ${result.function}`)
+            } else {
+                vscode.window.showWarningMessage(`Could not trace function`)
+            }
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
+    untraceFunction = async (uri: string, pos: vscode.Position): Promise<void> => {
+        try {
+            const result = await this.client?.sendRequest('$/alive/untraceFunction', {
+                textDocument: { uri },
+                position: pos,
+            })
+
+            if (isObject(result) && typeof result.function === 'string') {
+                vscode.window.showInformationMessage(`Untraced function ${result.function}`)
+            } else {
+                vscode.window.showWarningMessage(`Could not untrace ${JSON.stringify(result)}`)
+            }
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
+    untraceFunctionByName = async (packageName: string, funcName: string): Promise<void> => {
+        try {
+            await this.client?.sendRequest('$/alive/untraceFunctionByName', {
+                package: packageName,
+                function: funcName,
+            })
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
+    tracePackage = async (packageName: string): Promise<void> => {
+        try {
+            const result = await this.client?.sendRequest('$/alive/tracePackage', {
+                package: packageName,
+            })
+
+            if (typeof result === 'string') {
+                vscode.window.showInformationMessage(`Traced package ${result}`)
+            }
+        } catch (err) {
+            this.handleError(err)
+        }
+    }
+
+    untracePackage = async (packageName: string): Promise<void> => {
+        try {
+            await this.client?.sendRequest('$/alive/untracePackage', {
+                package: packageName,
+            })
+        } catch (err) {
+            this.handleError(err)
+        }
     }
 
     getSurroundingInfo = async (

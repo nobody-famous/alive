@@ -1,8 +1,8 @@
 import { Buffer } from 'buffer'
 import { getAllCallbacks } from '../../TestHelpers'
 import { activate, deactivate } from '../extension'
-import { COMMON_LISP_ID } from '../vscode/Utils'
 import { HistoryItem, HostPort } from '../vscode/Types'
+import { COMMON_LISP_ID } from '../vscode/Utils'
 import { LspSpawnOpts } from '../vscode/backend/LspProcess'
 
 const fsMock = jest.requireMock('fs')
@@ -14,8 +14,8 @@ jest.mock('vscode')
 const cmdsMock = jest.requireMock('../vscode/commands')
 jest.mock('../vscode/commands')
 
-const packagesMock = jest.requireMock('../vscode/views/PackagesTree')
-jest.mock('../vscode/views/PackagesTree')
+const packagesMock = jest.requireMock('../vscode/views/BasePackagesTree')
+jest.mock('../vscode/views/BasePackagesTree')
 
 const threadsMock = jest.requireMock('../vscode/views/ThreadsTree')
 jest.mock('../vscode/views/ThreadsTree')
@@ -195,6 +195,7 @@ describe('Extension tests', () => {
         uiMock.initPackagesTree.mockReset()
         uiMock.initAsdfSystemsTree.mockReset()
         uiMock.initThreadsTree.mockReset()
+        uiMock.initTracedFunctionsTree.mockReset()
 
         lspMock.listPackages.mockImplementationOnce(() => {
             throw new Error('Failed, as requested')
@@ -205,12 +206,16 @@ describe('Extension tests', () => {
         lspMock.listThreads.mockImplementationOnce(() => {
             throw new Error('Failed, as requested')
         })
+        lspMock.listTracedFunctions.mockImplementationOnce(() => {
+            throw new Error('Failed, as requested')
+        })
 
         await activate(ctx)
 
         expect(uiMock.initPackagesTree).not.toHaveBeenCalled()
         expect(uiMock.initAsdfSystemsTree).not.toHaveBeenCalled()
         expect(uiMock.initThreadsTree).not.toHaveBeenCalled()
+        expect(uiMock.initTracedFunctionsTree).not.toHaveBeenCalled()
     })
 
     const checkCallback = (fns: { [index: string]: () => void }, name: string, mockFn: jest.Mock) => {
@@ -284,10 +289,12 @@ describe('Extension tests', () => {
             const fns = await getAllCallbacks(lspMock.on, async () => await activate(ctx))
 
             checkCallback(fns, 'refreshPackages', cmdsMock.refreshPackages)
+            checkCallback(fns, 'refreshTracedFunctions', cmdsMock.refreshTracedFunctions)
             checkCallback(fns, 'refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
             checkCallback(fns, 'refreshThreads', cmdsMock.refreshThreads)
             checkCallback(fns, 'refreshInspectors', uiMock.refreshInspectors)
             checkCallback(fns, 'refreshDiagnostics', uiMock.refreshDiagnostics)
+            checkCallback(fns, 'compileImmediate', cmdsMock.tryCompileWithDiags)
             checkCallback(fns, 'input', uiMock.addReplOutput)
             checkCallback(fns, 'output', uiMock.addReplOutput)
             checkCallback(fns, 'queryText', uiMock.setQueryText)
@@ -357,42 +364,6 @@ describe('Extension tests', () => {
 
             fn?.({ document: {} })
             expect(lspMock.editorChanged).toHaveBeenCalled()
-        })
-
-        describe('onDidOpenTextDocument', () => {
-            beforeEach(() => {
-                utilsMock.diagnosticsEnabled.mockReset()
-                utilsMock.startCompileTimer.mockReset()
-            })
-
-            it('Valid ID, have diagnostics', async () => {
-                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
-
-                utilsMock.hasValidLangId.mockImplementationOnce(() => true)
-                utilsMock.diagnosticsEnabled.mockImplementationOnce(() => true)
-                fn?.()
-
-                expect(utilsMock.startCompileTimer).toHaveBeenCalled()
-            })
-
-            it('Valid ID, without diagnostics', async () => {
-                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
-
-                utilsMock.hasValidLangId.mockImplementationOnce(() => true)
-                utilsMock.diagnosticsEnabled.mockImplementationOnce(() => false)
-                fn?.()
-
-                expect(utilsMock.startCompileTimer).not.toHaveBeenCalled()
-            })
-
-            it('Invalid ID', async () => {
-                const fn = await getHandler(vscodeMock.workspace.onDidOpenTextDocument)
-
-                utilsMock.hasValidLangId.mockImplementationOnce(() => false)
-                fn?.()
-
-                expect(utilsMock.diagnosticsEnabled).not.toHaveBeenCalled()
-            })
         })
     })
 
@@ -583,6 +554,7 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.loadAsdfSystem', cmdsMock.loadAsdfSystem)
             checkCallback(fns, 'alive.compileFile', cmdsMock.compileFile)
             checkCallback(fns, 'alive.refreshPackages', cmdsMock.refreshPackages)
+            checkCallback(fns, 'alive.refreshTracedFunctions', cmdsMock.refreshTracedFunctions)
             checkCallback(fns, 'alive.refreshAsdfSystems', cmdsMock.refreshAsdfSystems)
             checkCallback(fns, 'alive.refreshThreads', cmdsMock.refreshThreads)
             checkCallback(fns, 'alive.clearRepl', cmdsMock.clearRepl)
@@ -596,11 +568,55 @@ describe('Extension tests', () => {
             checkCallback(fns, 'alive.openScratchPad', cmdsMock.openScratchPad)
             checkCallback(fns, 'alive.macroexpand', cmdsMock.macroexpand)
             checkCallback(fns, 'alive.macroexpand1', cmdsMock.macroexpand1)
+            checkCallback(fns, 'alive.traceFunction', cmdsMock.traceFunction)
+            checkCallback(fns, 'alive.untraceFunction', cmdsMock.untraceFunction)
+            checkCallback(fns, 'alive.tracePackage', cmdsMock.tracePackage)
+            checkCallback(fns, 'alive.untracePackage', cmdsMock.untracePackage)
 
             for (let index = 0; index <= 9; index++) {
                 fns[`alive.restart_${index}`]()
                 expect(cmdsMock.selectRestart).toHaveBeenCalledWith(expect.anything(), index)
             }
+        })
+
+        describe('untraceFunctionNode', () => {
+            it('Is leaf', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+
+                packagesMock.isLeafNode = jest.fn(() => true)
+                await fns['alive.untraceFunctionNode']({ label: 'foo' })
+                expect(lspMock.untraceFunctionByName).toHaveBeenCalled()
+            })
+
+            it('Not leaf', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+
+                lspMock.untraceFunctionByName.mockReset()
+                packagesMock.isLeafNode = jest.fn(() => false)
+
+                await fns['alive.untraceFunctionNode']({ label: 'foo' })
+                expect(lspMock.untraceFunctionByName).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('untracePackageNode', () => {
+            it('Is package', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+
+                packagesMock.isPackageNode = jest.fn(() => true)
+                await fns['alive.untracePackageNode']({ label: 'foo' })
+                expect(lspMock.untracePackage).toHaveBeenCalled()
+            })
+
+            it('Not leaf', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+
+                lspMock.untracePackage.mockReset()
+                packagesMock.isPackageNode = jest.fn(() => false)
+
+                await fns['alive.untracePackageNode']({ label: 'foo' })
+                expect(lspMock.untracePackage).not.toHaveBeenCalled()
+            })
         })
 
         describe('inspect', () => {
@@ -658,88 +674,99 @@ describe('Extension tests', () => {
             expect(uiMock.clearReplHistory).toHaveBeenCalled()
         })
 
-        const nodeTest = async (
-            label: string,
-            cbName: string,
-            toMock: jest.Mock,
-            value: boolean,
-            fnData: unknown,
-            toCall: jest.Mock
-        ) => {
-            it(label, async () => {
-                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+        const nodeTest = async (cbName: string, toMock: jest.Mock, value: boolean, fnData: unknown, toCall: jest.Mock) => {
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
 
-                toMock.mockReturnValue(value)
-                toCall.mockReset()
+            toMock.mockReturnValue(value)
+            toCall.mockReset()
 
-                fns[cbName]?.(fnData)
+            fns[cbName]?.(fnData)
 
-                value ? expect(toCall).toHaveBeenCalled() : expect(toCall).not.toHaveBeenCalled()
-            })
+            value ? expect(toCall).toHaveBeenCalled() : expect(toCall).not.toHaveBeenCalled()
         }
 
         describe('removePackage', () => {
             packagesMock.isPackageNode = jest.fn()
 
-            nodeTest('Invalid node', 'alive.removePackage', packagesMock.isPackageNode, false, {}, lspMock.removePackage)
-            nodeTest(
-                'Valid node',
-                'alive.removePackage',
-                packagesMock.isPackageNode,
-                true,
-                { label: 'foo' },
-                lspMock.removePackage
-            )
+            it('Invalid node', async () => {
+                await nodeTest('alive.removePackage', packagesMock.isPackageNode, false, {}, lspMock.removePackage)
+            })
+
+            it('Valid node', async () => {
+                await nodeTest('alive.removePackage', packagesMock.isPackageNode, true, { label: 'foo' }, lspMock.removePackage)
+            })
         })
 
         describe('removeExport', () => {
-            packagesMock.isExportNode = jest.fn()
+            packagesMock.isLeafNode = jest.fn()
 
-            nodeTest('Invalid node', 'alive.removeExport', packagesMock.isExportNode, false, {}, lspMock.removeExport)
-            nodeTest('Valid node', 'alive.removeExport', packagesMock.isExportNode, true, { label: 'foo' }, lspMock.removeExport)
+            it('Invalid node', async () => {
+                await nodeTest('alive.removeExport', packagesMock.isLeafNode, false, {}, lspMock.removeExport)
+            })
+
+            it('Valid node', async () => {
+                await nodeTest('alive.removeExport', packagesMock.isLeafNode, true, { label: 'foo' }, lspMock.removeExport)
+            })
         })
 
         describe('killThread', () => {
             threadsMock.isThreadNode = jest.fn()
 
-            nodeTest('Invalid node', 'alive.killThread', threadsMock.isThreadNode, false, {}, lspMock.killThread)
-            nodeTest('Valid node', 'alive.killThread', threadsMock.isThreadNode, true, { label: 'foo' }, lspMock.killThread)
+            it('Invalid node', async () => {
+                await nodeTest('alive.killThread', threadsMock.isThreadNode, false, {}, lspMock.killThread)
+            })
+
+            it('Valid node', async () => {
+                await nodeTest('alive.killThread', threadsMock.isThreadNode, true, { label: 'foo' }, lspMock.killThread)
+            })
         })
 
         describe('evalHistory', () => {
-            nodeTest('Invalid node', 'alive.evalHistory', historyMock.isHistoryNode, false, {}, lspMock.evalWithOutput)
-            nodeTest(
-                'Valid node',
-                'alive.evalHistory',
-                historyMock.isHistoryNode,
-                true,
-                { label: 'foo', item: { text: '', pkgName: '' } },
-                lspMock.evalWithOutput
-            )
+            it('Invalid node', async () => {
+                await nodeTest('alive.evalHistory', historyMock.isHistoryNode, false, {}, lspMock.evalWithOutput)
+            })
+
+            it('Valid node', async () => {
+                await nodeTest(
+                    'alive.evalHistory',
+                    historyMock.isHistoryNode,
+                    true,
+                    { label: 'foo', item: { text: '', pkgName: '' } },
+                    lspMock.evalWithOutput
+                )
+            })
         })
 
         describe('editHistory', () => {
-            nodeTest('Invalid node', 'alive.editHistory', historyMock.isHistoryNode, false, {}, uiMock.setReplInput)
-            nodeTest(
-                'Valid node',
-                'alive.editHistory',
-                historyMock.isHistoryNode,
-                true,
-                { label: 'foo', item: { text: '', pkgName: '' } },
-                uiMock.setReplInput
-            )
+            it('Invalid node', async () => {
+                await nodeTest('alive.editHistory', historyMock.isHistoryNode, false, {}, uiMock.setReplInput)
+            })
+
+            it('Valid node', async () => {
+                await nodeTest(
+                    'alive.editHistory',
+                    historyMock.isHistoryNode,
+                    true,
+                    { label: 'foo', item: { text: '', pkgName: '' } },
+                    uiMock.setReplInput
+                )
+            })
         })
 
         describe('removeHistory', () => {
-            nodeTest('Invalid node', 'alive.removeHistory', historyMock.isHistoryNode, false, {}, uiMock.removeHistoryNode)
-            nodeTest(
-                'Valid node',
-                'alive.removeHistory',
-                historyMock.isHistoryNode,
-                true,
-                { label: 'foo', item: { text: '', pkgName: '' } },
-                uiMock.removeHistoryNode
-            )
+            it('Invalid node', async () => {
+                await nodeTest('alive.removeHistory', historyMock.isHistoryNode, false, {}, uiMock.removeHistoryNode)
+            })
+
+            it('Valid node', async () => {
+                await nodeTest(
+                    'alive.removeHistory',
+                    historyMock.isHistoryNode,
+                    true,
+                    { label: 'foo', item: { text: '', pkgName: '' } },
+                    uiMock.removeHistoryNode
+                )
+            })
         })
 
         describe('loadAsdfByName', () => {

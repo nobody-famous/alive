@@ -278,6 +278,22 @@ Selected text is passed to macroexpand-1 and expanded in place. If nothing is se
 
 An inspector is opened for the currently selected text. If nothing is selected, the form surrounding the cursor is sent.
 
+### Trace Function (Alt+Shift+T)
+
+Trace the function whose name the cursor is currently over.
+
+### Untrace Function (Alt+Shift+U)
+
+Untrace the function whose name the cursor is currently over.
+
+### Trace Package
+
+Traces all functions in the selected package.
+
+### Untrace Package
+
+Removes tracing for all functions in the selected package.
+
 ## License
 
 Unless otherwise noted, all files are in the Public Domain.

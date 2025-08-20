@@ -1,4 +1,3 @@
-import { title } from 'process'
 import { getAllCallbacks, getCallback } from '../../../TestHelpers'
 import { HistoryItem, Package, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
@@ -20,6 +19,9 @@ jest.mock('../views/Inspector')
 
 const historyMock = jest.requireMock('../views/ReplHistory')
 jest.mock('../views/ReplHistory')
+
+const tracedFnsMock = jest.requireMock('../views/TracedFunctionsTree')
+jest.mock('../views/TracedFunctionsTree')
 
 const packagesMock = jest.requireMock('../views/PackagesTree')
 jest.mock('../views/PackagesTree')
@@ -173,6 +175,16 @@ describe('UI tests', () => {
                     expect(replMock.replSetPackage).toHaveBeenCalledWith('bar')
                 })
             })
+        })
+
+        it('requestTracedPackage', async () => {
+            const state = createState()
+            const ui = new UI(state)
+
+            tracedFnsMock.listPackages.mockReturnValueOnce([])
+            await ui.requestTracedPackage()
+
+            expect(vscodeMock.window.showQuickPick).toHaveBeenCalled()
         })
     })
 
@@ -483,6 +495,10 @@ describe('UI tests', () => {
         initTreeTest('lispPackages', (ui) => ui.initPackagesTree([]), packagesMock)
     })
 
+    it('initTracedFunctionsTree', () => {
+        initTreeTest('tracedFunctions', (ui) => ui.initTracedFunctionsTree([]), tracedFnsMock)
+    })
+
     it('initInspector', () => {
         const ui = new UI(createState())
 
@@ -500,6 +516,10 @@ describe('UI tests', () => {
 
     it('updatePackages', () => {
         updateTreeTest((ui) => ui.updatePackages([]), packagesMock)
+    })
+
+    it('updateTracedFunctions', () => {
+        updateTreeTest((ui) => ui.updateTracedFunctions([]), tracedFnsMock)
     })
 
     it('updateAsdfSystems', () => {
