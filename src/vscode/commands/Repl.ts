@@ -6,6 +6,7 @@ import { UI } from '../UI'
 import { COMMON_LISP_ID, createFolder, getFolderPath, strToMarkdown, tryCompile, updateDiagnostics, useEditor } from '../Utils'
 import { LSP } from '../backend/LSP'
 import { AliveConfig } from '../../config'
+import { isString } from '../Guards'
 
 export function clearRepl(ui: Pick<UI, 'clearRepl'>) {
     ui.clearRepl()
@@ -107,6 +108,14 @@ export async function refreshPackages(ui: Pick<UI, 'updatePackages'>, lsp: Pick<
     })
 }
 
+export async function refreshTracedFunctions(ui: Pick<UI, 'updateTracedFunctions'>, lsp: Pick<LSP, 'listTracedFunctions'>) {
+    await withCatchError(async () => {
+        const names = await lsp.listTracedFunctions()
+
+        ui.updateTracedFunctions(names)
+    })
+}
+
 export async function refreshAsdfSystems(ui: Pick<UI, 'updateAsdfSystems'>, lsp: Pick<LSP, 'listAsdfSystems'>) {
     await withCatchError(async () => {
         const systems = await lsp.listAsdfSystems()
@@ -183,10 +192,11 @@ export async function compileFile(lsp: Pick<LSP, 'compileFile'>, state: Pick<Ext
 export async function tryCompileWithDiags(
     lsp: Pick<LSP, 'tryCompileFile'>,
     state: Pick<ExtensionState, 'compileRunning' | 'diagnostics' | 'workspacePath'>,
-    config: Pick<AliveConfig, 'enableDiagnostics'>
+    config: Pick<AliveConfig, 'enableDiagnostics'>,
+    forceCompile: boolean
 ) {
     await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
-        const resp = await tryCompile(state, config, lsp, editor.document)
+        const resp = await tryCompile(state, config, lsp, editor.document, forceCompile)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
@@ -219,6 +229,34 @@ export async function macroexpand(lsp: Pick<LSP, 'macroexpand' | 'getSurrounding
 
 export async function macroexpand1(lsp: Pick<LSP, 'macroexpand1' | 'getSurroundingInfo'>) {
     await doMacroExpand(lsp, lsp.macroexpand1)
+}
+
+export async function traceFunction(lsp: Pick<LSP, 'traceFunction'>) {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
+        await lsp.traceFunction(editor.document.uri.toString(), editor.selection.active)
+    })
+}
+
+export async function untraceFunction(lsp: Pick<LSP, 'untraceFunction'>) {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
+        await lsp.untraceFunction(editor.document.uri.toString(), editor.selection.active)
+    })
+}
+
+export async function tracePackage(ui: Pick<UI, 'requestPackage'>, lsp: Pick<LSP, 'tracePackage'>) {
+    await ui.requestPackage({
+        setPackage: async (pick) => {
+            await lsp.tracePackage(pick)
+        },
+    })
+}
+
+export async function untracePackage(ui: Pick<UI, 'requestTracedPackage'>, lsp: Pick<LSP, 'untracePackage'>) {
+    const packageName = await ui.requestTracedPackage()
+
+    if (isString(packageName)) {
+        await lsp.untracePackage(packageName)
+    }
 }
 
 export function selectRestart(ui: Pick<UI, 'selectRestart'>, restart: number) {

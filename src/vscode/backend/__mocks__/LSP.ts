@@ -13,10 +13,13 @@ export const killThread = jest.fn()
 export const listAsdfSystems = jest.fn()
 export const listPackages = jest.fn()
 export const listThreads = jest.fn()
+export const listTracedFunctions = jest.fn()
 export const loadAsdfSystem = jest.fn()
 export const removeExport = jest.fn()
 export const removePackage = jest.fn()
 export const textDocumentChanged = jest.fn()
+export const untraceFunctionByName = jest.fn()
+export const untracePackage = jest.fn()
 
 export const LSP = jest.fn(() => ({
     on,
@@ -34,8 +37,11 @@ export const LSP = jest.fn(() => ({
     listAsdfSystems,
     listPackages,
     listThreads,
+    listTracedFunctions,
     loadAsdfSystem,
     removeExport,
     removePackage,
     textDocumentChanged,
+    untraceFunctionByName,
+    untracePackage,
 }))

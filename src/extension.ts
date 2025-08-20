@@ -8,7 +8,6 @@ import { ExtensionState, HistoryItem, InspectInfo, InspectResult, isLispSymbol }
 import { UI } from './vscode/UI'
 import {
     COMMON_LISP_ID,
-    diagnosticsEnabled,
     getWorkspaceOrFilePath,
     hasValidLangId,
     startCompileTimer,
@@ -20,9 +19,9 @@ import { downloadLspServer, getInstallPath, spawnLspProcess } from './vscode/bac
 import { disconnectChild } from './vscode/backend/ProcUtils'
 import * as cmds from './vscode/commands'
 import { getHoverProvider } from './vscode/providers/Hover'
-import { isExportNode, isPackageNode } from './vscode/views/PackagesTree'
 import { isHistoryNode } from './vscode/views/ReplHistory'
 import { isThreadNode } from './vscode/views/ThreadsTree'
+import { isLeafNode, isPackageNode } from './vscode/views/BasePackagesTree'
 
 export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions' | 'extensionPath'>) => {
     log('Activating extension')
@@ -99,6 +98,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(lsp, state)),
 
         vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(ui, lsp)),
+        vscode.commands.registerCommand('alive.refreshTracedFunctions', () => cmds.refreshTracedFunctions(ui, lsp)),
         vscode.commands.registerCommand('alive.refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp)),
         vscode.commands.registerCommand('alive.refreshThreads', () => cmds.refreshThreads(ui, lsp)),
 
@@ -114,6 +114,25 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.openScratchPad', () => cmds.openScratchPad(state)),
         vscode.commands.registerCommand('alive.macroexpand', () => cmds.macroexpand(lsp)),
         vscode.commands.registerCommand('alive.macroexpand1', () => cmds.macroexpand1(lsp)),
+        vscode.commands.registerCommand('alive.traceFunction', () => cmds.traceFunction(lsp)),
+        vscode.commands.registerCommand('alive.untraceFunction', () => cmds.untraceFunction(lsp)),
+        vscode.commands.registerCommand('alive.tracePackage', () => cmds.tracePackage(ui, lsp)),
+        vscode.commands.registerCommand('alive.untracePackage', () => cmds.untracePackage(ui, lsp)),
+        vscode.commands.registerCommand('alive.untraceFunctionNode', (node) => {
+            if (!isLeafNode(node) || typeof node.label !== 'string' || node.label === '') {
+                return
+            }
+
+            lsp.untraceFunctionByName(node.pkg, node.label)
+        }),
+        vscode.commands.registerCommand('alive.untracePackageNode', (node) => {
+            if (!isPackageNode(node) || typeof node.label !== 'string' || node.label === '') {
+                return
+            }
+
+            lsp.untracePackage(node.label)
+        }),
+
         vscode.commands.registerCommand('alive.inspect', async (symbol) => {
             if (isLispSymbol(symbol)) {
                 await cmds.inspect(lsp, symbol)
@@ -147,10 +166,10 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         }),
 
         vscode.commands.registerCommand('alive.removeExport', (node) => {
-            if (!isExportNode(node) || typeof node.label !== 'string' || node.label === '') {
+            if (!isLeafNode(node) || typeof node.label !== 'string' || node.label === '') {
                 return
             }
-
+            
             lsp.removeExport(node.pkg, node.label)
         }),
 
@@ -285,8 +304,6 @@ async function startLocalServer(state: ExtensionState): Promise<number | undefin
 }
 
 function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
-    vscode.workspace.onDidOpenTextDocument((doc: vscode.TextDocument) => openTextDocument(ui, lsp, state, doc))
-
     vscode.workspace.onDidChangeTextDocument(
         (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event.document),
         null,
@@ -340,22 +357,17 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
     }
 }
 
-function openTextDocument(ui: UI, lsp: LSP, state: ExtensionState, doc: Pick<vscode.TextDocument, 'languageId'>) {
-    if (!hasValidLangId(doc, [COMMON_LISP_ID])) {
-        return
-    }
-
-    if (diagnosticsEnabled()) {
-        startCompileTimer(ui, lsp, state, state.config)
-    }
-}
-
 async function initTreeViews(
-    ui: Pick<UI, 'initHistoryTree' | 'initThreadsTree' | 'initAsdfSystemsTree' | 'initPackagesTree'>,
-    lsp: Pick<LSP, 'listThreads' | 'listAsdfSystems' | 'listPackages'>,
+    ui: Pick<UI, 'initHistoryTree' | 'initThreadsTree' | 'initTracedFunctionsTree' | 'initAsdfSystemsTree' | 'initPackagesTree'>,
+    lsp: Pick<LSP, 'listThreads' | 'listTracedFunctions' | 'listAsdfSystems' | 'listPackages'>,
     history: HistoryItem[]
 ) {
-    const tasks = [initThreadsTree(ui, lsp), initAsdfSystemsTree(ui, lsp), initPackagesTree(ui, lsp)]
+    const tasks = [
+        initThreadsTree(ui, lsp),
+        initTracedFunctionsTree(ui, lsp),
+        initAsdfSystemsTree(ui, lsp),
+        initPackagesTree(ui, lsp),
+    ]
 
     await Promise.allSettled(tasks)
 
@@ -368,6 +380,15 @@ async function initThreadsTree(ui: Pick<UI, 'initThreadsTree'>, lsp: Pick<LSP, '
         ui.initThreadsTree(threads)
     } catch (err) {
         log(`Failed to init threads tree: ${err}`)
+    }
+}
+
+async function initTracedFunctionsTree(ui: Pick<UI, 'initTracedFunctionsTree'>, lsp: Pick<LSP, 'listTracedFunctions'>) {
+    try {
+        const traced = await lsp.listTracedFunctions()
+        ui.initTracedFunctionsTree(traced)
+    } catch (err) {
+        log(`Failed to init traced functions tree: ${err}`)
     }
 }
 
@@ -399,7 +420,7 @@ async function diagnosticsRefresh(
             continue
         }
 
-        const resp = await tryCompile(state, state.config, lsp, editor.document)
+        const resp = await tryCompile(state, state.config, lsp, editor.document, true)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
@@ -422,11 +443,13 @@ function registerUIEvents(ui: UI, lsp: LSP, state: ExtensionState) {
 
 function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshPackages', () => cmds.refreshPackages(ui, lsp))
+    lsp.on('refreshTracedFunctions', () => cmds.refreshTracedFunctions(ui, lsp))
     lsp.on('refreshAsdfSystems', () => cmds.refreshAsdfSystems(ui, lsp))
     lsp.on('refreshThreads', () => cmds.refreshThreads(ui, lsp))
     lsp.on('refreshInspectors', () => ui.refreshInspectors())
     lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
     lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state, state.config))
+    lsp.on('compileImmediate', () => cmds.tryCompileWithDiags(lsp, state, state.config, true))
     lsp.on('input', (str, pkgName) => ui.addReplOutput(str, pkgName))
     lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))

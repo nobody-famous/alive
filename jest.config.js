@@ -11,6 +11,7 @@ module.exports = {
         '!**/jest.*',
         '!TestHelpers.ts',
     ],
+    coverageReporters: ['html', 'text'],
     coverageThreshold: {
         global: {
             branches: 100,

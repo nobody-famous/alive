@@ -12,6 +12,13 @@ jest.mock('vscode')
 const netMock = jest.requireMock('net')
 jest.mock('net')
 
+const utilsMock = jest.requireMock('../../Utils')
+jest.mock('../../Utils', () => ({
+    ...jest.requireActual('../../Utils'),
+    diagnosticsEnabled: jest.fn(),
+    parseToInt: jest.fn((n) => +n),
+}))
+
 describe('LSP tests', () => {
     const createClientMock = () => ({
         start: jest.fn(),
@@ -117,7 +124,7 @@ describe('LSP tests', () => {
             const { lsp, funcMap } = await getClientFuncs()
 
             funcMap.notification['$/alive/refresh']?.()
-            expect(lsp.emit).toHaveBeenCalledTimes(5)
+            expect(lsp.emit).toHaveBeenCalledTimes(6)
         })
 
         it('query-io', async () => {
@@ -542,6 +549,182 @@ describe('LSP tests', () => {
         })
     })
 
+    describe('Trace', () => {
+        const runTest = async (fn: (lsp: LSP) => Promise<void>, sendFn: () => Promise<unknown>, messageName: string) => {
+            const sendRequest = jest.fn(sendFn)
+            const { lsp } = await doConnect({ sendRequest })
+
+            await fn(lsp)
+
+            expect(sendRequest).toHaveBeenCalledWith(messageName, expect.anything())
+        }
+
+        describe('traceFunction', () => {
+            beforeEach(() => {
+                vscodeMock.window.showInformationMessage.mockReset()
+                vscodeMock.window.showWarningMessage.mockReset()
+            })
+
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.traceFunction('some/uri', new vscodeMock.Position())
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.traceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => ({ function: 'foo' }),
+                    '$/alive/traceFunction'
+                )
+                expect(vscodeMock.window.showInformationMessage).toHaveBeenCalled()
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.traceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/traceFunction'
+                )
+                expect(vscodeMock.window.showInformationMessage).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('untraceFunction', () => {
+            beforeEach(() => {
+                vscodeMock.window.showInformationMessage.mockReset()
+                vscodeMock.window.showWarningMessage.mockReset()
+            })
+
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.untraceFunction('some/uri', new vscodeMock.Position())
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untraceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => ({ function: 'foo' }),
+                    '$/alive/untraceFunction'
+                )
+                expect(vscodeMock.window.showInformationMessage).toHaveBeenCalled()
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untraceFunction('some/uri', new vscodeMock.Position())
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/untraceFunction'
+                )
+                expect(vscodeMock.window.showInformationMessage).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('untraceFunctionByName', () => {
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.untraceFunctionByName('foo', 'bar')
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untraceFunctionByName('foo', 'bar')
+                    },
+                    async () => ({ function: 'foo' }),
+                    '$/alive/untraceFunctionByName'
+                )
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untraceFunctionByName('foo', 'bar')
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/untraceFunctionByName'
+                )
+            })
+        })
+
+        describe('tracePackage', () => {
+            beforeEach(() => {
+                vscodeMock.window.showInformationMessage.mockReset()
+            })
+
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.tracePackage('foo')
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.tracePackage('foo')
+                    },
+                    async () => 'foo',
+                    '$/alive/tracePackage'
+                )
+                expect(vscodeMock.window.showInformationMessage).toHaveBeenCalled()
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.tracePackage('foo')
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/tracePackage'
+                )
+                expect(vscodeMock.window.showInformationMessage).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('untracePackage', () => {
+            it('No client', async () => {
+                const lsp = new LSP({ hoverText: '' })
+                await lsp.untracePackage('foo')
+            })
+
+            it('Success', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untracePackage('foo')
+                    },
+                    async () => {},
+                    '$/alive/untracePackage'
+                )
+            })
+
+            it('Failure', async () => {
+                await runTest(
+                    async (lsp: LSP) => {
+                        await lsp.untracePackage('foo')
+                    },
+                    async () => {
+                        throw new Error('Failed, as requested')
+                    },
+                    '$/alive/untracePackage'
+                )
+            })
+        })
+    })
+
     describe('getEvalInfo', () => {
         const createSelection = (params?: unknown) => {
             return Object.assign(
@@ -660,7 +843,8 @@ describe('LSP tests', () => {
             validate(lsp)
         }
 
-        runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
+        utilsMock.diagnosticsEnabled.mockReturnValueOnce(true)
+        runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('compileImmediate'))
         runTest('foo', (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
 
@@ -674,6 +858,7 @@ describe('LSP tests', () => {
             validate(lsp)
         }
 
+        utilsMock.diagnosticsEnabled.mockReturnValueOnce(true)
         runTest(COMMON_LISP_ID, (lsp) => expect(lsp.emit).toHaveBeenCalledWith('startCompileTimer'))
         runTest('foo', (lsp) => expect(lsp.emit).not.toHaveBeenCalled())
     })
@@ -864,6 +1049,50 @@ describe('LSP tests', () => {
             })
         })
 
+        describe('listTracedFunctions', () => {
+            it('Success', async () => {
+                await listTest(
+                    {
+                        traced: [
+                            { package: 'foo', name: 'bar' },
+                            { package: {}, name: [] },
+                            { package: 'bar', name: 'bas' },
+                        ],
+                    },
+                    (lsp) => lsp.listTracedFunctions(),
+                    (result) => {
+                        expect(result.length).toBe(2)
+                        expect(result[0].name).toBe('foo')
+                        expect(result[1].name).toBe('bar')
+                    }
+                )
+            })
+
+            it('Invalid data', async () => {
+                await listTest(
+                    [{ id: 5, name: 'foo' }],
+                    (lsp) => lsp.listTracedFunctions(),
+                    (result) => expect(result.length).toBe(0)
+                )
+            })
+
+            it('No client', async () => {
+                await noClientTest((lsp) => lsp.listTracedFunctions())
+            })
+
+            it('Network error', async () => {
+                await networkErrorTest(
+                    (lsp) => lsp.listTracedFunctions(),
+                    (resp) => expect(resp).toMatchObject([])
+                )
+                await networkErrorTest(
+                    (lsp) => lsp.listTracedFunctions(),
+                    (resp) => expect(resp).toMatchObject([]),
+                    false
+                )
+            })
+        })
+
         describe('listAsdfSystems', () => {
             it('Success', async () => {
                 await listTest(
@@ -986,8 +1215,8 @@ describe('LSP tests', () => {
         it('should handle array response', async () => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({
-                    text: ['result1', 'result2']
-                }))
+                    text: ['result1', 'result2'],
+                })),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')
@@ -997,8 +1226,8 @@ describe('LSP tests', () => {
         it('should handle string response', async () => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({
-                    text: 'result'
-                }))
+                    text: 'result',
+                })),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')
@@ -1008,8 +1237,8 @@ describe('LSP tests', () => {
         it('should handle invalid response', async () => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => ({
-                    text: 123 // invalid type
-                }))
+                    text: 123, // invalid type
+                })),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')
@@ -1018,7 +1247,7 @@ describe('LSP tests', () => {
 
         it('should handle non-object response', async () => {
             const { lsp } = await doConnect({
-                sendRequest: jest.fn(() => "not an object")
+                sendRequest: jest.fn(() => 'not an object'),
             })
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')

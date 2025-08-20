@@ -1,5 +1,5 @@
 import { Selection } from 'vscode'
-import { EvalInfo, SurroundingInfo } from '../../Types'
+import { SurroundingInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
 import {
     clearRepl,
@@ -17,12 +17,18 @@ import {
     refreshAsdfSystems,
     refreshPackages,
     refreshThreads,
+    refreshTracedFunctions,
     selectRestart,
     selectSexpr,
     sendToRepl,
     toggleReplWordWrap,
+    traceFunction,
+    tracePackage,
     tryCompileWithDiags,
+    untraceFunction,
+    untracePackage,
 } from '../Repl'
+import { UI } from '../../UI'
 
 const vscodeMock = jest.requireMock('vscode')
 jest.mock('vscode')
@@ -366,6 +372,77 @@ describe('Repl tests', () => {
         })
     })
 
+    describe('Trace Function', () => {
+        const runTraceTest = async (
+            toRun: (lsp: Pick<LSP, 'traceFunction' | 'untraceFunction'>) => Promise<void>,
+            validate: (lsp: Pick<LSP, 'traceFunction' | 'untraceFunction'>) => void
+        ) => {
+            const lsp = { traceFunction: jest.fn(), untraceFunction: jest.fn() }
+            const editor = createFakeEditor()
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await toRun(lsp)
+            await editorFn?.(editor)
+
+            validate(lsp)
+        }
+
+        it('traceFunction', async () => {
+            await runTraceTest(traceFunction, (lsp) => expect(lsp.traceFunction).toHaveBeenCalled())
+        })
+
+        it('untraceFunction', async () => {
+            await runTraceTest(untraceFunction, (lsp) => expect(lsp.untraceFunction).toHaveBeenCalled())
+        })
+    })
+
+    describe('Trace Package', () => {
+        it('tracePackage', async () => {
+            const ui = { requestPackage: jest.fn() }
+            const lsp = { tracePackage: jest.fn() }
+            let setPkgFn = async () => {}
+
+            ui.requestPackage.mockImplementationOnce((params) => (setPkgFn = params.setPackage))
+
+            await tracePackage(ui, lsp)
+            await setPkgFn?.()
+
+            expect(lsp.tracePackage).toHaveBeenCalled()
+        })
+
+        describe('Untrace Package', () => {
+            const runTest = async (
+                fn: (
+                    ui: Pick<UI, 'requestPackage' | 'requestTracedPackage'>,
+                    lsp: Pick<LSP, 'tracePackage' | 'untracePackage'>
+                ) => Promise<void>,
+                packageName: string | undefined,
+                validate: (lsp: Pick<LSP, 'tracePackage' | 'untracePackage'>) => void
+            ) => {
+                const ui = { requestPackage: jest.fn(), requestTracedPackage: jest.fn() }
+                const lsp = { tracePackage: jest.fn(), untracePackage: jest.fn() }
+
+                ui.requestPackage.mockReturnValueOnce(packageName)
+                ui.requestTracedPackage.mockReturnValueOnce(packageName)
+                await fn(ui, lsp)
+
+                validate(lsp)
+            }
+
+            it('Have package', async () => {
+                await runTest(untracePackage, 'foo', (lsp) => expect(lsp.untracePackage).toHaveBeenCalled())
+            })
+
+            it('No package', async () => {
+                await runTest(untracePackage, undefined, (lsp) => expect(lsp.untracePackage).not.toHaveBeenCalled())
+            })
+        })
+    })
+
     describe('openScratchPad', () => {
         beforeEach(() => {
             vscodeMock.workspace.openTextDocument.mockReset()
@@ -423,7 +500,7 @@ describe('Repl tests', () => {
             })
             utilsMock.tryCompile.mockReturnValueOnce(respValue)
 
-            tryCompileWithDiags(lsp, state, { enableDiagnostics: true })
+            tryCompileWithDiags(lsp, state, { enableDiagnostics: true }, false)
             await editorFn?.(createFakeEditor())
         }
 
@@ -570,6 +647,15 @@ describe('Repl tests', () => {
         await refreshPackages(ui, lsp)
 
         expect(ui.updatePackages).toHaveBeenCalled()
+    })
+
+    it('refreshTracedFunctions', async () => {
+        const lsp = { listTracedFunctions: jest.fn() }
+        const ui = { updateTracedFunctions: jest.fn() }
+
+        await refreshTracedFunctions(ui, lsp)
+
+        expect(ui.updateTracedFunctions).toHaveBeenCalled()
     })
 
     describe('selectSexpr', () => {

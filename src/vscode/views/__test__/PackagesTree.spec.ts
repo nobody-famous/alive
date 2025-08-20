@@ -1,5 +1,7 @@
 import { TreeItem, TreeItemCollapsibleState } from 'vscode'
-import { ExportNode, PackageNode, PackagesTreeProvider, isExportNode, isPackageNode } from '../PackagesTree'
+import { PackagesTreeProvider } from '../PackagesTree'
+import { isLeafNode, isPackageNode, LeafNode, PackageNode } from '../BasePackagesTree'
+import { TracedFunctionTreeProvider } from '../TracedFunctionsTree'
 
 describe('PackagesTree tests', () => {
     const fakeState = { config: { packageTree: { separator: null } } }
@@ -7,13 +9,15 @@ describe('PackagesTree tests', () => {
     it('isPackageNode', () => {
         expect(isPackageNode(5)).toBe(false)
         expect(
-            isPackageNode(new PackageNode('Some key', { kids: {}, label: '', packageName: '' }, TreeItemCollapsibleState.None))
+            isPackageNode(
+                new PackageNode('Some ctx', 'Some key', { kids: {}, label: '', packageName: '' }, TreeItemCollapsibleState.None)
+            )
         ).toBe(true)
     })
 
-    it('isExportNode', () => {
-        expect(isExportNode(5)).toBe(false)
-        expect(isExportNode(new ExportNode('key', 'pkg'))).toBe(true)
+    it('isLeafNode', () => {
+        expect(isLeafNode(5)).toBe(false)
+        expect(isLeafNode(new LeafNode('context', 'key', 'pkg'))).toBe(true)
     })
 
     it('update', () => {
@@ -153,6 +157,30 @@ describe('PackagesTree tests', () => {
                     expect(barKids?.[0]?.label).toBe('baz')
                 }
             })
+        })
+    })
+
+    describe('TraceFunctionsTree', () => {
+        it('getItem methods', () => {
+            const tree = new TracedFunctionTreeProvider([], fakeState)
+
+            expect(tree.getItemName({ name: 'foo', traced: [] })).toBe('foo')
+            expect(tree.getItemChildren({ name: 'foo', traced: ['bar', 'bas'] })).toStrictEqual(['bar', 'bas'])
+        })
+
+        it('listPackages', () => {
+            const tree = new TracedFunctionTreeProvider(
+                [
+                    { name: 'foo', traced: [] },
+                    { name: 'bar', traced: [] },
+                ],
+                fakeState
+            )
+
+            const pkgs = tree.listPackages()
+
+            expect(pkgs[0]).toBe('foo')
+            expect(pkgs[1]).toBe('bar')
         })
     })
 })

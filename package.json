@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "publisher": "rheller",
     "license": "Unlicense",
     "repository": {
@@ -75,31 +75,42 @@
             "lisp-explorer": [
                 {
                     "id": "replHistory",
-                    "name": "REPL History"
+                    "name": "REPL History",
+                    "icon": "${history)"
+                },
+                {
+                    "id": "tracedFunctions",
+                    "name": "Traced Functions",
+                    "icon": "${debug)"
                 },
                 {
                     "id": "lispInspector",
                     "type": "webview",
-                    "name": "Inspector"
+                    "name": "Inspector",
+                    "icon": "$(inspect)"
                 },
                 {
                     "id": "lispPackages",
-                    "name": "Packages"
+                    "name": "Packages",
+                    "icon": "$(package)"
                 },
                 {
                     "id": "asdfSystems",
-                    "name": "ASDF Systems"
+                    "name": "ASDF Systems",
+                    "icon": "$(tools)"
                 },
                 {
                     "id": "lispThreads",
-                    "name": "Threads"
+                    "name": "Threads",
+                    "icon": "$(tools)"
                 }
             ],
             "lisp-repl": [
                 {
                     "id": "lispRepl",
                     "type": "webview",
-                    "name": "REPL"
+                    "name": "REPL",
+                    "icon": "$(repl)"
                 }
             ]
         },
@@ -248,6 +259,33 @@
             {
                 "command": "alive.macroexpand1",
                 "title": "Alive: Macro Expand 1"
+            },
+            {
+                "command": "alive.traceFunction",
+                "title": "Alive: Trace Function"
+            },
+            {
+                "command": "alive.tracePackage",
+                "title": "Alive: Trace Package"
+            },
+            {
+                "command": "alive.untraceFunction",
+                "title": "Alive: Untrace Function"
+            },
+            {
+                "command": "alive.untraceFunctionNode",
+                "title": "Alive: Untrace Function Node",
+                "icon": "$(remove)"
+            },
+            {
+                "command": "alive.untracePackage",
+                "title": "Alive: Untrace Package",
+                "icon": "$(remove)"
+            },
+            {
+                "command": "alive.untracePackageNode",
+                "title": "Alive: Untrace Package Node",
+                "icon": "$(remove)"
             }
         ],
         "menus": {
@@ -332,6 +370,16 @@
                     "group": "inline"
                 },
                 {
+                    "command": "alive.untraceFunctionNode",
+                    "when": "view == tracedFunctions && viewItem == tracedFunction",
+                    "group": "inline"
+                },
+                {
+                    "command": "alive.untracePackageNode",
+                    "when": "view == tracedFunctions && viewItem == tracedPackage",
+                    "group": "inline"
+                },
+                {
                     "command": "alive.loadAsdfByName",
                     "when": "view == asdfSystems",
                     "group": "inline"
@@ -397,6 +445,16 @@
             {
                 "command": "alive.replHistory",
                 "key": "alt+shift+r",
+                "when": "aliveExtensionActive"
+            },
+            {
+                "command": "alive.traceFunction",
+                "key": "alt+shift+t",
+                "when": "aliveExtensionActive"
+            },
+            {
+                "command": "alive.untraceFunction",
+                "key": "alt+shift+u",
                 "when": "aliveExtensionActive"
             },
             {
