@@ -296,19 +296,29 @@
                     "group": "x_commands@1"
                 },
                 {
-                    "command": "alive.sendToRepl",
+                    "command": "alive.traceFunction",
                     "when": "editorLangId == commonlisp",
                     "group": "x_commands@2"
                 },
                 {
-                    "command": "alive.loadFile",
+                    "command": "alive.untraceFunction",
                     "when": "editorLangId == commonlisp",
                     "group": "x_commands@3"
                 },
                 {
-                    "command": "alive.compileFile",
+                    "command": "alive.sendToRepl",
                     "when": "editorLangId == commonlisp",
                     "group": "x_commands@4"
+                },
+                {
+                    "command": "alive.loadFile",
+                    "when": "editorLangId == commonlisp",
+                    "group": "x_commands@5"
+                },
+                {
+                    "command": "alive.compileFile",
+                    "when": "editorLangId == commonlisp",
+                    "group": "x_commands@6"
                 }
             ],
             "view/title": [
@@ -400,6 +410,14 @@
                 },
                 {
                     "command": "alive.sendToRepl",
+                    "when": "editorLangId == commonlisp"
+                },
+                {
+                    "command": "alive.traceFunction",
+                    "when": "editorLangId == commonlisp"
+                },
+                {
+                    "command": "alive.untraceFunction",
                     "when": "editorLangId == commonlisp"
                 },
                 {
