@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 "--coverage",
-                "src/__test__/extension.spec.ts",
-                "-t",
-                "untraceFunctionNode"
+                "src/vscode/views/__test__/ThreadsTree.spec.ts"
+                // "-t",
+                // "untraceFunctionNode"
             ],
             "problemMatcher": ["$tsc"]
         },
