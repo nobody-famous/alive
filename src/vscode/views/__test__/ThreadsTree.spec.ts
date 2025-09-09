@@ -4,7 +4,10 @@ describe('ThreadsTree tests', () => {
     it('update', () => {
         const provider = new ThreadsTreeProvider([])
 
-        provider.update([{ id: 'foo', name: 'foo' }])
+        provider.update([
+            { id: 'foo', name: 'foo' },
+            { id: null, name: null },
+        ])
 
         const kids = provider.getChildren()
         expect(Array.isArray(kids)).toBe(true)
@@ -14,6 +17,8 @@ describe('ThreadsTree tests', () => {
 
         expect(isThreadNode(kids[0])).toBe(true)
         expect(kids[0].label).toBe('foo')
+        expect(isThreadNode(kids[1])).toBe(true)
+        expect(kids[1].label).toBe('')
     })
 
     it('getTreeItem', () => {
