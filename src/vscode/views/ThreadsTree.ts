@@ -5,7 +5,7 @@ export class ThreadNode extends vscode.TreeItem {
     public thread: Thread
 
     constructor(thread: Thread) {
-        super(thread.name)
+        super(thread.name ?? '')
 
         this.thread = thread
     }
