@@ -420,7 +420,7 @@ async function diagnosticsRefresh(
             continue
         }
 
-        const resp = await tryCompile(state, state.config, lsp, editor.document, true)
+        const resp = await tryCompile(state, state.config, lsp, editor.document)
 
         if (resp !== undefined) {
             await updateDiagnostics(state.diagnostics, editor.document.fileName, resp.notes)
@@ -449,7 +449,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('refreshInspectors', () => ui.refreshInspectors())
     lsp.on('refreshDiagnostics', () => ui.refreshDiagnostics())
     lsp.on('startCompileTimer', () => startCompileTimer(ui, lsp, state, state.config))
-    lsp.on('compileImmediate', () => cmds.tryCompileWithDiags(lsp, state, state.config, true))
+    lsp.on('compileImmediate', () => cmds.tryCompileWithDiags(lsp, state, state.config))
     lsp.on('input', (str, pkgName) => ui.addReplOutput(str, pkgName))
     lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))
