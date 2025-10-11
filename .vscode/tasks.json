@@ -27,10 +27,10 @@
             "command": "npx",
             "args": [
                 "jest",
-                "--coverage",
-                "src/vscode/views/__test__/ThreadsTree.spec.ts"
-                // "-t",
-                // "untraceFunctionNode"
+                // "--coverage",
+                "src/vscode/__test__/Utils.spec.ts",
+                "-t",
+                "autosave"
             ],
             "problemMatcher": ["$tsc"]
         },

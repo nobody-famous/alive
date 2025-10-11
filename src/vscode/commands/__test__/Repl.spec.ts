@@ -500,7 +500,7 @@ describe('Repl tests', () => {
             })
             utilsMock.tryCompile.mockReturnValueOnce(respValue)
 
-            tryCompileWithDiags(lsp, state, { enableDiagnostics: true }, false)
+            tryCompileWithDiags(lsp, state, { enableDiagnostics: true })
             await editorFn?.(createFakeEditor())
         }
 
