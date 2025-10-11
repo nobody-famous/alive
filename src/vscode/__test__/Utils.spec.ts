@@ -261,7 +261,7 @@ describe('Utils Tests', () => {
 
             it('autoSave', async () => {
                 await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: 'autoSave' }, lsp, doc)
-                expect(lsp.tryCompileFile).not.toHaveBeenCalled()
+                expect(lsp.tryCompileFile).toHaveBeenCalled()
 
                 await tryCompile({ compileRunning: false, workspacePath: 'foo' }, { enableDiagnostics: 'autoSave' }, lsp, {
                     getText: () => '',
