@@ -137,6 +137,7 @@ style.replaceSync(`
         height: 1.5rem;
         line-height: 1.5rem;
         cursor: pointer;
+        margin-right: 0.3rem;
     }
 
     .repl-input-text {
@@ -150,6 +151,7 @@ style.replaceSync(`
         height: 1.5rem;
         line-height: 1.5rem;
         width: 95%;
+        padding: 0;
     }
 
     .repl-input-form {
@@ -183,8 +185,6 @@ customElements.define(
             this.shadow.adoptedStyleSheets = [style]
             this.shadow.innerHTML = `
                 <div class="repl-output-package-box">
-                    <span id="package"></span>
-                    <span>&gt;</span>
                 </div>
             `
         }
@@ -371,8 +371,7 @@ customElements.define(
                 <div class="repl-input-box">
                     <div class="repl-input-text-box">
                         <div class="repl-input-label" onclick="requestPackage()">
-                            <span id="repl-package">${this.package ?? ''}</span>
-                            >
+                            <span id="repl-package">${this.package ?? ''}</span>&gt;
                         </div>
                             <form id="repl-input-form" class="repl-input-form" action="">
                                 <input class="repl-input-text" id="repl-input-text" type="text">
