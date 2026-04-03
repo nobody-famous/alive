@@ -78,6 +78,7 @@ style.replaceSync(`
     }
     .clickable {
         cursor: pointer;
+        color: var(--vscode-textLink-foreground);
     }
     .clickable:hover {
         background: green;

@@ -53,7 +53,7 @@ export class LSP extends EventEmitter<LSPEvents> {
         const serverOpts: () => Promise<StreamInfo> = () => {
             return new Promise((resolve, reject) => {
                 const socket: net.Socket = net.connect({ port: hostPort.port, host: hostPort.host }, () =>
-                    resolve({ reader: socket, writer: socket })
+                    resolve({ reader: socket, writer: socket }),
                 )
 
                 socket.on('error', (err: unknown) => reject(err))
@@ -288,7 +288,7 @@ export class LSP extends EventEmitter<LSPEvents> {
         text: string,
         pkgName: string,
         storeResult?: boolean,
-        withOutput: boolean = false
+        withOutput: boolean = false,
     ): Promise<string | Array<string> | undefined> => {
         try {
             if (withOutput) {
@@ -526,7 +526,7 @@ export class LSP extends EventEmitter<LSPEvents> {
         getRange: () => Promise<vscode.Range | undefined>,
         getTextFn: (range: vscode.Range) => string,
         uri: string,
-        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>,
     ) => {
         const range = selection.isEmpty ? await getRange() : new vscode.Range(selection.start, selection.end)
 
@@ -540,13 +540,13 @@ export class LSP extends EventEmitter<LSPEvents> {
     getEvalInfo = async (
         getTextFn: (range: vscode.Range) => string,
         uri: string,
-        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>,
     ): Promise<EvalInfo | undefined> => {
         const { text, pkg } = await this.doGetInfo(
             async () => await this.getTopExprRange(uri, selection),
             getTextFn,
             uri,
-            selection
+            selection,
         )
 
         return isString(text) && isString(pkg) ? { text, package: pkg } : undefined
@@ -646,13 +646,13 @@ export class LSP extends EventEmitter<LSPEvents> {
     getSurroundingInfo = async (
         getTextFn: (range?: vscode.Range) => string,
         uri: string,
-        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>
+        selection: Pick<vscode.Selection, 'active' | 'isEmpty' | 'start' | 'end'>,
     ): Promise<SurroundingInfo | undefined> => {
         const { range, text, pkg } = await this.doGetInfo(
             async () => await this.getSurroundingExprRange(uri, selection),
             getTextFn,
             uri,
-            selection
+            selection,
         )
 
         return range !== undefined && isString(text) && isString(pkg) ? { range, text, package: pkg } : undefined
@@ -711,7 +711,7 @@ export class LSP extends EventEmitter<LSPEvents> {
     getExprRange = async (
         method: string,
         uri: string,
-        selection: Pick<vscode.Selection, 'active'>
+        selection: Pick<vscode.Selection, 'active'>,
     ): Promise<vscode.Range | undefined> => {
         try {
             const resp = await this.client?.sendRequest(method, {
@@ -738,7 +738,7 @@ export class LSP extends EventEmitter<LSPEvents> {
 
     getSurroundingExprRange = async (
         uri: string,
-        selection: Pick<vscode.Selection, 'active'>
+        selection: Pick<vscode.Selection, 'active'>,
     ): Promise<vscode.Range | undefined> => {
         return await this.getExprRange('$/alive/surroundingFormBounds', uri, selection)
     }
