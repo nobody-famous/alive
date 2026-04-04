@@ -210,8 +210,8 @@ customElements.define(
             this.innerHTML = `
                 <div class="list-item stacktrace-item">
                     <div id="index-field" class="list-item-ndx">
-                        ${this.indexField}
-                        <span class="codicon codicon-debug-restart-frame"></span>
+                        <div>${this.indexField}</div>
+                        ${this.item.restartable ? '<div><span class="codicon codicon-debug-restart-frame"></span></div>' : ''}
                     </div>
                     <div id="loc-field" class="list-item-loc">
                         <div id="fn-field" class="list-item-fn"></div>
