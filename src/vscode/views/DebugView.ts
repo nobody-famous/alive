@@ -43,7 +43,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
             'cl-debug',
             this.title,
             { preserveFocus: true, viewColumn: this.viewCol },
-            { enableScripts: true }
+            { enableScripts: true },
         )
 
         this.setPanelCallbacks(this.panel)
@@ -68,7 +68,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 }
             },
             undefined,
-            this.ctx.subscriptions
+            this.ctx.subscriptions,
         )
 
         panel.onDidDispose(() => {
@@ -125,15 +125,19 @@ export class DebugView extends EventEmitter<DebugEvents> {
     private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.css'))
+        const codiconPath = vscode.Uri.file(
+            path.join(this.ctx.extensionPath, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'),
+        )
 
         panel.webview.html = `
             <html>
             <head>
                 <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
+                <link rel="stylesheet" href="${panel.webview.asWebviewUri(codiconPath)}">
             </head>
             <body>
                 <div id="content">
-                    <debug-condition>${strToHtml(this.info.message)}</debug-condition>
+                    <debug-condition message="${strToHtml(this.info.message)}"></debug-condition>
                     <debug-restarts id="restarts"></debug-restarts>
                     <debug-backtrace id="backtrace"></debug-backtrace>
                 </div>

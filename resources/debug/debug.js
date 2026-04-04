@@ -86,36 +86,31 @@ style.replaceSync(`
     }
 `)
 
+document.adoptedStyleSheets = [...document.adoptedStyleSheets, style]
+
 customElements.define(
     'debug-condition',
     class extends HTMLElement {
-        constructor() {
-            super()
+        connectedCallback() {
+            const msg = this.getAttribute('message') ?? ''
 
-            const shadow = this.attachShadow({ mode: 'open' })
-
-            shadow.adoptedStyleSheets = [style]
-            shadow.innerHTML = `
+            this.innerHTML = `
                 <div>
                     <div class="title">Condition</div>
                     <div class="list-box">
-                        <div class="list-item"><slot></slot></div>
+                        <div class="list-item">${msg}</div>
                     </div>
                 </div>
             `
         }
-    }
+    },
 )
 
 customElements.define(
     'debug-restarts',
     class extends HTMLElement {
-        constructor() {
-            super()
-
-            this.shadow = this.attachShadow({ mode: 'open' })
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
+        connectedCallback() {
+            this.innerHTML = `
                 <style>
                     #restarts {
                         margin-bottom: 1.5rem;
@@ -127,14 +122,12 @@ customElements.define(
                     <div id="box" class="list-box"></div>
                 </div>
             `
-        }
 
-        connectedCallback() {
             vscode.postMessage({ command: 'send_restarts' })
         }
 
         addItem(index, item) {
-            const box = this.shadow.getElementById('box')
+            const box = this.querySelector('#box')
             const elem = document.createElement('debug-restart-item')
             const text = `${index}: [${item.name}] ${item.description}`
 
@@ -143,7 +136,7 @@ customElements.define(
 
             box.appendChild(elem)
         }
-    }
+    },
 )
 
 customElements.define(
@@ -152,12 +145,6 @@ customElements.define(
         constructor() {
             super()
 
-            this.shadow = this.attachShadow({ mode: 'open' })
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
-                <div id="box" class="list-item restart-item clickable"></div>
-            `
-
             this.addEventListener('click', () => {
                 if (Number.isInteger(this.index)) {
                     restart(this.index)
@@ -165,40 +152,37 @@ customElements.define(
             })
         }
 
+        connectedCallback() {
+            this.innerHTML = `
+                <div id="box" class="list-item restart-item clickable">${this.value}</div>
+            `
+        }
+
         setIndex(value) {
             this.index = value
         }
 
         setText(value) {
-            const box = this.shadow.getElementById('box')
-            box.textContent = value
+            this.value = value
         }
-    }
+    },
 )
 
 customElements.define(
     'debug-backtrace',
     class extends HTMLElement {
-        constructor() {
-            super()
-
-            this.shadow = this.attachShadow({ mode: 'open' })
-
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
+        connectedCallback() {
+            this.innerHTML = `
                 <div id="backtrace">
                     <div class="title">Backtrace</div>
                     <div id="box" class="list-box"></div>
                 </div>
             `
-        }
-
-        connectedCallback() {
             vscode.postMessage({ command: 'send_backtrace' })
         }
 
         addItem(index, item) {
-            const box = this.shadow.getElementById('box')
+            const box = this.querySelector('#box')
             const elem = document.createElement('debug-backtrace-item')
 
             elem.setIndex(index)
@@ -206,7 +190,7 @@ customElements.define(
 
             box.appendChild(elem)
         }
-    }
+    },
 )
 
 customElements.define(
@@ -215,19 +199,6 @@ customElements.define(
         constructor() {
             super()
 
-            this.shadow = this.attachShadow({ mode: 'open' })
-
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
-                <div class="list-item stacktrace-item">
-                    <div id="index-field" class="list-item-ndx"></div>
-                    <div id="loc-field" class="list-item-loc">
-                        <div id="fn-field" class="list-item-fn"></div>
-                        <div id="file-field" class="list-item-file"></div>
-                        <div id="vars-box" class="list-item-vars"></div>
-                    </div>
-                </div>
-            `
             this.addEventListener('click', () => {
                 if (this.item?.file != null && this.item?.position != null) {
                     jump_to(this.item.file, this.item.position.line, this.item.position.character)
@@ -235,28 +206,29 @@ customElements.define(
             })
         }
 
-        setIndex(value) {
-            const elem = this.shadow.getElementById('index-field')
-            elem.textContent = value
+        connectedCallback() {
+            this.innerHTML = `
+                <div class="list-item stacktrace-item">
+                    <div id="index-field" class="list-item-ndx">
+                        ${this.indexField}
+                        <span class="codicon codicon-debug-restart-frame"></span>
+                    </div>
+                    <div id="loc-field" class="list-item-loc">
+                        <div id="fn-field" class="list-item-fn"></div>
+                        <div id="file-field" class="list-item-file"></div>
+                        <div id="vars-box" class="list-item-vars"></div>
+                    </div>
+                </div>
+            `
+
+            this.displayItem()
         }
 
-        posStr(file, pos) {
-            if (file == null) {
-                return ''
-            }
-
-            const str = pos != null ? `:${pos.line + 1}:${pos.character + 1}` : ''
-
-            return `${file}${str}`
-        }
-
-        setItem(item) {
-            const locElem = this.shadow.getElementById('loc-field')
-            const fnElem = this.shadow.getElementById('fn-field')
-            const fileElem = this.shadow.getElementById('file-field')
-            const varsElem = this.shadow.getElementById('vars-box')
-
-            this.item = item
+        displayItem() {
+            const locElem = this.querySelector('#loc-field')
+            const fnElem = this.querySelector('#fn-field')
+            const fileElem = this.querySelector('#file-field')
+            const varsElem = this.querySelector('#vars-box')
 
             if (this.item.file != null && this.item.position != null) {
                 locElem.classList.add('clickable')
@@ -265,7 +237,7 @@ customElements.define(
             fnElem.textContent = this.item.function
             fileElem.textContent = this.posStr(this.item.file, this.item.position)
 
-            for (const [name, value] of Object.entries(item.vars ?? {})) {
+            for (const [name, value] of Object.entries(this.item.vars ?? {})) {
                 const nameElem = document.createElement('div')
                 const valueElem = document.createElement('div')
 
@@ -279,5 +251,23 @@ customElements.define(
                 varsElem.appendChild(valueElem)
             }
         }
-    }
+
+        setIndex(value) {
+            this.indexField = value
+        }
+
+        posStr(file, pos) {
+            if (file == null) {
+                return ''
+            }
+
+            const str = pos != null ? `:${pos.line + 1}:${pos.character + 1}` : ''
+
+            return `${file}${str}`
+        }
+
+        setItem(item) {
+            this.item = item
+        }
+    },
 )
