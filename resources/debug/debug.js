@@ -84,6 +84,11 @@ style.replaceSync(`
         background: green;
         color: yellow;
     }
+    button {
+        cursor: pointer;
+        background: var(--list-background);
+        color: var(--vscode-editor-foreground);
+    }
 `)
 
 document.adoptedStyleSheets = [...document.adoptedStyleSheets, style]
@@ -198,20 +203,14 @@ customElements.define(
     class extends HTMLElement {
         constructor() {
             super()
-
-            this.addEventListener('click', () => {
-                if (this.item?.file != null && this.item?.position != null) {
-                    jump_to(this.item.file, this.item.position.line, this.item.position.character)
-                }
-            })
         }
 
         connectedCallback() {
             this.innerHTML = `
                 <div class="list-item stacktrace-item">
                     <div id="index-field" class="list-item-ndx">
-                        <div>${this.indexField}</div>
-                        ${this.item.restartable ? '<div><span class="codicon codicon-debug-restart-frame"></span></div>' : ''}
+                        <div>${this.indexValue}</div>
+                        ${this.item.restartable ? '<button id="restart" title="Restart Frame"><span class="codicon codicon-debug-restart-frame"></span></button>' : ''}
                     </div>
                     <div id="loc-field" class="list-item-loc">
                         <div id="fn-field" class="list-item-fn"></div>
@@ -221,17 +220,26 @@ customElements.define(
                 </div>
             `
 
+            this.querySelector('#restart')?.addEventListener('click', () => {
+                console.log('RESTART CLICKED', this.indexValue)
+            })
+
+            this.querySelector('#file-field')?.addEventListener('click', () => {
+                if (this.item?.file != null && this.item?.position != null) {
+                    jump_to(this.item.file, this.item.position.line, this.item.position.character)
+                }
+            })
+
             this.displayItem()
         }
 
         displayItem() {
-            const locElem = this.querySelector('#loc-field')
             const fnElem = this.querySelector('#fn-field')
             const fileElem = this.querySelector('#file-field')
             const varsElem = this.querySelector('#vars-box')
 
             if (this.item.file != null && this.item.position != null) {
-                locElem.classList.add('clickable')
+                fileElem.classList.add('clickable')
             }
 
             fnElem.textContent = this.item.function
@@ -253,7 +261,7 @@ customElements.define(
         }
 
         setIndex(value) {
-            this.indexField = value
+            this.indexValue = value
         }
 
         posStr(file, pos) {
