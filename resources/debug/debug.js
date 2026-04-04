@@ -86,6 +86,7 @@ style.replaceSync(`
     }
     button {
         cursor: pointer;
+        border: none;
         background: var(--list-background);
         color: var(--vscode-editor-foreground);
     }
