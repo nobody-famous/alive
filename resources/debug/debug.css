@@ -200,3 +200,67 @@ body.vscode-light .eval-result {
     background: #eee;
     color: var(--vscode-editor-foreground);
 }
+
+.title {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.list-box {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    row-gap: 1rem;
+    margin-left: 0.5rem;
+    padding: 0.5rem;
+    background: var(--list-background);
+    border-radius: 5px;
+}
+
+debug-backtrace-item {
+    display: contents;
+}
+
+.list-item {
+    display: flex;
+    overflow: auto;
+    flex-direction: row;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.list-item-ndx {
+    flex-shrink: 1;
+    text-align: center;
+    align-self: center;
+    margin-right: 0.5rem;
+}
+
+.list-item-loc {
+    border-left: 1px solid;
+    padding-left: 0.25rem;
+}
+
+.list-item-vars {
+    margin-left: 1rem;
+    display: grid;
+    grid-template-columns: min-content auto;
+    column-gap: 0.5rem;
+    row-gap: 0.25rem;
+}
+
+.clickable {
+    cursor: pointer;
+    color: var(--vscode-textLink-foreground);
+}
+
+.clickable:hover {
+    background: green;
+    color: yellow;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: var(--list-background);
+    color: var(--vscode-editor-foreground);
+}

@@ -41,59 +41,6 @@ window.addEventListener('message', (event) => {
     }
 })
 
-const style = new CSSStyleSheet()
-
-style.replaceSync(`
-    .title {
-        font-size: 1.25rem;
-        font-weight: bold;
-    }
-    .list-box {
-        margin-left: 0.5rem;
-        padding: 0.5rem;
-        background: var(--list-background);
-        border-radius: 5px;
-    }
-    .list-item {
-        display: flex;
-        overflow: auto;
-        flex-direction: row;
-        margin-top: 0.25rem;
-        margin-bottom: 0.25rem;
-    }
-    .list-item-ndx {
-        flex-shrink: 1;
-        margin-right: 0.5rem;
-    }
-    .list-item-vars {
-        margin-left: 1rem;
-        display: grid;
-        grid-template-columns: min-content auto;
-        column-gap: 0.5rem;
-        row-gap: 0.25rem;
-    }
-    .list-item-var-name {
-    }
-    .list-item-var-value {
-    }
-    .clickable {
-        cursor: pointer;
-        color: var(--vscode-textLink-foreground);
-    }
-    .clickable:hover {
-        background: green;
-        color: yellow;
-    }
-    button {
-        cursor: pointer;
-        border: none;
-        background: var(--list-background);
-        color: var(--vscode-editor-foreground);
-    }
-`)
-
-document.adoptedStyleSheets = [...document.adoptedStyleSheets, style]
-
 customElements.define(
     'debug-condition',
     class extends HTMLElement {
@@ -208,16 +155,14 @@ customElements.define(
 
         connectedCallback() {
             this.innerHTML = `
-                <div class="list-item stacktrace-item">
-                    <div id="index-field" class="list-item-ndx">
-                        <div>${this.indexValue}</div>
-                        ${this.item.restartable ? '<button id="restart" title="Restart Frame"><span class="codicon codicon-debug-restart-frame"></span></button>' : ''}
-                    </div>
-                    <div id="loc-field" class="list-item-loc">
-                        <div id="fn-field" class="list-item-fn"></div>
-                        <div id="file-field" class="list-item-file"></div>
-                        <div id="vars-box" class="list-item-vars"></div>
-                    </div>
+                <div id="index-field" class="list-item-ndx">
+                    <div>${this.indexValue}</div>
+                    ${this.item.restartable ? '<button id="restart" title="Restart Frame"><span class="codicon codicon-debug-restart-frame"></span></button>' : ''}
+                </div>
+                <div id="loc-field" class="list-item-loc">
+                    <div id="fn-field" class="list-item-fn"></div>
+                    <div id="file-field" class="list-item-file"></div>
+                    <div id="vars-box" class="list-item-vars"></div>
                 </div>
             `
 
