@@ -2,12 +2,23 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { isArray, isInspectResult, isObject, isPackage, isRestartInfo, isStackTrace, isString, isThread } from '../Guards'
+import {
+    isArray,
+    isFiniteNumber,
+    isInspectResult,
+    isObject,
+    isPackage,
+    isRestartInfo,
+    isStackTrace,
+    isString,
+    isThread,
+} from '../Guards'
 import { log, toLog } from '../Log'
 import {
     CompileFileNote,
     CompileFileResp,
     DebugInfo,
+    DebugAction,
     EvalInfo,
     ExtensionState,
     HostPort,
@@ -33,7 +44,7 @@ interface LSPEvents {
     input: [str: string, pkgName: string]
     output: [str: string]
     queryText: [str: string]
-    getRestartIndex: [info: DebugInfo, fn: (index: number | undefined) => void]
+    getDebugAction: [info: DebugInfo, fn: (action: DebugAction) => void]
     getUserInput: [fn: (input: string) => void]
     inspectResult: [result: InspectInfo]
     inspectUpdate: [result: InspectResult]
@@ -97,15 +108,15 @@ export class LSP extends EventEmitter<LSPEvents> {
                 return
             }
 
-            const requestIndex = () => {
-                return new Promise<number | undefined>((resolve) => {
-                    this.emit('getRestartIndex', info, (index: number | undefined) => resolve(index))
+            const requestAction = () => {
+                return new Promise<DebugAction>((resolve) => {
+                    this.emit('getDebugAction', info, (action: DebugAction) => resolve(action))
                 })
             }
 
-            const index = await requestIndex()
+            const action = await requestAction()
 
-            return { index }
+            return { index: action.restart, ...action }
         })
 
         this.client.onRequest('$/alive/userInput', async () => {

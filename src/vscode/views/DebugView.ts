@@ -14,6 +14,7 @@ interface DebugEvents {
     debugClosed: []
     jumpTo: [string, number, number]
     restart: [number]
+    restartFrame: [number]
 }
 
 export class DebugView extends EventEmitter<DebugEvents> {
@@ -57,6 +58,8 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 switch (msg.command) {
                     case 'restart':
                         return this.restartCommand(msg)
+                    case 'restart_frame':
+                        return this.restartFrame(msg)
                     case 'inspect_cond':
                         return this.inspectCondCommand()
                     case 'jump_to':
@@ -119,6 +122,12 @@ export class DebugView extends EventEmitter<DebugEvents> {
     private restartCommand(msg: jsMessage) {
         if (isFiniteNumber(msg.number)) {
             this.selectRestart(msg.number)
+        }
+    }
+
+    private restartFrame(msg: jsMessage) {
+        if (isFiniteNumber(msg.number)) {
+            this.emit('restartFrame', msg.number)
         }
     }
 

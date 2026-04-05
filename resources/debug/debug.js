@@ -4,6 +4,10 @@ function restart(ndx) {
     vscode.postMessage({ command: 'restart', number: ndx })
 }
 
+function restartFrame(ndx) {
+    vscode.postMessage({ command: 'restart_frame', number: ndx })
+}
+
 function jump_to(file, line, char) {
     vscode.postMessage({ command: 'jump_to', file, line, char })
 }
@@ -167,7 +171,7 @@ customElements.define(
             `
 
             this.querySelector('#restart')?.addEventListener('click', () => {
-                console.log('RESTART CLICKED', this.indexValue)
+                restartFrame(this.indexValue)
             })
 
             this.querySelector('#file-field')?.addEventListener('click', () => {

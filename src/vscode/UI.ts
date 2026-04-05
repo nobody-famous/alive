@@ -6,7 +6,17 @@ import { AsdfSystemsTreeProvider } from './views/AsdfSystemsTree'
 import { LispRepl } from './views/LispRepl'
 import { HistoryNode, ReplHistoryTreeProvider } from './views/ReplHistory'
 import { DebugView } from './views/DebugView'
-import { AliveContext, DebugInfo, HistoryItem, InspectInfo, InspectResult, Package, Thread, TracedPackage } from './Types'
+import {
+    AliveContext,
+    DebugAction,
+    DebugInfo,
+    HistoryItem,
+    InspectInfo,
+    InspectResult,
+    Package,
+    Thread,
+    TracedPackage,
+} from './Types'
 import { InspectorPanel } from './views/InspectorPanel'
 import { Inspector } from './views/Inspector'
 import { isFiniteNumber } from './Guards'
@@ -96,10 +106,11 @@ export class UI extends EventEmitter<UIEvents> {
         this.debugViews.splice(index, 1)
     }
 
-    async getRestartIndex(info: DebugInfo): Promise<number | undefined> {
+    async getDebugAction(info: DebugInfo): Promise<DebugAction> {
         let index: number | undefined = undefined
+        let frameIndex: number | undefined = undefined
 
-        return new Promise<number | undefined>((resolve) => {
+        return new Promise<DebugAction>((resolve) => {
             const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
 
             view.on('restart', (num: number) => {
@@ -111,19 +122,35 @@ export class UI extends EventEmitter<UIEvents> {
                 view.stop()
             })
 
+            view.on('restartFrame', (num: number) => {
+                if (num < 0 || num >= info.stackTrace.length) {
+                    return
+                }
+
+                frameIndex = num
+                view.stop()
+            })
+
             view.on('debugClosed', () => {
-                const num = isFiniteNumber(index)
-                    ? index
-                    : info.restarts.reduce(
-                          (acc: number | undefined, item, ndx) =>
-                              typeof acc === 'number' || item.name.toLocaleLowerCase() !== 'abort' ? acc : ndx,
-                          undefined
-                      )
+                const action =
+                    isFiniteNumber(index) || isFiniteNumber(frameIndex)
+                        ? {
+                              restart: index,
+                              restartFrame: frameIndex,
+                          }
+                        : {
+                              restart: info.restarts.reduce(
+                                  (acc: number | undefined, item, ndx) =>
+                                      typeof acc === 'number' || item.name.toLocaleLowerCase() !== 'abort' ? acc : ndx,
+                                  undefined,
+                              ),
+                              restartFrame: undefined,
+                          }
 
                 view.stop()
                 this.removeDebugView(view)
 
-                resolve(isFiniteNumber(num) ? num : undefined)
+                resolve(action)
             })
 
             view.on('jumpTo', async (file: string, line: number, char: number) => {
@@ -132,7 +159,7 @@ export class UI extends EventEmitter<UIEvents> {
                 const pos = new vscode.Position(line, char)
                 const range = new vscode.Range(
                     new vscode.Position(Math.max(0, pos.line - 10), pos.character),
-                    new vscode.Position(Math.max(0, pos.line + 10), pos.character)
+                    new vscode.Position(Math.max(0, pos.line + 10), pos.character),
                 )
 
                 editor.selection = new vscode.Selection(pos, pos)

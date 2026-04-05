@@ -96,6 +96,11 @@ export interface DebugInfo {
     stackTrace: Array<SourceLocation>
 }
 
+export interface DebugAction {
+    restart?: number
+    restartFrame?: number
+}
+
 export interface EvalInfo {
     text: string
     package: string

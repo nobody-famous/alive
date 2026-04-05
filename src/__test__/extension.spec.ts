@@ -310,12 +310,12 @@ describe('Extension tests', () => {
             expect(utilsMock.startCompileTimer).toHaveBeenCalled()
         })
 
-        it('getRestartIndex', async () => {
+        it('getDebugAction', async () => {
             const fns = await getAllCallbacks(lspMock.on, async () => await activate(ctx))
 
-            await fns['getRestartIndex']({}, () => {})
+            await fns['getDebugAction']({}, () => {})
 
-            expect(uiMock.getRestartIndex).toHaveBeenCalled()
+            expect(uiMock.getDebugAction).toHaveBeenCalled()
         })
 
         it('getUserInput', async () => {
@@ -732,7 +732,7 @@ describe('Extension tests', () => {
                     historyMock.isHistoryNode,
                     true,
                     { label: 'foo', item: { text: '', pkgName: '' } },
-                    lspMock.evalWithOutput
+                    lspMock.evalWithOutput,
                 )
             })
         })
@@ -748,7 +748,7 @@ describe('Extension tests', () => {
                     historyMock.isHistoryNode,
                     true,
                     { label: 'foo', item: { text: '', pkgName: '' } },
-                    uiMock.setReplInput
+                    uiMock.setReplInput,
                 )
             })
         })
@@ -764,7 +764,7 @@ describe('Extension tests', () => {
                     historyMock.isHistoryNode,
                     true,
                     { label: 'foo', item: { text: '', pkgName: '' } },
-                    uiMock.removeHistoryNode
+                    uiMock.removeHistoryNode,
                 )
             })
         })

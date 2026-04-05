@@ -221,7 +221,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
             ui.removeHistoryNode(node)
 
             saveReplHistory(state.replHistoryFile, ui.getHistoryItems())
-        })
+        }),
     )
 
     setWorkspaceEventHandlers(ui, lsp, state)
@@ -307,7 +307,7 @@ function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
     vscode.workspace.onDidChangeTextDocument(
         (event: vscode.TextDocumentChangeEvent) => lsp.textDocumentChanged(event.document),
         null,
-        state.ctx.subscriptions
+        state.ctx.subscriptions,
     )
 
     vscode.workspace.onDidChangeConfiguration(async () => {
@@ -324,7 +324,7 @@ function setWorkspaceEventHandlers(ui: UI, lsp: LSP, state: ExtensionState) {
             }
         },
         null,
-        state.ctx.subscriptions
+        state.ctx.subscriptions,
     )
 }
 
@@ -360,7 +360,7 @@ async function readReplHistory(fileName: string): Promise<HistoryItem[]> {
 async function initTreeViews(
     ui: Pick<UI, 'initHistoryTree' | 'initThreadsTree' | 'initTracedFunctionsTree' | 'initAsdfSystemsTree' | 'initPackagesTree'>,
     lsp: Pick<LSP, 'listThreads' | 'listTracedFunctions' | 'listAsdfSystems' | 'listPackages'>,
-    history: HistoryItem[]
+    history: HistoryItem[],
 ) {
     const tasks = [
         initThreadsTree(ui, lsp),
@@ -413,7 +413,7 @@ async function initPackagesTree(ui: Pick<UI, 'initPackagesTree'>, lsp: Pick<LSP,
 async function diagnosticsRefresh(
     lsp: Pick<LSP, 'tryCompileFile'>,
     state: ExtensionState,
-    editors: readonly vscode.TextEditor[]
+    editors: readonly vscode.TextEditor[],
 ) {
     for (const editor of editors) {
         if (editor.document.languageId !== COMMON_LISP_ID) {
@@ -453,7 +453,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('input', (str, pkgName) => ui.addReplOutput(str, pkgName))
     lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))
-    lsp.on('getRestartIndex', async (info, fn) => fn(await ui.getRestartIndex(info)))
+    lsp.on('getDebugAction', async (info, fn) => fn(await ui.getDebugAction(info)))
     lsp.on('getUserInput', async (fn) => fn(await ui.getUserInput()))
     lsp.on('inspectResult', (result: InspectInfo) => ui.newInspector(result))
     lsp.on('inspectUpdate', (result: InspectResult) => ui.updateInspector(result))
