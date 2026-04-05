@@ -569,6 +569,32 @@ describe('UI tests', () => {
             expect(debugMock.debugStop).toHaveBeenCalled()
         })
 
+        it('restart frame', async () => {
+            const ui = new UI(createState())
+            const info = {
+                message: 'foo',
+                restarts: [],
+                stackTrace: [
+                    { function: 'foo', file: null, position: null, vars: null },
+                    { function: 'bar', file: null, position: null, vars: null },
+                ],
+            }
+            let task: Promise<DebugAction> = Promise.resolve({})
+            const fns = await getAllCallbacks(debugMock.debugOn, async () => {
+                task = ui.getDebugAction(info)
+            })
+
+            fns['restartFrame'](5)
+            fns['restartFrame'](1)
+            fns['debugClosed']()
+
+            const action = await task
+
+            expect(action?.restartFrame).toBe(1)
+            expect(debugMock.debugRun).toHaveBeenCalled()
+            expect(debugMock.debugStop).toHaveBeenCalled()
+        })
+
         const closedTest = async (restarts: RestartInfo[], expectIndex: number | undefined) => {
             const ui = new UI(createState())
             const info = {
