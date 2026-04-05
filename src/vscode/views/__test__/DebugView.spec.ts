@@ -143,6 +143,16 @@ describe('DebugView tests', () => {
             expect(view.emit).toHaveBeenCalled()
         })
 
+        it('restartFrame', () => {
+            const { view, cb } = getCallback()
+
+            cb({ command: 'restart_frame' })
+            expect(view.emit).not.toHaveBeenCalled()
+
+            cb({ command: 'restart_frame', number: 5 })
+            expect(view.emit).toHaveBeenCalled()
+        })
+
         it('inspectCond', () => {
             const { cb } = getCallback()
 
