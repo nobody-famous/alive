@@ -333,16 +333,16 @@ describe('UI tests', () => {
 
     it('setQueryText', async () => {
         const ui = new UI(createState())
-        let boxTitle: string = ''
+        let boxPrompt: string = ''
 
-        vscodeMock.window.showInputBox.mockImplementationOnce(({ title }: { title: string }) => {
-            boxTitle = title
+        vscodeMock.window.showInputBox.mockImplementationOnce(({ prompt }: { prompt: string }) => {
+            boxPrompt = prompt
         })
 
         ui.setQueryText('foo')
         await ui.getUserInput()
 
-        expect(boxTitle).toBe('foo')
+        expect(boxPrompt).toBe('foo')
     })
 
     describe('selectHistoryItem', () => {

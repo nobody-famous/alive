@@ -149,7 +149,7 @@ describe('DebugView tests', () => {
             cb({ command: 'restart_frame' })
             expect(view.emit).not.toHaveBeenCalled()
 
-            cb({ command: 'restart_frame', number: 5 })
+            cb({ command: 'restart_frame', number: 5, argsList: '' })
             expect(view.emit).toHaveBeenCalled()
         })
 
