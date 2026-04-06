@@ -208,7 +208,7 @@ body.vscode-light .eval-result {
 
 .list-box {
     display: grid;
-    grid-template-columns: max-content 1fr;
+    grid-template-columns: max-content minmax(0, 1fr);
     row-gap: 1rem;
     margin-left: 0.5rem;
     padding: 0.5rem;

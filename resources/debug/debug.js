@@ -4,8 +4,8 @@ function restart(ndx) {
     vscode.postMessage({ command: 'restart', number: ndx })
 }
 
-function restartFrame(ndx) {
-    vscode.postMessage({ command: 'restart_frame', number: ndx })
+function restartFrame(ndx, argsList) {
+    vscode.postMessage({ command: 'restart_frame', number: ndx, argsList })
 }
 
 function jump_to(file, line, char) {
@@ -171,7 +171,8 @@ customElements.define(
             `
 
             this.querySelector('#restart')?.addEventListener('click', () => {
-                restartFrame(this.indexValue)
+                const args = this.item.argsList.trim().replace(/^\((.*)\)$/, '$1')
+                restartFrame(this.indexValue, args)
             })
 
             this.querySelector('#file-field')?.addEventListener('click', () => {
@@ -195,17 +196,15 @@ customElements.define(
             fnElem.textContent = this.item.function
             fileElem.textContent = this.posStr(this.item.file, this.item.position)
 
-            for (const [name, value] of Object.entries(this.item.vars ?? {})) {
+            for (const v of this.item.vars ?? []) {
                 const nameElem = document.createElement('div')
-                const valueElem = document.createElement('div')
-
                 nameElem.classList.add('list-item-var-name')
-                valueElem.classList.add('list-item-var-value')
-
-                nameElem.textContent = name
-                valueElem.textContent = value
-
+                nameElem.textContent = v.name
                 varsElem.appendChild(nameElem)
+
+                const valueElem = document.createElement('div')
+                valueElem.classList.add('list-item-var-value')
+                valueElem.textContent = v.value
                 varsElem.appendChild(valueElem)
             }
         }

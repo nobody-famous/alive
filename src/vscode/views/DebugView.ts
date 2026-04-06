@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { AliveContext, DebugInfo, RestartInfo } from '../Types'
+import { isFiniteNumber, isString } from '../Guards'
+import { AliveContext, DebugInfo } from '../Types'
 import { strToHtml } from '../Utils'
-import { isFiniteNumber } from '../Guards'
 
 export interface jsMessage {
     command: string
@@ -14,7 +14,7 @@ interface DebugEvents {
     debugClosed: []
     jumpTo: [string, number, number]
     restart: [number]
-    restartFrame: [number]
+    restartFrame: [number, string]
 }
 
 export class DebugView extends EventEmitter<DebugEvents> {
@@ -126,8 +126,8 @@ export class DebugView extends EventEmitter<DebugEvents> {
     }
 
     private restartFrame(msg: jsMessage) {
-        if (isFiniteNumber(msg.number)) {
-            this.emit('restartFrame', msg.number)
+        if (isFiniteNumber(msg.number) && isString(msg.argsList)) {
+            this.emit('restartFrame', msg.number, msg.argsList)
         }
     }
 

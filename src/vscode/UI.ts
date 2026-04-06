@@ -109,6 +109,7 @@ export class UI extends EventEmitter<UIEvents> {
     async getDebugAction(info: DebugInfo): Promise<DebugAction> {
         let index: number | undefined = undefined
         let frameIndex: number | undefined = undefined
+        let frameArgsList: string | undefined = undefined
 
         return new Promise<DebugAction>((resolve) => {
             const view = new DebugView(this.state.ctx, 'Debug', vscode.ViewColumn.Two, info)
@@ -122,21 +123,23 @@ export class UI extends EventEmitter<UIEvents> {
                 view.stop()
             })
 
-            view.on('restartFrame', (num: number) => {
+            view.on('restartFrame', (num: number, argsList: string) => {
                 if (num < 0 || num >= info.stackTrace.length) {
                     return
                 }
 
                 frameIndex = num
+                frameArgsList = argsList
                 view.stop()
             })
 
-            view.on('debugClosed', () => {
-                const action =
+            view.on('debugClosed', async () => {
+                const action: DebugAction =
                     isFiniteNumber(index) || isFiniteNumber(frameIndex)
                         ? {
                               restart: index,
                               restartFrame: frameIndex,
+                              restartArgsList: undefined,
                           }
                         : {
                               restart: info.restarts.reduce(
@@ -145,7 +148,13 @@ export class UI extends EventEmitter<UIEvents> {
                                   undefined,
                               ),
                               restartFrame: undefined,
+                              restartArgsList: undefined,
                           }
+
+                if (isFiniteNumber(frameIndex)) {
+                    const args = await vscode.window.showInputBox({ value: frameArgsList, prompt: 'Function Arguments' })
+                    action.restartArgsList = `'(${args})`
+                }
 
                 view.stop()
                 this.removeDebugView(view)
@@ -178,7 +187,7 @@ export class UI extends EventEmitter<UIEvents> {
     }
 
     async getUserInput(): Promise<string> {
-        const input = await vscode.window.showInputBox({ title: this.queryText })
+        const input = await vscode.window.showInputBox({ prompt: this.queryText })
 
         return input ?? ''
     }
