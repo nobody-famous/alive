@@ -87,13 +87,19 @@ export interface SourceLocation {
     function: string
     file: string | null | undefined
     position: vscode.Position | null | undefined
-    vars: Record<string, string> | null | undefined
+    vars: [{ name: string; value: string }] | null | undefined
 }
 
 export interface DebugInfo {
     message: string
     restarts: Array<RestartInfo>
     stackTrace: Array<SourceLocation>
+}
+
+export interface DebugAction {
+    restart?: number
+    restartFrame?: number
+    restartArgsList?: string
 }
 
 export interface EvalInfo {

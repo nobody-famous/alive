@@ -3,7 +3,7 @@ export const addReplInput = jest.fn()
 export const addReplOutput = jest.fn()
 export const clearReplHistory = jest.fn()
 export const getHistoryItems = jest.fn()
-export const getRestartIndex = jest.fn()
+export const getDebugAction = jest.fn()
 export const getUserInput = jest.fn()
 export const init = jest.fn()
 export const initAsdfSystemsTree = jest.fn()
@@ -31,7 +31,7 @@ export const UI = jest.fn(() => ({
     addReplOutput,
     clearReplHistory,
     getHistoryItems,
-    getRestartIndex,
+    getDebugAction,
     getUserInput,
     init,
     initAsdfSystemsTree,

@@ -62,7 +62,7 @@ describe('Type guard tests', () => {
         expect(isSourceLocation({ function: 'foo', position: { line: 5, character: 10 } })).toBe(true)
         expect(isSourceLocation({ file: 'bar', position: { line: 5, character: 10 } })).toBe(false)
         expect(isSourceLocation({ function: 'foo', vars: { foo: 10 } })).toBe(false)
-        expect(isSourceLocation({ function: 'foo', vars: { foo: 'bar' } })).toBe(true)
+        expect(isSourceLocation({ function: 'foo', vars: [{ name: 'foo', value: 'bar' }] })).toBe(true)
         expect(isSourceLocation(5)).toBe(false)
         expect(isSourceLocation({ function: 10, file: 'bar' })).toBe(false)
     })

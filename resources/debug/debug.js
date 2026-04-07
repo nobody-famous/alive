@@ -4,6 +4,10 @@ function restart(ndx) {
     vscode.postMessage({ command: 'restart', number: ndx })
 }
 
+function restartFrame(ndx, argsList) {
+    vscode.postMessage({ command: 'restart_frame', number: ndx, argsList })
+}
+
 function jump_to(file, line, char) {
     vscode.postMessage({ command: 'jump_to', file, line, char })
 }
@@ -41,80 +45,29 @@ window.addEventListener('message', (event) => {
     }
 })
 
-const style = new CSSStyleSheet()
-
-style.replaceSync(`
-    .title {
-        font-size: 1.25rem;
-        font-weight: bold;
-    }
-    .list-box {
-        margin-left: 0.5rem;
-        padding: 0.5rem;
-        background: var(--list-background);
-        border-radius: 5px;
-    }
-    .list-item {
-        display: flex;
-        overflow: auto;
-        flex-direction: row;
-        margin-top: 0.25rem;
-        margin-bottom: 0.25rem;
-    }
-    .list-item-ndx {
-        flex-shrink: 1;
-        margin-right: 0.5rem;
-    }
-    .list-item-vars {
-        margin-left: 1rem;
-        display: grid;
-        grid-template-columns: min-content auto;
-        column-gap: 0.5rem;
-        row-gap: 0.25rem;
-    }
-    .list-item-var-name {
-    }
-    .list-item-var-value {
-    }
-    .clickable {
-        cursor: pointer;
-    }
-    .clickable:hover {
-        background: green;
-        color: yellow;
-    }
-`)
-
 customElements.define(
     'debug-condition',
     class extends HTMLElement {
-        constructor() {
-            super()
+        connectedCallback() {
+            const msg = this.getAttribute('message') ?? ''
 
-            const shadow = this.attachShadow({ mode: 'open' })
-
-            shadow.adoptedStyleSheets = [style]
-            shadow.innerHTML = `
+            this.innerHTML = `
                 <div>
                     <div class="title">Condition</div>
                     <div class="list-box">
-                        <div class="list-item"><slot></slot></div>
+                        <div class="list-item">${msg}</div>
                     </div>
                 </div>
             `
         }
-    }
+    },
 )
 
 customElements.define(
     'debug-restarts',
     class extends HTMLElement {
-        constructor() {
-            super()
-
-            this.shadow = this.attachShadow({ mode: 'open' })
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
+        connectedCallback() {
+            this.innerHTML = `
                 <style>
                     #restarts {
                         margin-bottom: 1.5rem;
@@ -126,14 +79,12 @@ customElements.define(
                     <div id="box" class="list-box"></div>
                 </div>
             `
-        }
 
-        connectedCallback() {
             vscode.postMessage({ command: 'send_restarts' })
         }
 
         addItem(index, item) {
-            const box = this.shadow.getElementById('box')
+            const box = this.querySelector('#box')
             const elem = document.createElement('debug-restart-item')
             const text = `${index}: [${item.name}] ${item.description}`
 
@@ -142,7 +93,7 @@ customElements.define(
 
             box.appendChild(elem)
         }
-    }
+    },
 )
 
 customElements.define(
@@ -151,12 +102,6 @@ customElements.define(
         constructor() {
             super()
 
-            this.shadow = this.attachShadow({ mode: 'open' })
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
-                <div id="box" class="list-item restart-item clickable"></div>
-            `
-
             this.addEventListener('click', () => {
                 if (Number.isInteger(this.index)) {
                     restart(this.index)
@@ -164,40 +109,37 @@ customElements.define(
             })
         }
 
+        connectedCallback() {
+            this.innerHTML = `
+                <div id="box" class="list-item restart-item clickable">${this.value}</div>
+            `
+        }
+
         setIndex(value) {
             this.index = value
         }
 
         setText(value) {
-            const box = this.shadow.getElementById('box')
-            box.textContent = value
+            this.value = value
         }
-    }
+    },
 )
 
 customElements.define(
     'debug-backtrace',
     class extends HTMLElement {
-        constructor() {
-            super()
-
-            this.shadow = this.attachShadow({ mode: 'open' })
-
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
+        connectedCallback() {
+            this.innerHTML = `
                 <div id="backtrace">
                     <div class="title">Backtrace</div>
                     <div id="box" class="list-box"></div>
                 </div>
             `
-        }
-
-        connectedCallback() {
             vscode.postMessage({ command: 'send_backtrace' })
         }
 
         addItem(index, item) {
-            const box = this.shadow.getElementById('box')
+            const box = this.querySelector('#box')
             const elem = document.createElement('debug-backtrace-item')
 
             elem.setIndex(index)
@@ -205,7 +147,7 @@ customElements.define(
 
             box.appendChild(elem)
         }
-    }
+    },
 )
 
 customElements.define(
@@ -213,30 +155,62 @@ customElements.define(
     class extends HTMLElement {
         constructor() {
             super()
+        }
 
-            this.shadow = this.attachShadow({ mode: 'open' })
-
-            this.shadow.adoptedStyleSheets = [style]
-            this.shadow.innerHTML = `
-                <div class="list-item stacktrace-item">
-                    <div id="index-field" class="list-item-ndx"></div>
-                    <div id="loc-field" class="list-item-loc">
-                        <div id="fn-field" class="list-item-fn"></div>
-                        <div id="file-field" class="list-item-file"></div>
-                        <div id="vars-box" class="list-item-vars"></div>
-                    </div>
+        connectedCallback() {
+            this.innerHTML = `
+                <div id="index-field" class="list-item-ndx">
+                    <div>${this.indexValue}</div>
+                    ${this.item.restartable ? '<button id="restart" title="Restart Frame"><span class="codicon codicon-debug-restart-frame"></span></button>' : ''}
+                </div>
+                <div id="loc-field" class="list-item-loc">
+                    <div id="fn-field" class="list-item-fn"></div>
+                    <div id="file-field" class="list-item-file"></div>
+                    <div id="vars-box" class="list-item-vars"></div>
                 </div>
             `
-            this.addEventListener('click', () => {
+
+            this.querySelector('#restart')?.addEventListener('click', () => {
+                const args = this.item.argsList.trim().replace(/^\((.*)\)$/, '$1')
+                restartFrame(this.indexValue, args)
+            })
+
+            this.querySelector('#file-field')?.addEventListener('click', () => {
                 if (this.item?.file != null && this.item?.position != null) {
                     jump_to(this.item.file, this.item.position.line, this.item.position.character)
                 }
             })
+
+            this.displayItem()
+        }
+
+        displayItem() {
+            const fnElem = this.querySelector('#fn-field')
+            const fileElem = this.querySelector('#file-field')
+            const varsElem = this.querySelector('#vars-box')
+
+            if (this.item.file != null && this.item.position != null) {
+                fileElem.classList.add('clickable')
+            }
+
+            fnElem.textContent = this.item.function
+            fileElem.textContent = this.posStr(this.item.file, this.item.position)
+
+            for (const v of this.item.vars ?? []) {
+                const nameElem = document.createElement('div')
+                nameElem.classList.add('list-item-var-name')
+                nameElem.textContent = v.name
+                varsElem.appendChild(nameElem)
+
+                const valueElem = document.createElement('div')
+                valueElem.classList.add('list-item-var-value')
+                valueElem.textContent = v.value
+                varsElem.appendChild(valueElem)
+            }
         }
 
         setIndex(value) {
-            const elem = this.shadow.getElementById('index-field')
-            elem.textContent = value
+            this.indexValue = value
         }
 
         posStr(file, pos) {
@@ -250,33 +224,7 @@ customElements.define(
         }
 
         setItem(item) {
-            const locElem = this.shadow.getElementById('loc-field')
-            const fnElem = this.shadow.getElementById('fn-field')
-            const fileElem = this.shadow.getElementById('file-field')
-            const varsElem = this.shadow.getElementById('vars-box')
-
             this.item = item
-
-            if (this.item.file != null && this.item.position != null) {
-                locElem.classList.add('clickable')
-            }
-
-            fnElem.textContent = this.item.function
-            fileElem.textContent = this.posStr(this.item.file, this.item.position)
-
-            for (const [name, value] of Object.entries(item.vars ?? {})) {
-                const nameElem = document.createElement('div')
-                const valueElem = document.createElement('div')
-
-                nameElem.classList.add('list-item-var-name')
-                valueElem.classList.add('list-item-var-value')
-
-                nameElem.textContent = name
-                valueElem.textContent = value
-
-                varsElem.appendChild(nameElem)
-                varsElem.appendChild(valueElem)
-            }
         }
-    }
+    },
 )

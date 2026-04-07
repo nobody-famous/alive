@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { AliveContext, DebugInfo, RestartInfo } from '../Types'
+import { isFiniteNumber, isString } from '../Guards'
+import { AliveContext, DebugInfo } from '../Types'
 import { strToHtml } from '../Utils'
-import { isFiniteNumber } from '../Guards'
 
 export interface jsMessage {
     command: string
@@ -14,6 +14,7 @@ interface DebugEvents {
     debugClosed: []
     jumpTo: [string, number, number]
     restart: [number]
+    restartFrame: [number, string]
 }
 
 export class DebugView extends EventEmitter<DebugEvents> {
@@ -43,7 +44,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
             'cl-debug',
             this.title,
             { preserveFocus: true, viewColumn: this.viewCol },
-            { enableScripts: true }
+            { enableScripts: true },
         )
 
         this.setPanelCallbacks(this.panel)
@@ -57,6 +58,8 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 switch (msg.command) {
                     case 'restart':
                         return this.restartCommand(msg)
+                    case 'restart_frame':
+                        return this.restartFrame(msg)
                     case 'inspect_cond':
                         return this.inspectCondCommand()
                     case 'jump_to':
@@ -68,7 +71,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
                 }
             },
             undefined,
-            this.ctx.subscriptions
+            this.ctx.subscriptions,
         )
 
         panel.onDidDispose(() => {
@@ -122,18 +125,28 @@ export class DebugView extends EventEmitter<DebugEvents> {
         }
     }
 
+    private restartFrame(msg: jsMessage) {
+        if (isFiniteNumber(msg.number) && isString(msg.argsList)) {
+            this.emit('restartFrame', msg.number, msg.argsList)
+        }
+    }
+
     private renderHtml(panel: vscode.WebviewPanel) {
         const jsPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.js'))
         const cssPath = vscode.Uri.file(path.join(this.ctx.extensionPath, 'resources', 'debug', 'debug.css'))
+        const codiconPath = vscode.Uri.file(
+            path.join(this.ctx.extensionPath, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'),
+        )
 
         panel.webview.html = `
             <html>
             <head>
                 <link rel="stylesheet" href="${panel.webview.asWebviewUri(cssPath)}">
+                <link rel="stylesheet" href="${panel.webview.asWebviewUri(codiconPath)}">
             </head>
             <body>
                 <div id="content">
-                    <debug-condition>${strToHtml(this.info.message)}</debug-condition>
+                    <debug-condition message="${strToHtml(this.info.message)}"></debug-condition>
                     <debug-restarts id="restarts"></debug-restarts>
                     <debug-backtrace id="backtrace"></debug-backtrace>
                 </div>

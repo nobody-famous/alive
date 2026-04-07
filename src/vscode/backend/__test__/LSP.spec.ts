@@ -1,5 +1,5 @@
 import { getAllCallbacks } from '../../../../TestHelpers'
-import { DebugInfo, InspectInfo } from '../../Types'
+import { DebugAction, DebugInfo, InspectInfo } from '../../Types'
 import { COMMON_LISP_ID } from '../../Utils'
 import { LSP } from '../LSP'
 
@@ -45,7 +45,7 @@ describe('LSP tests', () => {
     const networkErrorTest = async (
         fn: (lsp: LSP) => Promise<unknown>,
         validate: (resp: unknown) => void,
-        throwObj: boolean = true
+        throwObj: boolean = true,
     ) => {
         const { lsp } = await doConnect({
             sendRequest: jest.fn(() => {
@@ -153,25 +153,25 @@ describe('LSP tests', () => {
             it('success', async () => {
                 const { lsp, funcMap } = await getClientFuncs()
 
-                lsp.emit = jest.fn().mockImplementation((name: string, info: DebugInfo, fn: (index: number) => void) => {
-                    fn(5)
+                lsp.emit = jest.fn().mockImplementation((name: string, info: DebugInfo, fn: (action: DebugAction) => void) => {
+                    fn({ restart: 5 })
                 })
 
                 expect(await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [], stackTrace: [] })).toMatchObject(
-                    { index: 5 }
+                    { restart: 5 },
                 )
             })
 
             it('Missing data', async () => {
                 const { lsp, funcMap } = await getClientFuncs()
 
-                lsp.emit = jest.fn().mockImplementation((name: string, info: DebugInfo, fn: (index: number) => void) => {
-                    fn(5)
+                lsp.emit = jest.fn().mockImplementation((name: string, info: DebugInfo, fn: (action: DebugAction) => void) => {
+                    fn({ restart: 5 })
                 })
 
                 expect(
-                    await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [5], stackTrace: [10] })
-                ).toMatchObject({ index: 5 })
+                    await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [5], stackTrace: [10] }),
+                ).toMatchObject({ restart: 5 })
             })
 
             it('debug info not object', async () => {
@@ -211,12 +211,12 @@ describe('LSP tests', () => {
         it('Request fail', async () => {
             await networkErrorTest(
                 (lsp) => lsp.getHoverText('/some/file', new vscodeMock.Position()),
-                (resp) => expect(resp).toBe('')
+                (resp) => expect(resp).toBe(''),
             )
             await networkErrorTest(
                 (lsp) => lsp.getHoverText('/some/file', new vscodeMock.Position()),
                 (resp) => expect(resp).toBe(''),
-                false
+                false,
             )
         })
     })
@@ -251,7 +251,7 @@ describe('LSP tests', () => {
         it('Request fail', async () => {
             await networkErrorTest(
                 (lsp) => lsp.getSymbol('/some/file', new vscodeMock.Position()),
-                (resp) => expect(resp).toBeUndefined()
+                (resp) => expect(resp).toBeUndefined(),
             )
         })
     })
@@ -304,12 +304,12 @@ describe('LSP tests', () => {
         it('Request failed', async () => {
             await networkErrorTest(
                 (lsp) => lsp.getExprRange('bar', 'foo', fakeSelection),
-                (resp) => expect(resp).toBeUndefined()
+                (resp) => expect(resp).toBeUndefined(),
             )
             await networkErrorTest(
                 (lsp) => lsp.getExprRange('bar', 'foo', fakeSelection),
                 (resp) => expect(resp).toBeUndefined(),
-                false
+                false,
             )
         })
 
@@ -405,12 +405,12 @@ describe('LSP tests', () => {
         it('Fail', async () => {
             await networkErrorTest(
                 (lsp) => lsp.getPackage('uri', new vscodeMock.Position()),
-                (resp) => expect(resp).toBeUndefined()
+                (resp) => expect(resp).toBeUndefined(),
             )
             await networkErrorTest(
                 (lsp) => lsp.getPackage('uri', new vscodeMock.Position()),
                 (resp) => expect(resp).toBeUndefined(),
-                false
+                false,
             )
         })
 
@@ -497,7 +497,7 @@ describe('LSP tests', () => {
         const runTest = async (
             fn: (lsp: LSP) => Promise<string | undefined>,
             fakeResp: unknown,
-            validate: (macro: string | undefined) => void
+            validate: (macro: string | undefined) => void,
         ) => {
             const { lsp } = await doConnect({
                 sendRequest: jest.fn(() => fakeResp),
@@ -512,13 +512,13 @@ describe('LSP tests', () => {
             await runTest(
                 (lsp) => lsp.macroexpand('Some text', 'Some package'),
                 { text: 'Some text' },
-                (macro) => expect(macro).not.toBeUndefined()
+                (macro) => expect(macro).not.toBeUndefined(),
             )
 
             await runTest(
                 (lsp) => lsp.macroexpand1('Some text', 'Some package'),
                 { text: 'Some text' },
-                (macro) => expect(macro).not.toBeUndefined()
+                (macro) => expect(macro).not.toBeUndefined(),
             )
         })
 
@@ -526,7 +526,7 @@ describe('LSP tests', () => {
             await runTest(
                 (lsp) => lsp.macroexpand('Some text', 'Some package'),
                 { text: 10 },
-                (macro) => expect(macro).toBeUndefined()
+                (macro) => expect(macro).toBeUndefined(),
             )
         })
 
@@ -539,12 +539,12 @@ describe('LSP tests', () => {
         it('Failure', async () => {
             await networkErrorTest(
                 (lsp) => lsp.macroexpand('Some text', 'Some package'),
-                (resp) => expect(resp).toBeUndefined()
+                (resp) => expect(resp).toBeUndefined(),
             )
             await networkErrorTest(
                 (lsp) => lsp.macroexpand('Some text', 'Some package'),
                 (resp) => expect(resp).toBeUndefined(),
-                false
+                false,
             )
         })
     })
@@ -576,7 +576,7 @@ describe('LSP tests', () => {
                         await lsp.traceFunction('some/uri', new vscodeMock.Position())
                     },
                     async () => ({ function: 'foo' }),
-                    '$/alive/traceFunction'
+                    '$/alive/traceFunction',
                 )
                 expect(vscodeMock.window.showInformationMessage).toHaveBeenCalled()
             })
@@ -589,7 +589,7 @@ describe('LSP tests', () => {
                     async () => {
                         throw new Error('Failed, as requested')
                     },
-                    '$/alive/traceFunction'
+                    '$/alive/traceFunction',
                 )
                 expect(vscodeMock.window.showInformationMessage).not.toHaveBeenCalled()
             })
@@ -612,7 +612,7 @@ describe('LSP tests', () => {
                         await lsp.untraceFunction('some/uri', new vscodeMock.Position())
                     },
                     async () => ({ function: 'foo' }),
-                    '$/alive/untraceFunction'
+                    '$/alive/untraceFunction',
                 )
                 expect(vscodeMock.window.showInformationMessage).toHaveBeenCalled()
             })
@@ -625,7 +625,7 @@ describe('LSP tests', () => {
                     async () => {
                         throw new Error('Failed, as requested')
                     },
-                    '$/alive/untraceFunction'
+                    '$/alive/untraceFunction',
                 )
                 expect(vscodeMock.window.showInformationMessage).not.toHaveBeenCalled()
             })
@@ -643,7 +643,7 @@ describe('LSP tests', () => {
                         await lsp.untraceFunctionByName('foo', 'bar')
                     },
                     async () => ({ function: 'foo' }),
-                    '$/alive/untraceFunctionByName'
+                    '$/alive/untraceFunctionByName',
                 )
             })
 
@@ -655,7 +655,7 @@ describe('LSP tests', () => {
                     async () => {
                         throw new Error('Failed, as requested')
                     },
-                    '$/alive/untraceFunctionByName'
+                    '$/alive/untraceFunctionByName',
                 )
             })
         })
@@ -676,7 +676,7 @@ describe('LSP tests', () => {
                         await lsp.tracePackage('foo')
                     },
                     async () => 'foo',
-                    '$/alive/tracePackage'
+                    '$/alive/tracePackage',
                 )
                 expect(vscodeMock.window.showInformationMessage).toHaveBeenCalled()
             })
@@ -689,7 +689,7 @@ describe('LSP tests', () => {
                     async () => {
                         throw new Error('Failed, as requested')
                     },
-                    '$/alive/tracePackage'
+                    '$/alive/tracePackage',
                 )
                 expect(vscodeMock.window.showInformationMessage).not.toHaveBeenCalled()
             })
@@ -707,7 +707,7 @@ describe('LSP tests', () => {
                         await lsp.untracePackage('foo')
                     },
                     async () => {},
-                    '$/alive/untracePackage'
+                    '$/alive/untracePackage',
                 )
             })
 
@@ -719,7 +719,7 @@ describe('LSP tests', () => {
                     async () => {
                         throw new Error('Failed, as requested')
                     },
-                    '$/alive/untracePackage'
+                    '$/alive/untracePackage',
                 )
             })
         })
@@ -735,7 +735,7 @@ describe('LSP tests', () => {
                     end: new vscodeMock.Position(),
                     isEmpty: false,
                 },
-                params
+                params,
             )
         }
 
@@ -814,12 +814,12 @@ describe('LSP tests', () => {
         it('Failure', async () => {
             await networkErrorTest(
                 (lsp) => lsp.tryCompileFile('/some/path'),
-                (resp) => expect(resp).toMatchObject({ notes: [] })
+                (resp) => expect(resp).toMatchObject({ notes: [] }),
             )
             await networkErrorTest(
                 (lsp) => lsp.tryCompileFile('/some/path'),
                 (resp) => expect(resp).toMatchObject({ notes: [] }),
-                false
+                false,
             )
         })
     })
@@ -934,12 +934,12 @@ describe('LSP tests', () => {
         it('Failure', async () => {
             await networkErrorTest(
                 (lsp) => lsp.loadAsdfSystem('Some system'),
-                (resp) => expect(resp).toBeUndefined()
+                (resp) => expect(resp).toBeUndefined(),
             )
             await networkErrorTest(
                 (lsp) => lsp.loadAsdfSystem('Some system'),
                 (resp) => expect(resp).toBeUndefined(),
-                false
+                false,
             )
         })
 
@@ -976,7 +976,7 @@ describe('LSP tests', () => {
                         ],
                     },
                     (lsp) => lsp.listThreads(),
-                    (result) => expect(result.length).toBe(2)
+                    (result) => expect(result.length).toBe(2),
                 )
             })
 
@@ -984,7 +984,7 @@ describe('LSP tests', () => {
                 await listTest(
                     [{ id: 5, name: 'foo' }],
                     (lsp) => lsp.listThreads(),
-                    (result) => expect(result.length).toBe(0)
+                    (result) => expect(result.length).toBe(0),
                 )
             })
 
@@ -995,12 +995,12 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.listThreads(),
-                    (resp) => expect(resp).toMatchObject([])
+                    (resp) => expect(resp).toMatchObject([]),
                 )
                 await networkErrorTest(
                     (lsp) => lsp.listThreads(),
                     (resp) => expect(resp).toMatchObject([]),
-                    false
+                    false,
                 )
             })
         })
@@ -1020,7 +1020,7 @@ describe('LSP tests', () => {
                         expect(result.length).toBe(2)
                         expect(result[0].exports).toMatchObject([])
                         expect(result[1].nicknames).toMatchObject([])
-                    }
+                    },
                 )
             })
 
@@ -1028,7 +1028,7 @@ describe('LSP tests', () => {
                 await listTest(
                     [{ id: 5, name: 'foo' }],
                     (lsp) => lsp.listPackages(),
-                    (result) => expect(result.length).toBe(0)
+                    (result) => expect(result.length).toBe(0),
                 )
             })
 
@@ -1039,12 +1039,12 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.listPackages(),
-                    (resp) => expect(resp).toMatchObject([])
+                    (resp) => expect(resp).toMatchObject([]),
                 )
                 await networkErrorTest(
                     (lsp) => lsp.listPackages(),
                     (resp) => expect(resp).toMatchObject([]),
-                    false
+                    false,
                 )
             })
         })
@@ -1064,7 +1064,7 @@ describe('LSP tests', () => {
                         expect(result.length).toBe(2)
                         expect(result[0].name).toBe('foo')
                         expect(result[1].name).toBe('bar')
-                    }
+                    },
                 )
             })
 
@@ -1072,7 +1072,7 @@ describe('LSP tests', () => {
                 await listTest(
                     [{ id: 5, name: 'foo' }],
                     (lsp) => lsp.listTracedFunctions(),
-                    (result) => expect(result.length).toBe(0)
+                    (result) => expect(result.length).toBe(0),
                 )
             })
 
@@ -1083,12 +1083,12 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.listTracedFunctions(),
-                    (resp) => expect(resp).toMatchObject([])
+                    (resp) => expect(resp).toMatchObject([]),
                 )
                 await networkErrorTest(
                     (lsp) => lsp.listTracedFunctions(),
                     (resp) => expect(resp).toMatchObject([]),
-                    false
+                    false,
                 )
             })
         })
@@ -1100,7 +1100,7 @@ describe('LSP tests', () => {
                         systems: ['foo', {}, 'bar'],
                     },
                     (lsp) => lsp.listAsdfSystems(),
-                    (result) => expect(result.length).toBe(2)
+                    (result) => expect(result.length).toBe(2),
                 )
             })
 
@@ -1108,7 +1108,7 @@ describe('LSP tests', () => {
                 await listTest(
                     [{ id: 5, name: 'foo' }],
                     (lsp) => lsp.listAsdfSystems(),
-                    (result) => expect(result.length).toBe(0)
+                    (result) => expect(result.length).toBe(0),
                 )
             })
 
@@ -1119,12 +1119,12 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.listAsdfSystems(),
-                    (resp) => expect(resp).toMatchObject([])
+                    (resp) => expect(resp).toMatchObject([]),
                 )
                 await networkErrorTest(
                     (lsp) => lsp.listAsdfSystems(),
                     (resp) => expect(resp).toMatchObject([]),
-                    false
+                    false,
                 )
             })
         })
@@ -1146,12 +1146,12 @@ describe('LSP tests', () => {
         it('Failure', async () => {
             await networkErrorTest(
                 (lsp) => lsp.killThread({ id: '10', name: 'foo' }),
-                (resp) => expect(resp).toBeUndefined()
+                (resp) => expect(resp).toBeUndefined(),
             )
             await networkErrorTest(
                 (lsp) => lsp.killThread({ id: '10', name: 'foo' }),
                 (resp) => expect(resp).toBeUndefined(),
-                false
+                false,
             )
         })
 
@@ -1186,12 +1186,12 @@ describe('LSP tests', () => {
         it('Failure', async () => {
             await networkErrorTest(
                 (lsp) => lsp.evalWithOutput('Some text', 'Some package'),
-                (resp) => expect(resp).toBeUndefined()
+                (resp) => expect(resp).toBeUndefined(),
             )
             await networkErrorTest(
                 (lsp) => lsp.evalWithOutput('Some text', 'Some package'),
                 (resp) => expect(resp).toBeUndefined(),
-                false
+                false,
             )
         })
 
@@ -1292,7 +1292,7 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.inspect('Some text', 'Some package'),
-                    (resp) => expect(resp).toBeUndefined()
+                    (resp) => expect(resp).toBeUndefined(),
                 )
             })
         })
@@ -1337,7 +1337,7 @@ describe('LSP tests', () => {
                             package: 'Some package',
                             result: [],
                         }),
-                    (resp) => expect(resp).toBeUndefined()
+                    (resp) => expect(resp).toBeUndefined(),
                 )
             })
         })
@@ -1384,7 +1384,7 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.inspectRefresh(fakeInfo),
-                    (resp) => expect(resp).toBeUndefined()
+                    (resp) => expect(resp).toBeUndefined(),
                 )
             })
         })
@@ -1430,7 +1430,7 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.inspectEval(fakeInfo, 'Some eval text'),
-                    (resp) => expect(resp).toBeUndefined()
+                    (resp) => expect(resp).toBeUndefined(),
                 )
             })
         })
@@ -1457,7 +1457,7 @@ describe('LSP tests', () => {
             it('Network error', async () => {
                 await networkErrorTest(
                     (lsp) => lsp.inspectClosed(fakeInfo),
-                    (resp) => expect(resp).toBeUndefined()
+                    (resp) => expect(resp).toBeUndefined(),
                 )
             })
         })

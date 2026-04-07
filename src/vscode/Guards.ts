@@ -27,12 +27,16 @@ export function isPosition(item: unknown): item is Position {
 }
 
 export function isSourceLocation(item: unknown): item is SourceLocation {
+    const isVar = (data: unknown): boolean => {
+        return isObject(data) && isString(data.name) && isString(data.value)
+    }
+
     return (
         isObject(item) &&
         isString(item.function) &&
         (item.file == null || isString(item.file)) &&
         (item.position == null || isPosition(item.position)) &&
-        (item.vars == null || (isObject(item.vars) && Object.values(item.vars).every(isString)))
+        (item.vars == null || (Array.isArray(item.vars) && item.vars.every(isVar)))
     )
 }
 

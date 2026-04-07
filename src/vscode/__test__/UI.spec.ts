@@ -1,5 +1,5 @@
 import { getAllCallbacks, getCallback } from '../../../TestHelpers'
-import { HistoryItem, Package, RestartInfo } from '../Types'
+import { DebugAction, HistoryItem, Package, RestartInfo } from '../Types'
 import { UI, UIState } from '../UI'
 
 const vscodeMock = jest.requireMock('vscode')
@@ -333,16 +333,16 @@ describe('UI tests', () => {
 
     it('setQueryText', async () => {
         const ui = new UI(createState())
-        let boxTitle: string = ''
+        let boxPrompt: string = ''
 
-        vscodeMock.window.showInputBox.mockImplementationOnce(({ title }: { title: string }) => {
-            boxTitle = title
+        vscodeMock.window.showInputBox.mockImplementationOnce(({ prompt }: { prompt: string }) => {
+            boxPrompt = prompt
         })
 
         ui.setQueryText('foo')
         await ui.getUserInput()
 
-        expect(boxTitle).toBe('foo')
+        expect(boxPrompt).toBe('foo')
     })
 
     describe('selectHistoryItem', () => {
@@ -539,7 +539,7 @@ describe('UI tests', () => {
         expect(text).toBe('foo')
     })
 
-    describe('getRestartIndex', () => {
+    describe('getDebugAction', () => {
         it('restart index', async () => {
             const ui = new UI(createState())
             const info = {
@@ -550,9 +550,9 @@ describe('UI tests', () => {
                 ],
                 stackTrace: [],
             }
-            let task: Promise<number | undefined> | undefined = undefined
+            let task: Promise<DebugAction> = Promise.resolve({})
             const fns = await getAllCallbacks(debugMock.debugOn, async () => {
-                task = ui.getRestartIndex(info)
+                task = ui.getDebugAction(info)
             })
 
             fns['jumpTo']('bar', 5, 10)
@@ -560,11 +560,37 @@ describe('UI tests', () => {
             fns['restart'](1)
             fns['debugClosed']()
 
-            const index = await task
+            const action = await task
 
-            expect(index).toBe(1)
+            expect(action?.restart).toBe(1)
             expect(vscodeMock.workspace.openTextDocument).toHaveBeenCalledWith('bar')
             expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
+            expect(debugMock.debugRun).toHaveBeenCalled()
+            expect(debugMock.debugStop).toHaveBeenCalled()
+        })
+
+        it('restart frame', async () => {
+            const ui = new UI(createState())
+            const info = {
+                message: 'foo',
+                restarts: [],
+                stackTrace: [
+                    { function: 'foo', file: null, position: null, vars: null },
+                    { function: 'bar', file: null, position: null, vars: null },
+                ],
+            }
+            let task: Promise<DebugAction> = Promise.resolve({})
+            const fns = await getAllCallbacks(debugMock.debugOn, async () => {
+                task = ui.getDebugAction(info)
+            })
+
+            fns['restartFrame'](5)
+            fns['restartFrame'](1)
+            fns['debugClosed']()
+
+            const action = await task
+
+            expect(action?.restartFrame).toBe(1)
             expect(debugMock.debugRun).toHaveBeenCalled()
             expect(debugMock.debugStop).toHaveBeenCalled()
         })
@@ -576,16 +602,16 @@ describe('UI tests', () => {
                 restarts,
                 stackTrace: [],
             }
-            let task: Promise<number | undefined> | undefined = undefined
+            let task: Promise<DebugAction> = Promise.resolve({})
             const fns = await getAllCallbacks(debugMock.debugOn, async () => {
-                task = ui.getRestartIndex(info)
+                task = ui.getDebugAction(info)
             })
 
             fns['debugClosed']()
 
-            const index = await task
+            const action = await task
 
-            expect(index).toBe(expectIndex)
+            expect(action.restart).toBe(expectIndex)
             expect(debugMock.debugRun).toHaveBeenCalled()
             expect(debugMock.debugStop).toHaveBeenCalled()
         }
@@ -597,7 +623,7 @@ describe('UI tests', () => {
                     { name: 'abort', description: '' },
                     { name: 'bar', description: '' },
                 ],
-                1
+                1,
             )
         })
 
@@ -650,7 +676,7 @@ describe('UI tests', () => {
             const ui = new UI(createState())
             const info = { message: 'foo', restarts: [], stackTrace: [] }
 
-            ui.getRestartIndex(info)
+            ui.getDebugAction(info)
 
             const panel = debugMock.fake.panel
             try {
@@ -665,7 +691,7 @@ describe('UI tests', () => {
             const ui = new UI(createState())
             const info = { message: 'foo', restarts: [], stackTrace: [] }
 
-            ui.getRestartIndex(info)
+            ui.getDebugAction(info)
             ui.selectRestart(3)
 
             debugMock.debugPanel.visible = true
