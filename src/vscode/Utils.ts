@@ -132,7 +132,12 @@ export function strToMarkdown(text: string): string {
 }
 
 export function strToHtml(str: string): string {
-    const html = str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+    const html = str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>')
+        .replace(/"/g, '&quot;')
 
     return html
 }
@@ -172,7 +177,7 @@ export function startCompileTimer(
     ui: Pick<UI, 'updatePackages'>,
     lsp: Pick<LSP, 'tryCompileFile' | 'listPackages'>,
     state: Pick<ExtensionState, 'compileRunning' | 'compileTimeoutID' | 'diagnostics' | 'workspacePath'>,
-    config: Pick<AliveConfig, 'enableDiagnostics'>
+    config: Pick<AliveConfig, 'enableDiagnostics'>,
 ) {
     if (state.compileTimeoutID !== undefined) {
         clearTimeout(state.compileTimeoutID)
@@ -189,7 +194,7 @@ export async function tryCompile(
     state: Pick<ExtensionState, 'compileRunning' | 'workspacePath'>,
     config: Pick<AliveConfig, 'enableDiagnostics'>,
     lsp: Pick<LSP, 'tryCompileFile'>,
-    doc: Pick<vscode.TextDocument, 'fileName' | 'getText' | 'uri' | 'isDirty'>
+    doc: Pick<vscode.TextDocument, 'fileName' | 'getText' | 'uri' | 'isDirty'>,
 ): Promise<CompileFileResp | void> {
     if (state.compileRunning) {
         return

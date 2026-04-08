@@ -55,7 +55,7 @@ customElements.define(
                 <div>
                     <div class="title">Condition</div>
                     <div class="list-box">
-                        <div class="list-item">${msg}</div>
+                        <div id="message" class="list-item">${msg}</div>
                     </div>
                 </div>
             `
@@ -111,8 +111,10 @@ customElements.define(
 
         connectedCallback() {
             this.innerHTML = `
-                <div id="box" class="list-item restart-item clickable">${this.value}</div>
+                <div id="box" class="list-item restart-item clickable"></div>
             `
+
+            this.querySelector('#box').textContent = this.value
         }
 
         setIndex(value) {

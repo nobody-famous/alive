@@ -26,6 +26,7 @@ body.vscode-light {
 }
 
 body.vscode-dark .list-box {
+    overflow: auto;
     margin-left: 0.5rem;
     padding: 0.5rem;
     background: #222;
