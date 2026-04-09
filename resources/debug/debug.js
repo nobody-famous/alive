@@ -52,7 +52,7 @@ customElements.define(
             const msg = this.getAttribute('message') ?? ''
 
             this.innerHTML = `
-                <div>
+                <div class="condition-box">
                     <div class="title">Condition</div>
                     <div class="list-box">
                         <div id="message" class="list-item">${msg}</div>
@@ -68,13 +68,7 @@ customElements.define(
     class extends HTMLElement {
         connectedCallback() {
             this.innerHTML = `
-                <style>
-                    #restarts {
-                        margin-bottom: 1.5rem;
-                    }
-                </style>
-
-                <div id="restarts-div">
+                <div class="restarts-box">
                     <div class="title">Restarts</div>
                     <div id="box" class="list-box"></div>
                 </div>
@@ -111,10 +105,11 @@ customElements.define(
 
         connectedCallback() {
             this.innerHTML = `
-                <div id="box" class="list-item restart-item clickable"></div>
+                <div id="item" class="restart-item clickable">
+                </div>
             `
 
-            this.querySelector('#box').textContent = this.value
+            this.querySelector('#item').textContent = this.value
         }
 
         setIndex(value) {
@@ -134,7 +129,7 @@ customElements.define(
             this.innerHTML = `
                 <div id="backtrace">
                     <div class="title">Backtrace</div>
-                    <div id="box" class="list-box"></div>
+                    <div id="box" class="list-box backtrace-box"></div>
                 </div>
             `
             vscode.postMessage({ command: 'send_backtrace' })
@@ -161,14 +156,19 @@ customElements.define(
 
         connectedCallback() {
             this.innerHTML = `
-                <div id="index-field" class="list-item-ndx">
+                <div id="index-field" class="backtrace-index">
                     <div>${this.indexValue}</div>
                     ${this.item.restartable ? '<button id="restart" title="Restart Frame"><span class="codicon codicon-debug-restart-frame"></span></button>' : ''}
                 </div>
-                <div id="loc-field" class="list-item-loc">
-                    <div id="fn-field" class="list-item-fn"></div>
-                    <div id="file-field" class="list-item-file"></div>
-                    <div id="vars-box" class="list-item-vars"></div>
+                <div id="loc-field" class="backtrace-location">
+                    <div id="fn-field" class="backtrace-fn"></div>
+                    <div id="file-field" class="backtrace-file"></div>
+                    ${
+                        this.item.vars.length > 0
+                            ? `${this.item.vars.length} Local variable${this.item.vars.length > 1 ? 's' : ''}`
+                            : ''
+                    }
+                    <div id="vars-box" class="backtrace-vars"></div>
                 </div>
             `
 

@@ -123,17 +123,22 @@ export class UI extends EventEmitter<UIEvents> {
                 view.stop()
             })
 
-            view.on('restartFrame', (num: number, argsList: string) => {
+            view.on('restartFrame', async (num: number, argsList: string) => {
                 if (num < 0 || num >= info.stackTrace.length) {
                     return
                 }
 
+                const args = await vscode.window.showInputBox({ value: argsList, prompt: 'Function Arguments' })
+                if (args === undefined) {
+                    return
+                }
+
                 frameIndex = num
-                frameArgsList = argsList
+                frameArgsList = `'(${args})`
                 view.stop()
             })
 
-            view.on('debugClosed', async () => {
+            view.on('debugClosed', () => {
                 const action: DebugAction =
                     isFiniteNumber(index) || isFiniteNumber(frameIndex)
                         ? {
@@ -152,8 +157,7 @@ export class UI extends EventEmitter<UIEvents> {
                           }
 
                 if (isFiniteNumber(frameIndex)) {
-                    const args = await vscode.window.showInputBox({ value: frameArgsList, prompt: 'Function Arguments' })
-                    action.restartArgsList = `'(${args})`
+                    action.restartArgsList = frameArgsList
                 }
 
                 view.stop()
