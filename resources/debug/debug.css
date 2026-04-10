@@ -80,6 +80,11 @@ debug-backtrace-item {
     row-gap: 0.25rem;
 }
 
+.backtrace-vars-label {
+    display: flex;
+    align-items: center;
+}
+
 .clickable {
     cursor: pointer;
     color: var(--vscode-textLink-foreground);
@@ -88,6 +93,10 @@ debug-backtrace-item {
 .clickable:hover {
     background: green;
     color: yellow;
+}
+
+.is-hidden {
+    display: none;
 }
 
 button {

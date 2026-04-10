@@ -148,12 +148,82 @@ customElements.define(
 )
 
 customElements.define(
-    'debug-backtrace-item',
+    'debug-backtrace-vars',
     class extends HTMLElement {
         constructor() {
             super()
+
+            this.chevronClass = 'codicon-chevron-right'
+            this.varsCount = 0
         }
 
+        connectedCallback() {
+            this.innerHTML = `
+                <div class="backtrace-vars-box">
+                    <div class="backtrace-vars-count"></div>
+                    <div class="backtrace-vars-label is-hidden">
+                        <span id="chevron" class="codicon ${this.chevronClass}"></span>
+                        <span id="label"></span>
+                    </div>
+                    <div id="backtrace-vars" class="backtrace-vars is-hidden"></div>
+                </div>
+            `
+        }
+
+        getLabel() {
+            return `${this.varsCount} Local variable${this.varsCount !== 1 ? 's' : ''}`
+        }
+
+        toggleCollapsed() {
+            const elem = this.querySelector('#chevron')
+            const varsElem = this.querySelector('#backtrace-vars')
+            const collapsed = elem.classList.contains('codicon-chevron-right')
+
+            if (collapsed) {
+                elem.classList.remove('codicon-chevron-right')
+                elem.classList.add('codicon-chevron-down')
+                varsElem.classList.remove('is-hidden')
+            } else {
+                elem.classList.remove('codicon-chevron-down')
+                elem.classList.add('codicon-chevron-right')
+                varsElem.classList.add('is-hidden')
+            }
+        }
+
+        setVars(vars) {
+            const varsElem = this.querySelector('#backtrace-vars')
+            const labelBoxElem = this.querySelector('.backtrace-vars-label')
+            const labelElem = this.querySelector('#label')
+
+            this.varsCount = vars ? vars.length : 0
+
+            labelElem.textContent = this.getLabel()
+
+            if (this.varsCount < 1) {
+                return
+            }
+
+            labelBoxElem.classList.remove('is-hidden')
+            labelBoxElem.addEventListener('click', () => this.toggleCollapsed())
+
+            for (const v of vars ?? []) {
+                const nameElem = document.createElement('div')
+                nameElem.classList.add('backtrace-var-name')
+                nameElem.textContent = v.name
+                varsElem.appendChild(nameElem)
+
+                const valueElem = document.createElement('div')
+                valueElem.classList.add('backtrace-var-value')
+                valueElem.textContent = v.value
+                varsElem.appendChild(valueElem)
+            }
+        }
+    },
+)
+
+customElements.define(
+    'debug-backtrace-item',
+    class extends HTMLElement {
         connectedCallback() {
             this.innerHTML = `
                 <div id="index-field" class="backtrace-index">
@@ -163,12 +233,7 @@ customElements.define(
                 <div id="loc-field" class="backtrace-location">
                     <div id="fn-field" class="backtrace-fn"></div>
                     <div id="file-field" class="backtrace-file"></div>
-                    ${
-                        this.item.vars.length > 0
-                            ? `${this.item.vars.length} Local variable${this.item.vars.length > 1 ? 's' : ''}`
-                            : ''
-                    }
-                    <div id="vars-box" class="backtrace-vars"></div>
+                    <debug-backtrace-vars id="vars"></debug-backtrace-vars>
                 </div>
             `
 
@@ -189,7 +254,7 @@ customElements.define(
         displayItem() {
             const fnElem = this.querySelector('#fn-field')
             const fileElem = this.querySelector('#file-field')
-            const varsElem = this.querySelector('#vars-box')
+            const varsElem = this.querySelector('#vars')
 
             if (this.item.file != null && this.item.position != null) {
                 fileElem.classList.add('clickable')
@@ -198,17 +263,7 @@ customElements.define(
             fnElem.textContent = this.item.function
             fileElem.textContent = this.posStr(this.item.file, this.item.position)
 
-            for (const v of this.item.vars ?? []) {
-                const nameElem = document.createElement('div')
-                nameElem.classList.add('list-item-var-name')
-                nameElem.textContent = v.name
-                varsElem.appendChild(nameElem)
-
-                const valueElem = document.createElement('div')
-                valueElem.classList.add('list-item-var-value')
-                valueElem.textContent = v.value
-                varsElem.appendChild(valueElem)
-            }
+            varsElem.setVars(this.item.vars)
         }
 
         setIndex(value) {
