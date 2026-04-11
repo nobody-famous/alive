@@ -52,10 +52,10 @@ customElements.define(
             const msg = this.getAttribute('message') ?? ''
 
             this.innerHTML = `
-                <div>
+                <div class="condition-box">
                     <div class="title">Condition</div>
                     <div class="list-box">
-                        <div class="list-item">${msg}</div>
+                        <div id="message" class="list-item">${msg}</div>
                     </div>
                 </div>
             `
@@ -68,13 +68,7 @@ customElements.define(
     class extends HTMLElement {
         connectedCallback() {
             this.innerHTML = `
-                <style>
-                    #restarts {
-                        margin-bottom: 1.5rem;
-                    }
-                </style>
-
-                <div id="restarts-div">
+                <div class="restarts-box">
                     <div class="title">Restarts</div>
                     <div id="box" class="list-box"></div>
                 </div>
@@ -111,8 +105,11 @@ customElements.define(
 
         connectedCallback() {
             this.innerHTML = `
-                <div id="box" class="list-item restart-item clickable">${this.value}</div>
+                <div id="item" class="restart-item clickable">
+                </div>
             `
+
+            this.querySelector('#item').textContent = this.value
         }
 
         setIndex(value) {
@@ -132,7 +129,7 @@ customElements.define(
             this.innerHTML = `
                 <div id="backtrace">
                     <div class="title">Backtrace</div>
-                    <div id="box" class="list-box"></div>
+                    <div id="box" class="list-box backtrace-box"></div>
                 </div>
             `
             vscode.postMessage({ command: 'send_backtrace' })
@@ -151,22 +148,92 @@ customElements.define(
 )
 
 customElements.define(
-    'debug-backtrace-item',
+    'debug-backtrace-vars',
     class extends HTMLElement {
         constructor() {
             super()
+
+            this.chevronClass = 'codicon-chevron-right'
+            this.varsCount = 0
         }
 
         connectedCallback() {
             this.innerHTML = `
-                <div id="index-field" class="list-item-ndx">
+                <div class="backtrace-vars-box">
+                    <div class="backtrace-vars-count"></div>
+                    <div class="backtrace-vars-label is-hidden">
+                        <span id="chevron" class="codicon ${this.chevronClass}"></span>
+                        <span id="label"></span>
+                    </div>
+                    <div id="backtrace-vars" class="backtrace-vars is-hidden"></div>
+                </div>
+            `
+        }
+
+        getLabel() {
+            return `${this.varsCount} Local variable${this.varsCount !== 1 ? 's' : ''}`
+        }
+
+        toggleCollapsed() {
+            const elem = this.querySelector('#chevron')
+            const varsElem = this.querySelector('#backtrace-vars')
+            const collapsed = elem.classList.contains('codicon-chevron-right')
+
+            if (collapsed) {
+                elem.classList.remove('codicon-chevron-right')
+                elem.classList.add('codicon-chevron-down')
+                varsElem.classList.remove('is-hidden')
+            } else {
+                elem.classList.remove('codicon-chevron-down')
+                elem.classList.add('codicon-chevron-right')
+                varsElem.classList.add('is-hidden')
+            }
+        }
+
+        setVars(vars) {
+            const varsElem = this.querySelector('#backtrace-vars')
+            const labelBoxElem = this.querySelector('.backtrace-vars-label')
+            const labelElem = this.querySelector('#label')
+
+            this.varsCount = vars ? vars.length : 0
+
+            labelElem.textContent = this.getLabel()
+
+            if (this.varsCount < 1) {
+                return
+            }
+
+            labelBoxElem.classList.remove('is-hidden')
+            labelBoxElem.addEventListener('click', () => this.toggleCollapsed())
+
+            for (const v of vars ?? []) {
+                const nameElem = document.createElement('div')
+                nameElem.classList.add('backtrace-var-name')
+                nameElem.textContent = v.name
+                varsElem.appendChild(nameElem)
+
+                const valueElem = document.createElement('div')
+                valueElem.classList.add('backtrace-var-value')
+                valueElem.textContent = v.value
+                varsElem.appendChild(valueElem)
+            }
+        }
+    },
+)
+
+customElements.define(
+    'debug-backtrace-item',
+    class extends HTMLElement {
+        connectedCallback() {
+            this.innerHTML = `
+                <div id="index-field" class="backtrace-index">
                     <div>${this.indexValue}</div>
                     ${this.item.restartable ? '<button id="restart" title="Restart Frame"><span class="codicon codicon-debug-restart-frame"></span></button>' : ''}
                 </div>
-                <div id="loc-field" class="list-item-loc">
-                    <div id="fn-field" class="list-item-fn"></div>
-                    <div id="file-field" class="list-item-file"></div>
-                    <div id="vars-box" class="list-item-vars"></div>
+                <div id="loc-field" class="backtrace-location">
+                    <div id="fn-field" class="backtrace-fn"></div>
+                    <div id="file-field" class="backtrace-file"></div>
+                    <debug-backtrace-vars id="vars"></debug-backtrace-vars>
                 </div>
             `
 
@@ -187,7 +254,7 @@ customElements.define(
         displayItem() {
             const fnElem = this.querySelector('#fn-field')
             const fileElem = this.querySelector('#file-field')
-            const varsElem = this.querySelector('#vars-box')
+            const varsElem = this.querySelector('#vars')
 
             if (this.item.file != null && this.item.position != null) {
                 fileElem.classList.add('clickable')
@@ -196,17 +263,7 @@ customElements.define(
             fnElem.textContent = this.item.function
             fileElem.textContent = this.posStr(this.item.file, this.item.position)
 
-            for (const v of this.item.vars ?? []) {
-                const nameElem = document.createElement('div')
-                nameElem.classList.add('list-item-var-name')
-                nameElem.textContent = v.name
-                varsElem.appendChild(nameElem)
-
-                const valueElem = document.createElement('div')
-                valueElem.classList.add('list-item-var-value')
-                valueElem.textContent = v.value
-                varsElem.appendChild(valueElem)
-            }
+            varsElem.setVars(this.item.vars)
         }
 
         setIndex(value) {

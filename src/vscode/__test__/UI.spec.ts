@@ -584,8 +584,10 @@ describe('UI tests', () => {
                 task = ui.getDebugAction(info)
             })
 
-            fns['restartFrame'](5)
-            fns['restartFrame'](1)
+            await fns['restartFrame'](5)
+            await fns['restartFrame'](1)
+            vscodeMock.window.showInputBox.mockReturnValueOnce('foo')
+            await fns['restartFrame'](1)
             fns['debugClosed']()
 
             const action = await task

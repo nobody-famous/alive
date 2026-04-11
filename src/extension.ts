@@ -222,6 +222,14 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
 
             saveReplHistory(state.replHistoryFile, ui.getHistoryItems())
         }),
+
+        vscode.commands.registerCommand('alive.showReferences', async (uriStr, position) => {
+            const uri = vscode.Uri.parse(uriStr)
+            const pos = new vscode.Position(position.line, position.character)
+            const refs = await vscode.commands.executeCommand('vscode.executeReferenceProvider', uri, pos)
+
+            vscode.commands.executeCommand('editor.action.showReferences', uri, pos, refs)
+        }),
     )
 
     setWorkspaceEventHandlers(ui, lsp, state)
