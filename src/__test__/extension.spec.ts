@@ -769,6 +769,14 @@ describe('Extension tests', () => {
             })
         })
 
+        it('showReferences', async () => {
+            const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+
+            await fns['alive.showReferences']?.('uri', { line: 1, character: 1 })
+
+            expect(vscodeMock.commands.executeCommand).toHaveBeenCalled()
+        })
+
         describe('loadAsdfByName', () => {
             it('Invalid node', async () => {
                 const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
