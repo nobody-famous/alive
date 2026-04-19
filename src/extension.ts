@@ -144,7 +144,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
                 return
             }
 
-            const text = await ui.getUserInput(options.query, '')
+            const text = await ui.getUserInput(options.query, 'How to call the macro')
             if (!isString || !isString(text) || text.trim() === '') {
                 return
             }
