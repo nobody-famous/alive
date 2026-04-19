@@ -340,7 +340,7 @@ describe('UI tests', () => {
         })
 
         ui.setQueryText('foo')
-        await ui.getUserInput()
+        await ui.getUserInput('', ui.getQueryText())
 
         expect(boxPrompt).toBe('foo')
     })
@@ -534,7 +534,7 @@ describe('UI tests', () => {
         const ui = new UI(createState())
 
         vscodeMock.window.showInputBox.mockReturnValueOnce('foo')
-        const text = await ui.getUserInput()
+        const text = await ui.getUserInput('', '')
 
         expect(text).toBe('foo')
     })

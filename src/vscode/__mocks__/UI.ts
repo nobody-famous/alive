@@ -4,6 +4,7 @@ export const addReplOutput = jest.fn()
 export const clearReplHistory = jest.fn()
 export const getHistoryItems = jest.fn()
 export const getDebugAction = jest.fn()
+export const getQueryText = jest.fn()
 export const getUserInput = jest.fn()
 export const init = jest.fn()
 export const initAsdfSystemsTree = jest.fn()
@@ -32,6 +33,7 @@ export const UI = jest.fn(() => ({
     clearReplHistory,
     getHistoryItems,
     getDebugAction,
+    getQueryText,
     getUserInput,
     init,
     initAsdfSystemsTree,

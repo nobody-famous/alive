@@ -2,23 +2,13 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import {
-    isArray,
-    isFiniteNumber,
-    isInspectResult,
-    isObject,
-    isPackage,
-    isRestartInfo,
-    isStackTrace,
-    isString,
-    isThread,
-} from '../Guards'
+import { isArray, isInspectResult, isObject, isPackage, isRestartInfo, isStackTrace, isString, isThread } from '../Guards'
 import { log, toLog } from '../Log'
 import {
     CompileFileNote,
     CompileFileResp,
-    DebugInfo,
     DebugAction,
+    DebugInfo,
     EvalInfo,
     ExtensionState,
     HostPort,
@@ -45,7 +35,7 @@ interface LSPEvents {
     output: [str: string]
     queryText: [str: string]
     getDebugAction: [info: DebugInfo, fn: (action: DebugAction) => void]
-    getUserInput: [fn: (input: string) => void]
+    getUserInput: [fn: (input: string | undefined) => void]
     inspectResult: [result: InspectInfo]
     inspectUpdate: [result: InspectResult]
 }
@@ -122,7 +112,7 @@ export class LSP extends EventEmitter<LSPEvents> {
         this.client.onRequest('$/alive/userInput', async () => {
             const requestInput = () => {
                 return new Promise<string>((resolve) => {
-                    this.emit('getUserInput', (input: string) => resolve(input))
+                    this.emit('getUserInput', (input: string | undefined) => resolve(input ?? ''))
                 })
             }
 

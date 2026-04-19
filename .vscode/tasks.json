@@ -30,7 +30,7 @@
                 // "--coverage",
                 "src/vscode/__test__/UI.spec.ts",
                 "-t",
-                "restart frame"
+                "getUserInput"
             ],
             "problemMatcher": ["$tsc"]
         },
