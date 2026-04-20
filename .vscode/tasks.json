@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/vscode/__test__/UI.spec.ts",
+                "src/__test__/extension.spec.ts",
                 "-t",
-                "getUserInput"
+                "queryInspectMacro"
             ],
             "problemMatcher": ["$tsc"]
         },

@@ -149,7 +149,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
                 return
             }
 
-            await lsp.inspectMacro(text ?? '', options.package)
+            await lsp.inspectMacro(text, options.package)
         }),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {

@@ -637,6 +637,28 @@ describe('Extension tests', () => {
                 expect(cmdsMock.inspect).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(symbol))
             })
         })
+        describe('queryInspectMacro', () => {
+            it('No data', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+
+                await fns['alive.queryInspectMacro']()
+
+                expect(lspMock.inspectMacro).not.toHaveBeenCalled()
+            })
+
+            it('With data', async () => {
+                const fns = await getAllCallbacks(vscodeMock.commands.registerCommand, async () => await activate(ctx))
+                const data = { package: 'foo', query: 'bar' }
+
+                uiMock.getUserInput.mockReturnValueOnce('')
+                await fns['alive.queryInspectMacro'](data)
+                expect(lspMock.inspectMacro).not.toHaveBeenCalled()
+
+                uiMock.getUserInput.mockReturnValueOnce(data.query)
+                await fns['alive.queryInspectMacro'](data)
+                expect(lspMock.inspectMacro).toHaveBeenCalledWith('bar', 'foo')
+            })
+        })
 
         describe('replHistory', () => {
             beforeEach(() => {
