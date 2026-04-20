@@ -140,13 +140,15 @@ describe('LSP tests', () => {
         it('userInput', async () => {
             const { lsp, funcMap } = await getClientFuncs()
 
-            lsp.emit = jest.fn().mockImplementation((name: string, fn: (input: string) => void) => {
+            lsp.emit = jest.fn().mockImplementationOnce((name: string, fn: (input: string) => void) => {
                 fn('Some input')
             })
+            expect(await funcMap.request['$/alive/userInput']?.()).toMatchObject({ text: 'Some input' })
 
-            const resp = await funcMap.request['$/alive/userInput']?.()
-
-            expect(resp).toMatchObject({ text: 'Some input' })
+            lsp.emit = jest.fn().mockImplementationOnce((name: string, fn: (input: string | undefined) => void) => {
+                fn(undefined)
+            })
+            expect(await funcMap.request['$/alive/userInput']?.()).toMatchObject({ text: '' })
         })
 
         describe('debugger', () => {
