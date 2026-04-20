@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { readAliveConfig } from './config'
-import { isFiniteNumber, isHistoryItem, isString } from './vscode/Guards'
+import { isFiniteNumber, isHistoryItem, isObject, isString } from './vscode/Guards'
 import { log, toLog } from './vscode/Log'
 import { ExtensionState, HistoryItem, InspectInfo, InspectResult, isLispSymbol } from './vscode/Types'
 import { UI } from './vscode/UI'
@@ -137,6 +137,19 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
             if (isLispSymbol(symbol)) {
                 await cmds.inspect(lsp, symbol)
             }
+        }),
+
+        vscode.commands.registerCommand('alive.queryInspectMacro', async (options) => {
+            if (!isObject(options) || !isString(options.package) || !isString(options.query)) {
+                return
+            }
+
+            const text = await ui.getUserInput(options.query, 'How to call the macro')
+            if (!isString || !isString(text) || text.trim() === '') {
+                return
+            }
+
+            await lsp.inspectMacro(text, options.package)
         }),
 
         vscode.commands.registerCommand('alive.replHistory', async () => {
@@ -462,7 +475,7 @@ function registerLSPEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     lsp.on('output', (str) => ui.addReplOutput(str))
     lsp.on('queryText', (str) => ui.setQueryText(str))
     lsp.on('getDebugAction', async (info, fn) => fn(await ui.getDebugAction(info)))
-    lsp.on('getUserInput', async (fn) => fn(await ui.getUserInput()))
+    lsp.on('getUserInput', async (fn) => fn(await ui.getUserInput('', ui.getQueryText())))
     lsp.on('inspectResult', (result: InspectInfo) => ui.newInspector(result))
     lsp.on('inspectUpdate', (result: InspectResult) => ui.updateInspector(result))
 }

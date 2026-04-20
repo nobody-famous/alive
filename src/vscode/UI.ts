@@ -190,10 +190,8 @@ export class UI extends EventEmitter<UIEvents> {
         view?.selectRestart(restart)
     }
 
-    async getUserInput(): Promise<string> {
-        const input = await vscode.window.showInputBox({ prompt: this.queryText })
-
-        return input ?? ''
+    async getUserInput(value: string, prompt: string): Promise<string | undefined> {
+        return await vscode.window.showInputBox({ prompt, value })
     }
 
     updateTracedFunctions(traced: TracedPackage[]): void {
@@ -402,6 +400,10 @@ export class UI extends EventEmitter<UIEvents> {
 
     addReplOutput(str: string, pkgName?: string): void {
         this.replView.addOutput(str, pkgName)
+    }
+
+    getQueryText(): string {
+        return this.queryText
     }
 
     setQueryText(str: string): void {

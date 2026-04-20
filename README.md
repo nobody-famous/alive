@@ -62,6 +62,7 @@ The following must be installed prior to using the Alive extension. It is okay f
 -   Jump To Definition
 -   Expand Selection
 -   Document Symbols
+-   Code Lens
 
 ## Extension Settings
 
