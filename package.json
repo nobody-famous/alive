@@ -228,6 +228,10 @@
                 "title": "Alive: REPL History"
             },
             {
+                "command": "alive.addToReplHistory",
+                "title": "Alive: Add To REPL History"
+            },
+            {
                 "command": "alive.loadAsdfSystem",
                 "title": "Alive: Load ASDF System"
             },
@@ -410,6 +414,10 @@
                 },
                 {
                     "command": "alive.sendToRepl",
+                    "when": "editorLangId == commonlisp"
+                },
+                {
+                    "command": "alive.addToReplHistory",
                     "when": "editorLangId == commonlisp"
                 },
                 {

@@ -2,6 +2,7 @@ import { Selection } from 'vscode'
 import { SurroundingInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
 import {
+    addToReplHistory,
     clearRepl,
     compileFile,
     evalSurrounding,
@@ -78,7 +79,7 @@ describe('Repl tests', () => {
         const runTest = async (
             lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'evalWithOutput'>,
             fn: (lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'evalWithOutput'>) => Promise<void>,
-            validate: () => void
+            validate: () => void,
         ) => {
             let editorFn: ((editor: unknown) => Promise<void>) | undefined
 
@@ -133,6 +134,51 @@ describe('Repl tests', () => {
         })
     })
 
+    describe('addToReplHistory', () => {
+        beforeEach(() => {})
+
+        const runTest = async (
+            lsp: Pick<LSP, 'getEvalInfo'>,
+            ui: Pick<UI, 'addHistoryItem'>,
+            fn: (lsp: Pick<LSP, 'getEvalInfo'>, ui: Pick<UI, 'addHistoryItem'>) => Promise<void>,
+            validate: () => void,
+        ) => {
+            let editorFn: ((editor: unknown) => Promise<void>) | undefined
+
+            utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
+                editorFn = fn
+            })
+
+            await fn(lsp, ui)
+            await editorFn?.(createFakeEditor())
+
+            validate()
+        }
+
+        it('No info', async () => {
+            const lsp = {
+                getEvalInfo: jest.fn().mockReturnValue(undefined),
+                evalWithOutput: jest.fn(),
+                getSurroundingInfo: jest.fn(),
+            }
+
+            const ui = { addHistoryItem: jest.fn() }
+
+            await runTest(lsp, ui, addToReplHistory, () => expect(ui.addHistoryItem).not.toHaveBeenCalled())
+        })
+
+        it('Have info', async () => {
+            const lsp = {
+                getEvalInfo: jest.fn().mockReturnValue({}),
+                evalWithOutput: jest.fn(),
+                getSurroundingInfo: jest.fn(),
+            }
+            const ui = { addHistoryItem: jest.fn() }
+
+            await runTest(lsp, ui, addToReplHistory, () => expect(ui.addHistoryItem).toHaveBeenCalled())
+        })
+    })
+
     describe('inlineEval', () => {
         beforeEach(() => {
             vscodeMock.window.showTextDocument.mockReset()
@@ -142,7 +188,7 @@ describe('Repl tests', () => {
         const runTest = async (
             lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'eval'>,
             fn: (lsp: Pick<LSP, 'getEvalInfo' | 'getSurroundingInfo' | 'eval'>, state: { hoverText: string }) => void,
-            validate: () => void
+            validate: () => void,
         ) => {
             const state = { hoverText: '' }
             let editorFn: ((editor: unknown) => Promise<void>) | undefined
@@ -168,7 +214,7 @@ describe('Repl tests', () => {
                 () => {
                     expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
                     expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
-                }
+                },
             )
 
             await runTest(
@@ -181,7 +227,7 @@ describe('Repl tests', () => {
                 () => {
                     expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
                     expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
-                }
+                },
             )
         })
 
@@ -226,7 +272,7 @@ describe('Repl tests', () => {
                 () => {
                     expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
                     expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
-                }
+                },
             )
 
             await runTest(
@@ -243,7 +289,7 @@ describe('Repl tests', () => {
                 () => {
                     expect(vscodeMock.window.showTextDocument).toHaveBeenCalled()
                     expect(vscodeMock.commands.executeCommand).toHaveBeenCalledWith('editor.action.showHover')
-                }
+                },
             )
         })
 
@@ -287,7 +333,7 @@ describe('Repl tests', () => {
             fn: (lsp: MacroLSP) => void,
             macroInfo: SurroundingInfo | undefined,
             macroResult: string | undefined,
-            validate: (lsp: MacroLSP, editor: FakeEditor) => void
+            validate: (lsp: MacroLSP, editor: FakeEditor) => void,
         ) => {
             const lsp: MacroLSP = {
                 macroexpand: jest.fn(async () => macroResult),
@@ -375,7 +421,7 @@ describe('Repl tests', () => {
     describe('Trace Function', () => {
         const runTraceTest = async (
             toRun: (lsp: Pick<LSP, 'traceFunction' | 'untraceFunction'>) => Promise<void>,
-            validate: (lsp: Pick<LSP, 'traceFunction' | 'untraceFunction'>) => void
+            validate: (lsp: Pick<LSP, 'traceFunction' | 'untraceFunction'>) => void,
         ) => {
             const lsp = { traceFunction: jest.fn(), untraceFunction: jest.fn() }
             const editor = createFakeEditor()
@@ -418,10 +464,10 @@ describe('Repl tests', () => {
             const runTest = async (
                 fn: (
                     ui: Pick<UI, 'requestPackage' | 'requestTracedPackage'>,
-                    lsp: Pick<LSP, 'tracePackage' | 'untracePackage'>
+                    lsp: Pick<LSP, 'tracePackage' | 'untracePackage'>,
                 ) => Promise<void>,
                 packageName: string | undefined,
-                validate: (lsp: Pick<LSP, 'tracePackage' | 'untracePackage'>) => void
+                validate: (lsp: Pick<LSP, 'tracePackage' | 'untracePackage'>) => void,
             ) => {
                 const ui = { requestPackage: jest.fn(), requestTracedPackage: jest.fn() }
                 const lsp = { tracePackage: jest.fn(), untracePackage: jest.fn() }
@@ -557,7 +603,7 @@ describe('Repl tests', () => {
     describe('inspectMacro', () => {
         const runTest = async (
             info: SurroundingInfo | undefined,
-            validate: (lsp: Pick<LSP, 'getSurroundingInfo' | 'inspectMacro'>) => void
+            validate: (lsp: Pick<LSP, 'getSurroundingInfo' | 'inspectMacro'>) => void,
         ) => {
             const lsp = {
                 getSurroundingInfo: jest.fn(async () => info),
@@ -577,7 +623,7 @@ describe('Repl tests', () => {
 
         it('Have info', async () => {
             await runTest({ text: 'some text', package: 'some package', range: new vscodeMock.Range() }, (lsp) =>
-                expect(lsp.inspectMacro).toHaveBeenCalled()
+                expect(lsp.inspectMacro).toHaveBeenCalled(),
             )
         })
 

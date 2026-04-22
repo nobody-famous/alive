@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/__test__/extension.spec.ts",
+                "src/vscode/commands/__test__/Repl.spec.ts",
                 "-t",
-                "queryInspectMacro"
+                "addToReplHistory"
             ],
             "problemMatcher": ["$tsc"]
         },

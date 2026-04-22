@@ -96,6 +96,7 @@ export const activate = async (ctx: Pick<vscode.ExtensionContext, 'subscriptions
         vscode.commands.registerCommand('alive.loadAsdfSystem', () => cmds.loadAsdfSystem(lsp)),
         vscode.commands.registerCommand('alive.loadFile', () => cmds.loadFile(lsp)),
         vscode.commands.registerCommand('alive.compileFile', () => cmds.compileFile(lsp, state)),
+        vscode.commands.registerCommand('alive.addToReplHistory', () => cmds.addToReplHistory(lsp, ui)),
 
         vscode.commands.registerCommand('alive.refreshPackages', async () => cmds.refreshPackages(ui, lsp)),
         vscode.commands.registerCommand('alive.refreshTracedFunctions', () => cmds.refreshTracedFunctions(ui, lsp)),

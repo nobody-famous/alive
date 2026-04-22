@@ -27,9 +27,19 @@ export async function sendToRepl(lsp: Pick<LSP, 'getEvalInfo' | 'evalWithOutput'
     })
 }
 
+export async function addToReplHistory(lsp: Pick<LSP, 'getEvalInfo'>, ui: Pick<UI, 'addHistoryItem'>) {
+    await useEditor([COMMON_LISP_ID], async (editor) => {
+        const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
+
+        if (info !== undefined) {
+            ui.addHistoryItem(info.package, info.text)
+        }
+    })
+}
+
 export async function inlineEval(
     lsp: Pick<LSP, 'getEvalInfo' | 'eval'>,
-    state: Pick<ExtensionState, 'hoverText'>
+    state: Pick<ExtensionState, 'hoverText'>,
 ): Promise<void> {
     await useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getEvalInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
@@ -65,7 +75,7 @@ export async function evalSurrounding(lsp: Pick<LSP, 'getSurroundingInfo' | 'eva
 
 export async function inlineEvalSurrounding(
     lsp: Pick<LSP, 'getSurroundingInfo' | 'eval'>,
-    state: Pick<ExtensionState, 'hoverText'>
+    state: Pick<ExtensionState, 'hoverText'>,
 ): Promise<void> {
     await useEditor([COMMON_LISP_ID], async (editor) => {
         const info = await lsp.getSurroundingInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
@@ -272,7 +282,7 @@ async function withCatchError(fn: () => Promise<void>) {
 
 async function doMacroExpand(
     lsp: Pick<LSP, 'getSurroundingInfo'>,
-    fn: (text: string, pkg: string) => Promise<string | undefined>
+    fn: (text: string, pkg: string) => Promise<string | undefined>,
 ) {
     await useEditor([COMMON_LISP_ID], async (editor: vscode.TextEditor) => {
         const info = await lsp.getSurroundingInfo(editor.document.getText, editor.document.uri.toString(), editor.selection)
