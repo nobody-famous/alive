@@ -1,5 +1,5 @@
 import { Selection } from 'vscode'
-import { SurroundingInfo } from '../../Types'
+import { EvalInfo, SurroundingInfo } from '../../Types'
 import { LSP } from '../../backend/LSP'
 import {
     addToReplHistory,
@@ -135,47 +135,28 @@ describe('Repl tests', () => {
     })
 
     describe('addToReplHistory', () => {
-        beforeEach(() => {})
-
-        const runTest = async (
-            lsp: Pick<LSP, 'getEvalInfo'>,
-            ui: Pick<UI, 'addHistoryItem'>,
-            fn: (lsp: Pick<LSP, 'getEvalInfo'>, ui: Pick<UI, 'addHistoryItem'>) => Promise<void>,
-            validate: () => void,
-        ) => {
+        const runTest = async (info: EvalInfo | undefined, ui: Pick<UI, 'addHistoryItem'>, validate: () => void) => {
             let editorFn: ((editor: unknown) => Promise<void>) | undefined
+            const lsp = { getEvalInfo: jest.fn().mockReturnValue(info) }
 
             utilsMock.useEditor.mockImplementationOnce((langs: string[], fn: (editor: unknown) => Promise<void>) => {
                 editorFn = fn
             })
 
-            await fn(lsp, ui)
+            await addToReplHistory(lsp, ui)
             await editorFn?.(createFakeEditor())
 
             validate()
         }
 
         it('No info', async () => {
-            const lsp = {
-                getEvalInfo: jest.fn().mockReturnValue(undefined),
-                evalWithOutput: jest.fn(),
-                getSurroundingInfo: jest.fn(),
-            }
-
             const ui = { addHistoryItem: jest.fn() }
-
-            await runTest(lsp, ui, addToReplHistory, () => expect(ui.addHistoryItem).not.toHaveBeenCalled())
+            await runTest(undefined, ui, () => expect(ui.addHistoryItem).not.toHaveBeenCalled())
         })
 
         it('Have info', async () => {
-            const lsp = {
-                getEvalInfo: jest.fn().mockReturnValue({}),
-                evalWithOutput: jest.fn(),
-                getSurroundingInfo: jest.fn(),
-            }
             const ui = { addHistoryItem: jest.fn() }
-
-            await runTest(lsp, ui, addToReplHistory, () => expect(ui.addHistoryItem).toHaveBeenCalled())
+            await runTest({ package: '', text: '' }, ui, () => expect(ui.addHistoryItem).toHaveBeenCalled())
         })
     })
 
