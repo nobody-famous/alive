@@ -551,6 +551,7 @@ describe('Extension tests', () => {
 
             checkCallback(fns, 'alive.selectSexpr', cmdsMock.selectSexpr)
             checkCallback(fns, 'alive.sendToRepl', cmdsMock.sendToRepl)
+            checkCallback(fns, 'alive.addToReplHistory', cmdsMock.addToReplHistory)
             checkCallback(fns, 'alive.loadAsdfSystem', cmdsMock.loadAsdfSystem)
             checkCallback(fns, 'alive.compileFile', cmdsMock.compileFile)
             checkCallback(fns, 'alive.refreshPackages', cmdsMock.refreshPackages)

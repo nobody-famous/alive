@@ -364,12 +364,16 @@ export class UI extends EventEmitter<UIEvents> {
         })
     }
 
+    addHistoryItem(pkg: string, text: string) {
+        this.historyTree.removeItem(pkg, text)
+        this.historyTree.addItem(pkg, text)
+
+        this.emit('saveReplHistory', this.historyTree.getItems())
+    }
+
     async initRepl() {
         this.replView.on('eval', async (pkg: string, text: string) => {
-            this.historyTree.removeItem(pkg, text)
-            this.historyTree.addItem(pkg, text)
-
-            this.emit('saveReplHistory', this.historyTree.getItems())
+            this.addHistoryItem(pkg, text)
             this.emit('eval', text, pkg, true)
         })
 
