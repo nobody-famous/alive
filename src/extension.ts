@@ -454,6 +454,7 @@ function registerUIEvents(ui: UI, lsp: LSP, state: ExtensionState) {
     ui.on('saveReplHistory', (items: HistoryItem[]) => saveReplHistory(state.replHistoryFile, items))
     ui.on('listPackages', async (fn) => fn(await lsp.listPackages()))
     ui.on('eval', (text, pkgName, storeResult) => lsp.evalWithOutput(text, pkgName, storeResult))
+    ui.on('evalInFrame', (text, frameNumber) => lsp.evalInFrame(text, frameNumber))
     ui.on('inspect', (text, pkgName) => lsp.inspect(text, pkgName))
     ui.on('inspectClosed', (info) => lsp.inspectClosed(info))
     ui.on('inspectEval', (info, text) => lsp.inspectEval(info, text))

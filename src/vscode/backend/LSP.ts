@@ -320,6 +320,23 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
     }
 
+    evalInFrame = async (text: string, frameNumber: number): Promise<void> => {
+        try {
+            const resp = await this.client?.sendRequest('$/alive/evalInFrame', { frame: frameNumber, text })
+            if (resp === undefined) {
+                return
+            }
+
+            const resultsArray = Array.isArray(resp) ? resp : [resp]
+
+            for (const res of resultsArray) {
+                this.emit('output', res)
+            }
+        } catch (err) {
+            log(`Eval in frame failed: ${toLog(err)}`)
+        }
+    }
+
     listAsdfSystems = async (): Promise<string[]> => {
         try {
             const resp = await this.client?.sendRequest('$/alive/listAsdfSystems')

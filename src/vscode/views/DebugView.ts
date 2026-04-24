@@ -15,6 +15,7 @@ interface DebugEvents {
     jumpTo: [string, number, number]
     restart: [number]
     restartFrame: [number, string]
+    evalInFrame: [number]
 }
 
 export class DebugView extends EventEmitter<DebugEvents> {
@@ -60,6 +61,8 @@ export class DebugView extends EventEmitter<DebugEvents> {
                         return this.restartCommand(msg)
                     case 'restart_frame':
                         return this.restartFrame(msg)
+                    case 'eval_in_frame':
+                        return this.evalInFrame(msg)
                     case 'inspect_cond':
                         return this.inspectCondCommand()
                     case 'jump_to':
@@ -128,6 +131,12 @@ export class DebugView extends EventEmitter<DebugEvents> {
     private restartFrame(msg: jsMessage) {
         if (isFiniteNumber(msg.number) && isString(msg.argsList)) {
             this.emit('restartFrame', msg.number, msg.argsList)
+        }
+    }
+
+    private evalInFrame(msg: jsMessage) {
+        if (isFiniteNumber(msg.number)) {
+            this.emit('evalInFrame', msg.number)
         }
     }
 
