@@ -11,6 +11,7 @@ describe('DebugView tests', () => {
         extensionPath: '/some/path',
     }
     const fakeDebugInfo: DebugInfo = {
+        id: 0,
         message: 'Fake Message',
         restarts: [],
         stackTrace: [],

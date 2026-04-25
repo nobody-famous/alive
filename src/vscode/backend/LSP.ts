@@ -2,7 +2,17 @@ import { EventEmitter } from 'events'
 import * as net from 'net'
 import * as vscode from 'vscode'
 import { LanguageClient, LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node'
-import { isArray, isInspectResult, isObject, isPackage, isRestartInfo, isStackTrace, isString, isThread } from '../Guards'
+import {
+    isArray,
+    isFiniteNumber,
+    isInspectResult,
+    isObject,
+    isPackage,
+    isRestartInfo,
+    isStackTrace,
+    isString,
+    isThread,
+} from '../Guards'
 import { log, toLog } from '../Log'
 import {
     CompileFileNote,
@@ -134,6 +144,7 @@ export class LSP extends EventEmitter<LSPEvents> {
         if (
             !isObject(params) ||
             !isString(params.message) ||
+            !isFiniteNumber(params.id) ||
             !Array.isArray(params.restarts) ||
             !Array.isArray(params.stackTrace)
         ) {
@@ -144,6 +155,7 @@ export class LSP extends EventEmitter<LSPEvents> {
         const hasStack = isStackTrace(params.stackTrace)
 
         return {
+            id: params.id,
             message: params.message,
             restarts: hasRestarts ? params.restarts : [],
             stackTrace: hasStack ? params.stackTrace : [],
@@ -320,9 +332,9 @@ export class LSP extends EventEmitter<LSPEvents> {
         }
     }
 
-    evalInFrame = async (text: string, frameNumber: number): Promise<void> => {
+    evalInFrame = async (debuggerId: number, text: string, frameNumber: number): Promise<void> => {
         try {
-            const resp = await this.client?.sendRequest('$/alive/evalInFrame', { frame: frameNumber, text })
+            const resp = await this.client?.sendRequest('$/alive/evalInFrame', { id: debuggerId, frame: frameNumber, text })
             if (resp === undefined) {
                 return
             }

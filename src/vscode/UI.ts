@@ -26,7 +26,7 @@ import { TracedFunctionTreeProvider } from './views/TracedFunctionsTree'
 export declare interface UIEvents {
     saveReplHistory: [history: HistoryItem[]]
     eval: [text: string, pkgName: string, storeResult?: boolean]
-    evalInFrame: [text: string, frameNumber: number]
+    evalInFrame: [id: number, text: string, frameNumber: number]
     inspect: [text: string, pkgName: string]
     inspectClosed: [info: InspectInfo]
     inspectEval: [info: InspectInfo, text: string]
@@ -139,7 +139,7 @@ export class UI extends EventEmitter<UIEvents> {
                 view.stop()
             })
 
-            view.on('evalInFrame', async (num: number) => {
+            view.on('evalInFrame', async (id: number, num: number) => {
                 if (num < 0 || num >= info.stackTrace.length) {
                     return
                 }
@@ -149,7 +149,7 @@ export class UI extends EventEmitter<UIEvents> {
                     return
                 }
 
-                this.emit('evalInFrame', text, num)
+                this.emit('evalInFrame', id, text, num)
             })
 
             view.on('debugClosed', () => {

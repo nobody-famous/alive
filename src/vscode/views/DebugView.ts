@@ -15,7 +15,7 @@ interface DebugEvents {
     jumpTo: [string, number, number]
     restart: [number]
     restartFrame: [number, string]
-    evalInFrame: [number]
+    evalInFrame: [number, number]
 }
 
 export class DebugView extends EventEmitter<DebugEvents> {
@@ -136,7 +136,7 @@ export class DebugView extends EventEmitter<DebugEvents> {
 
     private evalInFrame(msg: jsMessage) {
         if (isFiniteNumber(msg.number)) {
-            this.emit('evalInFrame', msg.number)
+            this.emit('evalInFrame', this.info.id, msg.number)
         }
     }
 
