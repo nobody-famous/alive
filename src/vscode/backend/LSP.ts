@@ -342,7 +342,7 @@ export class LSP extends EventEmitter<LSPEvents> {
             const resultsArray = Array.isArray(resp) ? resp : [resp]
 
             for (const res of resultsArray) {
-                this.emit('output', res)
+                this.emit('output', res.text)
             }
         } catch (err) {
             log(`Eval in frame failed: ${toLog(err)}`)
