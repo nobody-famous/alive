@@ -159,9 +159,9 @@ describe('LSP tests', () => {
                     fn({ restart: 5 })
                 })
 
-                expect(await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [], stackTrace: [] })).toMatchObject(
-                    { restart: 5 },
-                )
+                expect(
+                    await funcMap.request['$/alive/debugger']({ id: 0, message: 'foo', restarts: [], stackTrace: [] }),
+                ).toMatchObject({ restart: 5 })
             })
 
             it('Missing data', async () => {
@@ -172,7 +172,7 @@ describe('LSP tests', () => {
                 })
 
                 expect(
-                    await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [5], stackTrace: [10] }),
+                    await funcMap.request['$/alive/debugger']({ id: 0, message: 'foo', restarts: [5], stackTrace: [10] }),
                 ).toMatchObject({ restart: 5 })
             })
 
