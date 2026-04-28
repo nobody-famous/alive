@@ -154,6 +154,16 @@ describe('DebugView tests', () => {
             expect(view.emit).toHaveBeenCalled()
         })
 
+        it('evalInFrame', () => {
+            const { view, cb } = getCallback()
+
+            cb({ command: 'eval_in_frame' })
+            expect(view.emit).not.toHaveBeenCalled()
+
+            cb({ command: 'eval_in_frame', number: 5 })
+            expect(view.emit).toHaveBeenCalled()
+        })
+
         it('inspectCond', () => {
             const { cb } = getCallback()
 
