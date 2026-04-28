@@ -1257,6 +1257,42 @@ describe('LSP tests', () => {
         })
     })
 
+    describe('evalInFrame', () => {
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            lsp.emit = jest.fn()
+            await lsp.evalInFrame(0, 'Some text', 0)
+
+            expect(lsp.emit).not.toHaveBeenCalled()
+        })
+
+        it('Network error', async () => {
+            await networkErrorTest(
+                (lsp) => lsp.evalInFrame(0, 'Some text', 0),
+                (resp) => expect(resp).toBeUndefined(),
+            )
+        })
+
+        it('success', async () => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => 'foo') })
+
+            lsp.emit = jest.fn()
+            await lsp.evalInFrame(0, 'Some text', 0)
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+
+        it('success with array', async () => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => ['foo']) })
+
+            lsp.emit = jest.fn()
+            await lsp.evalInFrame(0, 'Some text', 0)
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+    })
+
     describe('inspect', () => {
         const fakeInfo = {
             id: 5,
