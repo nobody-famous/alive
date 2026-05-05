@@ -26,6 +26,7 @@ import { TracedFunctionTreeProvider } from './views/TracedFunctionsTree'
 export declare interface UIEvents {
     saveReplHistory: [history: HistoryItem[]]
     eval: [text: string, pkgName: string, storeResult?: boolean]
+    evalInFrame: [id: number, text: string, frameNumber: number]
     inspect: [text: string, pkgName: string]
     inspectClosed: [info: InspectInfo]
     inspectEval: [info: InspectInfo, text: string]
@@ -136,6 +137,19 @@ export class UI extends EventEmitter<UIEvents> {
                 frameIndex = num
                 frameArgsList = `'(${args})`
                 view.stop()
+            })
+
+            view.on('evalInFrame', async (id: number, num: number) => {
+                if (num < 0 || num >= info.stackTrace.length) {
+                    return
+                }
+
+                const text = await vscode.window.showInputBox({ prompt: 'Eval In Frame' })
+                if (text === undefined) {
+                    return
+                }
+
+                this.emit('evalInFrame', id, text, num)
             })
 
             view.on('debugClosed', () => {

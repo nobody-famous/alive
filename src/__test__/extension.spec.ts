@@ -228,6 +228,7 @@ describe('Extension tests', () => {
             const fns = await getAllCallbacks(uiMock.on, async () => await activate(ctx))
 
             checkCallback(fns, 'eval', lspMock.evalWithOutput)
+            checkCallback(fns, 'evalInFrame', lspMock.evalInFrame)
             checkCallback(fns, 'inspect', lspMock.inspect)
             checkCallback(fns, 'inspectClosed', lspMock.inspectClosed)
             checkCallback(fns, 'inspectEval', lspMock.inspectEval)

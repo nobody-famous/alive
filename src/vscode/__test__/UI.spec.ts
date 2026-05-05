@@ -543,6 +543,7 @@ describe('UI tests', () => {
         it('restart index', async () => {
             const ui = new UI(createState())
             const info = {
+                id: 0,
                 message: 'foo',
                 restarts: [
                     { name: 'foo', description: 'foo' },
@@ -572,6 +573,7 @@ describe('UI tests', () => {
         it('restart frame', async () => {
             const ui = new UI(createState())
             const info = {
+                id: 0,
                 message: 'foo',
                 restarts: [],
                 stackTrace: [
@@ -597,13 +599,39 @@ describe('UI tests', () => {
             expect(debugMock.debugStop).toHaveBeenCalled()
         })
 
+        describe('evalInFrame', () => {
+            it('invalid number', async () => {
+                const ui = new UI(createState())
+                const info = {
+                    id: 0,
+                    message: 'foo',
+                    restarts: [],
+                    stackTrace: [{ function: 'foo', file: null, position: null, vars: null }],
+                }
+                let emitted = false
+                let task: Promise<DebugAction> = Promise.resolve({})
+                const fns = await getAllCallbacks(debugMock.debugOn, async () => {
+                    task = ui.getDebugAction(info)
+                })
+
+                ui.on('evalInFrame', () => (emitted = true))
+
+                await fns['evalInFrame'](0, -1)
+                expect(vscodeMock.window.showInputBox).not.toHaveBeenCalled()
+
+                vscodeMock.window.showInputBox.mockReturnValueOnce()
+                await fns['evalInFrame'](0, 0)
+                expect(emitted).toEqual(false)
+
+                vscodeMock.window.showInputBox.mockReturnValueOnce('foo')
+                await fns['evalInFrame'](0, 0)
+                expect(emitted).toEqual(true)
+            })
+        })
+
         const closedTest = async (restarts: RestartInfo[], expectIndex: number | undefined) => {
             const ui = new UI(createState())
-            const info = {
-                message: 'foo',
-                restarts,
-                stackTrace: [],
-            }
+            const info = { id: 0, message: 'foo', restarts, stackTrace: [] }
             let task: Promise<DebugAction> = Promise.resolve({})
             const fns = await getAllCallbacks(debugMock.debugOn, async () => {
                 task = ui.getDebugAction(info)
@@ -676,7 +704,7 @@ describe('UI tests', () => {
 
         it('No panel for view', () => {
             const ui = new UI(createState())
-            const info = { message: 'foo', restarts: [], stackTrace: [] }
+            const info = { id: 0, message: 'foo', restarts: [], stackTrace: [] }
 
             ui.getDebugAction(info)
 
@@ -691,7 +719,7 @@ describe('UI tests', () => {
 
         it('Has view', () => {
             const ui = new UI(createState())
-            const info = { message: 'foo', restarts: [], stackTrace: [] }
+            const info = { id: 0, message: 'foo', restarts: [], stackTrace: [] }
 
             ui.getDebugAction(info)
             ui.selectRestart(3)

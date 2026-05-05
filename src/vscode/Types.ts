@@ -91,6 +91,7 @@ export interface SourceLocation {
 }
 
 export interface DebugInfo {
+    id: number
     message: string
     restarts: Array<RestartInfo>
     stackTrace: Array<SourceLocation>

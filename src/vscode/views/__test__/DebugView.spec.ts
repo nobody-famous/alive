@@ -11,6 +11,7 @@ describe('DebugView tests', () => {
         extensionPath: '/some/path',
     }
     const fakeDebugInfo: DebugInfo = {
+        id: 0,
         message: 'Fake Message',
         restarts: [],
         stackTrace: [],
@@ -150,6 +151,16 @@ describe('DebugView tests', () => {
             expect(view.emit).not.toHaveBeenCalled()
 
             cb({ command: 'restart_frame', number: 5, argsList: '' })
+            expect(view.emit).toHaveBeenCalled()
+        })
+
+        it('evalInFrame', () => {
+            const { view, cb } = getCallback()
+
+            cb({ command: 'eval_in_frame' })
+            expect(view.emit).not.toHaveBeenCalled()
+
+            cb({ command: 'eval_in_frame', number: 5 })
             expect(view.emit).toHaveBeenCalled()
         })
 

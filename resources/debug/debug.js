@@ -8,6 +8,10 @@ function restartFrame(ndx, argsList) {
     vscode.postMessage({ command: 'restart_frame', number: ndx, argsList })
 }
 
+function evalInFrame(ndx) {
+    vscode.postMessage({ command: 'eval_in_frame', number: ndx })
+}
+
 function jump_to(file, line, char) {
     vscode.postMessage({ command: 'jump_to', file, line, char })
 }
@@ -229,6 +233,7 @@ customElements.define(
                 <div id="index-field" class="backtrace-index">
                     <div>${this.indexValue}</div>
                     ${this.item.restartable ? '<button id="restart" title="Restart Frame"><span class="codicon codicon-debug-restart-frame"></span></button>' : ''}
+                    ${this.item.restartable ? '<button id="eval" title="Eval In Frame"><span class="codicon codicon-debug-stackframe-active"></span></button>' : ''}
                 </div>
                 <div id="loc-field" class="backtrace-location">
                     <div id="fn-field" class="backtrace-fn"></div>
@@ -240,6 +245,10 @@ customElements.define(
             this.querySelector('#restart')?.addEventListener('click', () => {
                 const args = this.item.argsList.trim().replace(/^\((.*)\)$/, '$1')
                 restartFrame(this.indexValue, args)
+            })
+
+            this.querySelector('#eval')?.addEventListener('click', () => {
+                evalInFrame(this.indexValue)
             })
 
             this.querySelector('#file-field')?.addEventListener('click', () => {

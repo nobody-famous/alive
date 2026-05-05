@@ -28,9 +28,9 @@
             "args": [
                 "jest",
                 // "--coverage",
-                "src/vscode/commands/__test__/Repl.spec.ts",
+                "src/vscode/backend/__test__/LSP.spec.ts",
                 "-t",
-                "addToReplHistory"
+                "evalInFrame"
             ],
             "problemMatcher": ["$tsc"]
         },

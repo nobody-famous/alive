@@ -159,9 +159,9 @@ describe('LSP tests', () => {
                     fn({ restart: 5 })
                 })
 
-                expect(await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [], stackTrace: [] })).toMatchObject(
-                    { restart: 5 },
-                )
+                expect(
+                    await funcMap.request['$/alive/debugger']({ id: 0, message: 'foo', restarts: [], stackTrace: [] }),
+                ).toMatchObject({ restart: 5 })
             })
 
             it('Missing data', async () => {
@@ -172,7 +172,7 @@ describe('LSP tests', () => {
                 })
 
                 expect(
-                    await funcMap.request['$/alive/debugger']({ message: 'foo', restarts: [5], stackTrace: [10] }),
+                    await funcMap.request['$/alive/debugger']({ id: 0, message: 'foo', restarts: [5], stackTrace: [10] }),
                 ).toMatchObject({ restart: 5 })
             })
 
@@ -1254,6 +1254,42 @@ describe('LSP tests', () => {
 
             const result = await lsp.eval('(+ 1 2)', 'cl-user')
             expect(result).toBeUndefined()
+        })
+    })
+
+    describe('evalInFrame', () => {
+        it('No client', async () => {
+            const lsp = new LSP({ hoverText: '' })
+
+            lsp.emit = jest.fn()
+            await lsp.evalInFrame(0, 'Some text', 0)
+
+            expect(lsp.emit).not.toHaveBeenCalled()
+        })
+
+        it('Network error', async () => {
+            await networkErrorTest(
+                (lsp) => lsp.evalInFrame(0, 'Some text', 0),
+                (resp) => expect(resp).toBeUndefined(),
+            )
+        })
+
+        it('success', async () => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => 'foo') })
+
+            lsp.emit = jest.fn()
+            await lsp.evalInFrame(0, 'Some text', 0)
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
+        })
+
+        it('success with array', async () => {
+            const { lsp } = await doConnect({ sendRequest: jest.fn(() => ['foo']) })
+
+            lsp.emit = jest.fn()
+            await lsp.evalInFrame(0, 'Some text', 0)
+
+            expect(lsp.emit).toHaveBeenCalledTimes(1)
         })
     })
 

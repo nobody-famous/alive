@@ -61,6 +61,8 @@ debug-backtrace-item {
 }
 
 .backtrace-index {
+    display: flex;
+    flex-direction: column;
     flex-shrink: 1;
     margin-right: 0.5rem;
 }
